@@ -55,6 +55,9 @@ jobs:
       - name: Vérifier la santé du plugin
         run: |
           php -r 'require "wp/wp-load.php"; $response = rest_do_request(new WP_REST_Request("GET", "/partikulier/v1/health")); $d = $response->get_data(); if (($d["status"] ?? "") !== "ok") { fwrite(STDERR, json_encode($d)."\n"); exit(1); } echo "health ok — core ".($d["core_version"] ?? "?")." / schema ".($d["schema_version"] ?? "?")."\n";'
+      - name: Amorcer une annonce de contrat
+        run: |
+          php -r 'require "wp/wp-load.php"; wp_set_current_user(1); $request = new WP_REST_Request("POST", "/partikulier/v1/listings"); $request->set_header("Content-Type", "application/json"); $request->set_body(wp_json_encode(["title" => "CI fixture", "description" => "CI contract fixture", "locale" => "fr", "price" => 100, "area" => 10])); $response = rest_do_request($request); if ($response->get_status() !== 201) { fwrite(STDERR, "fixture listing failed: ".wp_json_encode($response->get_data())."\n"); exit(1); } $id = (int) (($response->get_data()["id"] ?? 0)); global $wpdb; $row = $wpdb->get_row($wpdb->prepare("SELECT external_id FROM {$wpdb->prefix}pk_listings WHERE id = %d", $id), ARRAY_A); $post_id = $row ? (int) substr((string) $row["external_id"], strlen("estatik:")) : 0; if ($post_id < 1) { fwrite(STDERR, "fixture post missing\n"); exit(1); } wp_update_post(["ID" => $post_id, "post_status" => "publish"]); (new \Partikulier\Core\Integration\ListingSynchronizer())->flush(); echo "fixture listing ready: $post_id\n";'
       - name: Exécuter les 16 suites dynamiques
         env:
           PK_WP_DIR: ${{ github.workspace }}/wp
