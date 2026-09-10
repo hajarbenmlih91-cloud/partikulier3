@@ -24,6 +24,18 @@ La réponse attendue est un JSON dont `status` vaut `ok`. Contrôler également 
 
 Ne jamais committer de secrets. Les secrets d’automatisation doivent être injectés via les réglages protégés de WordPress ou `PARTIKULIER_AUTOMATION_API_SECRET` selon l’environnement. En production, utiliser le mode de sécurité signé/enforced décrit dans `docs/whatsapp-n8n-setup.md` et ne pas réutiliser de secret de staging.
 
+## Catalogues i18n
+
+Le plugin `partikulier-core` est la source canonique du domaine gettext `partikulier`. Le thème conserve une copie synchronisée pour garantir un repli traduit lorsque le plugin est désactivé. Le packaging et la CI refusent toute divergence entre les cinq fichiers partagés (`partikulier.pot`, `ar.po`, `ar.mo`, `en_US.po`, `en_US.mo`).
+
+Pour personnaliser une traduction sans modifier les livrables, placer le catalogue dans l’emplacement WordPress prioritaire :
+
+```text
+wp-content/languages/plugins/partikulier-core-<locale>.mo
+```
+
+La personnalisation est ainsi conservée lors des mises à jour du plugin.
+
 ## Rollback
 
 Conserver l’archive précédente et son checksum avant chaque mise à jour. En cas de régression, réinstaller les deux archives de la version précédente dans le même ordre, puis vérifier la route de santé et le parcours front. Les migrations du plugin sont journalisées ; ne pas supprimer manuellement les tables métier.

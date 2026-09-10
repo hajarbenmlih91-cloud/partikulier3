@@ -15,6 +15,14 @@ if (!defined('ABSPATH')) {
 const PARTIKULIER_CORE_VERSION = '2.8.0';
 const PARTIKULIER_CORE_FILE = __FILE__;
 
+// Le plugin est la source canonique du domaine partagé ; le thème ne le
+// charge qu'en repli lorsque ce plugin est absent.
+load_plugin_textdomain(
+    'partikulier',
+    false,
+    dirname(plugin_basename(__FILE__)) . '/languages'
+);
+
 require_once __DIR__ . '/src/Database/Schema.php';
 require_once __DIR__ . '/src/Database/Migrator.php';
 require_once __DIR__ . '/src/Rest/RouteRegistry.php';

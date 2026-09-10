@@ -32,3 +32,48 @@ jobs:
           path: |
             dist/*.zip
             dist/SHA256SUMS
+
+  contrats-statiques:
+    name: contrats-statiques (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        php: ['8.1', '8.2', '8.3']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring
+      - name: Contrat statique routes (S-ROUTE-004/005)
+        env:
+          PK_PLUGIN_DIR: ${{ github.workspace }}/plugin/partikulier-core
+          PK_THEME_DIR: ${{ github.workspace }}/theme/partikulier
+        run: |
+          set -euo pipefail
+          php plugin/partikulier-core/tests/routes-static.php > routes-static.json
+          php -r '$d=json_decode(file_get_contents("routes-static.json"),true); if (($d["status"] ?? "") !== "PASS") { fwrite(STDERR, "routes-static: FAIL\n"); exit(1); } echo "routes-static: PASS ".$d["passed"]."/".$d["total"]."\n";'
+      - name: Publier la preuve statique
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: contrat-statique-php-${{ matrix.php }}
+          path: routes-static.json
+
+  integrite-catalogues:
+    name: integrite-catalogues
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Vérifier la copie plugin/thème
+        run: bash scripts/check-catalogues.sh
+      - name: Vérifier le packaging et les empreintes
+        run: bash scripts/package.sh dist
+
+  manifeste-preuves:
+    name: manifeste-preuves
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Vérifier les preuves B1 à B6
+        run: bash scripts/check-evidence.sh

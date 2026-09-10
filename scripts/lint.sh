@@ -34,3 +34,5 @@ if find . -type f \( -name '.env' -o -name '.env.*' -o -name '*.sqlite' -o -name
   exit 1
 fi
 echo 'Artifact hygiene: PASS'
+
+bash scripts/check-catalogues.sh

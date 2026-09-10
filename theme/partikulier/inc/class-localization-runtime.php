@@ -55,11 +55,13 @@ trait Partikulier_Localization_Runtime {
                                 }
         }
 
-                        /**
+                /**
                  * Charge les fichiers gettext du thème avant tout dictionnaire de repli.
                  */
                 public static function load_textdomain() {
-                                load_theme_textdomain( 'partikulier', PARTIKULIER_DIR . '/languages' );
+                                if ( ! class_exists( 'Partikulier\\Core\\Domain\\DomainRegistry' ) ) {
+                                        load_theme_textdomain( 'partikulier', PARTIKULIER_DIR . '/languages' );
+                                }
                         }
 
                         /**
@@ -79,6 +81,9 @@ trait Partikulier_Localization_Runtime {
                          * les DEUX lecteurs gettext de WordPress).
                          */
                         public static function load_active_textdomain() {
+                                if ( class_exists( 'Partikulier\\Core\\Domain\\DomainRegistry' ) ) {
+                                        return;
+                                }
                                 $slug = function_exists( 'pll_current_language' ) ? pll_current_language( 'slug' ) : '';
                                 $locale = 'en' === $slug ? 'en_US' : ( 'ar' === $slug ? 'ar' : '' );
                                 if ( ! $locale ) {
@@ -204,4 +209,3 @@ trait Partikulier_Localization_Runtime {
                         return '' !== $ua && (bool) preg_match( '/bot|crawler|spider|slurp|bingpreview|facebookexternalhit|linkedinbot|whatsapp/i', $ua );
                 }
 }
-

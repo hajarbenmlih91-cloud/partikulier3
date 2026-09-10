@@ -1,0 +1,398 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Partikulier 6.17.10\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: ar\n"
+
+msgid "Aide"
+msgstr "المساعدة"
+
+msgid "Ajouter aux favoris"
+msgstr "إضافة إلى المفضلة"
+
+msgid "Ajouter un mot personnel"
+msgstr "إضافة كلمة شخصية"
+
+msgid "Animaux domestiques autorisés"
+msgstr "مسموح بدخول الحيوانات الأليفة"
+
+msgid "Annuler"
+msgstr "إلغاء"
+
+msgid "Aperçu rapide"
+msgstr "معاينة سريعة"
+
+msgid "Appartement"
+msgstr "شقة"
+
+msgid "Appartements"
+msgstr "شقق"
+
+msgid "Ascenseur"
+msgstr "مصعد"
+
+msgid "Baisse de prix"
+msgstr "انخفاض السعر"
+
+msgid "Balcon"
+msgstr "شرفة"
+
+msgid "Bien"
+msgstr "عقار"
+
+msgid "Bureau"
+msgstr "مكتب"
+
+msgid "Bâtiment professionnel"
+msgstr "مبنى مهني"
+
+msgid "Caractéristiques"
+msgstr "الخصائص"
+
+msgid "Centre-ville"
+msgstr "وسط المدينة"
+
+msgid "Chambre"
+msgstr "غرفة نوم"
+
+msgid "Chambres"
+msgstr "غرف النوم"
+
+msgid "Cheminée"
+msgstr "مدفأة"
+
+msgid "Climatisation"
+msgstr "تكييف"
+
+msgid "Climatisation centrale"
+msgstr "تكييف مركزي"
+
+msgid "Contact"
+msgstr "اتصال"
+
+msgid "Contact direct"
+msgstr "اتصال مباشر"
+
+msgid "Contacter le vendeur"
+msgstr "تواصل مع المعلن"
+
+msgid "Contactez-nous"
+msgstr "اتصل بنا"
+
+msgid "Continuer"
+msgstr "متابعة"
+
+msgid "Cuisine équipée"
+msgstr "مطبخ مجهز"
+
+msgid "Date de publication"
+msgstr "تاريخ النشر"
+
+msgid "Description"
+msgstr "الوصف"
+
+msgid "Description du bien"
+msgstr "وصف العقار"
+
+msgid "Double vitrage"
+msgstr "زجاج مزدوج"
+
+msgid "Déposer une annonce"
+msgstr "إضافة إعلان"
+
+msgid "Enregistrer"
+msgstr "حفظ"
+
+msgid "Envoyer"
+msgstr "إرسال"
+
+msgid "Favoris"
+msgstr "المفضلة"
+
+msgid "Four"
+msgstr "فرن"
+
+msgid "France"
+msgstr "فرنسا"
+
+msgid "Garage"
+msgstr "مرآب"
+
+msgid "Garage ou sous-sol"
+msgstr "مرآب أو قبو"
+
+msgid "Internet"
+msgstr "إنترنت"
+
+msgid "Jardin"
+msgstr "حديقة"
+
+msgid "Je publie mon propre bien."
+msgstr "أنشر عقاري الخاص."
+
+msgid "Je publie pour un client."
+msgstr "أنشر لصالح عميل."
+
+msgid "La description principale est déjà créée à partir de vos réponses. Cet espace vous permet d’ajouter un complément si vous le souhaitez."
+msgstr "تم إنشاء الوصف الرئيسي من إجاباتك. يمكنك إضافة تفاصيل هنا إذا رغبت."
+
+msgid "Les informations du bien"
+msgstr "معلومات العقار"
+
+msgid "Local commercial"
+msgstr "محل تجاري"
+
+msgid "Location"
+msgstr "كراء"
+
+msgid "Louer"
+msgstr "كراء"
+
+msgid "Machine à laver"
+msgstr "آلة غسيل"
+
+msgid "Maison"
+msgstr "منزل"
+
+msgid "Maisons"
+msgstr "منازل"
+
+msgid "Maroc"
+msgstr "المغرب"
+
+msgid "Mentions légales"
+msgstr "الإشعارات القانونية"
+
+msgid "Menu principal"
+msgstr "القائمة الرئيسية"
+
+msgid "Meublé"
+msgstr "مفروش"
+
+msgid "Micro-ondes"
+msgstr "ميكروويف"
+
+msgid "Mon espace"
+msgstr "مساحتي"
+
+msgid "Nombre de chambres"
+msgstr "عدد غرف النوم"
+
+msgid "Nombre de pièces"
+msgstr "عدد الغرف"
+
+msgid "Nombre de salles de bains"
+msgstr "عدد الحمامات"
+
+msgid "Nombre de salons"
+msgstr "عدد غرف الجلوس"
+
+msgid "Non"
+msgstr "لا"
+
+msgid "Non meublé"
+msgstr "غير مفروش"
+
+msgid "N’hésitez pas à nous contacter"
+msgstr "لا تتردد في الاتصال بنا"
+
+msgid "Oui"
+msgstr "نعم"
+
+msgid "Ouvrir le menu"
+msgstr "فتح القائمة"
+
+msgid "Parking"
+msgstr "موقف سيارات"
+
+msgid "Pertinence"
+msgstr "الأفضلية"
+
+msgid "Photos du bien"
+msgstr "صور العقار"
+
+msgid "Piscine"
+msgstr "مسبح"
+
+msgid "Pièce principale"
+msgstr "الغرفة الرئيسية"
+
+msgid "Porte blindée"
+msgstr "باب مصفحة"
+
+msgid "Pour plus d’informations"
+msgstr "لمزيد من المعلومات"
+
+msgid "Prix"
+msgstr "السعر"
+
+msgid "Prix demandé"
+msgstr "السعر المطلوب"
+
+msgid "Prix le plus bas"
+msgstr "الأقل سعراً"
+
+msgid "Prix le plus élevé"
+msgstr "الأعلى سعراً"
+
+msgid "Prix sur demande"
+msgstr "السعر عند الطلب"
+
+msgid "Propriétaire"
+msgstr "مالك"
+
+msgid "Précédent"
+msgstr "السابق"
+
+msgid "Publier"
+msgstr "نشر"
+
+msgid "Quartier"
+msgstr "الحي"
+
+msgid "Questions fréquentes"
+msgstr "الأسئلة الشائعة"
+
+msgid "Qui publie l’annonce ?"
+msgstr "من ينشر الإعلان؟"
+
+msgid "Recherche rapide"
+msgstr "بحث سريع"
+
+msgid "Rechercher"
+msgstr "بحث"
+
+msgid "Rechercher une ville"
+msgstr "البحث عن مدينة"
+
+msgid "Retour"
+msgstr "رجوع"
+
+msgid "Réfrigérateur"
+msgstr "ثلاجة"
+
+msgid "Résidence"
+msgstr "إقامة"
+
+msgid "Salle de bains"
+msgstr "حمّام"
+
+msgid "Salles de bains"
+msgstr "الحمّامات"
+
+msgid "Salon"
+msgstr "غرفة جلوس"
+
+msgid "Salons"
+msgstr "غرف الجلوس"
+
+msgid "Se connecter"
+msgstr "تسجيل الدخول"
+
+msgid "Studio"
+msgstr "استوديو"
+
+msgid "Suivant"
+msgstr "التالي"
+
+msgid "Superficie"
+msgstr "المساحة"
+
+msgid "Superficie (m²)"
+msgstr "المساحة (م²)"
+
+msgid "Superficie de la terrasse (m²)"
+msgstr "مساحة التراس (م²)"
+
+msgid "Surface"
+msgstr "المساحة"
+
+msgid "Sécurité"
+msgstr "حراسة"
+
+msgid "Terrain"
+msgstr "أرض"
+
+msgid "Terrasse"
+msgstr "تراس"
+
+msgid "Titre de l’annonce"
+msgstr "عنوان الإعلان"
+
+msgid "Tous droits réservés."
+msgstr "جميع الحقوق محفوظة."
+
+msgid "Toutes les annonces"
+msgstr "كل الإعلانات"
+
+msgid "Trier par"
+msgstr "فرز حسب"
+
+msgid "Type de bien"
+msgstr "نوع العقار"
+
+msgid "Types de biens"
+msgstr "أنواع العقارات"
+
+msgid "Téléphone"
+msgstr "الهاتف"
+
+msgid "Télévision"
+msgstr "تلفزيون"
+
+msgid "Un détail important, une précision sur le quartier ou vos conditions de visite…"
+msgstr "تفصيل مهم أو توضيح عن الحي أو شروط الزيارة…"
+
+msgid "Valider avec WhatsApp"
+msgstr "التأكيد عبر واتساب"
+
+msgid "Vendre"
+msgstr "بيع"
+
+msgid "Villa"
+msgstr "فيلا"
+
+msgid "Villas"
+msgstr "فيلات"
+
+msgid "Ville"
+msgstr "المدينة"
+
+msgid "Voir l'annonce"
+msgstr "أنظر الإعلان"
+
+msgid "Votre aperçu"
+msgstr "معاينتك"
+
+msgid "Votre e-mail"
+msgstr "بريدك الإلكتروني"
+
+msgid "Votre nom"
+msgstr "اسمك"
+
+msgid "Votre numéro de téléphone"
+msgstr "رقم هاتفك"
+
+msgid "Vue"
+msgstr "الإطلالة"
+
+msgid "Vue sur les montagnes"
+msgstr "مطلة على الجبال"
+
+msgid "WhatsApp"
+msgstr "واتساب"
+
+msgid "À louer"
+msgstr "للكراء"
+
+msgid "À partir de"
+msgstr "ابتداءً من"
+
+msgid "À propos"
+msgstr "من نحن"
+
+msgid "À vendre"
+msgstr "للبيع"
+
+msgid "Étage"
+msgstr "الطابق"

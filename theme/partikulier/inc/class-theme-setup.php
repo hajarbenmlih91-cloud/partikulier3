@@ -28,8 +28,10 @@ class Partikulier_Setup {
                 add_action( 'init', array( __CLASS__, 'register_image_sizes' ) );
         }
 
-        public static function setup() {
-                load_theme_textdomain( 'partikulier', PARTIKULIER_DIR . '/languages' );
+	        public static function setup() {
+	                if ( ! class_exists( 'Partikulier\\Core\\Domain\\DomainRegistry' ) ) {
+	                        load_theme_textdomain( 'partikulier', PARTIKULIER_DIR . '/languages' );
+	                }
 
                 add_theme_support( 'automatic-feed-links' );
                 add_theme_support( 'title-tag' );

@@ -1,0 +1,91 @@
+name: Contrats de recette (WordPress)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+env:
+  PK_VERSION: '2.8.0'
+
+permissions:
+  contents: read
+
+jobs:
+  contrats:
+    name: contrats WordPress / PHP 8.3
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: partikulier
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --host=127.0.0.1 --protocol=tcp"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, mysqli, sqlite3, curl
+      - name: Installer WP-CLI
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar -o /usr/local/bin/wp
+          chmod +x /usr/local/bin/wp
+          wp --info
+      - name: Installer WordPress et les livrables
+        run: |
+          wp core download --version=6.6 --path=wp
+          wp config create --path=wp --dbname=partikulier --dbuser=root --dbpass=root --dbhost=127.0.0.1:3306 --skip-check
+          wp core install --path=wp --url=http://partikulier.local --title=Partikulier \
+            --admin_user=admin --admin_password=admin --admin_email=admin@example.com --skip-email
+          wp plugin install estatik --activate --path=wp
+          rsync -a --delete --exclude='.git' --exclude='.github' plugin/partikulier-core/ wp/wp-content/plugins/partikulier-core/
+          rsync -a --delete --exclude='.git' --exclude='.github' --exclude='node_modules' theme/partikulier/ wp/wp-content/themes/partikulier/
+          wp plugin activate partikulier-core --path=wp
+          wp theme activate partikulier --path=wp
+          mkdir -p wp/wp-content/uploads/partikulier-cache
+      - name: Vérifier la santé du plugin
+        run: |
+          php -r 'require "wp/wp-load.php"; $response = rest_do_request(new WP_REST_Request("GET", "/partikulier/v1/health")); $d = $response->get_data(); if (($d["status"] ?? "") !== "ok") { fwrite(STDERR, json_encode($d)."\n"); exit(1); } echo "health ok — core ".($d["core_version"] ?? "?")." / schema ".($d["schema_version"] ?? "?")."\n";'
+      - name: Exécuter les 16 suites dynamiques
+        env:
+          PK_WP_DIR: ${{ github.workspace }}/wp
+          PK_COMMIT: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p preuves-run/contrats
+          : > preuves-run/journal.txt
+          cd wp
+          for suite in core-contract services-contract load-contract rest-lite-scope \
+                       routes-collision sync-contract payments-contract premium-contract \
+                       leads-contract leads-domain-contract alerts-domain-contract \
+                       automation-domain-contract owner-stats-domain-contract \
+                       translation-variants-domain-contract i18n-chrome-domain-contract \
+                       i18n-content-domain-contract; do
+            if php wp-content/plugins/partikulier-core/tests/$suite.php \
+                 > ../preuves-run/contrats/$suite.json \
+                 2> ../preuves-run/contrats/$suite.err; then
+              echo "PASS  $suite" | tee -a ../preuves-run/journal.txt
+            else
+              echo "FAIL  $suite" | tee -a ../preuves-run/journal.txt
+              exit 1
+            fi
+          done
+      - name: Vérifier l’oracle 184/184
+        run: |
+          php -r '$tot=0; $pas=0; foreach (glob("preuves-run/contrats/*.json") as $f) { $d=json_decode(file_get_contents($f), true); if (($d["status"] ?? "") !== "PASS") { fwrite(STDERR, basename($f).": status != PASS\n"); exit(1); } $tot += (int) $d["total"]; $pas += (int) $d["passed"]; } echo "contrats dynamiques : $pas/$tot\n"; if ($tot !== 184 || $pas !== 184) { fwrite(STDERR, "oracle inattendu (attendu 184/184)\n"); exit(1); }'
+      - name: Publier les résultats
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: contrats-recette
+          path: preuves-run/
+          retention-days: 30
