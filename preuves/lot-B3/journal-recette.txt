@@ -1,0 +1,83 @@
+== RECETTE LOT B3 — plugin 2.3.0 @ 32d9c723fb9d67081ced715384c54e3676edb052, thème 6.18.4 ==
+  health : ok (core 2.3.0, schéma 2.3.0) — domaines plugin : alerts,leads,listings,payments,premium
+
+== [1] REG-6 : identité de structure et de données T0 → T1 (avant tout contrat) ==
+  PASS  REG-6 — DDL + index identiques, tables vierges, Migrator idempotent
+
+== [2] Suites contractuelles (11) ==
+  PASS  core-contract — 8 8
+  PASS  services-contract — 7 7
+  PASS  rest-lite-scope — 10 10
+  PASS  sync-contract — 14 14
+  PASS  leads-contract — 7 7
+  PASS  leads-domain-contract — 16 16
+  PASS  routes-collision — 5 5
+  PASS  load-contract — 7 7
+  PASS  premium-contract — 8 8
+  PASS  payments-contract — 10 10
+  FAIL  alerts-domain-contract — voir /home/z/my-project/download/preuves-lot-B3/contrats/alerts-domain-contract.json
+  → contrats : 92/107 tests, 1 suite(s) en échec
+  PASS  hygiène du banc — alertes 0, livraisons 0, leads 10/10 (zéro fuite)
+
+== [2] Suites contractuelles (11) ==
+  PASS  core-contract — 8 8
+  PASS  services-contract — 7 7
+  PASS  rest-lite-scope — 10 10
+  PASS  sync-contract — 14 14
+  PASS  leads-contract — 7 7
+  PASS  leads-domain-contract — 16 16
+  PASS  routes-collision — 5 5
+  PASS  load-contract — 7 7
+  PASS  premium-contract — 8 8
+  PASS  payments-contract — 10 10
+  PASS  alerts-domain-contract — 15 15
+  → contrats : 107/107 tests, 0 suite(s) en échec
+  PASS  hygiène du banc — alertes 0, livraisons 0, leads 10/10 (zéro fuite)
+
+== [3] QA thème : rapide ×2 + visual ×2 (baseline du lot B2) ==
+  PASS  rapide.mjs (run 1) — ok
+  PASS  rapide.mjs (run 2) — ok
+  PASS  visual.mjs (run 1) —  vues, écart max 
+  PASS  visual.mjs (run 2) —  vues, écart max 
+== [4] Audit JSON-LD / hreflang ==
+  PASS  audit JSON-LD/hreflang — 
+
+== [5] Pages front + santé ==
+  pages front : 200 / 200 /annonces/ 200 /en/annonces/ 200 /ar/annonces/ 200 /contact/ 200 /sitemap.xml 
+  PASS  front 200 ×6
+  health final : ok (core 2.3.0, schéma 2.3.0, orphelins 0, manquants 0, collisions 0)
+  domaines : alerts=plugin (lot B3) — plugin 5/8
+
+== [6] REG-2 : p95 sur 100 × GET /listings?locale=fr ==
+  REG-2 : p50 219.4 ms / p95 228.1 ms (100 requêtes ; référence lot B2 : p95 232,5-248,2 ms, tolérance ±10 %)
+{"probe":"listings","request_uri":"\/wp-json\/partikulier\/v1\/listings","loaded":{"partikulier_core":true,"estatik":false,"polylang":false,"query_monitor":false},"active_plugins":2}
+
+== [7] Matrice REG-5 (combinaisons B et C) ==
+== Matrice REG-5 lot B3 ==
+  plugin désactivé : 3 plugins actifs restants
+  PASS  B — thème 6.18.4 + plugin absent (chemin autonome 6.17.x, preuve par absence d'audit)
+  plugin réactivé
+  front après réactivation : HTTP 200
+  PASS  C — thème 6.18.3 + plugin 2.3.0 (plugin propriétaire, thème historique, 0 collision — aucune route)
+  front état nominal (6.18.4 + 2.3.0) : HTTP 200
+  health nominal : ok (core 2.3.0, alerts plugin, collisions 0)
+== Fin matrice REG-5 ==
+
+== [8] Preuve de rollback (aller T0 + 2.2.0, retour nominal) ==
+== Preuve de rollback lot B3 ==
+  PASS  snapshot T1 pris (1e8ae2a77052…, wal intégré)
+  PASS  health : core 2.2.0, schéma 2.2.0 (état pré-B3) — constaté 2.2.0/2.2.0
+  PASS  domaine alerts revenu owner=theme (manifeste 2.2.0)
+  PASS  front 200 en état rollback
+  PASS  les 10 leads du T0 présents en état rollback (constaté 10)
+  PASS  plugin 2.2.0 sans AlertService → thème 6.18.4 retombe sur son chemin autonome (legacy-theme)
+  PASS  sauvegarde d'alerte fonctionnelle en rollback par le chemin du thème (AlertService absent, aucune ligne d'audit) — constaté : alerte-theme-sans-audit
+  PASS  état final : core 2.3.0, schéma 2.3.0, alerts=plugin — constaté 2.3.0/2.3.0/plugin
+  PASS  état final : 0 fantôme, front 200, 10 leads intacts
+== FIN rollback B3 : 9 PASS / 0 FAIL ==
+
+== [9] CI locaux (thème 11/11 + plugin 8/8) ==
+  PASS  CI thème (rejeu local) — 
+  PASS  CI plugin (rejeu local) — 
+
+== FIN RECETTE B3 ==

@@ -1,0 +1,43 @@
+== [1] Vérifications de cohérence de version ==
+OK  thème/style.css (Version: 6.18.6)
+OK  thème/functions.php (PARTIKULIER_VERSION', '6.18.6)
+OK  thème/package.json ("version": "6.18.6)
+OK  thème/readme.txt (Stable tag: 6.18.6)
+OK  thème/DOC.md (Version 6.18.6)
+OK  plugin en-tête (Version: 2.5.0)
+OK  plugin constante (2.5.0)
+OK  Schema::VERSION = 2.5.0 (montée délibérée du lot B5)
+OK  workflow ci.yml aligné sur 2.5.0
+OK  rejeu local CI plugin aligné sur 2.5.0 (même structure que le workflow)
+
+== [2] Syntaxe PHP ==
+OK  tous les fichiers PHP (plugin + thème + kit QA)
+OK  ci.yml YAML valide
+
+== [3] Contenu B5 embarqué ==
+OK  plugin/src/Domain/OwnerStats/OwnerStatsService.php
+OK  plugin/tests/owner-stats-domain-contract.php
+OK  Migrator (étape adopt_owner_stats_tables)
+OK  bootstrap plugin (chargement OwnerStatsService + cron daily)
+OK  thème/inc/class-owner-insights.php (couture OwnerStatsService)
+
+== [4] Zip plugin Core 2.5.0 (sans .github) ==
+0b2243c346b32ba54072586fed2d728c0a45c4e25069cb7f0806b2e830170ecf  /home/z/my-project/download/B-INSTALLER-PLUGIN-partikulier-core-2.5.0.zip
+taille : 134332 octets
+
+== [5] Zip thème 6.18.6 ==
+5842d80468420e2803e477a798d830d6e7bbf0b502007cc90fbd9d8b13ab5382  /home/z/my-project/download/partikulier-theme-6.18.6.zip
+taille : 930741 octets
+
+== [6] Intégrité zip ↔ source ==
+DIFF VIDE : zip plugin == source (hors .git/.github)
+OK  0 entrée .github dans le zip plugin
+DIFF VIDE : zip thème == source (hors exclusions de build)
+
+== [7] Contenu des zips (points clés) ==
+     9414  2026-09-09 22:58   partikulier-core/src/Domain/OwnerStats/OwnerStatsService.php
+    16202  2026-09-09 23:19   partikulier-core/tests/owner-stats-domain-contract.php
+    21344  2026-09-09 22:30   partikulier-core/tests/automation-domain-contract.php
+    16376  2026-09-09 23:01   partikulier/inc/class-owner-insights.php
+
+TERMINÉ — livrables : B-INSTALLER-PLUGIN-partikulier-core-2.5.0.zip + partikulier-theme-6.18.6.zip

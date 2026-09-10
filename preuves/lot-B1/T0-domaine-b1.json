@@ -1,0 +1,55 @@
+{
+    "at": "2026-09-09T00:36:12+00:00",
+    "tables": {
+        "wp_pk_payment_orders": {
+            "exists": true,
+            "count": 0,
+            "ddl": "CREATE TABLE `wp_pk_payment_orders` (\n  `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,\n  `property_id` INTEGER NOT NULL,\n  `owner_id` INTEGER NOT NULL,\n  `provider` TEXT COLLATE NOCASE NOT NULL DEFAULT 'unselected',\n  `provider_order_ref` TEXT COLLATE NOCASE,\n  `amount_minor` INTEGER NOT NULL DEFAULT '0',\n  `currency` TEXT COLLATE NOCASE NOT NULL DEFAULT 'MAD',\n  `purpose` TEXT COLLATE NOCASE NOT NULL DEFAULT 'premium_visibility',\n  `status` TEXT COLLATE NOCASE NOT NULL DEFAULT 'disabled',\n  `metadata` TEXT COLLATE NOCASE,\n  `created_at` TEXT COLLATE NOCASE NOT NULL,\n  `updated_at` TEXT COLLATE NOCASE NOT NULL\n) STRICT",
+            "rows": []
+        },
+        "wp_pk_premium_subscriptions": {
+            "exists": true,
+            "count": 0,
+            "ddl": "CREATE TABLE `wp_pk_premium_subscriptions` (\n  `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,\n  `property_id` INTEGER NOT NULL,\n  `owner_id` INTEGER NOT NULL,\n  `payment_order_id` INTEGER,\n  `plan_key` TEXT COLLATE NOCASE NOT NULL DEFAULT 'premium_visibility',\n  `status` TEXT COLLATE NOCASE NOT NULL DEFAULT 'disabled',\n  `starts_at` TEXT COLLATE NOCASE,\n  `ends_at` TEXT COLLATE NOCASE,\n  `created_at` TEXT COLLATE NOCASE NOT NULL,\n  `updated_at` TEXT COLLATE NOCASE NOT NULL\n) STRICT",
+            "rows": []
+        },
+        "wp_pk_premium_history": {
+            "exists": true,
+            "count": 0,
+            "ddl": "CREATE TABLE `wp_pk_premium_history` (\n  `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,\n  `property_id` INTEGER NOT NULL,\n  `owner_id` INTEGER NOT NULL,\n  `status` TEXT COLLATE NOCASE NOT NULL,\n  `selection_reason` TEXT COLLATE NOCASE NOT NULL,\n  `granted_by` INTEGER NOT NULL,\n  `granted_at` TEXT COLLATE NOCASE NOT NULL,\n  `starts_at` TEXT COLLATE NOCASE NOT NULL,\n  `ends_at` TEXT COLLATE NOCASE NOT NULL,\n  `revoked_by` INTEGER NOT NULL DEFAULT '0',\n  `revoked_at` TEXT COLLATE NOCASE,\n  `revocation_reason` TEXT COLLATE NOCASE\n) STRICT",
+            "rows": []
+        }
+    },
+    "options": {
+        "pk_premium_db_version": {
+            "option_value": "1.0.0",
+            "autoload": "off"
+        },
+        "pk_payment_foundation_db_version": {
+            "option_value": "1.0.0",
+            "autoload": "off"
+        },
+        "pk_premium_public_enabled": {
+            "option_value": "0",
+            "autoload": "off"
+        },
+        "partikulier_core_schema_version": {
+            "option_value": "2.0.0",
+            "autoload": "off"
+        },
+        "partikulier_core_migration_report": {
+            "option_value": "a:3:{s:6:\"schema\";s:5:\"2.0.0\";s:5:\"steps\";a:0:{}s:2:\"at\";s:25:\"2026-09-08T23:18:54+00:00\";}",
+            "autoload": "off"
+        }
+    },
+    "premium_meta": [],
+    "repere_listings": {
+        "published_rows": 30,
+        "orphans": 0
+    },
+    "backup": {
+        "file": "/home/z/my-project/download/preuves-lot-B1/T0-sauvegarde-base.sqlite",
+        "sha256": "1492f61adc8d2cf15017ca9ee88869b9692a95a772828920bd407e23e119e1f8",
+        "bytes": 2465792
+    }
+}

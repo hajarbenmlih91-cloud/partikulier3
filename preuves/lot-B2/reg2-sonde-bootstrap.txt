@@ -1,0 +1,1 @@
+{"probe":"listings","request_uri":"\/wp-json\/partikulier\/v1\/listings","loaded":{"partikulier_core":true,"estatik":false,"polylang":false,"query_monitor":false},"active_plugins":2}

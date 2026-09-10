@@ -1,0 +1,13 @@
+== Preuve de rollback lot B4 ==
+  PASS  snapshot T1 pris (6b2205f76103…, wal intégré)
+  PASS  health : core 2.3.0, schéma 2.3.0 (état pré-B4) — constaté 2.3.0/2.3.0
+  PASS  domaine automation revenu owner=theme (manifeste 2.3.0)
+  PASS  front 200 en état rollback
+  PASS  les 10 leads du T0 présents en état rollback (constaté 10)
+  PASS  les 2 événements réels du T0 préservés en état rollback (constaté 2)
+  PASS  plugin 2.3.0 sans AutomationService → thème 6.18.5 retombe sur son chemin autonome (legacy-theme)
+  PASS  réception d'événement fonctionnelle en rollback par le chemin du thème (AutomationService absent, aucune ligne d'audit) — constaté : evenement-theme-sans-audit
+  collision transitional (matrice C) retiree du registre persistant au retour nominal
+  PASS  état final : core 2.4.0, schéma 2.4.0, automation=plugin — constaté 2.4.0/2.4.0/plugin
+  PASS  état final : 0 fantôme, 0 collision, front 200, 10 leads + 2 événements intacts
+== FIN rollback B4 : 10 PASS / 0 FAIL ==

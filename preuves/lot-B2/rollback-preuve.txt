@@ -1,0 +1,11 @@
+== Preuve de rollback lot B2 ==
+  PASS  snapshot T1 pris (275a4f34583f…, wal intégré)
+  PASS  health : core 2.1.0, schéma 2.1.0 (état pré-B2) — constaté 2.1.0/2.1.0
+  PASS  domaine leads revenu owner=theme (manifeste 2.1.0)
+  PASS  front 200 en état rollback
+  PASS  les 10 leads du T0 présents en état rollback (constaté 10)
+  PASS  plugin 2.1.0 sans LeadService → thème 6.18.3 retombe sur son chemin autonome (legacy-theme)
+  PASS  pont POST /leads actif en rollback (LeadBridge → dispositif thème, garde 404 attendue) — constaté : lead_property_not_found
+  PASS  état final : core 2.2.0, schéma 2.2.0, leads=plugin — constaté 2.2.0/2.2.0/plugin
+  PASS  état final : 0 fantôme, front 200, 10 leads intacts
+== FIN rollback B2 : 9 PASS / 0 FAIL ==

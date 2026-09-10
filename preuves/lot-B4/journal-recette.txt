@@ -1,0 +1,97 @@
+== RECETTE LOT B4 — plugin 2.4.0 @ 4fde1f093a711babde897d5242fab93997b065fd, thème 6.18.5 ==
+  health : ok (core 2.4.0, schéma 2.4.0) — domaines plugin : alerts,automation,leads,listings,payments,premium
+
+== [1] REG-6 : identité de structure et de données T0 → T1 (avant tout contrat) ==
+  PASS  REG-6 — DDL + index identiques, 2 événements réels préservés, Migrator idempotent
+
+== [2] Suites contractuelles (12) ==
+  PASS  core-contract — 8 8
+  PASS  services-contract — 7 7
+  PASS  rest-lite-scope — 10 10
+  PASS  sync-contract — 14 14
+  PASS  leads-contract — 7 7
+  PASS  leads-domain-contract — 16 16
+  PASS  routes-collision — 5 5
+  PASS  load-contract — 7 7
+  PASS  premium-contract — 8 8
+  PASS  payments-contract — 10 10
+  PASS  alerts-domain-contract — 15 15
+  PASS  automation-domain-contract — 17 17
+  → contrats : 124/124 tests, 0 suite(s) en échec
+  PASS  hygiène du banc — événements 2, audit HMAC 0, leads 10/10 (zéro fuite)
+
+== [3] QA thème : rapide ×2 + visual ×2 (baseline du lot B2) ==
+  PASS  rapide.mjs (run 1) — ok
+  PASS  rapide.mjs (run 2) — ok
+  PASS  visual.mjs (run 1) —  vues, écart max 
+  PASS  visual.mjs (run 2) —  vues, écart max 
+== [4] Audit JSON-LD / hreflang ==
+  PASS  audit JSON-LD/hreflang — 
+
+== [5] Pages front + santé ==
+  pages front : 200 / 200 /annonces/ 200 /en/annonces/ 200 /ar/annonces/ 200 /contact/ 200 /sitemap.xml 
+  PASS  front 200 ×6
+  health final : ok (core 2.4.0, schéma 2.4.0, orphelins 0, manquants 0, collisions 0)
+  domaines : automation=plugin (lot B4) — plugin 6/8
+
+== [6] REG-2 : p95 sur 100 × GET /listings?locale=fr ==
+  REG-2 : p50 220.4 ms / p95 229.0 ms (100 requêtes ; référence lot B3 : p95 228,1 ms, tolérance ±10 %)
+{"probe":"listings","request_uri":"\/wp-json\/partikulier\/v1\/listings","loaded":{"partikulier_core":true,"estatik":false,"polylang":false,"query_monitor":false},"active_plugins":2}
+
+== [7] Matrice REG-5 (combinaisons B et C) ==
+== Matrice REG-5 lot B4 ==
+  plugin désactivé : 3 plugins actifs restants
+  PASS  B — thème 6.18.5 + plugin absent (chemin autonome 6.17.x, preuve par absence d'audit)
+  plugin réactivé
+  front après réactivation : HTTP 200
+  PASS  C — thème 6.18.4 + plugin 2.4.0 (plugin propriétaire, collision transitional /automation-event = détection conçue INTEG-3)
+  front état nominal (6.18.5 + 2.4.0) : HTTP 200
+  health nominal : ok (core 2.4.0, automation plugin, collisions 1)
+== Fin matrice REG-5 ==
+
+== [8] Preuve de rollback (aller T0 + 2.3.0, retour nominal) ==
+== Preuve de rollback lot B4 ==
+  PASS  snapshot T1 pris (77b395f1ecb3…, wal intégré)
+  PASS  health : core 2.3.0, schéma 2.3.0 (état pré-B4) — constaté 2.3.0/2.3.0
+  PASS  domaine automation revenu owner=theme (manifeste 2.3.0)
+  PASS  front 200 en état rollback
+  PASS  les 10 leads du T0 présents en état rollback (constaté 10)
+  PASS  les 2 événements réels du T0 préservés en état rollback (constaté 2)
+  PASS  plugin 2.3.0 sans AutomationService → thème 6.18.5 retombe sur son chemin autonome (legacy-theme)
+  PASS  réception d'événement fonctionnelle en rollback par le chemin du thème (AutomationService absent, aucune ligne d'audit) — constaté : evenement-theme-sans-audit
+  PASS  état final : core 2.4.0, schéma 2.4.0, automation=plugin — constaté 2.4.0/2.4.0/plugin
+  FAIL  état final : 0 fantôme, 0 collision, front 200, 10 leads + 2 événements intacts
+== FIN rollback B4 : 9 PASS / 1 FAIL ==
+
+== [8] Preuve de rollback (aller T0 + 2.3.0, retour nominal) ==
+== Preuve de rollback lot B4 ==
+  PASS  snapshot T1 pris (e9ef62a30d2c…, wal intégré)
+  PASS  health : core 2.3.0, schéma 2.3.0 (état pré-B4) — constaté 2.3.0/2.3.0
+  PASS  domaine automation revenu owner=theme (manifeste 2.3.0)
+  PASS  front 200 en état rollback
+  PASS  les 10 leads du T0 présents en état rollback (constaté 10)
+  PASS  les 2 événements réels du T0 préservés en état rollback (constaté 2)
+  PASS  plugin 2.3.0 sans AutomationService → thème 6.18.5 retombe sur son chemin autonome (legacy-theme)
+  PASS  réception d'événement fonctionnelle en rollback par le chemin du thème (AutomationService absent, aucune ligne d'audit) — constaté : evenement-theme-sans-audit
+/home/z/my-project/scripts/b4-rollback-preuve.sh: line 135: unexpected EOF while looking for matching `"'
+
+== [8] Preuve de rollback (aller T0 + 2.3.0, retour nominal) ==
+== Preuve de rollback lot B4 ==
+  PASS  snapshot T1 pris (e9ef62a30d2c…, wal intégré)
+  PASS  health : core 2.3.0, schéma 2.3.0 (état pré-B4) — constaté 2.3.0/2.3.0
+  PASS  domaine automation revenu owner=theme (manifeste 2.3.0)
+  PASS  front 200 en état rollback
+  PASS  les 10 leads du T0 présents en état rollback (constaté 10)
+  PASS  les 2 événements réels du T0 préservés en état rollback (constaté 2)
+  PASS  plugin 2.3.0 sans AutomationService → thème 6.18.5 retombe sur son chemin autonome (legacy-theme)
+  PASS  réception d'événement fonctionnelle en rollback par le chemin du thème (AutomationService absent, aucune ligne d'audit) — constaté : evenement-theme-sans-audit
+  collision transitional (matrice C) retiree du registre persistant au retour nominal
+  PASS  état final : core 2.4.0, schéma 2.4.0, automation=plugin — constaté 2.4.0/2.4.0/plugin
+  PASS  état final : 0 fantôme, 0 collision, front 200, 10 leads + 2 événements intacts
+== FIN rollback B4 : 10 PASS / 0 FAIL ==
+
+== [9] CI locaux (thème 11/11 + plugin 8/8) ==
+  PASS  CI thème (rejeu local) — 
+  PASS  CI plugin (rejeu local) — 
+
+== FIN RECETTE B4 ==

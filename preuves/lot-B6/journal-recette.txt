@@ -1,0 +1,101 @@
+== RECETTE LOT B6 — plugin 2.6.0 @ 4b6b249c4e08e9475e60cc8a75dcb957b94e5ed8, thème 6.18.7 ==
+  corpus gelé : 150 chaînes registre / 136 chrome / 140 form / 72 entrées runtime — empreinte bcab5c3700ec… (thème 6.18.6)
+  health : ok (core 2.6.0, schéma 2.6.0) — domaines plugin : 8/8
+
+== [1] REG-3 : gel du corpus + ordre de résolution figé (avant tout contrat) ==
+  corpus gelé : 150 chaînes registre / 136 chrome / 140 form / 72 entrées runtime — empreinte bcab5c3700ec… (thème 6.18.7)
+  PASS  REG-3 — corpus identique avant/après (diff nul), ordre figé par sondes, API + hooks gelés, 5 modules ≤300 lignes
+
+== [2] REG-6 : identité de structure et de données T0 → T1 ==
+  PASS  REG-6 — DDL + index identiques, table vide du T0 préservée (domaine dormant), Migrator idempotent
+
+== [3] Suites contractuelles (14) ==
+  PASS  core-contract — 8 8
+  PASS  services-contract — 7 7
+  PASS  rest-lite-scope — 10 10
+  PASS  sync-contract — 14 14
+  PASS  leads-contract — 7 7
+  PASS  leads-domain-contract — 16 16
+  PASS  routes-collision — 5 5
+  PASS  load-contract — 7 7
+  PASS  premium-contract — 8 8
+  PASS  payments-contract — 10 10
+  PASS  alerts-domain-contract — 15 15
+  PASS  automation-domain-contract — 17 17
+  FAIL  owner-stats-domain-contract — voir /home/z/my-project/download/preuves-lot-B6/contrats/owner-stats-domain-contract.json
+  PASS  translation-variants-domain-contract — 16 16
+  → contrats : 140/156 tests, 1 suite(s) en échec
+  PASS  hygiène du banc — variantes 0, favoris 4, événements 2, audit HMAC 0, leads 10/10, méta sonde 0 (zéro fuite)
+
+== [3] Suites contractuelles (14) ==
+  PASS  core-contract — 8 8
+  PASS  services-contract — 7 7
+  PASS  rest-lite-scope — 10 10
+  PASS  sync-contract — 14 14
+  PASS  leads-contract — 7 7
+  PASS  leads-domain-contract — 16 16
+  PASS  routes-collision — 5 5
+  PASS  load-contract — 7 7
+  PASS  premium-contract — 8 8
+  PASS  payments-contract — 10 10
+  PASS  alerts-domain-contract — 15 15
+  PASS  automation-domain-contract — 17 17
+  PASS  owner-stats-domain-contract — 16 16
+  PASS  translation-variants-domain-contract — 16 16
+  → contrats : 156/156 tests, 0 suite(s) en échec
+  PASS  hygiène du banc — variantes 0, favoris 4, événements 2, audit HMAC 0, leads 10/10, méta sonde 0 (zéro fuite)
+
+== [4] QA thème : rapide ×2 + visual ×2 (baseline du lot B2 — cinq sites historiques) ==
+  FAIL  rapide.mjs (run 1) — ECART accueil: reference absente | deposer: reference absente | annonces: reference absente | accueil-m: reference absente 
+  FAIL  rapide.mjs (run 2) — ECART accueil: reference absente | deposer: reference absente | annonces: reference absente | accueil-m: reference absente 
+  FAIL  visual.mjs (run 1) —   - deposer-mobile : reference absente (lancer 'baseline')   - mes-annonces-mobile : reference absente (lancer 'baseline') 
+  FAIL  visual.mjs (run 2) —   - deposer-mobile : reference absente (lancer 'baseline')   - mes-annonces-mobile : reference absente (lancer 'baseline') 
+== [5] Audit JSON-LD / hreflang ==
+  PASS  audit JSON-LD/hreflang — 
+
+== [4] QA thème : A/B direct 6.18.6 → 6.18.7 (references 6.18.6 enregistrées, comparaison sur 6.18.7) ==
+  références 6.18.6 enregistrées (12 vues visual + 4 vues rapide)
+  PASS  rapide.mjs (run 1) — ok
+  PASS  rapide.mjs (run 2) — ok
+  PASS  visual.mjs (run 1) —  vues, écart max 
+  PASS  visual.mjs (run 2) —  vues, écart max 
+== [5] Audit JSON-LD / hreflang ==
+  PASS  audit JSON-LD/hreflang — 
+
+== [6] Pages front + santé ==
+  pages front : 200 / 200 /annonces/ 200 /en/annonces/ 200 /ar/annonces/ 200 /contact/ 200 /sitemap.xml 
+  PASS  front 200 ×6
+  health final : ok (core 2.6.0, schéma 2.6.0, orphelins 0, manquants 0, collisions 0)
+  domaines : translation_variants=plugin (lot B6) — plugin 8/8
+
+== [7] REG-2 : p95 sur 100 × GET /listings?locale=fr ==
+  REG-2 : p50 233.3 ms / p95 243.0 ms (100 requêtes ; référence lot B5 : p95 231,7 ms, tolérance ±10 %)
+{"probe":"listings","request_uri":"\/wp-json\/partikulier\/v1\/listings","loaded":{"partikulier_core":true,"estatik":false,"polylang":false,"query_monitor":false},"active_plugins":2}
+
+== [8] Matrice REG-5 (combinaisons B et C) ==
+== Matrice REG-5 lot B6 ==
+  plugin désactivé : 3 plugins actifs restants
+  PASS  B — thème 6.18.7 + plugin absent (chemin autonome 6.17.x, preuve par absence d'audit, schéma maintenu côté thème)
+  plugin réactivé
+  front après réactivation : HTTP 200
+  PASS  C — thème 6.18.6 + plugin 2.6.0 (plugin propriétaire au manifeste 8/8, chemin historique du thème sans audit, 0 collision — aucune route déplacée)
+  front état nominal (6.18.7 + 2.6.0) : HTTP 200
+  health nominal : ok (core 2.6.0, translation_variants plugin, collisions 0)
+== Fin matrice REG-5 ==
+
+== [9] Preuve de rollback (aller T0 + 2.5.0, retour nominal) ==
+== Preuve de rollback lot B6 ==
+  PASS  snapshot T1 pris (c8a97b8c28e4…, wal intégré)
+  PASS  health : core 2.5.0, schéma 2.5.0 (état pré-B6) — constaté 2.5.0/2.5.0
+  PASS  domaine translation_variants revenu owner=theme (manifeste 2.5.0)
+  PASS  front 200 en état rollback
+  PASS  les 10 leads du T0 présents en état rollback (constaté 10)
+  PASS  les 2 événements réels du T0 préservés en état rollback (constaté 2)
+  PASS  les 4 favoris réels du T0 préservés en état rollback (constaté 4)
+  PASS  la table des variantes vide du T0 préservée en état rollback (constaté 0)
+  PASS  plugin 2.5.0 sans TranslationVariantsService → thème 6.18.7 retombe sur son chemin autonome (legacy-theme)
+  PASS  variante préparée puis liée en rollback par le chemin du thème (service absent, aucune ligne d'audit, sonde retirée) — constaté : variante-theme-sans-audit+hgyiene-ok
+  PASS  état final : core 2.6.0, schéma 2.6.0, translation_variants=plugin, 8/8 domaines — constaté 2.6.0/2.6.0/plugin/8
+  PASS  état final : 0 fantôme, 0 collision, front 200, 10 leads + 2 événements + 4 favoris intacts (constaté orphelins 0, collisions 0, front 200, leads 10, événements 2, favoris 4)
+== FIN rollback B6 : 12 PASS / 0 FAIL ==
+

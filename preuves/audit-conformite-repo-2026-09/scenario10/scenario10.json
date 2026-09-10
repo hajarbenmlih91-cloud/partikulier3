@@ -1,0 +1,87 @@
+{
+  "resultats": [
+    {
+      "id": "S10.1",
+      "nom": "Aucun matériau secret dans les couches publiques",
+      "verdict": "FAIL",
+      "detail": "/wp-json/partikulier/v1/health contient « hmac » ; /wp-json/partikulier/v1/health contient « n8n »",
+      "note": 1
+    },
+    {
+      "id": "S10.2",
+      "nom": "pkConfig inline sans matériau secret",
+      "verdict": "PASS",
+      "detail": "clés : ajaxUrl, nonce, manageNonce, homeUrl, placesNonce, submitNonce, language, i18n · 3 nonces au format WP (10 hex) · clés interdites : aucune",
+      "note": null
+    },
+    {
+      "id": "S10.3",
+      "nom": "automation-event : garde HMAC (sans signature → 401, signature invalide → 401)",
+      "verdict": "PASS",
+      "detail": "sans signature : 401 · signature « deadbeef » : 401 · GET sur route POST : 404",
+      "note": null
+    },
+    {
+      "id": "S10.4",
+      "nom": "Routes propriétaire inaccessibles anonymement",
+      "verdict": "PASS",
+      "detail": "GET owner/dashboard : 401 · POST owner/listings/12/action : 401 (attendu 401/401)",
+      "note": null
+    },
+    {
+      "id": "S10.5",
+      "nom": "API listings publique sans PII (email/téléphone)",
+      "verdict": "PASS",
+      "detail": "200 JSON · ? annonces · emails : 0 · téléphones : 0",
+      "note": null
+    },
+    {
+      "id": "S10.6",
+      "nom": "Mutations REST anonymes rejetées (favorites, leads)",
+      "verdict": "PASS",
+      "detail": "POST favorites anonyme : 401 · POST leads anonyme : 400 (attendu 401 et 4xx)",
+      "note": null
+    },
+    {
+      "id": "S10.7",
+      "nom": "pk_sync_favorite exige un nonce CSRF vivant",
+      "verdict": "PASS",
+      "detail": "sans nonce : HTTP 403, corps « -1 » (coupé par check_ajax_referer) · avec nonce de page + post_id=0 : HTTP 400 (passe la porte nonce, refusé par validation — aucune écriture)",
+      "note": null
+    },
+    {
+      "id": "S10.8",
+      "nom": "Requête de recherche réfléchie uniquement échappée",
+      "verdict": "PASS",
+      "detail": "9 combinaisons ?s= sondées (FR/AR) : aucun payload brut ; marqueur bénin réfléchi 9× (échappé/encodé en contexte attr/texte)",
+      "note": null
+    },
+    {
+      "id": "S10.9",
+      "nom": "Paramètres de filtre sans réflexion de payload",
+      "verdict": "PASS",
+      "detail": "10 sondes (es_city/es_type/es_action/pk_order/es_price_max × FR/AR) : sanitize_title/absint neutralisent, aucun payload brut",
+      "note": null
+    },
+    {
+      "id": "S10.10",
+      "nom": "Autocomplete : réponse JSON stricte, payload non exécutable",
+      "verdict": "PASS",
+      "detail": "HTTP 200 · Content-Type application/json; charset=UTF-8 · JSON valide · payload <script> réfléchi : non",
+      "note": null
+    },
+    {
+      "id": "S10.11",
+      "nom": "En-têtes de sécurité présents, pas de divulgation de bannière",
+      "verdict": "PASS",
+      "detail": "CSP (frame-ancestors 'self'), X-Content-Type-Options: nosniff, X-Frame-Options: SAMEORIGIN, Referrer-Policy: strict-origin-when-cross-origin, Permissions-Policy (geo/mic/cam désactivés) · X-Powered-By/Server : absents",
+      "note": null
+    }
+  ],
+  "notes": [
+    {
+      "n": 1,
+      "texte": "Fuites détectées : /wp-json/partikulier/v1/health contient « hmac » ; /wp-json/partikulier/v1/health contient « n8n »"
+    }
+  ]
+}

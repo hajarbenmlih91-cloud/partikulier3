@@ -1,0 +1,88 @@
+{
+    "suite": "i18n-content-domain-contract (lot C1)",
+    "started_at": "2026-09-10T20:51:56+00:00",
+    "finished_at": "2026-09-10T20:51:56+00:00",
+    "command": "php partikulier-core/tests/i18n-content-domain-contract.php",
+    "commit": "41d6e35a411bae39fa5b9af78f2b18d254162b51",
+    "results": [
+        {
+            "test_id": "C1A-001",
+            "status": "PASS",
+            "detail": "couture thème/plugin : 7 classes Domain/I18n chargées, Partikulier_Listing_I18n présente avec ses 9 méthodes publiques"
+        },
+        {
+            "test_id": "C1A-002",
+            "status": "PASS",
+            "detail": "parité lexique trilingue : lex($lang) identique repli thème / port plugin pour fr, en, ar (dictionnaires VERBATIM)"
+        },
+        {
+            "test_id": "C1A-003",
+            "status": "PASS",
+            "detail": "parité dictionnaire des lieux arabes : 60 entrées identiques (villes + quartiers du référentiel marocain)"
+        },
+        {
+            "test_id": "C1A-004",
+            "status": "PASS",
+            "detail": "langues prises en charge : [fr, en, ar] des deux côtés"
+        },
+        {
+            "test_id": "C1A-005",
+            "status": "PASS",
+            "detail": "parité générateurs : 54 comparaisons (5 fixtures × 3 langues × title/description/meta + alt × 3 rangs), triple chemin (couture/service/repli) — 0 divergence(s)"
+        },
+        {
+            "test_id": "C1A-006",
+            "status": "PASS",
+            "detail": "parité API post : 30 annonces × 2 langues × (title_from_post + rooms_label_from_post), triple chemin (couture/service/repli) — 0 divergence(s)"
+        },
+        {
+            "test_id": "C1A-007",
+            "status": "PASS",
+            "detail": "parité vocabulaire : types (appartement→شقة, villa→Villa) et lieux (Hay Riad, Rabat → arabe ; lieu inconnu conservé) identiques"
+        },
+        {
+            "test_id": "C1A-008",
+            "status": "PASS",
+            "detail": "couture statique : 9/9 branches de délégation, garde class_exists présente, 9 appels de repli *_local dans le shell"
+        },
+        {
+            "test_id": "C1A-009",
+            "status": "PASS",
+            "detail": "découpe : 13 modules (7 classes plugin + 5 traits + shell), tous ≤300 lignes (monolithe 6.18.7 : 955 l.)"
+        },
+        {
+            "test_id": "C1A-010",
+            "status": "PASS",
+            "detail": "zéro hook/cron/route dans la couche CONTENU de Domain/I18n — bibliothèque pure (aucune inscription ; la couche chrome C2 détient l'unique filtre gettext, enregistré par le bootstrap)"
+        },
+        {
+            "test_id": "C1A-011",
+            "status": "PASS",
+            "detail": "catalogues : ar.mo (131 entrées, hash_addr=2124) et en_US.mo (72 entrées, hash_addr=1180) canoniques — nommage <locale>.mo que charge le JIT du thème ; doublons partikulier-*.mo absents"
+        },
+        {
+            "test_id": "C1A-012",
+            "status": "PASS",
+            "detail": "lecteur pomo historique : ar.mo 131 entrées, en_US.mo 72 entrées (lisible par pomo ET WP_Translation_File — hash_addr=0 était rejeté par pomo)"
+        },
+        {
+            "test_id": "C1A-013",
+            "status": "PASS",
+            "detail": "chargeur runtime : 'Aide' → 'المساعدة' (ar) et 'Annuler' → 'Cancel' (en_US) via load_textdomain des catalogues canoniques ; JIT du thème résout 'Annuler' → 'Cancel' (WP_Translations)"
+        },
+        {
+            "test_id": "C1A-014",
+            "status": "PASS",
+            "detail": "santé : schéma 2.6.0 inchangé (zéro migration lot C1), 8/8 domaines plugin, 0 collision REST"
+        },
+        {
+            "test_id": "C1A-015",
+            "status": "PASS",
+            "detail": "manifeste : 20/20 tables pk_ suivies, 0 côté thème (le lot C1 n'ajoute aucune table — couche contenu pure)"
+        }
+    ],
+    "status": "PASS",
+    "total": 15,
+    "passed": 15,
+    "failed": 0
+}

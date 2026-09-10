@@ -1,0 +1,61 @@
+{
+    "at": "2026-09-09T21:39:29+00:00",
+    "lot": "B3",
+    "domaine": "alertes (alertes sauvegardées)",
+    "tables": {
+        "wp_pk_saved_alerts": {
+            "exists": true,
+            "count": 0,
+            "ddl": "CREATE TABLE `wp_pk_saved_alerts` (\n  `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,\n  `lead_id` INTEGER NOT NULL,\n  `criteria` TEXT COLLATE NOCASE NOT NULL,\n  `criteria_signature` TEXT COLLATE NOCASE NOT NULL,\n  `locale` TEXT COLLATE NOCASE NOT NULL DEFAULT 'fr',\n  `frequency` TEXT COLLATE NOCASE NOT NULL DEFAULT 'daily',\n  `status` TEXT COLLATE NOCASE NOT NULL DEFAULT 'active',\n  `consent_message_id` TEXT COLLATE NOCASE NOT NULL,\n  `created_at` TEXT COLLATE NOCASE NOT NULL,\n  `updated_at` TEXT COLLATE NOCASE NOT NULL\n) STRICT",
+            "indexes": [
+                {
+                    "name": "wp_pk_saved_alerts__lead_signature",
+                    "sql": "CREATE UNIQUE INDEX `wp_pk_saved_alerts__lead_signature` ON `wp_pk_saved_alerts` (`lead_id`, `criteria_signature`)"
+                },
+                {
+                    "name": "wp_pk_saved_alerts__status_updated",
+                    "sql": "CREATE INDEX `wp_pk_saved_alerts__status_updated` ON `wp_pk_saved_alerts` (`status`, `updated_at`)"
+                }
+            ]
+        },
+        "wp_pk_alert_deliveries": {
+            "exists": true,
+            "count": 0,
+            "ddl": "CREATE TABLE `wp_pk_alert_deliveries` (\n  `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,\n  `alert_id` INTEGER NOT NULL,\n  `property_id` INTEGER NOT NULL,\n  `status` TEXT COLLATE NOCASE NOT NULL DEFAULT 'candidate',\n  `created_at` TEXT COLLATE NOCASE NOT NULL\n) STRICT",
+            "indexes": [
+                {
+                    "name": "wp_pk_alert_deliveries__alert_property",
+                    "sql": "CREATE UNIQUE INDEX `wp_pk_alert_deliveries__alert_property` ON `wp_pk_alert_deliveries` (`alert_id`, `property_id`)"
+                },
+                {
+                    "name": "wp_pk_alert_deliveries__status_created",
+                    "sql": "CREATE INDEX `wp_pk_alert_deliveries__status_created` ON `wp_pk_alert_deliveries` (`status`, `created_at`)"
+                }
+            ]
+        }
+    },
+    "options": {
+        "pk_saved_alerts_db_version": {
+            "option_value": "1.0.0",
+            "autoload": "off"
+        },
+        "partikulier_core_schema_version": {
+            "option_value": "2.2.0",
+            "autoload": "off"
+        },
+        "partikulier_core_migration_report": {
+            "option_value": "a:3:{s:6:\"schema\";s:5:\"2.2.0\";s:5:\"steps\";a:0:{}s:2:\"at\";s:25:\"2026-09-09T21:07:38+00:00\";}",
+            "autoload": "off"
+        }
+    },
+    "repere_consents": 0,
+    "repere_listings": {
+        "published_rows": 30,
+        "orphans": 0
+    },
+    "backup": {
+        "file": "/home/z/my-project/download/preuves-lot-B3/T0-sauvegarde-base.sqlite",
+        "sha256": "85dd06a24085b99664805fdf823d73ea3e0cec09e4e76daa832ea1c7fe36532b",
+        "bytes": 2899968
+    }
+}

@@ -1,0 +1,44 @@
+== [1] Vérifications de cohérence de version ==
+OK  thème/style.css (Version: 6.18.5)
+OK  thème/functions.php (PARTIKULIER_VERSION', '6.18.5)
+OK  thème/package.json ("version": "6.18.5)
+OK  thème/readme.txt (Stable tag: 6.18.5)
+OK  thème/DOC.md (Version 6.18.5)
+OK  plugin en-tête (Version: 2.4.0)
+OK  plugin constante (2.4.0)
+OK  Schema::VERSION = 2.4.0 (montée délibérée du lot B4)
+OK  workflow ci.yml aligné sur 2.4.0
+
+== [2] Syntaxe PHP ==
+OK  tous les fichiers PHP (plugin + thème + kit QA)
+OK  ci.yml YAML valide
+
+== [3] Contenu B4 embarqué ==
+OK  plugin/src/Domain/Automation/AutomationService.php
+OK  plugin/tests/automation-domain-contract.php
+OK  Migrator (étape adopt_automation_tables)
+OK  bootstrap plugin (chargement AutomationService)
+OK  thème/inc/class-automation-bridge.php (couture AutomationService)
+OK  thème/inc/class-n8n-security.php (couture AutomationService)
+
+== [4] Zip plugin Core 2.4.0 (sans .github) ==
+49d6155639bd7bb80fab6394b42f2509dc0fbdb8cb0d0ddd5c5a31ba87b1441e  /home/z/my-project/download/B-INSTALLER-PLUGIN-partikulier-core-2.4.0.zip
+taille : 124397 octets
+
+== [5] Zip thème 6.18.5 ==
+5d95459dd7ac6da53c4adc7f6d795476aadd57437c29531142c4042606522898  /home/z/my-project/download/partikulier-theme-6.18.5.zip
+taille : 929333 octets
+
+== [6] Intégrité zip ↔ source ==
+DIFF VIDE : zip plugin == source (hors .git/.github)
+OK  0 entrée .github dans le zip plugin
+DIFF VIDE : zip thème == source (hors exclusions de build)
+
+== [7] Contenu des zips (points clés) ==
+    21156  2026-09-09 22:21   partikulier-core/src/Domain/Automation/AutomationService.php
+    17880  2026-09-09 22:03   partikulier-core/tests/alerts-domain-contract.php
+    21344  2026-09-09 22:30   partikulier-core/tests/automation-domain-contract.php
+     9842  2026-09-09 22:27   partikulier/inc/class-automation-bridge.php
+    25164  2026-09-09 22:27   partikulier/inc/class-n8n-security.php
+
+TERMINÉ — livrables : B-INSTALLER-PLUGIN-partikulier-core-2.4.0.zip + partikulier-theme-6.18.5.zip

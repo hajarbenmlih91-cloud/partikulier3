@@ -1,0 +1,23 @@
+═══ Préparation : checkout simulé (copie propre) ═══
+  checkout : 39 fichiers (dont .github/workflows/ci.yml)
+
+═══ Job 1 : lint PHP (matrice simulée sur le binaire local 8.3) ═══
+  PASS  [lint-php] php -l sur tous les fichiers
+
+═══ Job 2 : contrat statique des routes (INTEG-3) ═══
+  PASS  [routes-static] sortie JSON valide + statut PASS (mode runner)
+  PASS  [routes-static] mode complet plugin + thème (S-ROUTE-004b/005b exécutés)
+
+═══ Job 3 : cohérence & structure plugin ═══
+  PASS  [coherence] version unique (en-tête = constante)
+  PASS  [coherence] version de schéma figée (2.2.0 — lot B2)
+  PASS  [coherence] fichiers de structure présents
+  PASS  [coherence] aucun artefact de travail
+
+═══ Job 4 : packaging reproductible ═══
+  PASS  [package] zip + sha256 + intégrité + exclusions
+
+═══ BILAN DU REJEU LOCAL (plugin partikulier-core) ═══
+  steps PASS : 8
+  steps ÉCHEC : 0
+  VERDICT : VERT — équivalent d'un premier push GitHub

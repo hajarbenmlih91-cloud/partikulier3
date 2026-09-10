@@ -1,0 +1,3323 @@
+{
+    "test_id": "LOT-B6-REG3-GEL-CORPUS",
+    "theme": "6.18.9",
+    "at": "2026-09-10T20:52:29+00:00",
+    "corpus_registre": [
+        {
+            "key": "property",
+            "source": "Bien",
+            "en": {
+                "out": "Property",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "عقار",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "features",
+            "source": "Caractéristiques",
+            "en": {
+                "out": "Features",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "المميزات",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "description",
+            "source": "Description",
+            "en": {
+                "out": "Description",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "الوصف",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "contact_seller",
+            "source": "Contacter le vendeur",
+            "en": {
+                "out": "Contacter le vendeur",
+                "layer": "origine"
+            },
+            "ar": {
+                "out": "Contacter le vendeur",
+                "layer": "origine"
+            }
+        },
+        {
+            "key": "free_private_listing",
+            "source": "Annonce gratuite publiée par un particulier. Aucun frais d’agence.",
+            "en": {
+                "out": "Annonce gratuite publiée par un particulier. Aucun frais d’agence.",
+                "layer": "origine"
+            },
+            "ar": {
+                "out": "Annonce gratuite publiée par un particulier. Aucun frais d’agence.",
+                "layer": "origine"
+            }
+        },
+        {
+            "key": "owner",
+            "source": "Propriétaire",
+            "en": {
+                "out": "Owner",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "المالك",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "agent",
+            "source": "Propriétaire",
+            "en": {
+                "out": "Owner",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "المالك",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "whatsapp_request",
+            "source": "Demander le contact sur WhatsApp",
+            "en": {
+                "out": "Demander le contact sur WhatsApp",
+                "layer": "origine"
+            },
+            "ar": {
+                "out": "Demander le contact sur WhatsApp",
+                "layer": "origine"
+            }
+        },
+        {
+            "key": "whatsapp_flow",
+            "source": "Envoyez-nous cette annonce sur WhatsApp. Après contrôle de votre demande, nous vous transmettons les coordonnées du propriétaire.",
+            "en": {
+                "out": "Send us this listing on WhatsApp. After verification of your request, we will send you the owner's contact details.",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "أرسل لنا هذا الإعلان عبر واتساب. بعد التحقق من طلبك، سنزودك ببيانات اتصال المالك.",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "city_listings",
+            "source": "Voir les autres annonces dans cette ville",
+            "en": {
+                "out": "See other listings in this city",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "مشاهدة الإعلانات الأخرى في هذه المدينة",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "photos",
+            "source": "Photos du bien",
+            "en": {
+                "out": "Photos du bien",
+                "layer": "origine"
+            },
+            "ar": {
+                "out": "Photos du bien",
+                "layer": "origine"
+            }
+        },
+        {
+            "key": "photo_navigation",
+            "source": "Navigation des photos",
+            "en": {
+                "out": "Navigation des photos",
+                "layer": "origine"
+            },
+            "ar": {
+                "out": "Navigation des photos",
+                "layer": "origine"
+            }
+        },
+        {
+            "key": "previous_photo",
+            "source": "Photo précédente",
+            "en": {
+                "out": "Photo précédente",
+                "layer": "origine"
+            },
+            "ar": {
+                "out": "Photo précédente",
+                "layer": "origine"
+            }
+        },
+        {
+            "key": "next_photo",
+            "source": "Photo suivante",
+            "en": {
+                "out": "Photo suivante",
+                "layer": "origine"
+            },
+            "ar": {
+                "out": "Photo suivante",
+                "layer": "origine"
+            }
+        },
+        {
+            "key": "surface",
+            "source": "Surface",
+            "en": {
+                "out": "Area",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "المساحة",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "bedrooms",
+            "source": "Chambres",
+            "en": {
+                "out": "Bedrooms",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "غرف النوم",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "living_rooms",
+            "source": "Salons",
+            "en": {
+                "out": "Living rooms",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "صالونات",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "bathrooms",
+            "source": "Salles de bains",
+            "en": {
+                "out": "Bathrooms",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "حمامات",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "terrace",
+            "source": "Terrasse",
+            "en": {
+                "out": "Terrace",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "شرفة",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "view",
+            "source": "Vue",
+            "en": {
+                "out": "Vue",
+                "layer": "origine"
+            },
+            "ar": {
+                "out": "Vue",
+                "layer": "origine"
+            }
+        },
+        {
+            "key": "sunshine",
+            "source": "Ensoleillement",
+            "en": {
+                "out": "Sunlight",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "التعرض للشمس",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "parking",
+            "source": "Parkings",
+            "en": {
+                "out": "Parking spaces",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "مواقف السيارات",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "floor",
+            "source": "Étage",
+            "en": {
+                "out": "Floor",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "الطابق",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "first_floor",
+            "source": "1er étage",
+            "en": {
+                "out": "1st floor",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "الطابق الأول",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "nth_floor",
+            "source": "%d%s étage",
+            "en": {
+                "out": "%d%s floor",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "الطابق %d",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "year_built",
+            "source": "Année de construction",
+            "en": {
+                "out": "Year built",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "سنة البناء",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "energy_class",
+            "source": "Classe énergie",
+            "en": {
+                "out": "Energy class",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "فئة الطاقة",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "yes",
+            "source": "Oui",
+            "en": {
+                "out": "Yes",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "نعم",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "no",
+            "source": "Non",
+            "en": {
+                "out": "No",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "لا",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "studio",
+            "source": "Studio",
+            "en": {
+                "out": "Studio",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "استوديو",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "main_room",
+            "source": "Pièce principale",
+            "en": {
+                "out": "Main room",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "الغرفة الرئيسية",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "three_bedrooms_plus",
+            "source": "3 chambres ou plus",
+            "en": {
+                "out": "3 bedrooms or more",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "3 غرف نوم أو أكثر",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "three_living_rooms_plus",
+            "source": "3 salons ou plus",
+            "en": {
+                "out": "3 living rooms or more",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "3 غرف جلوس أو أكثر",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "three_bathrooms_plus",
+            "source": "3 salles de bains ou plus",
+            "en": {
+                "out": "3 bathrooms or more",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "3 حمامات أو أكثر",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "contact_unavailable",
+            "source": "Le contact WhatsApp sera bientôt disponible pour cette annonce.",
+            "en": {
+                "out": "Le contact WhatsApp sera bientôt disponible pour cette annonce.",
+                "layer": "origine"
+            },
+            "ar": {
+                "out": "Le contact WhatsApp sera bientôt disponible pour cette annonce.",
+                "layer": "origine"
+            }
+        },
+        {
+            "key": "closed_no_contact",
+            "source": "Cette annonce ne reçoit plus de contacts.",
+            "en": {
+                "out": "This listing no longer accepts contacts.",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "هذا الإعلان لم يعد يستقبل اتصالات.",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "contact_via_whatsapp",
+            "source": "Demander le contact sur WhatsApp",
+            "en": {
+                "out": "Demander le contact sur WhatsApp",
+                "layer": "origine"
+            },
+            "ar": {
+                "out": "Demander le contact sur WhatsApp",
+                "layer": "origine"
+            }
+        },
+        {
+            "key": "direct_contact",
+            "source": "Contact direct",
+            "en": {
+                "out": "Direct contact",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "اتصال مباشر",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "skip_to_content",
+            "source": "Aller au contenu",
+            "en": {
+                "out": "Skip to content",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "انتقل إلى المحتوى",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "post_listing",
+            "source": "Déposer une annonce",
+            "en": {
+                "out": "Post an ad",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "أضف إعلانك",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "all_listings",
+            "source": "Toutes les annonces",
+            "en": {
+                "out": "All listings",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "جميع الإعلانات",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "my_space",
+            "source": "Mon espace",
+            "en": {
+                "out": "My account",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "مساحتي",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "sign_in",
+            "source": "Se connecter",
+            "en": {
+                "out": "Sign in",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "تسجيل الدخول",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "quick_search",
+            "source": "Recherche rapide",
+            "en": {
+                "out": "Quick search",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "بحث سريع",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "property_type",
+            "source": "Type de bien",
+            "en": {
+                "out": "Property type",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "نوع العقار",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "city_postcode_area",
+            "source": "Ville, code postal, quartier…",
+            "en": {
+                "out": "City, postcode, neighbourhood…",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "المدينة، الرمز البريدي، الحي…",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "search_city",
+            "source": "Rechercher une ville",
+            "en": {
+                "out": "Search for a city",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "ابحث عن مدينة",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "search",
+            "source": "Rechercher",
+            "en": {
+                "out": "Search",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "بحث",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "favorites",
+            "source": "Favoris",
+            "en": {
+                "out": "Favorites",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "المفضلة",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "open_menu",
+            "source": "Ouvrir le menu",
+            "en": {
+                "out": "Open menu",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "فتح القائمة",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "main_menu",
+            "source": "Menu principal",
+            "en": {
+                "out": "Main menu",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "القائمة الرئيسية",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "about",
+            "source": "À propos",
+            "en": {
+                "out": "About",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "عن الموقع",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "help",
+            "source": "Aide",
+            "en": {
+                "out": "Help",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "مساعدة",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "faq",
+            "source": "Questions fréquentes",
+            "en": {
+                "out": "FAQ",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "الأسئلة الشائعة",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "contact_us",
+            "source": "Contactez-nous",
+            "en": {
+                "out": "Contact us",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "اتصل بنا",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "property_types",
+            "source": "Types de biens",
+            "en": {
+                "out": "Property types",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "أنواع العقارات",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "contact",
+            "source": "Contact",
+            "en": {
+                "out": "Contact",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "اتصل بنا",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "country",
+            "source": "Maroc",
+            "en": {
+                "out": "Morocco",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "المغرب",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "all_rights_reserved",
+            "source": "Tous droits réservés.",
+            "en": {
+                "out": "All rights reserved.",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "جميع الحقوق محفوظة.",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "legal_notices",
+            "source": "Mentions légales",
+            "en": {
+                "out": "Legal notice",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "إشعار قانوني",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "bedroom",
+            "source": "chambre",
+            "en": {
+                "out": "chambre",
+                "layer": "origine"
+            },
+            "ar": {
+                "out": "chambre",
+                "layer": "origine"
+            }
+        },
+        {
+            "key": "bedrooms_plural",
+            "source": "chambres",
+            "en": {
+                "out": "chambres",
+                "layer": "origine"
+            },
+            "ar": {
+                "out": "chambres",
+                "layer": "origine"
+            }
+        },
+        {
+            "key": "living_room",
+            "source": "salon",
+            "en": {
+                "out": "salon",
+                "layer": "origine"
+            },
+            "ar": {
+                "out": "salon",
+                "layer": "origine"
+            }
+        },
+        {
+            "key": "living_rooms_plural",
+            "source": "salons",
+            "en": {
+                "out": "salons",
+                "layer": "origine"
+            },
+            "ar": {
+                "out": "salons",
+                "layer": "origine"
+            }
+        },
+        {
+            "key": "bathroom",
+            "source": "salle de bains",
+            "en": {
+                "out": "salle de bains",
+                "layer": "origine"
+            },
+            "ar": {
+                "out": "salle de bains",
+                "layer": "origine"
+            }
+        },
+        {
+            "key": "bathrooms_plural",
+            "source": "salles de bains",
+            "en": {
+                "out": "salles de bains",
+                "layer": "origine"
+            },
+            "ar": {
+                "out": "salles de bains",
+                "layer": "origine"
+            }
+        },
+        {
+            "key": "display",
+            "source": "Affichage",
+            "en": {
+                "out": "Showing",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "عرض",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "results",
+            "source": "résultats",
+            "en": {
+                "out": "results",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "نتائج",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "latest",
+            "source": "Plus récentes",
+            "en": {
+                "out": "Most recent",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "الأحدث",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "price_asc",
+            "source": "Prix croissant",
+            "en": {
+                "out": "Price: Low to High",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "الثمن: من الأقل إلى الأعلى",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "price_desc",
+            "source": "Prix décroissant",
+            "en": {
+                "out": "Price: High to Low",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "الثمن: من الأعلى إلى الأقل",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "surface_desc",
+            "source": "Surface décroissante",
+            "en": {
+                "out": "Surface: High to Low",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "المساحة: من الأعلى إلى الأقل",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "filters",
+            "source": "Filtres",
+            "en": {
+                "out": "Filters",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "تصفية",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "budget_max",
+            "source": "Budget maximum",
+            "en": {
+                "out": "Maximum budget",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "الميزانية القصوى",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "apply",
+            "source": "APPLIQUER",
+            "en": {
+                "out": "APPLY",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "تطبيق",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "popular_cities",
+            "source": "Villes populaires",
+            "en": {
+                "out": "Popular cities",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "المدن الأكثر شعبية",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "back_to_home",
+            "source": "Retour à l’accueil",
+            "en": {
+                "out": "Back to home",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "العودة إلى الرئيسية",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "property_merits",
+            "source": "Votre bien mérite",
+            "en": {
+                "out": "Your property deserves",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "عقارك يستحق",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "real_estate_agent",
+            "source": "Agent immobilier",
+            "en": {
+                "out": "Real estate agent",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "وكيل عقاري",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "i_wish",
+            "source": "Je souhaite",
+            "en": {
+                "out": "I want to",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "أرغب في",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "no_registration_required",
+            "source": "Aucune inscription obligatoire",
+            "en": {
+                "out": "No registration required",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "لا يشترط التسجيل",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "annonces",
+            "source": "Annonces",
+            "en": {
+                "out": "Listings",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "الإعلانات",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "listing_catalogue",
+            "source": "Le catalogue direct",
+            "en": {
+                "out": "The direct catalog",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "كتالوج مباشر",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "showing_x_y_of_z",
+            "source": "Affichage %1$s–%2$s de %3$s résultats",
+            "en": {
+                "out": "Showing %1$s–%2$s of %3$s results",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "عرض %1$s–%2$s من %3$s نتائج",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "search_results_for",
+            "source": "Résultats pour « %s »",
+            "en": {
+                "out": "Results for \"%s\"",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "نتائج البحث عن \"%s\"",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "listings_in",
+            "source": "Annonces immobilières à %s",
+            "en": {
+                "out": "Real estate listings in %s",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "إعلانات عقارية في %s",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "type_for_sale_rent",
+            "source": "%s à vendre et à louer",
+            "en": {
+                "out": "%s for sale and rent",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "%s للبيع وللكراء",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "grid_view",
+            "source": "Vue grille",
+            "en": {
+                "out": "Grid view",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "عرض الشبكة",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "list_view",
+            "source": "Vue liste",
+            "en": {
+                "out": "List view",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "عرض القائمة",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "sort_by",
+            "source": "Trier les annonces",
+            "en": {
+                "out": "Sort listings",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "ترتيب الإعلانات",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "search_hint",
+            "source": "Commencez par une ville, un quartier ou un code postal.",
+            "en": {
+                "out": "Start with a city, neighborhood, or zip code.",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "ابدأ بمدينة أو حي أو رمز بريدي.",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "filter_budget_max",
+            "source": "Budget maximum en euros",
+            "en": {
+                "out": "Maximum budget in euros",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "الميزانية القصوى باليورو",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "listings_appear_here",
+            "source": "Les premières annonces apparaîtront ici.",
+            "en": {
+                "out": "The first listings will appear here.",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "ستظهر الإعلانات الأولى هنا.",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "post_free_listing",
+            "source": "Déposez un bien gratuitement pour ouvrir cette sélection.",
+            "en": {
+                "out": "Post a property for free to open this selection.",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "أضف عقاراً مجاناً لفتح هذه المجموعة.",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "no_listings_yet",
+            "source": "Aucune annonce publiée pour le moment.",
+            "en": {
+                "out": "No listings published yet.",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "لا توجد إعلانات منشورة حالياً.",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "post_for_free_arrow",
+            "source": "Publier gratuitement",
+            "en": {
+                "out": "Publish for free",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "نشر مجاني",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "find_your_property",
+            "source": "Trouvez votre bien",
+            "en": {
+                "out": "Find your property",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "جد عقارك",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "search_starts_here",
+            "source": "Une recherche qui commence par le bon lieu.",
+            "en": {
+                "out": "A search that starts with the right place.",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "بحث يبدأ بالمكان المناسب.",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "browse_categories",
+            "source": "Parcourez les catégories sans bruit, puis laissez les détails vous guider.",
+            "en": {
+                "out": "Browse categories without noise, then let details guide you.",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "تصفح الفئات بكل هدوء، واترك التفاصيل توجهك.",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "explorer",
+            "source": "Explorer",
+            "en": {
+                "out": "Explore",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "استكشاف",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "rent_directly",
+            "source": "À louer directement",
+            "en": {
+                "out": "For rent directly",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "للكراء المباشر",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "apt_with_view",
+            "source": "Un appartement avec vue sur le large.",
+            "en": {
+                "out": "An apartment with a view of the open sea.",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "شقة مطلة على البحر.",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "discover_properties",
+            "source": "Découvrez les biens qui privilégient la lumière, l’espace et le contact direct.",
+            "en": {
+                "out": "Discover properties that prioritize light, space and direct contact.",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "اكتشف العقارات التي تعطي الأولوية للإضاءة، المساحة والتواصل المباشر.",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "search_property",
+            "source": "Rechercher un bien",
+            "en": {
+                "out": "Search for a property",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "البحث عن عقار",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "near_you",
+            "source": "Proche de chez vous",
+            "en": {
+                "out": "Near you",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "بالقرب منك",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "find_in_your_city",
+            "source": "Trouvez un bien dans votre ville.",
+            "en": {
+                "out": "Find a property in your city.",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "جد عقاراً في مدينتك.",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "indexed_places",
+            "source": "Les quartiers et villes sont indexés pour vous aider à trouver plus vite.",
+            "en": {
+                "out": "Neighborhoods and cities are indexed to help you find faster.",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "الأحياء والمدن مفهرسة لمساعدتك في العثور بسرعة.",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "explore_listings",
+            "source": "Explorer les annonces",
+            "en": {
+                "out": "Explore listings",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "استكشاف الإعلانات",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "cities_appear_here",
+            "source": "Les villes apparaîtront dès les premières annonces.",
+            "en": {
+                "out": "Cities will appear with the first listings.",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "ستظهر المدن مع الإعلانات الأولى.",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "by_region",
+            "source": "Par région",
+            "en": {
+                "out": "By region",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "حسب الجهة",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "everywhere_in_morocco",
+            "source": "Partout au Maroc.",
+            "en": {
+                "out": "Throughout Morocco.",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "في جميع أنحاء المغرب.",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "most_recent",
+            "source": "Plus récentes",
+            "en": {
+                "out": "Most recent",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "الأحدث",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "owner_space",
+            "source": "Espace propriétaire",
+            "en": {
+                "out": "Owner space",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "مساحة المالك",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "connexion",
+            "source": "Connexion",
+            "en": {
+                "out": "Sign in",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "تسجيل الدخول",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "your_listings",
+            "source": "Vos annonces",
+            "en": {
+                "out": "Your listings",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "إعلاناتك",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "awaiting_you",
+            "source": "vous attendent.",
+            "en": {
+                "out": "are waiting.",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "في انتظارك.",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "sign_in_manage_listings",
+            "source": "Connectez-vous pour les gérer, suivre leurs vues et vos contacts directs.",
+            "en": {
+                "out": "Sign in to manage them, follow their views and your direct contacts.",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "سجّل الدخول لإدارتها ومتابعة مشاهداتها وجهات الاتصال المباشرة.",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "auth_module_unavailable",
+            "source": "Le module de connexion n’est pas disponible pour le moment.",
+            "en": {
+                "out": "The sign-in module is currently unavailable.",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "وحدة تسجيل الدخول غير متاحة حالياً.",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "partikulier_guarantees",
+            "source": "Garanties Partikulier",
+            "en": {
+                "out": "Partikulier guarantees",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "ضمانات بارتيكيولييه",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "browsing_without_account",
+            "source": "La consultation des annonces et le dépôt restent possibles sans compte.",
+            "en": {
+                "out": "Browsing and posting listings remains possible without an account.",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "يبقى تصفح الإعلانات ونشرها متاحاً دون حساب.",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "browse_listings",
+            "source": "Parcourir les annonces",
+            "en": {
+                "out": "Browse the listings",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "تصفح الإعلانات",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "setting_site_tagline",
+            "source": "Vendez et louez entre particuliers.",
+            "en": {
+                "out": "Buy and rent directly from private owners.",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "اشترِ واكترِ مباشرة من المالكين.",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "setting_site_intro",
+            "source": "Déposez votre annonce immobilière gratuitement, sans commission, sans intermédiaire. Directement aux acheteurs et locataires.",
+            "en": {
+                "out": "Post your property for free, with no commission or middleman. Reach buyers and tenants directly.",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "أضف عقارك مجاناً، بدون عمولة أو وسيط. تواصل مباشرة مع المشترين والمستأجرين.",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "setting_btn_deposit",
+            "source": "Publier gratuitement",
+            "en": {
+                "out": "Publish for free",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "نشر مجاني",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "setting_btn_listings",
+            "source": "Chercher par ville",
+            "en": {
+                "out": "Search by city",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "ابحث حسب المدينة",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "setting_topbar_text",
+            "source": "Annonces 100% gratuites — Publiez en 2 minutes sans commission",
+            "en": {
+                "out": "Annonces 100% gratuites — Publiez en 2 minutes sans commission",
+                "layer": "origine"
+            },
+            "ar": {
+                "out": "Annonces 100% gratuites — Publiez en 2 minutes sans commission",
+                "layer": "origine"
+            }
+        },
+        {
+            "key": "setting_service1_name",
+            "source": "Annonces gratuites",
+            "en": {
+                "out": "Annonces gratuites",
+                "layer": "origine"
+            },
+            "ar": {
+                "out": "Annonces gratuites",
+                "layer": "origine"
+            }
+        },
+        {
+            "key": "setting_service1_desc",
+            "source": "Publiez sans rien payer",
+            "en": {
+                "out": "Publiez sans rien payer",
+                "layer": "origine"
+            },
+            "ar": {
+                "out": "Publiez sans rien payer",
+                "layer": "origine"
+            }
+        },
+        {
+            "key": "setting_service2_name",
+            "source": "Zéro commission",
+            "en": {
+                "out": "No commission",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "بدون عمولة",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "setting_service2_desc",
+            "source": "Sans intermédiaire",
+            "en": {
+                "out": "Sans intermédiaire",
+                "layer": "origine"
+            },
+            "ar": {
+                "out": "Sans intermédiaire",
+                "layer": "origine"
+            }
+        },
+        {
+            "key": "setting_service3_name",
+            "source": "Visio disponible",
+            "en": {
+                "out": "Visio disponible",
+                "layer": "origine"
+            },
+            "ar": {
+                "out": "Visio disponible",
+                "layer": "origine"
+            }
+        },
+        {
+            "key": "setting_service3_desc",
+            "source": "Visitez à distance",
+            "en": {
+                "out": "Visitez à distance",
+                "layer": "origine"
+            },
+            "ar": {
+                "out": "Visitez à distance",
+                "layer": "origine"
+            }
+        },
+        {
+            "key": "setting_service4_name",
+            "source": "En ligne en 2 min",
+            "en": {
+                "out": "En ligne en 2 min",
+                "layer": "origine"
+            },
+            "ar": {
+                "out": "En ligne en 2 min",
+                "layer": "origine"
+            }
+        },
+        {
+            "key": "setting_service4_desc",
+            "source": "Sans inscription",
+            "en": {
+                "out": "Sans inscription",
+                "layer": "origine"
+            },
+            "ar": {
+                "out": "Sans inscription",
+                "layer": "origine"
+            }
+        },
+        {
+            "key": "setting_section_types_kicker",
+            "source": "Trouvez votre bien",
+            "en": {
+                "out": "Find your property",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "جد عقارك",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "setting_section_types_title",
+            "source": "Types de biens",
+            "en": {
+                "out": "Property types",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "أنواع العقارات",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "setting_section_types_desc",
+            "source": "Explorez les annonces par catégorie de bien immobilier.",
+            "en": {
+                "out": "Explorez les annonces par catégorie de bien immobilier.",
+                "layer": "origine"
+            },
+            "ar": {
+                "out": "Explorez les annonces par catégorie de bien immobilier.",
+                "layer": "origine"
+            }
+        },
+        {
+            "key": "setting_section_recent_kicker",
+            "source": "Fraîchement publiées",
+            "en": {
+                "out": "Freshly published",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "نشرت حديثاً",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "setting_section_recent_title",
+            "source": "Dernières annonces",
+            "en": {
+                "out": "Dernières annonces",
+                "layer": "origine"
+            },
+            "ar": {
+                "out": "Dernières annonces",
+                "layer": "origine"
+            }
+        },
+        {
+            "key": "setting_section_recent_desc",
+            "source": "Les annonces immobilières les plus récentes de tous les particuliers.",
+            "en": {
+                "out": "Les annonces immobilières les plus récentes de tous les particuliers.",
+                "layer": "origine"
+            },
+            "ar": {
+                "out": "Les annonces immobilières les plus récentes de tous les particuliers.",
+                "layer": "origine"
+            }
+        },
+        {
+            "key": "setting_section_cities_title",
+            "source": "Villes populaires",
+            "en": {
+                "out": "Popular cities",
+                "layer": "form_translations"
+            },
+            "ar": {
+                "out": "المدن الأكثر شعبية",
+                "layer": "form_translations"
+            }
+        },
+        {
+            "key": "setting_section_cities_desc",
+            "source": "Découvrez les annonces des villes les plus actives.",
+            "en": {
+                "out": "Découvrez les annonces des villes les plus actives.",
+                "layer": "origine"
+            },
+            "ar": {
+                "out": "Découvrez les annonces des villes les plus actives.",
+                "layer": "origine"
+            }
+        },
+        {
+            "key": "setting_whatsapp_validation_number",
+            "source": "",
+            "en": {
+                "out": "",
+                "layer": "origine"
+            },
+            "ar": {
+                "out": "",
+                "layer": "origine"
+            }
+        },
+        {
+            "key": "setting_whatsapp_message",
+            "source": "Bonjour, je souhaite valider ma demande de publication Partikulier. Mon code est : {code}",
+            "en": {
+                "out": "Bonjour, je souhaite valider ma demande de publication Partikulier. Mon code est : {code}",
+                "layer": "origine"
+            },
+            "ar": {
+                "out": "Bonjour, je souhaite valider ma demande de publication Partikulier. Mon code est : {code}",
+                "layer": "origine"
+            }
+        },
+        {
+            "key": "setting_buyer_whatsapp_number",
+            "source": "",
+            "en": {
+                "out": "",
+                "layer": "origine"
+            },
+            "ar": {
+                "out": "",
+                "layer": "origine"
+            }
+        },
+        {
+            "key": "setting_n8n_webhook_url",
+            "source": "",
+            "en": {
+                "out": "",
+                "layer": "origine"
+            },
+            "ar": {
+                "out": "",
+                "layer": "origine"
+            }
+        },
+        {
+            "key": "setting_footer_about_text",
+            "source": "Portail immobilier 100% gratuit entre particuliers. Publiez votre annonce sans commission ni intermédiaire.",
+            "en": {
+                "out": "A 100% free property portal between individuals. Post your listing with no commission or middleman.",
+                "layer": "chrome_translations"
+            },
+            "ar": {
+                "out": "بوابة عقارية مجانية بنسبة 100% بين الأفراد. انشر إعلانك بدون عمولة أو وسيط.",
+                "layer": "chrome_translations"
+            }
+        },
+        {
+            "key": "setting_footer_cta_title",
+            "source": "Votre bien mérite d'être vu",
+            "en": {
+                "out": "Votre bien mérite d'être vu",
+                "layer": "origine"
+            },
+            "ar": {
+                "out": "Votre bien mérite d'être vu",
+                "layer": "origine"
+            }
+        },
+        {
+            "key": "setting_footer_cta_text",
+            "source": "Déposez votre annonce en 2 minutes, sans inscription préalable.",
+            "en": {
+                "out": "Déposez votre annonce en 2 minutes, sans inscription préalable.",
+                "layer": "origine"
+            },
+            "ar": {
+                "out": "Déposez votre annonce en 2 minutes, sans inscription préalable.",
+                "layer": "origine"
+            }
+        },
+        {
+            "key": "setting_footer_cta_btn",
+            "source": "Déposer mon annonce",
+            "en": {
+                "out": "Déposer mon annonce",
+                "layer": "origine"
+            },
+            "ar": {
+                "out": "Déposer mon annonce",
+                "layer": "origine"
+            }
+        }
+    ],
+    "dictionnaires": {
+        "chrome_translations": {
+            "%s à vendre et à louer": {
+                "fr": "%s à vendre et à louer",
+                "en": "%s for sale and rent",
+                "ar": "%s للبيع وللكراء"
+            },
+            "A louer": {
+                "fr": "A louer",
+                "en": "For rent",
+                "ar": "للإيجار"
+            },
+            "APPLIQUER": {
+                "fr": "APPLIQUER",
+                "en": "APPLY",
+                "ar": "تطبيق"
+            },
+            "Accueil": {
+                "fr": "Accueil",
+                "en": "Home",
+                "ar": "الرئيسية"
+            },
+            "Achat ou location": {
+                "fr": "Achat ou location",
+                "en": "Buy or rent",
+                "ar": "شراء أو إيجار"
+            },
+            "Affichage": {
+                "fr": "Affichage",
+                "en": "Showing",
+                "ar": "عرض"
+            },
+            "Affichage %1$s–%2$s de %3$s résultats": {
+                "fr": "Affichage %1$s–%2$s de %3$s résultats",
+                "en": "Showing %1$s–%2$s of %3$s results",
+                "ar": "عرض %1$s–%2$s من %3$s نتائج"
+            },
+            "Affiner la recherche": {
+                "fr": "Affiner la recherche",
+                "en": "Refine search",
+                "ar": "تصفية البحث"
+            },
+            "Agent immobilier": {
+                "fr": "Agent immobilier",
+                "en": "Real estate agent",
+                "ar": "وكيل عقاري"
+            },
+            "Aide": {
+                "fr": "Aide",
+                "en": "Help",
+                "ar": "مساعدة"
+            },
+            "Aller au contenu": {
+                "fr": "Aller au contenu",
+                "en": "Skip to content",
+                "ar": "انتقل إلى المحتوى"
+            },
+            "Annonce à la une": {
+                "fr": "Annonce à la une",
+                "en": "Featured listing",
+                "ar": "إعلان مميز"
+            },
+            "Annonces": {
+                "fr": "Annonces",
+                "en": "Listings",
+                "ar": "الإعلانات"
+            },
+            "Annonces immobilières à %s": {
+                "fr": "Annonces immobilières à %s",
+                "en": "Real estate listings in %s",
+                "ar": "إعلانات عقارية في %s"
+            },
+            "Appartement": {
+                "fr": "Appartement",
+                "en": "Apartment",
+                "ar": "شقة"
+            },
+            "Appliquer": {
+                "fr": "Appliquer",
+                "en": "Apply",
+                "ar": "تطبيق"
+            },
+            "Aucune annonce publiée pour le moment.": {
+                "fr": "Aucune annonce publiée pour le moment.",
+                "en": "No listings published yet.",
+                "ar": "لا توجد إعلانات منشورة حالياً."
+            },
+            "Aucune inscription obligatoire": {
+                "fr": "Aucune inscription obligatoire",
+                "en": "No registration required",
+                "ar": "لا يشترط التسجيل"
+            },
+            "Budget max": {
+                "fr": "Budget max",
+                "en": "Maximum budget",
+                "ar": "الميزانية القصوى"
+            },
+            "Budget maximum": {
+                "fr": "Budget maximum",
+                "en": "Maximum budget",
+                "ar": "الميزانية القصوى"
+            },
+            "Budget maximum en euros": {
+                "fr": "Budget maximum en euros",
+                "en": "Maximum budget in euros",
+                "ar": "الميزانية القصوى باليورو"
+            },
+            "Canal WhatsApp": {
+                "fr": "Canal WhatsApp",
+                "en": "WhatsApp Channel",
+                "ar": "قناة واتساب"
+            },
+            "Chercher par ville": {
+                "fr": "Chercher par ville",
+                "en": "Search by city",
+                "ar": "ابحث حسب المدينة"
+            },
+            "Choisir la langue": {
+                "fr": "Choisir la langue",
+                "en": "Choose language",
+                "ar": "اختر اللغة"
+            },
+            "Commencez par une ville, un quartier ou un code postal.": {
+                "fr": "Commencez par une ville, un quartier ou un code postal.",
+                "en": "Start with a city, neighbourhood or postcode.",
+                "ar": "ابدأ بمدينة أو حي أو رمز بريدي."
+            },
+            "Connectez-vous pour les gérer, suivre leurs vues et vos contacts directs.": {
+                "fr": "Connectez-vous pour les gérer, suivre leurs vues et vos contacts directs.",
+                "en": "Sign in to manage them, follow their views and your direct contacts.",
+                "ar": "سجّل الدخول لإدارتها ومتابعة مشاهداتها وجهات الاتصال المباشرة."
+            },
+            "Connexion": {
+                "fr": "Connexion",
+                "en": "Sign in",
+                "ar": "تسجيل الدخول"
+            },
+            "Consentement WhatsApp": {
+                "fr": "Consentement WhatsApp",
+                "en": "WhatsApp Consent",
+                "ar": "موافقة واتساب"
+            },
+            "Contact": {
+                "fr": "Contact",
+                "en": "Contact",
+                "ar": "اتصل بنا"
+            },
+            "Contact direct": {
+                "fr": "Contact direct",
+                "en": "Direct contact",
+                "ar": "اتصال مباشر"
+            },
+            "Contactez-nous": {
+                "fr": "Contactez-nous",
+                "en": "Contact us",
+                "ar": "اتصل بنا"
+            },
+            "Des biens ajoutés récemment par leurs propriétaires.": {
+                "fr": "Des biens ajoutés récemment par leurs propriétaires.",
+                "en": "Properties recently added by their owners.",
+                "ar": "عقارات أضافها مالكوها مؤخراً."
+            },
+            "Des biens choisis pour leur lumière.": {
+                "fr": "Des biens choisis pour leur lumière.",
+                "en": "Properties selected for their light.",
+                "ar": "عقارات مختارة لإضاءتها."
+            },
+            "Découvrez les biens qui privilégient la lumière, l’espace et le contact direct.": {
+                "fr": "Découvrez les biens qui privilégient la lumière, l’espace et le contact direct.",
+                "en": "Discover properties that prioritize light, space and direct contact.",
+                "ar": "اكتشف العقارات التي تعطي الأولوية للضوء والمساحة والاتصال المباشر."
+            },
+            "Déposer une annonce": {
+                "fr": "Déposer une annonce",
+                "en": "Post an ad",
+                "ar": "أضف إعلانك"
+            },
+            "Déposez un bien gratuitement pour ouvrir cette sélection.": {
+                "fr": "Déposez un bien gratuitement pour ouvrir cette sélection.",
+                "en": "Post a property for free to open this selection.",
+                "ar": "أضف عقاراً مجاناً لفتح هذه المجموعة."
+            },
+            "Déposez votre annonce immobilière gratuitement, sans commission, sans intermédiaire. Directement aux acheteurs et locataires.": {
+                "fr": "Déposez votre annonce immobilière gratuitement, sans commission, sans intermédiaire. Directement aux acheteurs et locataires.",
+                "en": "Post your property for free, with no commission or middleman. Reach buyers and tenants directly.",
+                "ar": "أضف عقارك مجاناً، بدون عمولة أو وسيط. تواصل مباشرة مع المشترين والمستأجرين."
+            },
+            "Enregistrer": {
+                "fr": "Enregistrer",
+                "en": "Save",
+                "ar": "حفظ"
+            },
+            "Espace propriétaire": {
+                "fr": "Espace propriétaire",
+                "en": "Owner space",
+                "ar": "مساحة المالك"
+            },
+            "Explorer": {
+                "fr": "Explorer",
+                "en": "Explore",
+                "ar": "استكشاف"
+            },
+            "Explorer les annonces": {
+                "fr": "Explorer les annonces",
+                "en": "Explore listings",
+                "ar": "استكشاف الإعلانات"
+            },
+            "Favoris": {
+                "fr": "Favoris",
+                "en": "Favorites",
+                "ar": "المفضلة"
+            },
+            "Fermer": {
+                "fr": "Fermer",
+                "en": "Close",
+                "ar": "إغلاق"
+            },
+            "Filtres": {
+                "fr": "Filtres",
+                "en": "Filters",
+                "ar": "تصفية"
+            },
+            "Filtres actifs": {
+                "fr": "filtres actifs",
+                "en": "active filters",
+                "ar": "مرشحات نشطة"
+            },
+            "Find your property": {
+                "fr": "Trouvez votre bien",
+                "en": "Find your property",
+                "ar": "ابحث عن عقارك"
+            },
+            "Fraîchement publiées": {
+                "fr": "Fraîchement publiées",
+                "en": "Recently published",
+                "ar": "أضيفت حديثاً"
+            },
+            "Garanties Partikulier": {
+                "fr": "Garanties Partikulier",
+                "en": "Partikulier guarantees",
+                "ar": "ضمانات بارتيكيولييه"
+            },
+            "Illimité": {
+                "fr": "Illimité",
+                "en": "No limit",
+                "ar": "بدون حد"
+            },
+            "Immeuble": {
+                "fr": "Immeuble",
+                "en": "Building",
+                "ar": "عمارة"
+            },
+            "Je souhaite": {
+                "fr": "Je souhaite",
+                "en": "I want to",
+                "ar": "أرغب في"
+            },
+            "La consultation des annonces et le dépôt restent possibles sans compte.": {
+                "fr": "La consultation des annonces et le dépôt restent possibles sans compte.",
+                "en": "Browsing and posting listings remains possible without an account.",
+                "ar": "يبقى تصفح الإعلانات ونشرها متاحاً دون حساب."
+            },
+            "Le catalogue direct": {
+                "fr": "Le catalogue direct",
+                "en": "The direct catalog",
+                "ar": "الدليل المباشر"
+            },
+            "Le module de connexion n’est pas disponible pour le moment.": {
+                "fr": "Le module de connexion n’est pas disponible pour le moment.",
+                "en": "The sign-in module is currently unavailable.",
+                "ar": "وحدة تسجيل الدخول غير متاحة حالياً."
+            },
+            "Les dernières annonces": {
+                "fr": "Les dernières annonces",
+                "en": "Latest listings",
+                "ar": "أحدث الإعلانات"
+            },
+            "Les informations du bien": {
+                "fr": "Les informations du bien",
+                "en": "Property details",
+                "ar": "معلومات العقار"
+            },
+            "Les premières annonces apparaîtront ici.": {
+                "fr": "Les premières annonces apparaîtront ici.",
+                "en": "The first listings will appear here.",
+                "ar": "ستظهر الإعلانات الأولى هنا."
+            },
+            "Les quartiers et villes sont indexés pour vous aider à trouver plus vite.": {
+                "fr": "Les quartiers et villes sont indexés pour vous aider à trouver plus vite.",
+                "en": "Neighbourhoods and cities are indexed to help you find faster.",
+                "ar": "الأحياء والمدن مفهرسة لمساعدتك في العثور بشكل أسرع."
+            },
+            "Les villes apparaîtront dès les premières annonces.": {
+                "fr": "Les villes apparaîtront dès les premières annonces.",
+                "en": "Cities will appear with the first listings.",
+                "ar": "ستظهر المدن مع الإعلانات الأولى."
+            },
+            "Local": {
+                "fr": "Local",
+                "en": "Commercial space",
+                "ar": "محل تجاري"
+            },
+            "Loft": {
+                "fr": "Loft",
+                "en": "Loft",
+                "ar": "لوفت"
+            },
+            "Louer": {
+                "fr": "Louer",
+                "en": "Rent",
+                "ar": "كراء"
+            },
+            "Maison": {
+                "fr": "Maison",
+                "en": "House",
+                "ar": "منزل"
+            },
+            "Maroc": {
+                "fr": "Maroc",
+                "en": "Morocco",
+                "ar": "المغرب"
+            },
+            "Mentions légales": {
+                "fr": "Mentions légales",
+                "en": "Legal notices",
+                "ar": "الإشعارات القانونية"
+            },
+            "Menu principal": {
+                "fr": "Menu principal",
+                "en": "Main menu",
+                "ar": "القائمة الرئيسية"
+            },
+            "Mode HMAC": {
+                "fr": "Mode HMAC",
+                "en": "HMAC Mode",
+                "ar": "وضع HMAC"
+            },
+            "Mon espace": {
+                "fr": "Mon espace",
+                "en": "My account",
+                "ar": "مساحتي"
+            },
+            "Ouvrir le menu": {
+                "fr": "Ouvrir le menu",
+                "en": "Open menu",
+                "ar": "فتح القائمة"
+            },
+            "Par région": {
+                "fr": "Par région",
+                "en": "By region",
+                "ar": "حسب الجهة"
+            },
+            "Parcourez les catégories sans bruit, puis laissez les détails vous guider.": {
+                "fr": "Parcourez les catégories sans bruit, puis laissez les détails vous guider.",
+                "en": "Browse categories without noise, then let the details guide you.",
+                "ar": "تصفح الفئات بهدوء، ثم دع التفاصيل ترشدك."
+            },
+            "Parcourir les annonces": {
+                "fr": "Parcourir les annonces",
+                "en": "Browse the listings",
+                "ar": "تصفح الإعلانات"
+            },
+            "Parking": {
+                "fr": "Parking",
+                "en": "Parking",
+                "ar": "موقف سيارات"
+            },
+            "Partikulier — Réglages n8n": {
+                "fr": "Partikulier — Réglages n8n",
+                "en": "Partikulier — n8n Settings",
+                "ar": "Partikulier — إعدادات n8n"
+            },
+            "Partout au Maroc.": {
+                "fr": "Partout au Maroc.",
+                "en": "Everywhere in Morocco.",
+                "ar": "في كل أنحاء المغرب."
+            },
+            "Plus récentes": {
+                "fr": "Plus récentes",
+                "en": "Most recent",
+                "ar": "الأحدث"
+            },
+            "Portail immobilier 100% gratuit entre particuliers. Publiez votre annonce sans commission ni intermédiaire.": {
+                "fr": "Portail immobilier 100% gratuit entre particuliers. Publiez votre annonce sans commission ni intermédiaire.",
+                "en": "A 100% free property portal between individuals. Post your listing with no commission or middleman.",
+                "ar": "بوابة عقارية مجانية بنسبة 100% بين الأفراد. انشر إعلانك بدون عمولة أو وسيط."
+            },
+            "Prix croissant": {
+                "fr": "Prix croissant",
+                "en": "Price: Low to High",
+                "ar": "الثمن: من الأقل إلى الأعلى"
+            },
+            "Prix décroissant": {
+                "fr": "Prix décroissant",
+                "en": "Price: High to Low",
+                "ar": "الثمن: من الأعلى إلى الأقل"
+            },
+            "Proche de chez vous": {
+                "fr": "Proche de chez vous",
+                "en": "Near you",
+                "ar": "بالقرب منك"
+            },
+            "Publier gratuitement": {
+                "fr": "Publier gratuitement",
+                "en": "Post for free",
+                "ar": "أضف إعلاناً مجاناً"
+            },
+            "Questions fréquentes": {
+                "fr": "Questions fréquentes",
+                "en": "Frequently asked questions",
+                "ar": "الأسئلة الشائعة"
+            },
+            "Qui publie l’annonce ?": {
+                "fr": "Qui publie l’annonce ?",
+                "en": "Who is posting?",
+                "ar": "من ينشر الإعلان؟"
+            },
+            "Quota / jour": {
+                "fr": "Quota / jour",
+                "en": "Daily quota",
+                "ar": "الحصة اليومية"
+            },
+            "Recherche rapide": {
+                "fr": "Recherche rapide",
+                "en": "Quick search",
+                "ar": "بحث سريع"
+            },
+            "Rechercher": {
+                "fr": "Rechercher",
+                "en": "Search",
+                "ar": "بحث"
+            },
+            "Rechercher un bien": {
+                "fr": "Rechercher un bien",
+                "en": "Search for a property",
+                "ar": "ابحث عن عقار"
+            },
+            "Rechercher une ville": {
+                "fr": "Rechercher une ville",
+                "en": "Search for a city",
+                "ar": "ابحث عن مدينة"
+            },
+            "Remplacer uniquement": {
+                "fr": "Remplacer uniquement",
+                "en": "Replace only",
+                "ar": "استبدال فقط"
+            },
+            "Retour à l’accueil": {
+                "fr": "Retour à l’accueil",
+                "en": "Back to home",
+                "ar": "العودة إلى الرئيسية"
+            },
+            "Rien à afficher pour le moment.": {
+                "fr": "Rien à afficher pour le moment.",
+                "en": "Nothing to display at the moment.",
+                "ar": "لا يوجد شيء للعرض في الوقت الحالي."
+            },
+            "Réglages enregistrés.": {
+                "fr": "Réglages enregistrés.",
+                "en": "Settings saved.",
+                "ar": "تم حفظ الإعدادات."
+            },
+            "Réglages n8n": {
+                "fr": "Réglages n8n",
+                "en": "n8n Settings",
+                "ar": "إعدادات n8n"
+            },
+            "Réinitialiser": {
+                "fr": "Réinitialiser",
+                "en": "Reset",
+                "ar": "إعادة ضبط"
+            },
+            "Résultats pour « %s »": {
+                "fr": "Résultats pour « %s »",
+                "en": "Results for \"%s\"",
+                "ar": "نتائج البحث عن \"%s\""
+            },
+            "Se connecter": {
+                "fr": "Se connecter",
+                "en": "Sign in",
+                "ar": "تسجيل الدخول"
+            },
+            "Secret": {
+                "fr": "Secret",
+                "en": "Secret",
+                "ar": "السر"
+            },
+            "Studio": {
+                "fr": "Studio",
+                "en": "Studio",
+                "ar": "ستوديو"
+            },
+            "Surface décroissante": {
+                "fr": "Surface décroissante",
+                "en": "Surface: High to Low",
+                "ar": "المساحة: من الأعلى إلى الأقل"
+            },
+            "Terrain": {
+                "fr": "Terrain",
+                "en": "Land",
+                "ar": "أرض"
+            },
+            "Tous": {
+                "fr": "Tous",
+                "en": "All",
+                "ar": "الكل"
+            },
+            "Tous droits réservés.": {
+                "fr": "Tous droits réservés.",
+                "en": "All rights reserved.",
+                "ar": "جميع الحقوق محفوظة."
+            },
+            "Tout": {
+                "fr": "Tout",
+                "en": "All",
+                "ar": "الكل"
+            },
+            "Toutes les annonces": {
+                "fr": "Toutes les annonces",
+                "en": "All listings",
+                "ar": "كل الإعلانات"
+            },
+            "Toutes les villes": {
+                "fr": "Toutes les villes",
+                "en": "All cities",
+                "ar": "كل المدن"
+            },
+            "Transaction": {
+                "fr": "Transaction",
+                "en": "Transaction",
+                "ar": "المعاملة"
+            },
+            "Trier les annonces": {
+                "fr": "Trier les annonces",
+                "en": "Sort listings",
+                "ar": "ترتيب الإعلانات"
+            },
+            "Trouvez un bien dans votre ville.": {
+                "fr": "Trouvez un bien dans votre ville.",
+                "en": "Find a property in your city.",
+                "ar": "ابحث عن عقار في مدينتك."
+            },
+            "Type": {
+                "fr": "Type",
+                "en": "Type",
+                "ar": "النوع"
+            },
+            "Type de bien": {
+                "fr": "Type de bien",
+                "en": "Property type",
+                "ar": "نوع العقار"
+            },
+            "Types de biens": {
+                "fr": "Types de biens",
+                "en": "Property types",
+                "ar": "أنواع العقارات"
+            },
+            "Un accès direct aux annonces publiées par leurs propriétaires.": {
+                "fr": "Un accès direct aux annonces publiées par leurs propriétaires.",
+                "en": "Direct access to listings published by their owners.",
+                "ar": "وصول مباشر إلى الإعلانات المنشورة من مالكيها."
+            },
+            "Un appartement avec vue sur le large.": {
+                "fr": "Un appartement avec vue sur le large.",
+                "en": "An apartment with a view of the open sea.",
+                "ar": "شقة مع إطلالة على البحر."
+            },
+            "Une recherche qui commence par le bon lieu.": {
+                "fr": "Une recherche qui commence par le bon lieu.",
+                "en": "A search that starts in the right place.",
+                "ar": "بحث يبدأ من المكان الصحيح."
+            },
+            "Vendeur identifié": {
+                "fr": "Vendeur identifié",
+                "en": "Verified seller",
+                "ar": "بائع موثوق"
+            },
+            "Vendez et louez entre particuliers.": {
+                "fr": "Vendez et louez entre particuliers.",
+                "en": "Buy and rent directly from private owners.",
+                "ar": "اشترِ واكترِ مباشرة من المالكين."
+            },
+            "Vendre": {
+                "fr": "Vendre",
+                "en": "Sell",
+                "ar": "بيع"
+            },
+            "Ville": {
+                "fr": "Ville",
+                "en": "City",
+                "ar": "المدينة"
+            },
+            "Ville, code postal, quartier…": {
+                "fr": "Ville, code postal, quartier…",
+                "en": "City, postcode, neighbourhood…",
+                "ar": "المدينة، الرمز البريدي، الحي…"
+            },
+            "Villes populaires": {
+                "fr": "Villes populaires",
+                "en": "Popular cities",
+                "ar": "مدن شعبية"
+            },
+            "Voir toutes les annonces": {
+                "fr": "Voir toutes les annonces",
+                "en": "View all listings",
+                "ar": "عرض كل الإعلانات"
+            },
+            "Vos annonces": {
+                "fr": "Vos annonces",
+                "en": "Your listings",
+                "ar": "إعلاناتك"
+            },
+            "Votre aperçu": {
+                "fr": "Votre aperçu",
+                "en": "Your preview",
+                "ar": "المعاينة"
+            },
+            "Votre bien mérite": {
+                "fr": "Votre bien mérite",
+                "en": "Your property deserves",
+                "ar": "عقارك يستحق"
+            },
+            "Vue grille": {
+                "fr": "Vue grille",
+                "en": "Grid view",
+                "ar": "عرض الشبكة"
+            },
+            "Vue liste": {
+                "fr": "Vue liste",
+                "en": "List view",
+                "ar": "عرض القائمة"
+            },
+            "Webhook n8n": {
+                "fr": "Webhook n8n",
+                "en": "n8n Webhook",
+                "ar": "n8n Webhook"
+            },
+            "Zéro commission": {
+                "fr": "Zéro commission",
+                "en": "No commission",
+                "ar": "بدون عمولة"
+            },
+            "résultats": {
+                "fr": "résultats",
+                "en": "results",
+                "ar": "نتائج"
+            },
+            "vous attendent.": {
+                "fr": "vous attendent.",
+                "en": "are waiting.",
+                "ar": "في انتظارك."
+            },
+            "À louer directement": {
+                "fr": "À louer directement",
+                "en": "For rent directly",
+                "ar": "للكراء مباشرة"
+            },
+            "À propos": {
+                "fr": "À propos",
+                "en": "About",
+                "ar": "عن الموقع"
+            },
+            "Étape 1": {
+                "fr": "Étape 1",
+                "en": "Step 1",
+                "ar": "الخطوة 1"
+            },
+            "Étape 2": {
+                "fr": "Étape 2",
+                "en": "Step 2",
+                "ar": "الخطوة 2"
+            },
+            "Étape 3": {
+                "fr": "Étape 3",
+                "en": "Step 3",
+                "ar": "الخطوة 3"
+            },
+            "Étapes de publication": {
+                "fr": "Étapes de publication",
+                "en": "Listing steps",
+                "ar": "خطوات نشر الإعلان"
+            }
+        },
+        "form_translations": {
+            "%d%s étage": {
+                "fr": "%d%s étage",
+                "en": "%d%s floor",
+                "ar": "الطابق %d"
+            },
+            "/ mois": {
+                "fr": "/ mois",
+                "en": "/ month",
+                "ar": "/ شهر"
+            },
+            "0 salon — pièce principale": {
+                "fr": "0 salon — pièce principale",
+                "en": "0 living rooms — main room",
+                "ar": "دون غرفة جلوس — الغرفة الرئيسية"
+            },
+            "06 12 34 56 78": {
+                "fr": "06 12 34 56 78",
+                "en": "+1 555 123 4567",
+                "ar": "06 12 34 56 78"
+            },
+            "1 chambre": {
+                "fr": "1 chambre",
+                "en": "1 bedroom",
+                "ar": "غرفة نوم واحدة"
+            },
+            "1 salle de bains": {
+                "fr": "1 salle de bains",
+                "en": "1 bathroom",
+                "ar": "حمام واحد"
+            },
+            "1 salon": {
+                "fr": "1 salon",
+                "en": "1 living room",
+                "ar": "غرفة جلوس واحدة"
+            },
+            "1er étage": {
+                "fr": "1er étage",
+                "en": "1st floor",
+                "ar": "الطابق الأول"
+            },
+            "2 chambres": {
+                "fr": "2 chambres",
+                "en": "2 bedrooms",
+                "ar": "غرفتا نوم"
+            },
+            "2 salles de bains": {
+                "fr": "2 salles de bains",
+                "en": "2 bathrooms",
+                "ar": "حمامان"
+            },
+            "2 salons": {
+                "fr": "2 salons",
+                "en": "2 living rooms",
+                "ar": "غرفتا جلوس"
+            },
+            "3 chambres ou plus": {
+                "fr": "3 chambres ou plus",
+                "en": "3 bedrooms or more",
+                "ar": "3 غرف نوم أو أكثر"
+            },
+            "3 salles de bains ou plus": {
+                "fr": "3 salles de bains ou plus",
+                "en": "3 bathrooms or more",
+                "ar": "3 حمامات أو أكثر"
+            },
+            "3 salons ou plus": {
+                "fr": "3 salons ou plus",
+                "en": "3 living rooms or more",
+                "ar": "3 غرف جلوس أو أكثر"
+            },
+            "Action": {
+                "fr": "Action",
+                "en": "Action",
+                "ar": "العملية"
+            },
+            "Aide": {
+                "fr": "Aide",
+                "en": "Help",
+                "ar": "مساعدة"
+            },
+            "Ajouter aux favoris": {
+                "fr": "Ajouter aux favoris",
+                "en": "Add to favorites",
+                "ar": "إضافة إلى المفضلة"
+            },
+            "Annonce à la une": {
+                "fr": "Annonce à la une",
+                "en": "Featured listing",
+                "ar": "إعلان مميز"
+            },
+            "Année de construction": {
+                "fr": "Année de construction",
+                "en": "Year built",
+                "ar": "سنة البناء"
+            },
+            "Aperçu rapide": {
+                "fr": "Aperçu rapide",
+                "en": "Quick view",
+                "ar": "عرض سريع"
+            },
+            "Appartement": {
+                "fr": "Appartement",
+                "en": "Apartment",
+                "ar": "شقة"
+            },
+            "Après l’enregistrement, vous enverrez un message WhatsApp prérempli. L’équipe vérifiera ce message avant de mettre l’annonce en ligne.": {
+                "fr": "Après l’enregistrement, vous enverrez un message WhatsApp prérempli. L’équipe vérifiera ce message avant de mettre l’annonce en ligne.",
+                "en": "After submission, you will send a pre-filled WhatsApp message. Our team will review it before publishing the listing.",
+                "ar": "بعد الإرسال، سترسل رسالة واتساب جاهزة. سيتحقق فريقنا منها قبل نشر الإعلان."
+            },
+            "Aucune annonce ne correspond à votre recherche.": {
+                "fr": "Aucune annonce ne correspond à votre recherche.",
+                "en": "No listing matches your search.",
+                "ar": "لا يوجد إعلان يطابق بحثك."
+            },
+            "Bien": {
+                "fr": "Bien",
+                "en": "Property",
+                "ar": "عقار"
+            },
+            "Budget maximum": {
+                "fr": "Budget maximum",
+                "en": "Maximum budget",
+                "ar": "الميزانية القصوى"
+            },
+            "Budget maximum en MAD": {
+                "fr": "Budget maximum en MAD",
+                "en": "Maximum budget in MAD",
+                "ar": "الميزانية القصوى بالدرهم"
+            },
+            "Caractéristiques": {
+                "fr": "Caractéristiques",
+                "en": "Features",
+                "ar": "المميزات"
+            },
+            "Cette annonce ne reçoit plus de contacts.": {
+                "fr": "Cette annonce ne reçoit plus de contacts.",
+                "en": "This listing no longer accepts contacts.",
+                "ar": "هذا الإعلان لم يعد يستقبل اتصالات."
+            },
+            "Chambres": {
+                "fr": "Chambres",
+                "en": "Bedrooms",
+                "ar": "غرف النوم"
+            },
+            "Choisir une ville…": {
+                "fr": "Choisir une ville…",
+                "en": "Choose a city…",
+                "ar": "اختر مدينة…"
+            },
+            "Choisir…": {
+                "fr": "Choisir…",
+                "en": "Choose…",
+                "ar": "اختر…"
+            },
+            "Choisissez un quartier": {
+                "fr": "Choisissez un quartier",
+                "en": "Choose a neighborhood",
+                "ar": "اختر الحي"
+            },
+            "Classe énergie": {
+                "fr": "Classe énergie",
+                "en": "Energy class",
+                "ar": "فئة الطاقة"
+            },
+            "Commencez par une ville, un quartier ou un code postal.": {
+                "fr": "Commencez par une ville, un quartier ou un code postal.",
+                "en": "Start with a city, neighborhood, or zip code.",
+                "ar": "ابدأ بمدينة أو حي أو رمز بريدي."
+            },
+            "Composition": {
+                "fr": "Composition",
+                "en": "Composition",
+                "ar": "التكوين"
+            },
+            "Contact sécurisé": {
+                "fr": "Contact sécurisé",
+                "en": "Secure contact",
+                "ar": "اتصال آمن"
+            },
+            "Contact transmis après contrôle": {
+                "fr": "Contact transmis après contrôle",
+                "en": "Contact transmitted after verification",
+                "ar": "يتم إرسال معلومات الاتصال بعد التحقق"
+            },
+            "Contactez-nous": {
+                "fr": "Contactez-nous",
+                "en": "Contact us",
+                "ar": "اتصل بنا"
+            },
+            "Dans la même ville": {
+                "fr": "Dans la même ville",
+                "en": "In the same city",
+                "ar": "في نفس المدينة"
+            },
+            "Demander la validation WhatsApp": {
+                "fr": "Demander la validation WhatsApp",
+                "en": "Request WhatsApp validation",
+                "ar": "طلب التحقق عبر واتساب"
+            },
+            "Demander sur WhatsApp": {
+                "fr": "Demander sur WhatsApp",
+                "en": "Ask on WhatsApp",
+                "ar": "الطلب عبر واتساب"
+            },
+            "Des biens ajoutés récemment par leurs propriétaires.": {
+                "fr": "Des biens ajoutés récemment par leurs propriétaires.",
+                "en": "Properties recently added by their owners.",
+                "ar": "عقارات أضيفت مؤخراً من قبل أصحابها."
+            },
+            "Des biens choisis pour leur lumière.": {
+                "fr": "Des biens choisis pour leur lumière.",
+                "en": "Properties chosen for their light.",
+                "ar": "عقارات مختارة لجمال إضاءتها."
+            },
+            "Des biens publiés directement par leurs propriétaires.": {
+                "fr": "Des biens publiés directement par leurs propriétaires.",
+                "en": "Properties published directly by their owners.",
+                "ar": "عقارات منشورة مباشرة من قبل أصحابها."
+            },
+            "Description": {
+                "fr": "Description",
+                "en": "Description",
+                "ar": "الوصف"
+            },
+            "Description *": {
+                "fr": "Description *",
+                "en": "Description *",
+                "ar": "الوصف *"
+            },
+            "Découvrez les biens qui privilégient la lumière, l’espace et le contact direct.": {
+                "fr": "Découvrez les biens qui privilégient la lumière, l’espace et le contact direct.",
+                "en": "Discover properties that prioritize light, space and direct contact.",
+                "ar": "اكتشف العقارات التي تعطي الأولوية للإضاءة، المساحة والتواصل المباشر."
+            },
+            "Décrivez votre bien : état, atouts, quartier, transports…": {
+                "fr": "Décrivez votre bien : état, atouts, quartier, transports…",
+                "en": "Describe your property: condition, features, neighbourhood, transport…",
+                "ar": "صف عقارك: حالته، مزاياه، الحي ووسائل النقل…"
+            },
+            "E-mail": {
+                "fr": "E-mail",
+                "en": "Email",
+                "ar": "البريد الإلكتروني"
+            },
+            "Ensoleillement": {
+                "fr": "Ensoleillement",
+                "en": "Sunlight",
+                "ar": "التعرض للشمس"
+            },
+            "Ensoleillé le matin": {
+                "fr": "Ensoleillé le matin",
+                "en": "Morning sun",
+                "ar": "مشمس صباحاً"
+            },
+            "Ensoleillé l’après-midi": {
+                "fr": "Ensoleillé l’après-midi",
+                "en": "Afternoon sun",
+                "ar": "مشمس بعد الظهر"
+            },
+            "Envoyez cette annonce sur WhatsApp. Après vérification de votre demande, nous vous transmettons les coordonnées du propriétaire.": {
+                "fr": "Envoyez cette annonce sur WhatsApp. Après vérification de votre demande, nous vous transmettons les coordonnées du propriétaire.",
+                "en": "Send this listing on WhatsApp. After verification of your request, we will send you the owner's contact details.",
+                "ar": "أرسل هذا الإعلان عبر واتساب. بعد التحقق من طلبك، سنزودك ببيانات اتصال المالك."
+            },
+            "Envoyez-nous cette annonce sur WhatsApp. Après contrôle de votre demande, nous vous transmettons les coordonnées du propriétaire.": {
+                "fr": "Envoyez-nous cette annonce sur WhatsApp. Après contrôle de votre demande, nous vous transmettons les coordonnées du propriétaire.",
+                "en": "Send us this listing on WhatsApp. After verification of your request, we will send you the owner's contact details.",
+                "ar": "أرسل لنا هذا الإعلان عبر واتساب. بعد التحقق من طلبك، سنزودك ببيانات اتصال المالك."
+            },
+            "Essayez d'élargir vos critères ou consultez les villes populaires.": {
+                "fr": "Essayez d'élargir vos critères ou consultez les villes populaires.",
+                "en": "Try to broaden your criteria or check popular cities.",
+                "ar": "حاول توسيع معاييرك أو تحقق من المدن الأكثر شعبية."
+            },
+            "Ex : 245000": {
+                "fr": "Ex : 245000",
+                "en": "E.g. 245000",
+                "ar": "مثال: 245000"
+            },
+            "Ex : Appartement lumineux 3 pièces avec balcon": {
+                "fr": "Ex : Appartement lumineux 3 pièces avec balcon",
+                "en": "E.g. Bright 3-bedroom apartment with balcony",
+                "ar": "مثال: شقة مشرقة بثلاث غرف مع شرفة"
+            },
+            "Explorer": {
+                "fr": "Explorer",
+                "en": "Explore",
+                "ar": "استكشاف"
+            },
+            "Explorer les annonces": {
+                "fr": "Explorer les annonces",
+                "en": "Explore listings",
+                "ar": "استكشاف الإعلانات"
+            },
+            "Fraîchement publiées": {
+                "fr": "Fraîchement publiées",
+                "en": "Freshly published",
+                "ar": "نشرت حديثاً"
+            },
+            "Glissez vos photos ici": {
+                "fr": "Glissez vos photos ici",
+                "en": "Drag your photos here",
+                "ar": "اسحب صورك إلى هنا"
+            },
+            "Immeuble": {
+                "fr": "Immeuble",
+                "en": "Building",
+                "ar": "عمارة"
+            },
+            "Intéressé par ce bien ?": {
+                "fr": "Intéressé par ce bien ?",
+                "en": "Interested in this property?",
+                "ar": "مهتم بهذا العقار؟"
+            },
+            "Je gère pour quelqu’un": {
+                "fr": "Je gère pour quelqu’un",
+                "en": "I manage a property for someone else",
+                "ar": "أدير عقاراً لشخص آخر"
+            },
+            "Je vends ou loue mon bien": {
+                "fr": "Je vends ou loue mon bien",
+                "en": "I am selling or renting my property",
+                "ar": "أبيع أو أؤجر عقاري"
+            },
+            "Jean Dupont": {
+                "fr": "Jean Dupont",
+                "en": "John Smith",
+                "ar": "محمد العلوي"
+            },
+            "Le catalogue direct": {
+                "fr": "Le catalogue direct",
+                "en": "The direct catalog",
+                "ar": "كتالوج مباشر"
+            },
+            "Les dernières annonces": {
+                "fr": "Les dernières annonces",
+                "en": "Latest listings",
+                "ar": "آخر الإعلانات"
+            },
+            "Les quartiers et villes sont indexés pour vous aider à trouver plus vite.": {
+                "fr": "Les quartiers et villes sont indexés pour vous aider à trouver plus vite.",
+                "en": "Neighborhoods and cities are indexed to help you find faster.",
+                "ar": "الأحياء والمدن مفهرسة لمساعدتك في العثور بسرعة."
+            },
+            "Local": {
+                "fr": "Local",
+                "en": "Commercial",
+                "ar": "محل تجاري"
+            },
+            "Localisation d’abord": {
+                "fr": "Localisation d’abord",
+                "en": "Location first",
+                "ar": "الموقع أولاً"
+            },
+            "MAD max": {
+                "fr": "MAD max",
+                "en": "MAD max",
+                "ar": "الحد الأقصى بالدرهم"
+            },
+            "Maison": {
+                "fr": "Maison",
+                "en": "House",
+                "ar": "منزل"
+            },
+            "Maison lumineuse à vendre entre particuliers": {
+                "fr": "Maison lumineuse à vendre entre particuliers",
+                "en": "Bright house for sale by owner",
+                "ar": "منزل مشرق للبيع من طرف صاحبه"
+            },
+            "Maroc": {
+                "fr": "Maroc",
+                "en": "Morocco",
+                "ar": "المغرب"
+            },
+            "Mentions légales": {
+                "fr": "Mentions légales",
+                "en": "Legal notice",
+                "ar": "إشعار قانوني"
+            },
+            "Nombre de chambres": {
+                "fr": "Nombre de chambres",
+                "en": "Bedrooms",
+                "ar": "عدد غرف النوم"
+            },
+            "Nombre de salles de bains": {
+                "fr": "Nombre de salles de bains",
+                "en": "Bathrooms",
+                "ar": "عدد الحمامات"
+            },
+            "Nombre de salons": {
+                "fr": "Nombre de salons",
+                "en": "Living rooms",
+                "ar": "عدد غرف الجلوس"
+            },
+            "Non": {
+                "fr": "Non",
+                "en": "No",
+                "ar": "لا"
+            },
+            "Oui": {
+                "fr": "Oui",
+                "en": "Yes",
+                "ar": "نعم"
+            },
+            "Par région": {
+                "fr": "Par région",
+                "en": "By region",
+                "ar": "حسب الجهة"
+            },
+            "Parcourez les catégories sans bruit, puis laissez les détails vous guider.": {
+                "fr": "Parcourez les catégories sans bruit, puis laissez les détails vous guider.",
+                "en": "Browse categories without noise, then let details guide you.",
+                "ar": "تصفح الفئات بكل هدوء، واترك التفاصيل توجهك."
+            },
+            "Parking": {
+                "fr": "Parking",
+                "en": "Parking",
+                "ar": "موقف سيارات"
+            },
+            "Parkings": {
+                "fr": "Parkings",
+                "en": "Parking spaces",
+                "ar": "مواقف السيارات"
+            },
+            "Partager cette annonce": {
+                "fr": "Partager cette annonce",
+                "en": "Share this listing",
+                "ar": "مشاركة هذا الإعلان"
+            },
+            "Partout au Maroc.": {
+                "fr": "Partout au Maroc.",
+                "en": "Throughout Morocco.",
+                "ar": "في جميع أنحاء المغرب."
+            },
+            "Pièce principale": {
+                "fr": "Pièce principale",
+                "en": "Main room",
+                "ar": "الغرفة الرئيسية"
+            },
+            "Prix (MAD)": {
+                "fr": "Prix (MAD)",
+                "en": "Price (MAD)",
+                "ar": "السعر (درهم)"
+            },
+            "Prix sur demande": {
+                "fr": "Prix sur demande",
+                "en": "Price on request",
+                "ar": "السعر عند الطلب"
+            },
+            "Proche de chez vous": {
+                "fr": "Proche de chez vous",
+                "en": "Near you",
+                "ar": "بالقرب منك"
+            },
+            "Propriétaire": {
+                "fr": "Propriétaire",
+                "en": "Owner",
+                "ar": "المالك"
+            },
+            "Publier gratuitement": {
+                "fr": "Publier gratuitement",
+                "en": "Publish for free",
+                "ar": "نشر مجاني"
+            },
+            "Questions fréquentes": {
+                "fr": "Questions fréquentes",
+                "en": "FAQ",
+                "ar": "الأسئلة الشائعة"
+            },
+            "Qui êtes-vous ?": {
+                "fr": "Qui êtes-vous ?",
+                "en": "Who are you?",
+                "ar": "من أنت؟"
+            },
+            "Recherche principale": {
+                "fr": "Recherche principale",
+                "en": "Main search",
+                "ar": "البحث الرئيسي"
+            },
+            "Rechercher un bien": {
+                "fr": "Rechercher un bien",
+                "en": "Search for a property",
+                "ar": "البحث عن عقار"
+            },
+            "Salles de bains": {
+                "fr": "Salles de bains",
+                "en": "Bathrooms",
+                "ar": "حمامات"
+            },
+            "Salons": {
+                "fr": "Salons",
+                "en": "Living rooms",
+                "ar": "صالونات"
+            },
+            "Sans vis-à-vis": {
+                "fr": "Sans vis-à-vis",
+                "en": "No overlooking neighbours",
+                "ar": "بدون إطلالة مقابلة"
+            },
+            "Studio": {
+                "fr": "Studio",
+                "en": "Studio",
+                "ar": "استوديو"
+            },
+            "Studio / 0 chambre": {
+                "fr": "Studio / 0 chambre",
+                "en": "Studio / 0 bedrooms",
+                "ar": "استوديو / دون غرفة نوم"
+            },
+            "Superficie de la terrasse (m²)": {
+                "fr": "Superficie de la terrasse (m²)",
+                "en": "Terrace area (m²)",
+                "ar": "مساحة الشرفة (م²)"
+            },
+            "Surface": {
+                "fr": "Surface",
+                "en": "Area",
+                "ar": "المساحة"
+            },
+            "Surface (m²)": {
+                "fr": "Surface (m²)",
+                "en": "Area (m²)",
+                "ar": "المساحة (م²)"
+            },
+            "Terrain": {
+                "fr": "Terrain",
+                "en": "Land",
+                "ar": "أرض"
+            },
+            "Terrasse": {
+                "fr": "Terrasse",
+                "en": "Terrace",
+                "ar": "شرفة"
+            },
+            "Titre de l’annonce *": {
+                "fr": "Titre de l’annonce *",
+                "en": "Listing title *",
+                "ar": "عنوان الإعلان *"
+            },
+            "Tout voir": {
+                "fr": "Tout voir",
+                "en": "See all",
+                "ar": "مشاهدة الكل"
+            },
+            "Toute la journée": {
+                "fr": "Toute la journée",
+                "en": "All day",
+                "ar": "طوال اليوم"
+            },
+            "Toutes les annonces": {
+                "fr": "Toutes les annonces",
+                "en": "All listings",
+                "ar": "جميع الإعلانات"
+            },
+            "Trouvez un bien dans votre ville.": {
+                "fr": "Trouvez un bien dans votre ville.",
+                "en": "Find a property in your city.",
+                "ar": "جد عقاراً في مدينتك."
+            },
+            "Trouvez votre bien": {
+                "fr": "Trouvez votre bien",
+                "en": "Find your property",
+                "ar": "جد عقارك"
+            },
+            "Très peu": {
+                "fr": "Très peu",
+                "en": "Very little",
+                "ar": "قليل جداً"
+            },
+            "Type de bien": {
+                "fr": "Type de bien",
+                "en": "Property type",
+                "ar": "نوع العقار"
+            },
+            "Téléphone": {
+                "fr": "Téléphone",
+                "en": "Phone",
+                "ar": "الهاتف"
+            },
+            "Un accès direct aux annonces publiées par leurs propriétaires.": {
+                "fr": "Un accès direct aux annonces publiées par leurs propriétaires.",
+                "en": "Direct access to listings published by owners.",
+                "ar": "وصول مباشر للإعلانات المنشورة من قبل أصحابها."
+            },
+            "Un appartement avec vue sur le large.": {
+                "fr": "Un appartement avec vue sur le large.",
+                "en": "An apartment with a view of the open sea.",
+                "ar": "شقة مطلة على البحر."
+            },
+            "Une recherche qui commence par le bon lieu.": {
+                "fr": "Une recherche qui commence par le bon lieu.",
+                "en": "A search that starts with the right place.",
+                "ar": "بحث يبدأ بالمكان المناسب."
+            },
+            "Ville": {
+                "fr": "Ville",
+                "en": "City",
+                "ar": "المدينة"
+            },
+            "Villes populaires": {
+                "fr": "Villes populaires",
+                "en": "Popular cities",
+                "ar": "المدن الأكثر شعبية"
+            },
+            "Voir aussi à %s": {
+                "fr": "Voir aussi à %s",
+                "en": "See also in %s",
+                "ar": "شاهد أيضاً في %s"
+            },
+            "Voir l'annonce": {
+                "fr": "Voir l'annonce",
+                "en": "View listing",
+                "ar": "عرض الإعلان"
+            },
+            "Voir les autres annonces dans cette ville": {
+                "fr": "Voir les autres annonces dans cette ville",
+                "en": "See other listings in this city",
+                "ar": "مشاهدة الإعلانات الأخرى في هذه المدينة"
+            },
+            "Voir toutes les annonces": {
+                "fr": "Voir toutes les annonces",
+                "en": "View all listings",
+                "ar": "مشاهدة جميع الإعلانات"
+            },
+            "Vos critères seront demandés sur WhatsApp. Les annonces similaires ne sont envoyées qu’avec votre accord explicite.": {
+                "fr": "Vos critères seront demandés sur WhatsApp. Les annonces similaires ne sont envoyées qu’avec votre accord explicite.",
+                "en": "Your criteria will be requested on WhatsApp. Similar listings are only sent with your explicit agreement.",
+                "ar": "سيتم طلب معاييرك عبر واتساب. لا يتم إرسال إعلانات مماثلة إلا بموافقتك الصريحة."
+            },
+            "Vos critères sont enregistrés pour vérifier la demande. Les annonces similaires ne sont envoyées qu’avec votre accord explicite.": {
+                "fr": "Vos critères sont enregistrés pour vérifier la demande. Les annonces similaires ne sont envoyées qu’avec votre accord explicite.",
+                "en": "Your criteria are recorded to verify the request. Similar listings are only sent with your explicit agreement.",
+                "ar": "يتم تسجيل معاييرك للتحقق من الطلب. لا يتم إرسال إعلانات مماثلة إلا بموافقتك الصريحة."
+            },
+            "Vos critères sont vérifiés avant transmission des coordonnées.": {
+                "fr": "Vos critères sont vérifiés avant transmission des coordonnées.",
+                "en": "Your criteria are verified before transmitting contact details.",
+                "ar": "يتم التحقق من معاييرك قبل إرسال بيانات الاتصال."
+            },
+            "Vos photos": {
+                "fr": "Vos photos",
+                "en": "Your photos",
+                "ar": "صورك"
+            },
+            "Votre nom *": {
+                "fr": "Votre nom *",
+                "en": "Your name *",
+                "ar": "اسمك *"
+            },
+            "Votre téléphone est requis pour demander la validation via WhatsApp. Votre e-mail reste facultatif.": {
+                "fr": "Votre téléphone est requis pour demander la validation via WhatsApp. Votre e-mail reste facultatif.",
+                "en": "Your phone number is required for WhatsApp validation. Email is optional.",
+                "ar": "رقم الهاتف مطلوب لطلب التحقق عبر واتساب. البريد الإلكتروني اختياري."
+            },
+            "Vous (simple et rapide)": {
+                "fr": "Vous (simple et rapide)",
+                "en": "You (quick and easy)",
+                "ar": "بياناتك (بسهولة وسرعة)"
+            },
+            "Vous souhaitez": {
+                "fr": "Vous souhaitez",
+                "en": "You want to",
+                "ar": "أرغب في"
+            },
+            "Vous êtes": {
+                "fr": "Vous êtes",
+                "en": "You are",
+                "ar": "أنت"
+            },
+            "annonces": {
+                "fr": "annonces",
+                "en": "listings",
+                "ar": "إعلانات"
+            },
+            "e étage": {
+                "fr": "e étage",
+                "en": "th floor",
+                "ar": "الطابق"
+            },
+            "ou cliquez pour parcourir (15 photos maximum, JPG/PNG)": {
+                "fr": "ou cliquez pour parcourir (15 photos maximum, JPG/PNG)",
+                "en": "or click to browse (15 photos maximum, JPG/PNG)",
+                "ar": "أو اضغط للتصفح (15 صورة كحد أقصى، JPG/PNG)"
+            },
+            "vous@exemple.com": {
+                "fr": "vous@exemple.com",
+                "en": "you@example.com",
+                "ar": "you@example.com"
+            },
+            "À louer directement": {
+                "fr": "À louer directement",
+                "en": "For rent directly",
+                "ar": "للكراء المباشر"
+            },
+            "Étage": {
+                "fr": "Étage",
+                "en": "Floor",
+                "ar": "الطابق"
+            }
+        }
+    },
+    "catalogues_mo": {
+        "runtime_domain_entries": 72,
+        "runtime_resolutions": [
+            "Help",
+            "Add a personal note",
+            "Cancel",
+            "Lift",
+            "Property",
+            "Features",
+            "Bedrooms",
+            "Contact",
+            "Contact seller",
+            "Contact us",
+            "Continue",
+            "Description",
+            "Property description",
+            "Post a listing",
+            "Save",
+            "Send",
+            "Favorites",
+            "France",
+            "Garage or basement",
+            "I am publishing my own property.",
+            "I am publishing for a client.",
+            "The main description is created from your answers. Add more details here if you wish.",
+            "Property details",
+            "For rent",
+            "Legal notices",
+            "Main menu",
+            "My space",
+            "Number of bedrooms",
+            "Number of bathrooms",
+            "Number of living rooms",
+            "No",
+            "Yes",
+            "Open menu",
+            "Property photos",
+            "Price",
+            "Asking price",
+            "Owner",
+            "Previous",
+            "Publish",
+            "Neighbourhood",
+            "Frequently asked questions",
+            "Who is publishing the listing?",
+            "Quick search",
+            "Search",
+            "Search a city",
+            "Back",
+            "Bathrooms",
+            "Living rooms",
+            "Sign in",
+            "Next",
+            "Area (m²)",
+            "Terrace area (m²)",
+            "Area",
+            "Terrace",
+            "Listing title",
+            "All rights reserved.",
+            "All listings",
+            "Property type",
+            "Property types",
+            "Phone",
+            "An important detail, a note about the neighbourhood or your viewing terms…",
+            "Confirm with WhatsApp",
+            "For sale",
+            "City",
+            "Your preview",
+            "Your email",
+            "Your name",
+            "Your phone number",
+            "View",
+            "WhatsApp",
+            "About",
+            "Floor"
+        ],
+        "en": {
+            "sha256": "9b2e7f1bbe6386ac44d1b4b66d0991e2887ce83e83e04fbb5c793d77571c6fda"
+        },
+        "ar": {
+            "sha256": "2ad002e6032c2a8717d5c9f50fda0443d810c8fb51217dbaa681acc0dd64d31e"
+        }
+    },
+    "chaines_non_resolues": {
+        "count": 35,
+        "keys": [
+            "bathroom",
+            "bathrooms_plural",
+            "bedroom",
+            "bedrooms_plural",
+            "contact_seller",
+            "contact_unavailable",
+            "contact_via_whatsapp",
+            "free_private_listing",
+            "living_room",
+            "living_rooms_plural",
+            "next_photo",
+            "photo_navigation",
+            "photos",
+            "previous_photo",
+            "setting_buyer_whatsapp_number",
+            "setting_footer_cta_btn",
+            "setting_footer_cta_text",
+            "setting_footer_cta_title",
+            "setting_n8n_webhook_url",
+            "setting_section_cities_desc",
+            "setting_section_recent_desc",
+            "setting_section_recent_title",
+            "setting_section_types_desc",
+            "setting_service1_desc",
+            "setting_service1_name",
+            "setting_service2_desc",
+            "setting_service3_desc",
+            "setting_service3_name",
+            "setting_service4_desc",
+            "setting_service4_name",
+            "setting_topbar_text",
+            "setting_whatsapp_message",
+            "setting_whatsapp_validation_number",
+            "view",
+            "whatsapp_request"
+        ]
+    },
+    "stats": {
+        "registre_chrome": 150,
+        "chrome_translations": 136,
+        "form_translations": 140,
+        "corpus_total": 150
+    },
+    "fingerprint_sha256": "ea685fded1922f10d391688e511d99ab96d516eb201ed19f8a7d993d67e3c58e"
+}

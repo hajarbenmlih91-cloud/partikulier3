@@ -1,0 +1,13 @@
+== [8] Preuve de rollback (aller T0 + 2.2.0, retour nominal) ==
+== Preuve de rollback lot B3 ==
+  PASS  snapshot T1 pris (1e8ae2a77052…, wal intégré)
+  PASS  health : core 2.2.0, schéma 2.2.0 (état pré-B3) — constaté 2.2.0/2.2.0
+  PASS  domaine alerts revenu owner=theme (manifeste 2.2.0)
+  PASS  front 200 en état rollback
+  PASS  les 10 leads du T0 présents en état rollback (constaté 10)
+  PASS  plugin 2.2.0 sans AlertService → thème 6.18.4 retombe sur son chemin autonome (legacy-theme)
+  PASS  sauvegarde d'alerte fonctionnelle en rollback par le chemin du thème (AlertService absent, aucune ligne d'audit) — constaté : alerte-theme-sans-audit
+  PASS  état final : core 2.3.0, schéma 2.3.0, alerts=plugin — constaté 2.3.0/2.3.0/plugin
+  PASS  état final : 0 fantôme, front 200, 10 leads intacts
+== FIN rollback B3 : 9 PASS / 0 FAIL ==
+

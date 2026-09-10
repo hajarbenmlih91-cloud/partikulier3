@@ -1,0 +1,10 @@
+== Preuve de rollback lot B1 ==
+  PASS  snapshot T1 pris (8274d64f3147…, wal intégré)
+  PASS  health : core 2.0.1, schéma 2.0.0 (état pré-B1) — constaté 2.0.1/2.0.0
+  PASS  domaines B1 revenus owner=theme (manifeste 2.0.0)
+  PASS  front 200 en état rollback
+  PASS  3 tables B1 vides comme au T0 (total lignes = 0, T0 = 0)
+  PASS  chemin premium : plugin 2.0.1 sans service → repli legacy thème (legacy)
+  PASS  état final : core 2.1.0, schéma 2.1.0, payments=plugin — constaté 2.1.0/2.1.0/plugin
+  PASS  état final : 0 fantôme, front 200
+== FIN rollback : 8 PASS / 0 FAIL ==

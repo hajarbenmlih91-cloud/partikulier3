@@ -1,0 +1,108 @@
+{
+    "at": "2026-09-09T22:56:21+00:00",
+    "lot": "B5",
+    "domaine": "statistiques propriétaire (favoris visiteurs agrégés par HMAC)",
+    "tables": {
+        "wp_pk_property_saves": {
+            "exists": true,
+            "count": 4,
+            "ddl": "CREATE TABLE `wp_pk_property_saves` (\n  `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,\n  `property_id` INTEGER NOT NULL,\n  `visitor_hash` TEXT COLLATE NOCASE NOT NULL,\n  `created_at` TEXT COLLATE NOCASE NOT NULL,\n  `updated_at` TEXT COLLATE NOCASE NOT NULL\n) STRICT",
+            "indexes": [
+                {
+                    "name": "wp_pk_property_saves__property_visitor",
+                    "sql": "CREATE UNIQUE INDEX `wp_pk_property_saves__property_visitor` ON `wp_pk_property_saves` (`property_id`, `visitor_hash`)"
+                },
+                {
+                    "name": "wp_pk_property_saves__property_id",
+                    "sql": "CREATE INDEX `wp_pk_property_saves__property_id` ON `wp_pk_property_saves` (`property_id`)"
+                },
+                {
+                    "name": "wp_pk_property_saves__updated_at",
+                    "sql": "CREATE INDEX `wp_pk_property_saves__updated_at` ON `wp_pk_property_saves` (`updated_at`)"
+                }
+            ],
+            "rows": [
+                {
+                    "id": 1,
+                    "property_id": 199,
+                    "visitor_hash": "3642d47cd09d56e3434f1f5ee60649defbf0a8da97b221a5d4943cacba6e9d29",
+                    "created_at": "2026-09-07 20:50:13",
+                    "updated_at": "2026-09-07 20:50:13"
+                },
+                {
+                    "id": 2,
+                    "property_id": 199,
+                    "visitor_hash": "40d6b532f3e84701ec4bdbf1fa77f2f58098302316d4244d634df7460104ec13",
+                    "created_at": "2026-09-07 20:54:20",
+                    "updated_at": "2026-09-07 20:54:20"
+                },
+                {
+                    "id": 3,
+                    "property_id": 199,
+                    "visitor_hash": "46bf4b32261d21bb41e03eefd966d20844b8a14cff424cc081cbdfb97ff059e3",
+                    "created_at": "2026-09-08 17:03:20",
+                    "updated_at": "2026-09-08 17:03:20"
+                },
+                {
+                    "id": 4,
+                    "property_id": 199,
+                    "visitor_hash": "372c0fcd4006001188319bc274514c6f2c319e24ef6f55ff67c379e2024ef003",
+                    "created_at": "2026-09-08 18:37:45",
+                    "updated_at": "2026-09-08 18:37:45"
+                }
+            ],
+            "data_fingerprint": "a35c770731388d574cb009e37e8aa5199be11f69db9aebcdcbcf977c46e5dd03"
+        }
+    },
+    "options": {
+        "pk_owner_insights_db_version": {
+            "option_value": "1.0.1",
+            "autoload": "off"
+        },
+        "partikulier_core_schema_version": {
+            "option_value": "2.4.0",
+            "autoload": "off"
+        },
+        "partikulier_core_migration_report": {
+            "option_value": {
+                "schema": "2.4.0",
+                "steps": [],
+                "at": "2026-09-09T22:36:26+00:00"
+            },
+            "autoload": "off"
+        }
+    },
+    "cron_pk_owner_insights_daily_purge": {
+        "scheduled": true,
+        "timestamp": 1789041974,
+        "at_utc": "2026-09-10 12:06:14"
+    },
+    "repere_listings": {
+        "published_rows": 30,
+        "orphans": 0
+    },
+    "repere_leads": 10,
+    "repere_events": 2,
+    "repere_hmac_audit": 0,
+    "backup": {
+        "file": "/home/z/my-project/download/preuves-lot-B5/T0-sauvegarde-base.sqlite",
+        "sha256": "d5162d9ee132abb08b5d83cfe3b43d21b015c677fb8f7efb30655ce3e1d8d807",
+        "bytes": 2899968
+    },
+    "corrections": [
+        {
+            "champ": "cron_pk_owner_insights_daily_purge",
+            "at": "2026-09-09T23:18:50+00:00",
+            "cause": "isset racine sur le nom du hook — la structure WP est [ts => [hook => args]] : le nom n'est jamais une clé racine",
+            "releve_initial": {
+                "scheduled": false
+            },
+            "releve_corrige": {
+                "scheduled": true,
+                "timestamp": 1789041974,
+                "at_utc": "2026-09-10 12:06:14"
+            },
+            "source": "T0-sauvegarde-base.sqlite (sha256 re-vérifié d5162d9ee132…)"
+        }
+    ]
+}

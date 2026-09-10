@@ -1,0 +1,24 @@
+{
+    "test_id": "LOT-B4-REG6-STRUCTURE-DONNEES-IDEMPOTENCE",
+    "at": "2026-09-09T22:35:13+00:00",
+    "tables": 2,
+    "ddl_identique_t0_t1": true,
+    "ddl_diffs": [],
+    "index_parite": true,
+    "index_diffs": [],
+    "donnees_t0_preservees": {
+        "evenements_t0": 2,
+        "evenements_apres_migration": 2,
+        "empreintes_identiques": true,
+        "audit_hmac_t0": 0,
+        "audit_hmac_apres": 0
+    },
+    "migrator_second_pass": {
+        "version_avant": "2.4.0",
+        "version_apres": "2.4.0",
+        "etapes_rejouees": [],
+        "structure_stable_apres_rejeu_dbdelta": true,
+        "donnees_stables_apres_rejeu": true
+    },
+    "status": "PASS"
+}

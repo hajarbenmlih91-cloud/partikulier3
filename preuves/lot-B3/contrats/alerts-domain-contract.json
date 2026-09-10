@@ -1,0 +1,88 @@
+{
+    "suite": "alerts-domain-contract (lot B3)",
+    "started_at": "2026-09-09T22:05:29+00:00",
+    "finished_at": "2026-09-09T22:05:29+00:00",
+    "command": "php partikulier-core/tests/alerts-domain-contract.php",
+    "commit": "5e0a8d3b840946358b9cc7f114c3bc927a160706",
+    "results": [
+        {
+            "test_id": "B3A-001",
+            "status": "PASS",
+            "detail": "couture thème/plugin : classes chargées, tables uniques wp_pk_saved_alerts / wp_pk_alert_deliveries"
+        },
+        {
+            "test_id": "B3A-002",
+            "status": "PASS",
+            "detail": "adoption B3 journalisée (domain_adopted B3/alerts = 1), deux tables en place"
+        },
+        {
+            "test_id": "B3A-003",
+            "status": "PASS",
+            "detail": "fixture : lead 28 créé via authorize_contact + consentement similar_listings accordé (voie REST B2)"
+        },
+        {
+            "test_id": "B3A-004",
+            "status": "PASS",
+            "detail": "lead sans consentement → pk_alert_consent, aucune ligne écrite"
+        },
+        {
+            "test_id": "B3A-005",
+            "status": "PASS",
+            "detail": "save_alert : ligne conforme (critères assainis, signature sha256, statut active) + audit alert_saved"
+        },
+        {
+            "test_id": "B3A-006",
+            "status": "PASS",
+            "detail": "upsert (lead_id, criteria_signature) : même alerte actualisée, pas de doublon"
+        },
+        {
+            "test_id": "B3A-007",
+            "status": "PASS",
+            "detail": "critères réordonnés (clés) → même signature (assainissement normalisé par ksort — l'ordre des zones reste significatif, comportement hérité)"
+        },
+        {
+            "test_id": "B3A-008",
+            "status": "PASS",
+            "detail": "assainissement : clé inconnue écartée, 3 zones maximum, budget entier"
+        },
+        {
+            "test_id": "B3A-009",
+            "status": "PASS",
+            "detail": "gardes : lead 0, locale inconnue, fréquence inconnue, preuve vide, critères vides → pk_alert_payload"
+        },
+        {
+            "test_id": "B3A-010",
+            "status": "PASS",
+            "detail": "change_status : active → paused → stopped, deux audits alert_status_changed"
+        },
+        {
+            "test_id": "B3A-011",
+            "status": "PASS",
+            "detail": "gardes statut : id nul et valeur inconnue → pk_alert_status"
+        },
+        {
+            "test_id": "B3A-012",
+            "status": "PASS",
+            "detail": "couture thème → service plugin : save_alert/change_status via Partikulier_Saved_Alerts exécutent AlertService (audits écrits)"
+        },
+        {
+            "test_id": "B3A-013",
+            "status": "PASS",
+            "detail": "consentement révoqué → toute nouvelle alerte refusée (pk_alert_consent)"
+        },
+        {
+            "test_id": "B3A-014",
+            "status": "PASS",
+            "detail": "pk_alert_deliveries reste vide : aucune livraison écrite par le service (contrat du thème porté fidèlement)"
+        },
+        {
+            "test_id": "B3A-015",
+            "status": "PASS",
+            "detail": "health check : domaine alerts owner=plugin, 2/2 tables suivies, 0 collision de routes"
+        }
+    ],
+    "status": "PASS",
+    "total": 15,
+    "passed": 15,
+    "failed": 0
+}

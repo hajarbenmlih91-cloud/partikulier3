@@ -1,0 +1,11 @@
+PASS · JSONLD-fiche-syntaxe — 1 bloc(s) JSON-LD · tous valides syntaxiquement : true
+PASS · JSONLD-fiche-types — types présents (imbriqués inclus) : RealEstateListing, Offer, UnitPriceSpecification, QuantitativeValue, PostalAddress, Place, GeoCoordinates, Organization, BreadcrumbList, ListItem, WebSite, SearchAction, EntryPoint
+PASS · JSONLD-fiche-langue — name en arabe : true · résidus FR : aucun
+PASS · JSONLD-fiche-geo — GeoCoordinates : lat=31.664, lng=-8.05
+PASS · JSONLD-fiche-offre — Offer : prix=850000 MAD
+PASS · JSONLD-archive-itemlist — ItemList : présente · name « إعلانات عقارية مجانية » · 10 éléments
+PASS · HREFLANG--annonces- — 7 alternates · manquants : aucun
+PASS · HREFLANG--fr-annonces- — 7 alternates · manquants : aucun
+PASS · HREFLANG--ar-annonces- — 7 alternates · manquants : aucun
+
+=== AUDIT JSON-LD/HREFLANG : 9 PASS / 0 FAIL ===

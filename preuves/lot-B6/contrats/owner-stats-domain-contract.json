@@ -1,0 +1,93 @@
+{
+    "suite": "owner-stats-domain-contract (lot B5)",
+    "started_at": "2026-09-10T09:04:20+00:00",
+    "finished_at": "2026-09-10T09:04:20+00:00",
+    "command": "php partikulier-core/tests/owner-stats-domain-contract.php",
+    "commit": "4b6b249c4e08e9475e60cc8a75dcb957b94e5ed8",
+    "results": [
+        {
+            "test_id": "B5A-001",
+            "status": "PASS",
+            "detail": "couture thème/plugin : classes chargées, table unique wp_pk_property_saves, annonce de référence #171"
+        },
+        {
+            "test_id": "B5A-002",
+            "status": "PASS",
+            "detail": "adoption B5 journalisée (domain_adopted B5/owner_stats = 1), table en place, 4 favoris T0 préservés"
+        },
+        {
+            "test_id": "B5A-003",
+            "status": "PASS",
+            "detail": "sync_favorite save : ligne conforme (HMAC sha256 64 hex non réversible, dates UTC) + audit owner_favorite_saved"
+        },
+        {
+            "test_id": "B5A-004",
+            "status": "PASS",
+            "detail": "upsert : re-save du même visiteur → même id (34), une seule ligne, updated_at actualisé (rétention glissante)"
+        },
+        {
+            "test_id": "B5A-005",
+            "status": "PASS",
+            "detail": "sync_favorite remove : ligne supprimée + audit owner_favorite_removed"
+        },
+        {
+            "test_id": "B5A-006",
+            "status": "PASS",
+            "detail": "gardes : annonce nulle, visiteur trop court, état inconnu → pk_invalid_favorite"
+        },
+        {
+            "test_id": "B5A-007",
+            "status": "PASS",
+            "detail": "annonce inexistante → pk_unknown_favorite_property"
+        },
+        {
+            "test_id": "B5A-008",
+            "status": "PASS",
+            "detail": "plafond 60/heure : 61e mise à jour refusée (429 pk_favorite_rate_limited), aucune ligne écrite"
+        },
+        {
+            "test_id": "B5A-009",
+            "status": "PASS",
+            "detail": "favorite_count : 0 → 1 après un favori (coexistence avec les 4 favoris réels du T0)"
+        },
+        {
+            "test_id": "B5A-010",
+            "status": "PASS",
+            "detail": "fenêtre 90 jours : le pseudonyme périmé (2026-06-11 09:04:20) est exclu de l'agrégat (1 = 1)"
+        },
+        {
+            "test_id": "B5A-011",
+            "status": "PASS",
+            "detail": "purge_expired_saves : 1 pseudonyme(s) périmé(s) supprimé(s), lignes actives intactes, audit owner_saves_purged"
+        },
+        {
+            "test_id": "B5A-012",
+            "status": "PASS",
+            "detail": "port fidèle : rétention 90 jours, cron pk_owner_insights_daily_purge (noms hérités du thème 6.17.x)"
+        },
+        {
+            "test_id": "B5A-013",
+            "status": "PASS",
+            "detail": "cron daily : planifié (présent dès le T0, relevé initial corrigé), handler lié côté plugin, thème 6.18.6 délié (pattern rétention B2)"
+        },
+        {
+            "test_id": "B5A-014",
+            "status": "PASS",
+            "detail": "couture thème → service plugin : sync_favorite/remove via Partikulier_Owner_Insights exécuté par OwnerStatsService (mêmes HMAC, même table)"
+        },
+        {
+            "test_id": "B5A-015",
+            "status": "PASS",
+            "detail": "health check : domaine owner_stats owner=plugin, 1/1 table suivie, 8/8 domaines plugin (invariant ≥ 7 — 7 au lot B5, 8/8 depuis le lot B6 : translation_variants complété sans retrait), 0 collision"
+        },
+        {
+            "test_id": "B5A-016",
+            "status": "PASS",
+            "detail": "routes /owner/dashboard + /owner/listings/<id>/action déclarées au registre INTEG-3 (thème — écran d'intégration, primitives déléguées)"
+        }
+    ],
+    "status": "PASS",
+    "total": 16,
+    "passed": 16,
+    "failed": 0
+}

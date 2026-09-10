@@ -1,0 +1,98 @@
+{
+    "suite": "automation-domain-contract (lot B4)",
+    "started_at": "2026-09-10T20:51:54+00:00",
+    "finished_at": "2026-09-10T20:51:54+00:00",
+    "command": "php partikulier-core/tests/automation-domain-contract.php",
+    "commit": "41d6e35a411bae39fa5b9af78f2b18d254162b51",
+    "results": [
+        {
+            "test_id": "B4A-001",
+            "status": "PASS",
+            "detail": "couture thème/plugin : classes chargées, tables uniques wp_pk_automation_events / wp_pk_n8n_hmac_audit"
+        },
+        {
+            "test_id": "B4A-002",
+            "status": "PASS",
+            "detail": "adoption B4 journalisée (domain_adopted B4/automation = 1), 2 tables en place, 2 événements T0 préservés"
+        },
+        {
+            "test_id": "B4A-003",
+            "status": "PASS",
+            "detail": "receive_event : ligne conforme (statut received, hash sha256 64, payload jamais en clair) + audit automation_event_received"
+        },
+        {
+            "test_id": "B4A-004",
+            "status": "PASS",
+            "detail": "idempotence : rejeu du même event_id → duplicate=true, une seule ligne, audit automation_event_duplicate"
+        },
+        {
+            "test_id": "B4A-005",
+            "status": "PASS",
+            "detail": "gardes : préfixe, type, source et event_id vide → pk_automation_payload"
+        },
+        {
+            "test_id": "B4A-006",
+            "status": "PASS",
+            "detail": "sans en-tête partagé → pk_automation_auth (401)"
+        },
+        {
+            "test_id": "B4A-007-pre",
+            "status": "PASS",
+            "detail": "fixture : secret partagé présent sur le banc (valeur non imprimée)"
+        },
+        {
+            "test_id": "B4A-007",
+            "status": "PASS",
+            "detail": "secret présent + mode off → promotion enforce (LOT 2) : secret sans signature refusé"
+        },
+        {
+            "test_id": "B4A-008",
+            "status": "PASS",
+            "detail": "signature HMAC valide (POST + route + horodatage + corps) → requête acceptée"
+        },
+        {
+            "test_id": "B4A-009",
+            "status": "PASS",
+            "detail": "corps altéré après signature → refus (la signature ne correspond plus au corps envoyé)"
+        },
+        {
+            "test_id": "B4A-010",
+            "status": "PASS",
+            "detail": "horodatage périmé (−400 s, fenêtre 300 s) → refus"
+        },
+        {
+            "test_id": "B4A-011",
+            "status": "PASS",
+            "detail": "mode log : mauvaise signature (clé connue) acceptée, échec journalisé (key_id/heure, raison invalid_signature)"
+        },
+        {
+            "test_id": "B4A-012",
+            "status": "PASS",
+            "detail": "audit_failure : compteur par heure incrémenté (1→3), dernière raison actualisée (upsert key_hour)"
+        },
+        {
+            "test_id": "B4A-013",
+            "status": "PASS",
+            "detail": "5 en-têtes, clé N, signature re-calculable (chemin + requête entrant dans le canonique)"
+        },
+        {
+            "test_id": "B4A-014",
+            "status": "PASS",
+            "detail": "save_admin_settings : secret mono-caractère répété → pk_n8n_secret_weak, réglages inchangés"
+        },
+        {
+            "test_id": "B4A-015",
+            "status": "PASS",
+            "detail": "couture thème → service plugin : receive_event via Partikulier_Automation_Bridge exécute AutomationService (audit écrit)"
+        },
+        {
+            "test_id": "B4A-016",
+            "status": "PASS",
+            "detail": "health check : domaine automation owner=plugin, 2/2 tables suivies, 0 collision, route /automation-event inscrite"
+        }
+    ],
+    "status": "PASS",
+    "total": 17,
+    "passed": 17,
+    "failed": 0
+}

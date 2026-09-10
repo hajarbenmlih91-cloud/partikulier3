@@ -1,0 +1,88 @@
+== RECETTE LOT B5 — plugin 2.5.0 @ 94b99618efb7a6408331e431b36862d1264631a1, thème 6.18.6 ==
+  health : ok (core 2.5.0, schéma 2.5.0) — domaines plugin : alerts,automation,leads,listings,owner_stats,payments,premium
+
+== [1] REG-6 : identité de structure et de données T0 → T1 (avant tout contrat) ==
+  PASS  REG-6 — DDL + index identiques, 4 favoris réels préservés, Migrator idempotent
+
+== [2] Suites contractuelles (13) ==
+  PASS  core-contract — 8 8
+  PASS  services-contract — 7 7
+  PASS  rest-lite-scope — 10 10
+  PASS  sync-contract — 14 14
+  PASS  leads-contract — 7 7
+  PASS  leads-domain-contract — 16 16
+  PASS  routes-collision — 5 5
+  PASS  load-contract — 7 7
+  PASS  premium-contract — 8 8
+  PASS  payments-contract — 10 10
+  PASS  alerts-domain-contract — 15 15
+  PASS  automation-domain-contract — 17 17
+  PASS  owner-stats-domain-contract — 16 16
+  → contrats : 140/140 tests, 0 suite(s) en échec
+  PASS  hygiène du banc — favoris 4, événements 2, audit HMAC 0, leads 10/10 (zéro fuite)
+
+== [3] QA thème : rapide ×2 + visual ×2 (baseline du lot B2) ==
+  PASS  rapide.mjs (run 1) — ok
+  PASS  rapide.mjs (run 2) — ok
+  PASS  visual.mjs (run 1) —  vues, écart max 
+  PASS  visual.mjs (run 2) —  vues, écart max 
+== [4] Audit JSON-LD / hreflang ==
+  PASS  audit JSON-LD/hreflang — 
+
+== [5] Pages front + santé ==
+  pages front : 200 / 200 /annonces/ 200 /en/annonces/ 200 /ar/annonces/ 200 /contact/ 200 /sitemap.xml 
+  PASS  front 200 ×6
+  health final : ok (core 2.5.0, schéma 2.5.0, orphelins 0, manquants 0, collisions 0)
+  domaines : owner_stats=plugin (lot B5) — plugin 7/8
+
+== [6] REG-2 : p95 sur 100 × GET /listings?locale=fr ==
+  REG-2 : p50 223.1 ms / p95 231.7 ms (100 requêtes ; référence lot B4 : p95 229,0 ms, tolérance ±10 %)
+{"probe":"listings","request_uri":"\/wp-json\/partikulier\/v1\/listings","loaded":{"partikulier_core":true,"estatik":false,"polylang":false,"query_monitor":false},"active_plugins":2}
+
+== [7] Matrice REG-5 (combinaisons B et C) ==
+== Matrice REG-5 lot B5 ==
+  plugin désactivé : 3 plugins actifs restants
+  PASS  B — thème 6.18.6 + plugin absent (chemin autonome 6.17.x, preuve par absence d'audit, cron relié côté thème)
+  plugin réactivé
+  front après réactivation : HTTP 200
+  PASS  C — thème 6.18.5 + plugin 2.5.0 (plugin propriétaire au manifeste, chemin historique du thème sans audit, 0 collision — aucune route déplacée)
+  front état nominal (6.18.6 + 2.5.0) : HTTP 200
+  health nominal : ok (core 2.5.0, owner_stats plugin, collisions 0)
+== Fin matrice REG-5 ==
+
+== [8] Preuve de rollback (aller T0 + 2.4.0, retour nominal) ==
+== Preuve de rollback lot B5 ==
+  PASS  snapshot T1 pris (4293b45c302c…, wal intégré)
+  PASS  health : core 2.4.0, schéma 2.4.0 (état pré-B5) — constaté 2.4.0/2.4.0
+  PASS  domaine owner_stats revenu owner=theme (manifeste 2.4.0)
+  PASS  front 200 en état rollback
+  PASS  les 10 leads du T0 présents en état rollback (constaté 10)
+  PASS  les 2 événements réels du T0 préservés en état rollback (constaté 2)
+  PASS  les 4 favoris réels du T0 préservés en état rollback (constaté 4)
+  PASS  plugin 2.4.0 sans OwnerStatsService → thème 6.18.6 retombe sur son chemin autonome (legacy-theme)
+  PASS  favori enregistré puis retiré en rollback par le chemin du thème (OwnerStatsService absent, aucune ligne d'audit) — constaté : favori-theme-sans-audit+cron-present
+  PASS  état final : core 2.5.0, schéma 2.5.0, owner_stats=plugin — constaté 2.5.0/2.5.0/plugin
+/home/z/my-project/scripts/b5-rollback-preuve.sh: line 126: unexpected EOF while looking for matching `"'
+
+== [8] Preuve de rollback (aller T0 + 2.4.0, retour nominal) ==
+== Preuve de rollback lot B5 ==
+  PASS  snapshot T1 pris (da8c0440b91b…, wal intégré)
+  PASS  health : core 2.4.0, schéma 2.4.0 (état pré-B5) — constaté 2.4.0/2.4.0
+  PASS  domaine owner_stats revenu owner=theme (manifeste 2.4.0)
+  PASS  front 200 en état rollback
+  PASS  les 10 leads du T0 présents en état rollback (constaté 10)
+  PASS  les 2 événements réels du T0 préservés en état rollback (constaté 2)
+  PASS  les 4 favoris réels du T0 préservés en état rollback (constaté 4)
+  PASS  plugin 2.4.0 sans OwnerStatsService → thème 6.18.6 retombe sur son chemin autonome (legacy-theme)
+  PASS  favori enregistré puis retiré en rollback par le chemin du thème (OwnerStatsService absent, aucune ligne d'audit) — constaté : favori-theme-sans-audit+cron-present
+  PASS  état final : core 2.5.0, schéma 2.5.0, owner_stats=plugin — constaté 2.5.0/2.5.0/plugin
+  PASS  état final : 0 fantôme, 0 collision, front 200, 10 leads + 2 événements + 4 favoris intacts (constaté orphelins 0, collisions 0, front 200, leads 10, événements 2, favoris 4)
+== FIN rollback B5 : 11 PASS / 0 FAIL ==
+
+== [9] CI locaux (thème 11/11 + plugin 8/8) ==
+  PASS  CI thème (rejeu local) — 
+  FAIL  CI plugin — 
+═══ BILAN DU REJEU LOCAL (plugin partikulier-core) ═══
+  steps PASS : 7
+
+== FIN RECETTE B5 ==

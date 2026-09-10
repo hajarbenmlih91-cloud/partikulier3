@@ -1,0 +1,78 @@
+{
+    "suite": "i18n-chrome-domain-contract (lot C2)",
+    "started_at": "2026-09-10T20:51:55+00:00",
+    "finished_at": "2026-09-10T20:51:55+00:00",
+    "command": "php partikulier-core/tests/i18n-chrome-domain-contract.php",
+    "commit": "41d6e35a411bae39fa5b9af78f2b18d254162b51",
+    "results": [
+        {
+            "test_id": "C2A-001",
+            "status": "PASS",
+            "detail": "couture thème/plugin : 3 classes Domain/I18n chargées, Partikulier_Localization présente avec la couture + les replis *_local, service unifié complet"
+        },
+        {
+            "test_id": "C2A-002",
+            "status": "PASS",
+            "detail": "dictionnaire chrome : 136 entrées plugin == 136 entrées thème (dormant), 0 divergence — port VERBATIM prouvé"
+        },
+        {
+            "test_id": "C2A-003",
+            "status": "PASS",
+            "detail": "dictionnaire form : 140 entrées plugin == 140 entrées thème (dormant), 0 divergence — port VERBATIM prouvé"
+        },
+        {
+            "test_id": "C2A-004",
+            "status": "PASS",
+            "detail": "triple chemin : 150/150 chaînes du registre identiques (couture == service == repli local)"
+        },
+        {
+            "test_id": "C2A-005",
+            "status": "PASS",
+            "detail": "extinction : filtre gettext thème ABSENT (éteint), filtre gettext service unifié ACTIF — LE mécanisme appartient au plugin"
+        },
+        {
+            "test_id": "C2A-006",
+            "status": "PASS",
+            "detail": "provider : registre fourni au service == public_chrome_strings() du thème (150 entrées — donnée du thème, consommée par le plugin)"
+        },
+        {
+            "test_id": "C2A-007",
+            "status": "PASS",
+            "detail": "priorité .mo canonique : le service et la couture laissent passer la traduction pré-résolue (MO-CANONIQUE)"
+        },
+        {
+            "test_id": "C2A-008",
+            "status": "PASS",
+            "detail": "garde de domaine : 'es' et 'default' passent sans touch (résolution réservée au domaine partikulier)"
+        },
+        {
+            "test_id": "C2A-009",
+            "status": "PASS",
+            "detail": "filtre réel : __('Aide') → 'المساعدة' via le filtre du service unifié (catalogue ar chargé sur le domaine réel, domaine déchargé au préalable) — parité locale et service directe"
+        },
+        {
+            "test_id": "C2A-010",
+            "status": "PASS",
+            "detail": "versions : plugin 2.8.0, thème 6.18.9, schéma 2.6.0 (figé — zéro migration C2), 8/8 domaines, 0 collision"
+        },
+        {
+            "test_id": "C2A-011",
+            "status": "PASS",
+            "detail": "couture statique : shell (garde + extinction + provide_registry + replis *_local) et bootstrap plugin (enregistrement du filtre) vérifiés en source"
+        },
+        {
+            "test_id": "C2A-012",
+            "status": "PASS",
+            "detail": "modules ≤ 300 lignes : 9 fichiers du périmètre C2 conformes (max 290 lignes)"
+        },
+        {
+            "test_id": "C2A-013",
+            "status": "PASS",
+            "detail": "manifeste : 20/20 tables pk_ suivies, 0 côté thème — la couche chrome est une bibliothèque de résolution sans stockage"
+        }
+    ],
+    "status": "PASS",
+    "total": 13,
+    "passed": 13,
+    "failed": 0
+}

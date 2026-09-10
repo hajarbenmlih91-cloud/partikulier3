@@ -1,0 +1,63 @@
+{
+    "at": "2026-09-10T08:31:55+00:00",
+    "lot": "B6",
+    "domaine": "variantes de traduction (registre pk_property_variants — préparation et liaison des variantes localisées)",
+    "tables": {
+        "wp_pk_property_variants": {
+            "exists": true,
+            "count": 0,
+            "ddl": "CREATE TABLE `wp_pk_property_variants` (\n  `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,\n  `source_property_id` INTEGER NOT NULL,\n  `locale` TEXT COLLATE NOCASE NOT NULL,\n  `variant_property_id` INTEGER NOT NULL DEFAULT '0',\n  `original_free_text_locale` TEXT COLLATE NOCASE NOT NULL,\n  `status` TEXT COLLATE NOCASE NOT NULL,\n  `created_at` TEXT COLLATE NOCASE NOT NULL,\n  `updated_at` TEXT COLLATE NOCASE NOT NULL\n) STRICT",
+            "indexes": [
+                {
+                    "name": "wp_pk_property_variants__source_locale",
+                    "sql": "CREATE UNIQUE INDEX `wp_pk_property_variants__source_locale` ON `wp_pk_property_variants` (`source_property_id`, `locale`)"
+                },
+                {
+                    "name": "wp_pk_property_variants__variant_property",
+                    "sql": "CREATE INDEX `wp_pk_property_variants__variant_property` ON `wp_pk_property_variants` (`variant_property_id`)"
+                },
+                {
+                    "name": "wp_pk_property_variants__status_locale",
+                    "sql": "CREATE INDEX `wp_pk_property_variants__status_locale` ON `wp_pk_property_variants` (`status`, `locale`)"
+                }
+            ],
+            "rows": [],
+            "data_fingerprint": ""
+        }
+    },
+    "options": {
+        "pk_localization_db_version": {
+            "option_value": "1.0.0",
+            "autoload": "off"
+        },
+        "pk_localization_public_enabled": {
+            "option_value": "0",
+            "autoload": "off"
+        },
+        "partikulier_core_schema_version": {
+            "option_value": "2.5.0",
+            "autoload": "off"
+        },
+        "partikulier_core_migration_report": {
+            "option_value": {
+                "schema": "2.5.0",
+                "steps": [],
+                "at": "2026-09-09T23:07:07+00:00"
+            },
+            "autoload": "off"
+        }
+    },
+    "meta_free_text_language": 0,
+    "repere_listings": {
+        "published_rows": 30,
+        "orphans": 0
+    },
+    "repere_leads": 10,
+    "repere_events": 2,
+    "repere_saves": 4,
+    "backup": {
+        "file": "/home/z/my-project/download/preuves-lot-B6/T0-sauvegarde-base.sqlite",
+        "sha256": "ae8661f1e0972e27972c322596205ca5747949f95c1f783a4d3758be95eb7678",
+        "bytes": 2899968
+    }
+}

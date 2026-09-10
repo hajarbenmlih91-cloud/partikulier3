@@ -49,7 +49,9 @@ Le script exclut les dépôts Git, caches, secrets, artefacts de test et dossier
 
 ## Qualité et traçabilité
 
-Le lot source a été vérifié par somme SHA-256 avant intégration. Les preuves et contrats de recette historiques sont conservés dans `plugin/partikulier-core/tests/` et `theme/partikulier/tests/`. Les contrôles nécessitant WordPress vivant sont explicitement séparés des contrôles statiques.
+Le lot source a été vérifié par somme SHA-256 avant intégration. Les preuves textuelles de recette B1→B6, les journaux, contrats JSON, rapports et l’audit du monorepo sont regroupés dans [`preuves/`](preuves/), avec le [manifeste de campagne](preuves/MANIFESTE.md). Les preuves historiques restent distinctes des contrats rejouables dans `plugin/partikulier-core/tests/` et `theme/partikulier/tests/`.
+
+La campagne fournie documente **695/695 assertions PASS** sur les lots B1→B6 et **189/189 assertions PASS** sur l’audit du monorepo. Les snapshots SQLite et captures PNG sont publiés séparément dans la [Release `preuves-b1-b6`](https://github.com/hajarbenmlih91-cloud/partikulier3/releases/tag/preuves-b1-b6), conformément à [`preuves/ARTEFACTS-BINAIRES.md`](preuves/ARTEFACTS-BINAIRES.md). Les contrôles nécessitant WordPress vivant sont explicitement séparés des contrôles statiques.
 
 Les versions, les checksums et le détail du périmètre sont documentés dans [`docs/RELEASE.md`](docs/RELEASE.md). Pour l’exploitation, consulter [`docs/INSTALLATION.md`](docs/INSTALLATION.md).
 

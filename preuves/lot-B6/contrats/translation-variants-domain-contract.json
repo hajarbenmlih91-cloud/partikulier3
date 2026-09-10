@@ -1,0 +1,93 @@
+{
+    "suite": "translation-variants-domain-contract (lot B6)",
+    "started_at": "2026-09-10T09:04:20+00:00",
+    "finished_at": "2026-09-10T09:04:20+00:00",
+    "command": "php partikulier-core/tests/translation-variants-domain-contract.php",
+    "commit": "4b6b249c4e08e9475e60cc8a75dcb957b94e5ed8",
+    "results": [
+        {
+            "test_id": "B6A-001",
+            "status": "PASS",
+            "detail": "couture thème/plugin : classes chargées, table unique wp_pk_property_variants, annonces de référence #171 (source) et #174 (variante)"
+        },
+        {
+            "test_id": "B6A-002",
+            "status": "PASS",
+            "detail": "adoption B6 journalisée (domain_adopted B6/translation_variants = 1), table en place, 0 ligne au départ (domaine dormant au T0)"
+        },
+        {
+            "test_id": "B6A-003",
+            "status": "PASS",
+            "detail": "prepare_variant : emplacement conforme (statut prepared, locale en, texte libre fr) + méta _pk_free_text_language + audit variant_prepared"
+        },
+        {
+            "test_id": "B6A-004",
+            "status": "PASS",
+            "detail": "upsert : re-prepare du même couple annonce+locale → même id (7), une seule ligne (clé unique source_locale)"
+        },
+        {
+            "test_id": "B6A-005",
+            "status": "PASS",
+            "detail": "gardes : annonce nulle ou hors type properties → pk_variant_property"
+        },
+        {
+            "test_id": "B6A-006",
+            "status": "PASS",
+            "detail": "gardes : locale non supportée (es) ou langue du texte libre invalide (it) → pk_variant_locale, aucune ligne écrite"
+        },
+        {
+            "test_id": "B6A-007",
+            "status": "PASS",
+            "detail": "link_variant : statut linked, variante #174 attachée, audit variant_linked (1)"
+        },
+        {
+            "test_id": "B6A-008",
+            "status": "PASS",
+            "detail": "gardes de liaison : variante nulle → pk_variant_link, variante hors properties → pk_variant_link_property"
+        },
+        {
+            "test_id": "B6A-009",
+            "status": "PASS",
+            "detail": "locales fr/ar/en : emplacements distincts par clé unique source+locale, count_variants = 3"
+        },
+        {
+            "test_id": "B6A-010",
+            "status": "PASS",
+            "detail": "méta _pk_free_text_language = 'fr' (langue du texte libre, distincte de la locale de variante 'en')"
+        },
+        {
+            "test_id": "B6A-011",
+            "status": "PASS",
+            "detail": "lectures de contrôle : get_variant exact par locale, sanitize refuse les locales non supportées, AUCUNE route REST pour le registre (domaine dormant — passerelle au lot C)"
+        },
+        {
+            "test_id": "B6A-012",
+            "status": "PASS",
+            "detail": "port fidèle : statuts prepared/linked, options pk_localization_*, méta _pk_free_text_language, type properties (noms hérités du thème)"
+        },
+        {
+            "test_id": "B6A-013",
+            "status": "PASS",
+            "detail": "porte publique éteinte : pk_localization_public_enabled = '0' (aucun affichage activé par le lot B6)"
+        },
+        {
+            "test_id": "B6A-014",
+            "status": "PASS",
+            "detail": "couture thème → service plugin : prepare_variant via Partikulier_Localization exécuté par TranslationVariantsService (preuve : audit variant_prepared écrit — le chemin autonome du thème n'écrit jamais ce registre)"
+        },
+        {
+            "test_id": "B6A-015",
+            "status": "PASS",
+            "detail": "health check : translation_variants owner=plugin, 1/1 table, 8/8 domaines plugin (lot B COMPLET), 0 collision"
+        },
+        {
+            "test_id": "B6A-016",
+            "status": "PASS",
+            "detail": "manifeste : 20/20 tables pk_ suivies, 0 restée côté thème, pk_property_variants owner=plugin lot=B6"
+        }
+    ],
+    "status": "PASS",
+    "total": 16,
+    "passed": 16,
+    "failed": 0
+}

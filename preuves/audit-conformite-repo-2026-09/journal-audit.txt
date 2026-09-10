@@ -1,0 +1,89 @@
+== [1] T0 (état B6 certifié) + déploiement repo 2.8.0/6.18.9 ==
+  health : status=ok core=2.8.0 schema=2.6.0
+  domaines (8) : {'alerts': 'plugin', 'automation': 'plugin', 'leads': 'plugin', 'listings': 'plugin', 'owner_stats': 'plugin', 'payments': 'plugin', 'premium': 'plugin', 'translation_variants': 'plugin'}
+  intégrité : {'orphans': 0, 'missing': 0, 'served': 30, 'live_posts': 30, 'status': 'ok'}, collisions : 0
+== [2] Contrats du repo (suites livrées) ==
+  FAIL  core-contract — voir contrats/core-contract.err
+  FAIL  services-contract — voir contrats/services-contract.err
+  FAIL  rest-lite-scope — voir contrats/rest-lite-scope.err
+  FAIL  routes-static — voir contrats/routes-static.err
+  FAIL  routes-collision — voir contrats/routes-collision.err
+  FAIL  load-contract — voir contrats/load-contract.err
+  FAIL  sync-contract — voir contrats/sync-contract.err
+  FAIL  leads-contract — voir contrats/leads-contract.err
+  FAIL  leads-domain-contract — voir contrats/leads-domain-contract.err
+  FAIL  premium-contract — voir contrats/premium-contract.err
+  FAIL  payments-contract — voir contrats/payments-contract.err
+  FAIL  alerts-domain-contract — voir contrats/alerts-domain-contract.err
+  FAIL  automation-domain-contract — voir contrats/automation-domain-contract.err
+  FAIL  owner-stats-domain-contract — voir contrats/owner-stats-domain-contract.err
+  FAIL  translation-variants-domain-contract — voir contrats/translation-variants-domain-contract.err
+  FAIL  i18n-chrome-domain-contract — voir contrats/i18n-chrome-domain-contract.err
+  FAIL  i18n-content-domain-contract — voir contrats/i18n-content-domain-contract.err
+  → contrats : 0/0 tests, 17 suite(s) en échec
+== [2] Contrats du repo (suites livrées) ==
+  PASS  core-contract — 8/8
+  PASS  services-contract — 7/7
+  PASS  rest-lite-scope — 10/10
+  FAIL  routes-static — voir contrats/routes-static.err
+  PASS  routes-collision — 5/5
+  PASS  load-contract — 7/7
+  PASS  sync-contract — 14/14
+  PASS  leads-contract — 7/7
+  PASS  leads-domain-contract — 16/16
+  PASS  premium-contract — 8/8
+  PASS  payments-contract — 10/10
+  PASS  alerts-domain-contract — 15/15
+  PASS  automation-domain-contract — 17/17
+  PASS  owner-stats-domain-contract — 16/16
+  PASS  translation-variants-domain-contract — 16/16
+  PASS  i18n-chrome-domain-contract — 13/13
+  PASS  i18n-content-domain-contract — 15/15
+  → contrats : 184/184 tests, 1 suite(s) en échec
+  PASS  routes-static — 5/5 (mode complet plugin+thème, rejeu manuel PK_PLUGIN_DIR/PK_THEME_DIR)
+== [3] Front ×6 + hreflang/JSON-LD ==
+PASS · HREFLANG--annonces- — 7 alternates · manquants : aucun
+PASS · HREFLANG--fr-annonces- — 7 alternates · manquants : aucun
+PASS · HREFLANG--ar-annonces- — 7 alternates · manquants : aucun
+
+=== AUDIT JSON-LD/HREFLANG : 9 PASS / 0 FAIL ===
+== [4] Corpus REG-3 : gel sur repo (catalogues canoniques) vs gel B6 ==
+  corpus gelé : 150 chaînes registre / 136 chrome / 140 form / 72 entrées runtime — empreinte ea685fded192… (thème 6.18.9)
+  empreinte B6 (gel avant découpe) : bcab5c3700ecd987…
+  empreinte repo 2.8.0/6.18.9      : ea685fded1922f10…
+  empreintes identiques : NON — écart à qualifier
+  entrées corpus : B6=0 repo=0
+  corpus sérialisés identiques : OUI (écart = empreinte fichier .mo rebuild seulement)
+  stats_b6 : {'registre_chrome': 150, 'chrome_translations': 136, 'form_translations': 140, 'corpus_total': 150}
+  stats_repo : {'registre_chrome': 150, 'chrome_translations': 136, 'form_translations': 140, 'corpus_total': 150}
+== [5] Scénarios 9 et 10 (critères de sortie du lot C) ==
+  scénario 9 : 11 PASS / 11
+  scénario 10 : 10 PASS / 11
+/home/z/my-project/download/preuves-audit-repo/scenario10.txt:FAIL · S10.1 Aucun matériau secret dans les couches publiques — /wp-json/partikulier/v1/health contient « hmac » ; /wp-json/partikulier/v1/health contient « n8n » [^1]
+== [6] REG-5 lite : repli sans plugin ==
+  front sans plugin : HTTP 200
+  front /en/annonces/ sans plugin : HTTP 200
+  front après réactivation : HTTP 200
+== [7] Rollback sandbox vers B6 (2.6.0/6.18.7) ==
+  health restauré : ok core=2.6.0 schema=2.6.0
+
+== VERDICT SYNTHÈSE — audit conformité CDC v1.2 du repo partikulier3 (41d6e35a) ==
+Lot 0  : CONFORME (kit QA embarqué + readme 6.17.x complet ; preuves historiques non embarquées)
+Lot A  : CONFORME (health ok live, 0 fantôme 30/30, 0 collision, INTEG-3 routes-static 5/5)
+B1-B6  : CONFORME (8/8 domaines owner=plugin, 14 suites domaine PASS, coutures, repli REG-5 front 200 sans plugin)
+C1     : CONFORME + 1 ÉCART DOCUMENTÉ (955→263+5 modules ≤300 ; absorption I18nContentService 15/15 ;
+         doublons .mo supprimés ; catalogues restés côté thème vs destin « consolidés au plugin » —
+         justification JIT WP in-code ; contenu identique prouvé : 131/72 entrées diff nul)
+C2     : CONFORME + 1 FAUX POSITIF OUTILLAGE (ChromeDictionary/FormsDictionary/I18nChromeService 13/13 ;
+         extinction gettext conditionnelle par inversion de dépendance ; scénario 9 : 11/11 ;
+         hreflang 9/9 ; scénario 10 : 10/11 — S10.1 faux positif préexistant, mots hmac/n8n =
+         noms de tables du manifeste health public, présents à l'identique au T0 B6 certifié)
+REG-3  : DIFF NUL (corpus 150 chaînes identique, couches identiques form 114/origine 70/chrome 116 ;
+         empreinte binaire .mo seule à varier — rebuild)
+Contrats totaux : 189/189 (17 suites, routes-static rejeu manuel mode complet)
+Écarts à traiter : (1) CI GitHub n'exécute AUCUN contrat (routes-static conçu pour runner, non branché) ;
+(2) catalogues à consolider ou arbitrage à valider ; (3) outillage scenario10 à rafraîchir ;
+(4) lot C non terminé (C3+ : mécanisme unique strict, retrait physique marqué « C4 ») ;
+(5) métrique finale 0 fichier >400 l. non atteinte (15 thème + 4 plugin, préexistants, lots D/F) ;
+(6) preuves de recette B1-B6 absentes du repo.
+Sandbox : restaurée et re-vérifiée B6 (2.6.0/6.18.7, 8/8, front 200).

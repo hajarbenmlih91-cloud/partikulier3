@@ -1,0 +1,42 @@
+== [1] Vérifications de cohérence de version ==
+OK  thème/style.css (Version: 6.18.4)
+OK  thème/functions.php (PARTIKULIER_VERSION', '6.18.4)
+OK  thème/package.json ("version": "6.18.4)
+OK  thème/readme.txt (Stable tag: 6.18.4)
+OK  thème/DOC.md (Version 6.18.4)
+OK  plugin en-tête (Version: 2.3.0)
+OK  plugin constante (2.3.0)
+OK  Schema::VERSION = 2.3.0 (montée délibérée du lot B3)
+OK  workflow ci.yml aligné sur 2.3.0 (correctif de l'écart B2)
+
+== [2] Syntaxe PHP ==
+OK  tous les fichiers PHP (plugin + thème + kit QA)
+OK  ci.yml YAML valide
+
+== [3] Contenu B3 embarqué ==
+OK  plugin/src/Domain/Alerts/AlertService.php
+OK  plugin/tests/alerts-domain-contract.php
+OK  Migrator (étape adopt_alerts_tables)
+OK  bootstrap plugin (chargement AlertService)
+OK  thème/inc/class-saved-alerts.php (couture AlertService)
+
+== [4] Zip plugin Core 2.3.0 (sans .github) ==
+682a329a20c2089b1205b7bffb5c9dee1028cd30df5be106942b4559257701ae  /home/z/my-project/download/B-INSTALLER-PLUGIN-partikulier-core-2.3.0.zip
+taille : 110412 octets
+
+== [5] Zip thème 6.18.4 ==
+024de07297f14a336dbe14e44f4037263ea0a9a977fac2b71a74dc8201230daa  /home/z/my-project/download/partikulier-theme-6.18.4.zip
+taille : 927216 octets
+
+== [6] Intégrité zip ↔ source ==
+DIFF VIDE : zip plugin == source (hors .git/.github)
+OK  0 entrée .github dans le zip plugin
+DIFF VIDE : zip thème == source (hors exclusions de build)
+
+== [7] Contenu des zips (points clés) ==
+     9991  2026-09-09 21:44   partikulier-core/src/Domain/Alerts/AlertService.php
+    19998  2026-09-09 20:35   partikulier-core/tests/leads-domain-contract.php
+    17880  2026-09-09 22:03   partikulier-core/tests/alerts-domain-contract.php
+    10892  2026-09-09 21:48   partikulier/inc/class-saved-alerts.php
+
+TERMINÉ — livrables : B-INSTALLER-PLUGIN-partikulier-core-2.3.0.zip + partikulier-theme-6.18.4.zip

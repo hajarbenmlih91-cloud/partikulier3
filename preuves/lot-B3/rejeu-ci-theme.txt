@@ -1,0 +1,27 @@
+═══ Préparation : checkout simulé (copie propre, sans artefacts) ═══
+  checkout : 123 fichiers
+
+═══ Job 1 : lint PHP (matrice simulée sur le binaire local 8.3) ═══
+  PASS  [lint-php] php -l sur tous les fichiers
+
+═══ Job 2 : lint JS / SH / JSON ═══
+  PASS  [lint-assets] node --check sur tous les fichiers
+  PASS  [lint-assets] bash -n scripts shell
+  PASS  [lint-assets] JSON valide
+
+═══ Job 3 : cohérence & structure ═══
+  PASS  [coherence] en-tête style.css complet
+  PASS  [coherence] version unique sur 4 fichiers
+  PASS  [coherence] fichiers obligatoires présents
+  PASS  [coherence] aucun artefact de travail
+
+═══ Job 4 : zip reproductible ═══
+  PASS  [package] construction du zip + sha256
+  PASS  [package] zip : racine partikulier/, 0 entrée interdite
+
+═══ Validation YAML des workflows ═══
+  PASS  [workflows] ci.yml + qa-live.yml parsables
+
+════════════════ BILAN DU RUN SIMULÉ ════════════════
+  steps PASS : 11    steps ÉCHEC : 0
+  VERDICT CI : ✅ VERT — le workflow ci.yml passerait sur GitHub Actions

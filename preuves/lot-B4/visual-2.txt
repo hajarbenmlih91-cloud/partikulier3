@@ -1,0 +1,14 @@
+  ok    accueil-desktop  0.00%
+  ok    annonces-desktop  0.00%
+  ok    annonces-filtre-desktop  0.00%
+  ok    deposer-desktop  0.00%
+  ok    mes-annonces-desktop  0.00%
+  ok    404-desktop  0.00%
+  ok    accueil-mobile  0.00%
+  ok    annonces-mobile  0.00%
+  ok    annonces-filtre-mobile  0.00%
+  ok    deposer-mobile  0.00%
+  ok    mes-annonces-mobile  0.00%
+  ok    404-mobile  0.00%
+
+OK — 12 vues conformes.

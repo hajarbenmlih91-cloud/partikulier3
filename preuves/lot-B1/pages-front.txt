@@ -1,0 +1,6 @@
+200 /
+200 /annonces/
+200 /en/annonces/
+200 /ar/annonces/
+200 /contact/
+200 /sitemap.xml

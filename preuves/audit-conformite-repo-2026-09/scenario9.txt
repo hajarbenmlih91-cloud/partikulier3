@@ -1,0 +1,18 @@
+PASS · S9.1 /ar/ lang + dir — lang="ar" dir="rtl" · <title> Partikulier Sandbox
+PASS · S9.2 /ar/annonces/ RTL + 10 cartes — lang="ar" dir="rtl" · 10 cartes
+PASS · S9.3 Titres de cartes sans caractères latins — 12 titres échantillonnés, 0 mot latin
+PASS · S9.4 Libellés screen-reader des cartes traduits en AR — libellés: المساحة | النوع | التكوين | حمامات | شرفة
+PASS · S9.5 Placeholders traduits en AR — placeholders: المدينة، الرمز البريدي، الحي… | كل المدن | كل المدن
+PASS · S9.6 JSON-LD archive AR sans résidu français — ItemList.name = "إعلانات عقارية مجانية" · anciens FAIL mots-clés: aucun
+PASS · S9.7 Alternates hreflang complets — en→http://127.0.0.1:8091/annonces/ · fr→http://127.0.0.1:8091/fr/annonces/ · ar→http://127.0.0.1:8091/ar/annonces/ · fr-FR→http://127.0.0.1:8091/fr/annonces/ · ar-MA→http://127.0.0.1:8091/ar/annonces/ · en-US→http://127.0.0.1:8091/annonces/ · x-default→http://127.0.0.1:8091/fr/annonces/
+
+Fiches AR testées : http://127.0.0.1:8091/ar/annonce/marrakech/%d8%a3%d8%b1%d8%b6-%d8%a8%d9%85%d8%b3%d8%a7%d8%ad%d8%a9-500-%d9%85%c2%b2-%d9%84%d9%84%d8%a8%d9%8a%d8%b9-%d9%81%d9%8a-%d8%aa%d8%a7%d8%b1%d8%ba%d8%a9%d8%8c-%d9%85%d8%b1%d8%a7%d9%83%d8%b4/
+  http://127.0.0.1:8091/ar/annonce/marrakech/%d8%b4%d9%82%d8%a9-%d8%a8%d9%85%d8%b3%d8%a7%d8%ad%d8%a9-105-%d9%85%c2%b2-%d9%85%d8%b9-%d8%aa%d8%b1%d8%a7%d8%b3-%d8%a8%d9%85%d8%b3%d8%a7%d8%ad%d8%a9-10-%d9%85%c2%b2-%d9%84%d9%84%d9%83%d8%b1%d8%a7%d8%a1/
+  http://127.0.0.1:8091/ar/annonce/marrakech/%d8%b1%d9%8a%d8%a7%d8%b6-%d8%a8%d9%85%d8%b3%d8%a7%d8%ad%d8%a9-180-%d9%85%c2%b2-%d9%85%d8%b9-%d8%aa%d8%b1%d8%a7%d8%b3-%d8%a8%d9%85%d8%b3%d8%a7%d8%ad%d8%a9-30-%d9%85%c2%b2-%d9%84%d9%84%d8%a8%d9%8a%d8%b9/
+PASS · S9.8 Fiches AR : RTL + JSON-LD sans résidu latin ni entité — fiche 1: lang=ar, dir=rtl, résidus-mots-clés=0, valeurs-latines=0, entité-&hellip;=absente ; fiche 2: lang=ar, dir=rtl, résidus-mots-clés=0, valeurs-latines=0, entité-&hellip;=absente ; fiche 3: lang=ar, dir=rtl, résidus-mots-clés=0, valeurs-latines=0, entité-&hellip;=absente
+PASS · S9.10 <title> des fiches AR sans variation SEO française — أرض بمساحة 500 م² للبيع في تارغة، مراكش &#8211; للبيع أرض في مراكش | P ; شقة بمساحة 105 م² مع تراس بمساحة 10 م² للكراء في هيفيرناژ، مراكش &#821 ; رياض بمساحة 180 م² مع تراس بمساحة 30 م² للبيع في المدينة القديمة، مراك
+PASS · S9.11 Options des selects du hero traduites en AR — action: الكل/بيع/كراء · type: الكل/شقة/دوبلكس/منزل
+PASS · S9.9 Mobile AR : une carte par rangée — 10 cartes · une par rangée: true
+
+=== SCÉNARIO 9 : 11/11 PASS ===
+Rapport : /home/z/my-project/download/preuves-audit-repo/scenario9/rapport-scenario9.md

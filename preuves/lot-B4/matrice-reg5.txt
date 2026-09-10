@@ -1,0 +1,10 @@
+== [7] Matrice REG-5 (combinaisons B et C) ==
+== Matrice REG-5 lot B4 ==
+  plugin désactivé : 3 plugins actifs restants
+  PASS  B — thème 6.18.5 + plugin absent (chemin autonome 6.17.x, preuve par absence d'audit)
+  plugin réactivé
+  front après réactivation : HTTP 200
+  PASS  C — thème 6.18.4 + plugin 2.4.0 (plugin propriétaire, collision transitional /automation-event = détection conçue INTEG-3)
+  front état nominal (6.18.5 + 2.4.0) : HTTP 200
+  health nominal : ok (core 2.4.0, automation plugin, collisions 1)
+== Fin matrice REG-5 ==

@@ -1,0 +1,93 @@
+{
+    "suite": "leads-domain-contract (lot B2)",
+    "started_at": "2026-09-09T21:07:41+00:00",
+    "finished_at": "2026-09-09T21:07:41+00:00",
+    "command": "php partikulier-core/tests/leads-domain-contract.php",
+    "commit": "95637746a3f4021883277da24d18d2ce55c8e6a8",
+    "results": [
+        {
+            "test_id": "B2L-001",
+            "status": "PASS",
+            "detail": "couture thème/plugin : classes chargées, table unique wp_pk_buyer_leads"
+        },
+        {
+            "test_id": "B2L-002",
+            "status": "PASS",
+            "detail": "adoption B2 journalisée (domain_adopted B2/leads = 1), leads du T0 intacts (10 ≥ 10)"
+        },
+        {
+            "test_id": "B2L-003",
+            "status": "PASS",
+            "detail": "authorize_contact : lead + message + intérêt + divulgation + audit lead_authorized ; numéro haché/chiffré, jamais en clair"
+        },
+        {
+            "test_id": "B2L-004",
+            "status": "PASS",
+            "detail": "message provider rejoué → duplicate_message, aucune seconde écriture"
+        },
+        {
+            "test_id": "B2L-005",
+            "status": "PASS",
+            "detail": "plafonnement quotidien porté sur les propriétaires distincts : 2/2 puis daily_limit"
+        },
+        {
+            "test_id": "B2L-006",
+            "status": "PASS",
+            "detail": "LeadBridge → LeadService::register_api_lead : dispositif complet + suivi contextuel du canal REST"
+        },
+        {
+            "test_id": "B2L-007",
+            "status": "PASS",
+            "detail": "gardes : téléphone invalide 422, annonce inconnue 404, rattachement obligatoire 422"
+        },
+        {
+            "test_id": "B2L-008",
+            "status": "PASS",
+            "detail": "consentement accordé (voie REST du service) + lecture croisée has_active_consent (domaine alertes)"
+        },
+        {
+            "test_id": "B2L-009",
+            "status": "PASS",
+            "detail": "STOP : opt_out_at posé + consentement révoqué ; message rejoué → replayed, idempotent"
+        },
+        {
+            "test_id": "B2L-010",
+            "status": "PASS",
+            "detail": "préférences : replace idempotent, trois zones conservées au maximum"
+        },
+        {
+            "test_id": "B2L-011",
+            "status": "PASS",
+            "detail": "écran admin : KPI total 12 = comptage SQL direct ; filtre opted_out rend le lead"
+        },
+        {
+            "test_id": "B2L-012",
+            "status": "PASS",
+            "detail": "suivi admin : replace statut+note+acteur, audit lead_followup_updated"
+        },
+        {
+            "test_id": "B2L-013",
+            "status": "PASS",
+            "detail": "déchiffrement admin : round-trip AES-256-CBC exact (réservé manage_options)"
+        },
+        {
+            "test_id": "B2L-014",
+            "status": "PASS",
+            "detail": "erase_lead : huit tables purgées en transaction, audit lead_erased"
+        },
+        {
+            "test_id": "B2L-015",
+            "status": "PASS",
+            "detail": "REG-4 : zéro commentaire partikulier_lead créé par les chemins B2 (0 = baseline 0)"
+        },
+        {
+            "test_id": "B2L-016",
+            "status": "PASS",
+            "detail": "health check : domaine leads owner=plugin, 8/8 tables suivies, 0 collision de routes"
+        }
+    ],
+    "status": "PASS",
+    "total": 16,
+    "passed": 16,
+    "failed": 0
+}

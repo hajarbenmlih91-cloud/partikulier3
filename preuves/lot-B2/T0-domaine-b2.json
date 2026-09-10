@@ -1,0 +1,135 @@
+{
+    "at": "2026-09-09T19:53:28+00:00",
+    "lot": "B2",
+    "domaine": "leads/qualification/WhatsApp",
+    "tables": {
+        "wp_pk_buyer_leads": {
+            "exists": true,
+            "count": 10,
+            "ddl": "CREATE TABLE `wp_pk_buyer_leads` (\n  `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,\n  `phone_hash` TEXT COLLATE NOCASE NOT NULL,\n  `phone_encrypted` TEXT COLLATE NOCASE NOT NULL,\n  `first_seen_at` TEXT COLLATE NOCASE NOT NULL,\n  `last_seen_at` TEXT COLLATE NOCASE NOT NULL,\n  `opt_out_at` TEXT COLLATE NOCASE\n) STRICT",
+            "indexes": [
+                {
+                    "name": "wp_pk_buyer_leads__phone_hash",
+                    "sql": "CREATE UNIQUE INDEX `wp_pk_buyer_leads__phone_hash` ON `wp_pk_buyer_leads` (`phone_hash`)"
+                }
+            ]
+        },
+        "wp_pk_interest_events": {
+            "exists": true,
+            "count": 0,
+            "ddl": "CREATE TABLE `wp_pk_interest_events` (\n  `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,\n  `lead_id` INTEGER NOT NULL,\n  `property_id` INTEGER NOT NULL,\n  `reference_code` TEXT COLLATE NOCASE NOT NULL,\n  `property_snapshot` TEXT COLLATE NOCASE NOT NULL,\n  `provider_message_id` TEXT COLLATE NOCASE NOT NULL,\n  `created_at` TEXT COLLATE NOCASE NOT NULL\n) STRICT",
+            "indexes": [
+                {
+                    "name": "wp_pk_interest_events__provider_message_id",
+                    "sql": "CREATE UNIQUE INDEX `wp_pk_interest_events__provider_message_id` ON `wp_pk_interest_events` (`provider_message_id`)"
+                },
+                {
+                    "name": "wp_pk_interest_events__lead_property",
+                    "sql": "CREATE INDEX `wp_pk_interest_events__lead_property` ON `wp_pk_interest_events` (`lead_id`, `property_id`)"
+                }
+            ]
+        },
+        "wp_pk_contact_limits": {
+            "exists": true,
+            "count": 0,
+            "ddl": "CREATE TABLE `wp_pk_contact_limits` (\n  `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,\n  `lead_id` INTEGER NOT NULL,\n  `day_key` TEXT COLLATE NOCASE NOT NULL,\n  `contacts_count` INTEGER NOT NULL DEFAULT '0'\n) STRICT",
+            "indexes": [
+                {
+                    "name": "wp_pk_contact_limits__lead_day",
+                    "sql": "CREATE UNIQUE INDEX `wp_pk_contact_limits__lead_day` ON `wp_pk_contact_limits` (`lead_id`, `day_key`)"
+                }
+            ]
+        },
+        "wp_pk_contact_disclosures": {
+            "exists": true,
+            "count": 0,
+            "ddl": "CREATE TABLE `wp_pk_contact_disclosures` (\n  `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,\n  `lead_id` INTEGER NOT NULL,\n  `property_id` INTEGER NOT NULL,\n  `owner_id` INTEGER NOT NULL,\n  `day_key` TEXT COLLATE NOCASE NOT NULL,\n  `sent_at` TEXT COLLATE NOCASE NOT NULL\n) STRICT",
+            "indexes": [
+                {
+                    "name": "wp_pk_contact_disclosures__lead_property",
+                    "sql": "CREATE UNIQUE INDEX `wp_pk_contact_disclosures__lead_property` ON `wp_pk_contact_disclosures` (`lead_id`, `property_id`)"
+                },
+                {
+                    "name": "wp_pk_contact_disclosures__lead_day",
+                    "sql": "CREATE INDEX `wp_pk_contact_disclosures__lead_day` ON `wp_pk_contact_disclosures` (`lead_id`, `day_key`)"
+                },
+                {
+                    "name": "wp_pk_contact_disclosures__lead_owner_day",
+                    "sql": "CREATE INDEX `wp_pk_contact_disclosures__lead_owner_day` ON `wp_pk_contact_disclosures` (`lead_id`, `owner_id`, `day_key`)"
+                }
+            ]
+        },
+        "wp_pk_whatsapp_consents": {
+            "exists": true,
+            "count": 0,
+            "ddl": "CREATE TABLE `wp_pk_whatsapp_consents` (\n  `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,\n  `lead_id` INTEGER NOT NULL,\n  `scope` TEXT COLLATE NOCASE NOT NULL,\n  `granted_at` TEXT COLLATE NOCASE,\n  `revoked_at` TEXT COLLATE NOCASE,\n  `policy_version` TEXT COLLATE NOCASE NOT NULL,\n  `proof_message_id` TEXT COLLATE NOCASE NOT NULL\n) STRICT",
+            "indexes": [
+                {
+                    "name": "wp_pk_whatsapp_consents__lead_scope",
+                    "sql": "CREATE UNIQUE INDEX `wp_pk_whatsapp_consents__lead_scope` ON `wp_pk_whatsapp_consents` (`lead_id`, `scope`)"
+                }
+            ]
+        },
+        "wp_pk_whatsapp_messages": {
+            "exists": true,
+            "count": 0,
+            "ddl": "CREATE TABLE `wp_pk_whatsapp_messages` (\n  `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,\n  `provider_message_id` TEXT COLLATE NOCASE NOT NULL,\n  `lead_id` INTEGER NOT NULL,\n  `direction` TEXT COLLATE NOCASE NOT NULL,\n  `message_type` TEXT COLLATE NOCASE NOT NULL,\n  `created_at` TEXT COLLATE NOCASE NOT NULL\n) STRICT",
+            "indexes": [
+                {
+                    "name": "wp_pk_whatsapp_messages__provider_message_id",
+                    "sql": "CREATE UNIQUE INDEX `wp_pk_whatsapp_messages__provider_message_id` ON `wp_pk_whatsapp_messages` (`provider_message_id`)"
+                }
+            ]
+        },
+        "wp_pk_buyer_preferences": {
+            "exists": true,
+            "count": 0,
+            "ddl": "CREATE TABLE `wp_pk_buyer_preferences` (\n  `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,\n  `lead_id` INTEGER NOT NULL,\n  `budget_max` INTEGER,\n  `areas` TEXT COLLATE NOCASE NOT NULL,\n  `layout_value` TEXT COLLATE NOCASE NOT NULL,\n  `transaction_value` TEXT COLLATE NOCASE NOT NULL,\n  `source` TEXT COLLATE NOCASE NOT NULL,\n  `updated_at` TEXT COLLATE NOCASE NOT NULL\n) STRICT",
+            "indexes": [
+                {
+                    "name": "wp_pk_buyer_preferences__lead_id",
+                    "sql": "CREATE UNIQUE INDEX `wp_pk_buyer_preferences__lead_id` ON `wp_pk_buyer_preferences` (`lead_id`)"
+                }
+            ]
+        },
+        "wp_pk_lead_followups": {
+            "exists": true,
+            "count": 0,
+            "ddl": "CREATE TABLE `wp_pk_lead_followups` (\n  `lead_id` INT NOT NULL,\n  `status` TEXT COLLATE NOCASE NOT NULL DEFAULT 'new',\n  `note` TEXT COLLATE NOCASE,\n  `updated_by` INTEGER NOT NULL DEFAULT '0',\n  `updated_at` TEXT COLLATE NOCASE NOT NULL,\n  PRIMARY KEY (`lead_id`)\n) STRICT",
+            "indexes": [
+                {
+                    "name": "sqlite_autoindex_wp_pk_lead_followups_1",
+                    "sql": null
+                },
+                {
+                    "name": "wp_pk_lead_followups__status_updated",
+                    "sql": "CREATE INDEX `wp_pk_lead_followups__status_updated` ON `wp_pk_lead_followups` (`status`, `updated_at`)"
+                }
+            ]
+        }
+    },
+    "options": {
+        "pk_buyer_qualification_db_version": {
+            "option_value": "1.1.0",
+            "autoload": "off"
+        },
+        "partikulier_core_schema_version": {
+            "option_value": "2.1.0",
+            "autoload": "off"
+        },
+        "partikulier_core_migration_report": {
+            "option_value": "a:3:{s:6:\"schema\";s:5:\"2.1.0\";s:5:\"steps\";a:0:{}s:2:\"at\";s:25:\"2026-09-09T01:29:01+00:00\";}",
+            "autoload": "off"
+        }
+    },
+    "usermeta_domaine": 0,
+    "repere_listings": {
+        "published_rows": 30,
+        "orphans": 0
+    },
+    "backup": {
+        "file": "/home/z/my-project/download/preuves-lot-B2/T0-sauvegarde-base.sqlite",
+        "sha256": "41d556226ee0cf2787feafb16d9912d8e6450d6e643612d6711dcbbbcff67b89",
+        "bytes": 2899968
+    }
+}

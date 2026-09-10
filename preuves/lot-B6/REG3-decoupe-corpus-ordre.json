@@ -1,0 +1,97 @@
+{
+    "test_id": "LOT-B6-REG3-DECOUPE-CORPUS-ORDRE",
+    "at": "2026-09-10T08:59:17+00:00",
+    "theme": "6.18.7",
+    "monolithe_avant": {
+        "fichier": "inc/class-localization.php",
+        "lignes": 990
+    },
+    "modules_apres": {
+        "inc/class-localization.php": 280,
+        "inc/class-localization-runtime.php": 195,
+        "inc/class-localization-strings.php": 275,
+        "inc/class-localization-chrome.php": 186,
+        "inc/class-localization-forms.php": 210
+    },
+    "empreinte_avant": "bcab5c3700ecd98730a9a91db0ecb9dc993b62f6ce508983ac2b671f51f4ec3d",
+    "empreinte_apres": "bcab5c3700ecd98730a9a91db0ecb9dc993b62f6ce508983ac2b671f51f4ec3d",
+    "diff_corpus": "nul",
+    "sites_historiques": {
+        "popup_authentification": "QA visual.mjs 12 vues ×2 + rejeu HTTP (correctif 6.17.31 — rechargement du domaine « es » sondé par les hooks gelés REG3-11)",
+        "etat_vide": "QA visual.mjs (vues annonces/404 — libellé d'état vide) ×2",
+        "pied_de_page": "QA visual.mjs 12 vues ×2 (chrome commun — catalogue gelé REG3-01)",
+        "quartiers": "QA front ×6 + audit JSON-LD/hreflang 9/9 (libellés de lieux — translate_taxonomy_label)",
+        "hero": "QA visual.mjs (accueil desktop/mobile) ×2 + rapide.mjs ×2"
+    },
+    "results": [
+        {
+            "test_id": "REG3-01",
+            "status": "PASS",
+            "detail": "empreinte du corpus identique avant (thème 6.18.6) / après (thème 6.18.7) découpe : bcab5c3700ec… — diff nul"
+        },
+        {
+            "test_id": "REG3-02",
+            "status": "PASS",
+            "detail": "décompte de chaînes non résolues identique avant/après : 35 (même ensemble — dépend de la saisie Polylang, complétude au lot C)"
+        },
+        {
+            "test_id": "REG3-03",
+            "status": "PASS",
+            "detail": "catalogue .mo intact : 72 entrées servies en runtime (get_translations_for_domain), empreintes des fichiers en/ar inchangées — observation lot B6 : en-tête hash_addr=0 des .mo compilés (compile-mo.py) rejeté par pomo mais accepté par WP_Translation_File 6.5+, consolidation au lot C"
+        },
+        {
+            "test_id": "REG3-04",
+            "status": "PASS",
+            "detail": "ordre 1 : une traduction gettext .mo est canonique — le dictionnaire interne ne la remplace jamais"
+        },
+        {
+            "test_id": "REG3-05",
+            "status": "PASS",
+            "detail": "ordre 2 : garde de domaine — seul le domaine « partikulier » traverse le filtre"
+        },
+        {
+            "test_id": "REG3-06",
+            "status": "PASS",
+            "detail": "ordre 3 : « Questions fréquentes » (langue en) résout par form_translations (« FAQ ») et non chrome_translations (« Frequently asked questions ») — précédence figée"
+        },
+        {
+            "test_id": "REG3-07",
+            "status": "PASS",
+            "detail": "ordre 4 : « Aller au contenu » (absent de form) résout par chrome_translations (« Skip to content »)"
+        },
+        {
+            "test_id": "REG3-08",
+            "status": "PASS",
+            "detail": "ordre 5 : chaîne non préparée et non traduite conservée à l'identique (textes libres et réglages personnalisés protégés)"
+        },
+        {
+            "test_id": "REG3-09",
+            "status": "PASS",
+            "detail": "API publique gelée : 24/24 méthodes du monolithe présentes sur la classe composée"
+        },
+        {
+            "test_id": "REG3-10",
+            "status": "PASS",
+            "detail": "composition : shell + 4 traits (Runtime, Strings, Chrome, Forms) — même classe, mêmes méthodes, mécanisme actif inchangé"
+        },
+        {
+            "test_id": "REG3-11",
+            "status": "PASS",
+            "detail": "hooks gelés : les 10 liaisons d'init() présentes (init 5/6, wp 1/2, template_redirect 1, gettext 10, pll_* 10, pre_get_posts 20, es_settings 999)"
+        },
+        {
+            "test_id": "REG3-12",
+            "status": "PASS",
+            "detail": "modules ≤300 lignes (CA-4 / annexe C tableau 11) : class-localization.php 280, class-localization-runtime.php 195, class-localization-strings.php 275, class-localization-chrome.php 186, class-localization-forms.php 210"
+        },
+        {
+            "test_id": "REG3-13",
+            "status": "PASS",
+            "detail": "constantes gelées : DB_VERSION 1.0.0, options pk_localization_*, statut prepared, méta _pk_free_text_language"
+        }
+    ],
+    "total": 13,
+    "passed": 13,
+    "failed": 0,
+    "status": "PASS"
+}

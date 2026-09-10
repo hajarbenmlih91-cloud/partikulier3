@@ -1,0 +1,79 @@
+{
+    "at": "2026-09-09T22:18:11+00:00",
+    "lot": "B4",
+    "domaine": "automatisation n8n (pont entrant + sécurité HMAC)",
+    "tables": {
+        "wp_pk_automation_events": {
+            "exists": true,
+            "count": 2,
+            "ddl": "CREATE TABLE `wp_pk_automation_events` (\n  `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,\n  `event_id` TEXT COLLATE NOCASE NOT NULL,\n  `event_type` TEXT COLLATE NOCASE NOT NULL,\n  `source` TEXT COLLATE NOCASE NOT NULL,\n  `payload_hash` TEXT COLLATE NOCASE NOT NULL,\n  `status` TEXT COLLATE NOCASE NOT NULL DEFAULT 'received',\n  `received_at` TEXT COLLATE NOCASE NOT NULL\n) STRICT",
+            "indexes": [
+                {
+                    "name": "wp_pk_automation_events__event_id",
+                    "sql": "CREATE UNIQUE INDEX `wp_pk_automation_events__event_id` ON `wp_pk_automation_events` (`event_id`)"
+                },
+                {
+                    "name": "wp_pk_automation_events__type_received",
+                    "sql": "CREATE INDEX `wp_pk_automation_events__type_received` ON `wp_pk_automation_events` (`event_type`, `received_at`)"
+                }
+            ]
+        },
+        "wp_pk_n8n_hmac_audit": {
+            "exists": true,
+            "count": 0,
+            "ddl": "CREATE TABLE `wp_pk_n8n_hmac_audit` (\n  `id` INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,\n  `key_id` TEXT COLLATE NOCASE NOT NULL,\n  `hour_key` TEXT COLLATE NOCASE NOT NULL,\n  `failure_count` INTEGER NOT NULL DEFAULT '0',\n  `last_reason` TEXT COLLATE NOCASE NOT NULL\n) STRICT",
+            "indexes": [
+                {
+                    "name": "wp_pk_n8n_hmac_audit__key_hour",
+                    "sql": "CREATE UNIQUE INDEX `wp_pk_n8n_hmac_audit__key_hour` ON `wp_pk_n8n_hmac_audit` (`key_id`, `hour_key`)"
+                }
+            ]
+        }
+    },
+    "options": {
+        "pk_automation_bridge_db_version": {
+            "option_value": "1.0.0",
+            "autoload": "off"
+        },
+        "pk_n8n_hmac_audit_db_version": {
+            "option_value": "1.0.0",
+            "autoload": "off"
+        },
+        "pk_n8n_settings": {
+            "option_value": "a:3:{s:9:\"hmac_mode\";s:3:\"off\";s:13:\"quota_per_day\";i:2;s:21:\"automation_api_secret\";s:22:\"MASQUE(44 caractères)\";}",
+            "autoload": "off"
+        },
+        "_pk_n8n_settings_migration_state": {
+            "option_value": "completed",
+            "autoload": "off"
+        },
+        "_pk_n8n_settings_migrated_at": {
+            "option_value": "2026-09-03T11:27:06+00:00",
+            "autoload": "off"
+        },
+        "partikulier_core_schema_version": {
+            "option_value": "2.3.0",
+            "autoload": "off"
+        },
+        "partikulier_core_migration_report": {
+            "option_value": "a:3:{s:6:\"schema\";s:5:\"2.3.0\";s:5:\"steps\";a:0:{}s:2:\"at\";s:25:\"2026-09-09T22:04:45+00:00\";}",
+            "autoload": "off"
+        }
+    },
+    "repere_listings": {
+        "published_rows": 30,
+        "orphans": 0
+    },
+    "repere_leads": 10,
+    "repere_events_par_statut": [
+        {
+            "status": "received",
+            "n": 2
+        }
+    ],
+    "backup": {
+        "file": "/home/z/my-project/download/preuves-lot-B4/T0-sauvegarde-base.sqlite",
+        "sha256": "6b8184ae6a428dba3832036178f52b2a0565cde654ace9fe661ca5f0d4bf4423",
+        "bytes": 2899968
+    }
+}
