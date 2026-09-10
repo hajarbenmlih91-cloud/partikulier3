@@ -1,0 +1,16 @@
+.DS_Store
+*.swp
+*.log
+.env
+.env.*
+!.env.example
+node_modules/
+coverage/
+dist/
+playwright-report/
+test-results/
+.phpunit.result.cache
+vendor/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal

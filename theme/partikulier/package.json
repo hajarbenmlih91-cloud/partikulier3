@@ -1,0 +1,16 @@
+{
+  "name": "partikulier-theme-tests",
+  "private": true,
+  "version": "6.18.9",
+  "description": "Harnais de non-regression visuelle du theme Partikulier.",
+  "type": "module",
+  "scripts": {
+    "test": "node tests/visual.mjs check",
+    "test:baseline": "node tests/visual.mjs baseline",
+    "setup": "npm install && npx playwright install --with-deps chromium"
+  },
+  "devDependencies": {
+    "playwright": "^1.50.0",
+    "pngjs": "^7.0.0"
+  }
+}

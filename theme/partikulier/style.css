@@ -1,0 +1,130 @@
+/*
+Theme Name: Partikulier CDC v1.8 — final30
+Theme URI: https://partikulier.com/
+Author: Partikulier Team
+Author URI: https://partikulier.com/
+Description: Theme de portail immobilier pour Partikulier.com. Annonces de biens immobiliers gratuites deposees par les particuliers. Zero jQuery, cache de page integre, conversion AVIF automatique des images, schema.org JSON-LD complet (RealEstateListing, Place, Offer, GeoCoordinates), sitemap XML virtuel, permaliens geographiques (ville, quartier, region, departement) et optimisation PageSpeed cible 100/100. Concu pour ESTATIK, avec compatibilite optionnelle Polylang gratuit pour les variantes SEO FR/AR/EN. Formulaire structure avec chambres, salons, salles de bains, terrasse, vue et ensoleillement, metadonnees Estatik compatibles et design bronze cognac inspire de Royal Elementor Kit.
+Version: 6.18.9
+Requires at least: 6.2
+Requires PHP: 8.0
+Tested up to: 7.1
+License: GNU General Public License v3 or later
+License URI: https://www.gnu.org/licenses/gpl-3.0.html
+Text Domain: partikulier
+Tags: real-estate, one-column, custom-logo, custom-menu, featured-images, translation-ready, block-editor-styles
+*/
+
+
+/* Lot 1 i18n — police arabe locale, chargée uniquement pour les documents RTL. */
+@font-face {
+        font-family: 'Noto Sans Arabic';
+        src: url('./assets/fonts/NotoSansArabic-Regular.woff2') format('woff2');
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+}
+
+@font-face {
+        font-family: 'Noto Sans Arabic';
+        src: url('./assets/fonts/NotoSansArabic-SemiBold.woff2') format('woff2');
+        font-style: normal;
+        font-weight: 600 800;
+        font-display: swap;
+}
+
+html[dir='rtl'] body,
+html[dir='rtl'] [lang='ar'] {
+        font-family: 'Noto Sans Arabic', system-ui, sans-serif;
+        text-align: right;
+}
+
+html[dir='rtl'] input,
+html[dir='rtl'] textarea,
+html[dir='rtl'] select,
+html[dir='rtl'] button {
+        font-family: inherit;
+}
+
+html[dir='rtl'] .site-header,
+html[dir='rtl'] .site-header .header-inner {
+        direction: rtl;
+}
+
+html[dir='rtl'] .site-header .custom-logo-link {
+        order: 0;
+}
+
+html[dir='rtl'] .site-header .language-switcher,
+html[dir='rtl'] .site-header .site-navigation {
+        direction: rtl;
+}
+
+/* Les champs libres conservent la langue saisie par l’utilisateur. */
+[data-pk-free-text][lang='fr'],
+[data-pk-free-text][lang='en'] {
+        font-family: system-ui, sans-serif;
+        direction: ltr;
+        text-align: left;
+}
+
+html[dir='rtl'] [data-pk-free-text][lang='ar'] {
+        direction: rtl;
+        text-align: right;
+}
+
+@media (prefers-reduced-motion: reduce) {
+        html[dir='rtl'] * {
+                transition-duration: 0.01ms !important;
+                animation-duration: 0.01ms !important;
+        }
+}
+
+@media (max-width: 600px) {
+        html[dir='rtl'] .site-header .header-inner {
+                flex-wrap: wrap;
+                gap: 0.75rem;
+        }
+}
+
+/* Lot 5 — le menu reste structurellement identique ; aucune inversion arbitraire. */
+html[dir='rtl'] .site-header .custom-logo-link {
+        margin-inline-start: 0;
+        margin-inline-end: auto;
+}
+
+html[dir='rtl'] .site-header .main-navigation {
+        margin-inline-start: auto;
+        margin-inline-end: 0;
+}
+
+/* Le globe du sélecteur garde son orientation et reste suivi du code ISO. */
+html[dir='rtl'] .language-switcher .language-label {
+        direction: rtl;
+        unicode-bidi: isolate;
+}
+
+/* Lot 3bis — aucun pictogramme de sens ne doit être inversé en RTL. */
+html[dir='rtl'] .icon-chevron,
+html[dir='rtl'] .icon-arrow,
+html[dir='rtl'] .icon-external-link {
+        direction: ltr;
+        unicode-bidi: isolate;
+}
+
+/* Les cartes/conteneurs restent directionnels, les numéros et coordonnées non. */
+html[dir='rtl'] .property-card,
+html[dir='rtl'] .listing-grid {
+        direction: rtl;
+}
+
+html[dir='rtl'] .price,
+html[dir='rtl'] .property-reference,
+html[dir='rtl'] [data-ltr] {
+        direction: ltr;
+        unicode-bidi: isolate;
+}
+
+/* Lot 5 — le champ de texte libre annonce sa langue sans forcer une traduction. */
+textarea[name='description'][data-pk-free-text] {
+        unicode-bidi: plaintext;
+}

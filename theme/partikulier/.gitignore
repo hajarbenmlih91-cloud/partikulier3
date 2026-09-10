@@ -1,0 +1,13 @@
+# Artefacts Node — jamais dans le repo ni le zip
+node_modules/
+package-lock.json
+
+# Captures et références pixel du harnais visuel (régénérées par environnement)
+tests/__screens__/
+tests/__baseline__/
+
+# Journaux et fichiers d'outils locaux
+*.log
+.DS_Store
+Thumbs.db
+inc/*.sauvegarde-*

@@ -1,0 +1,38 @@
+{
+  "fixture_version": "1.0.0",
+  "purpose": "Contrat test-only du filtre transactionnel Estatik.",
+  "not_for_import": true,
+  "source_of_truth": "es_status",
+  "required_taxonomies": {
+    "post_type": "properties",
+    "transaction": "es_status",
+    "type": "es_type",
+    "location": "es_location"
+  },
+  "listings": [
+    {
+      "fixture_id": "sale-apartment-marrakech",
+      "post_status": "publish",
+      "transaction_slug": "a-vendre",
+      "transaction_label": "Vente",
+      "type_slug": "appartement-fr",
+      "city_slug": "marrakech",
+      "expected_filter": "es_action=a-vendre&es_type=appartement-fr&es_city=marrakech"
+    },
+    {
+      "fixture_id": "rent-apartment-marrakech",
+      "post_status": "publish",
+      "transaction_slug": "a-louer",
+      "transaction_label": "Location",
+      "type_slug": "appartement-fr",
+      "city_slug": "marrakech",
+      "expected_filter": "es_action=a-louer&es_type=appartement-fr&es_city=marrakech"
+    }
+  ],
+  "acceptance": {
+    "sale_result_minimum": 1,
+    "rent_result_minimum": 1,
+    "intersection_relation": "AND",
+    "reset_query": "/fr/annonces/"
+  }
+}

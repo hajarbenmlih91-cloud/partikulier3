@@ -1,0 +1,120 @@
+# Catalogue arabe du domaine « es » (plugin Estatik) — embarqué par le thème
+# Partikulier (languages/estatik/es-ar.mo). Périmètre : le chrome visible du
+# popup d'authentification imprimé au wp_footer de chaque page. Le reste du
+# plugin reste en anglais (source) : sans effet sur les pages du thème.
+# Les msgid sont COPIES EXACTES des templates estatik (y compris les deux
+# ordres d'attributs HTML des liens de bascule).
+msgid ""
+msgstr ""
+"Project-Id-Version: Partikulier (domaine es - popup auth)\n"
+"Language: ar\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+# --- Titres / sous-titres (réglages Estatik, résolus à l'affichage) ---
+msgid "Sign in or register"
+msgstr "سجّل الدخول أو أنشئ حسابًا"
+
+msgid "to save your favourite homes and more"
+msgstr "لحفظ منازلك المفضلة والمزيد"
+
+msgid "Get started with your account"
+msgstr "ابدأ بإنشاء حسابك"
+
+msgid "Create an agent account"
+msgstr "أنشئ حساب وكيل"
+
+msgid "Manage your listings, profile and more"
+msgstr "أدر إعلاناتك وملفك الشخصي والمزيد"
+
+# --- Écran « login buttons » ---
+msgid "Log in with email"
+msgstr "الدخول بالبريد الإلكتروني"
+
+msgid "Log in with %s"
+msgstr "الدخول بواسطة %s"
+
+msgid ""
+"Don't have an account? <a href=\"#\" class=\"js-es-auth-item__switcher\" "
+"data-auth-item=\"buyer-register-buttons\">Sign up</a>"
+msgstr ""
+"ليس لديك حساب؟ <a href=\"#\" class=\"js-es-auth-item__switcher\" data-auth-"
+"item=\"buyer-register-buttons\">أنشئ حسابًا</a>"
+
+msgid ""
+"Don't have an account? <a href=\"#\" data-auth-item=\"buyer-register-buttons"
+"\" class=\"js-es-auth-item__switcher\">Sign up</a>"
+msgstr ""
+"ليس لديك حساب؟ <a href=\"#\" data-auth-item=\"buyer-register-buttons\" "
+"class=\"js-es-auth-item__switcher\">أنشئ حسابًا</a>"
+
+# --- Écran « login form » ---
+msgid "All log in options"
+msgstr "كل خيارات تسجيل الدخول"
+
+msgid "Log in"
+msgstr "تسجيل الدخول"
+
+msgid "Log out"
+msgstr "تسجيل الخروج"
+
+msgid "You’re already logged in."
+msgstr "أنت مسجّل الدخول بالفعل."
+
+msgid "Forgot password?"
+msgstr "نسيت كلمة المرور؟"
+
+msgctxt "authenticate form"
+msgid "Email"
+msgstr "البريد الإلكتروني"
+
+msgctxt "authenticate form"
+msgid "Password"
+msgstr "كلمة المرور"
+
+# --- Écran « reset form » ---
+msgid "Enter your email address and we will send you a link to change your password."
+msgstr "أدخل بريدك الإلكتروني وسنرسل لك رابطًا لتغيير كلمة المرور."
+
+msgid "New password"
+msgstr "كلمة مرور جديدة"
+
+msgid "At least 8 characters"
+msgstr "8 أحرف على الأقل"
+
+msgid "Contains a number or symbol"
+msgstr "تحتوي على رقم أو رمز"
+
+msgid "Save new password"
+msgstr "حفظ كلمة المرور الجديدة"
+
+msgid "Send reset link"
+msgstr "إرسال رابط إعادة التعيين"
+
+# --- Écran « buyer register » ---
+msgid "Sign up with %s"
+msgstr "إنشاء حساب بواسطة %s"
+
+msgid "Sign up with email"
+msgstr "إنشاء حساب بالبريد الإلكتروني"
+
+msgid ""
+"Already have an account? <a href=\"#\" class=\"js-es-auth-item__switcher\" "
+"data-auth-item=\"login-buttons\">Log in</a>"
+msgstr ""
+"لديك حساب بالفعل؟ <a href=\"#\" class=\"js-es-auth-item__switcher\" data-"
+"auth-item=\"login-buttons\">تسجيل الدخول</a>"
+
+msgid ""
+"Already have an account? <a href=\"#\" data-auth-item=\"login-buttons\" "
+"class=\"js-es-auth-item__switcher\">Log in</a>"
+msgstr ""
+"لديك حساب بالفعل؟ <a href=\"#\" data-auth-item=\"login-buttons\" class="
+"\"js-es-auth-item__switcher\">تسجيل الدخول</a>"
+
+msgid "All sign up options"
+msgstr "كل خيارات إنشاء الحساب"
+
+msgid "Sign up"
+msgstr "إنشاء حساب"
