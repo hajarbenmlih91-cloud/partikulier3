@@ -19,7 +19,7 @@ final class ListingMediaService
 {
     private const MIME = ['image/jpeg', 'image/png', 'image/webp'];
 
-    public function validate(array $file): true|WP_Error
+    public function validate(array $file): bool|WP_Error
     {
         $mime = (string) ($file['type'] ?? '');
         $size = (int) ($file['size'] ?? 0);
