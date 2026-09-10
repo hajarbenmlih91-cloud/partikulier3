@@ -6,6 +6,11 @@ Les binaires sont publiés dans la Release GitHub dédiée :
 
 **[Release `preuves-b1-b6`](https://github.com/hajarbenmlih91-cloud/partikulier3/releases/tag/preuves-b1-b6)**
 
+GitHub impose des noms d’assets uniques dans une Release. Les fichiers individuels
+utilisent donc le chemin source préfixé par `__` (par exemple
+`lot-B1__T0-sauvegarde-base.sqlite`) ; l’archive
+`preuves-b1-b6-binaires.tar.gz` conserve en plus l’arborescence originale.
+
 ## Snapshots SQLite
 
 La Release conserve les fichiers avec leurs noms et chemins de campagne :
