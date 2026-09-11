@@ -23,12 +23,6 @@ mkdir -p "$tmp/plugin/partikulier-core" "$tmp/theme/partikulier"
 cp -a plugin/partikulier-core/. "$tmp/plugin/partikulier-core/"
 cp -a theme/partikulier/. "$tmp/theme/partikulier/"
 
-# Le plugin porte la source de vérité ; le thème embarque une copie de repli
-# afin de rester traduit lorsque le plugin est désactivé.
-for catalog in partikulier.pot ar.po ar.mo en_US.po en_US.mo; do
-  cp -f "$tmp/plugin/partikulier-core/languages/$catalog" "$tmp/theme/partikulier/languages/$catalog"
-done
-
 clean_tree() {
   local dir="$1"
   find "$dir" -type d \( -name .git -o -name node_modules -o -name coverage -o -name dist \) -prune -exec rm -rf {} +
