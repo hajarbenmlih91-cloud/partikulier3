@@ -14,6 +14,15 @@
  * comportement — le mécanisme actif ne change pas au découpage, CDC 3.7
  * REG-3 ; la migration de mécanisme relève du lot C).
  *
+ * Lot C3 (extinction, CDC v1.2 §3.2 I18N-1 — mécanisme unique strict) : les
+ * TROIS chargeurs de textdomains (load_textdomain, load_active_textdomain,
+ * load_estatik_textdomain) sont DORMANTS quand le chargeur unique du plugin
+ * est chargé (\Partikulier\Core\Domain\I18n\I18nDomainLoader, plugin 2.9+) :
+ * bootstrap + init@5 + after_setup_theme@1 + wp@1 lui appartiennent, pour
+ * les domaines « partikulier » ET « es ». Sans le plugin, ce chemin autonome
+ * historique reste actif à l'identique (dégradation gracieuse REG-5) ; le
+ * retrait physique des copies dormantes relève du lot C4.
+ *
  * @package Partikulier
  */
 
@@ -109,6 +118,13 @@ trait Partikulier_Localization_Runtime {
                  * communautaire standard WP_LANG_DIR.
                  */
                 public static function load_estatik_textdomain() {
+                        /* Lot C3 — EXTINCTION : le chargeur unique du plugin
+                         * (I18nDomainLoader, après_setup_theme@1 + wp@1) est
+                         * LE mécanisme actif quand il est chargé ; ce chemin
+                         * autonome ne sert que sans plugin (REG-5). */
+                        if ( class_exists( '\Partikulier\Core\Domain\I18n\I18nDomainLoader' ) ) {
+                                return;
+                        }
                         if ( is_admin() || wp_doing_ajax() || wp_doing_cron() ) {
                                 return;
                         }

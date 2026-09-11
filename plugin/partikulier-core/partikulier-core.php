@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Partikulier Core
  * Description: Cœur métier contractuel de Partikulier : données, politiques et REST.
- * Version: 2.8.0
+ * Version: 2.9.0
  * Requires PHP: 8.1
  */
 
@@ -12,36 +12,23 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-const PARTIKULIER_CORE_VERSION = '2.8.0';
+const PARTIKULIER_CORE_VERSION = '2.9.0';
 const PARTIKULIER_CORE_FILE = __FILE__;
 
-// Le plugin est la source canonique du domaine partagé ; le thème ne le
-// charge qu'en repli lorsque ce plugin est absent. Catalogues canoniques au
-// nommage <locale>.mo (convention du lot C1, contrats C1A-011/013 : les
-// doublons <domaine>-<locale>.mo sont proscrits).
-//
-// Portabilité WP 6.2 -> 7.x : load_plugin_textdomain() seul ne suffit pas —
-// sur WP <= 6.6 il ne cherche QUE <domaine>-<locale>.mo dans le dossier du
-// plugin (échec silencieux avec le nommage canonique, domaine NOOP), tandis
-// que WP 7.x charge paresseusement via le registre et accepte <locale>.mo.
-// On charge donc explicitement le catalogue canonique, après la voie de
-// personnalisation client (convention WP : WP_LANG_DIR/plugins/), puis on
-// enregistre le chemin du dossier pour le JIT (rechargements runtime).
-// fr_FR (langue source) : aucun catalogue -> msgids, comportement voulu.
-$pk_locale = apply_filters('plugin_locale', determine_locale(), 'partikulier');
-load_textdomain(
-    'partikulier',
-    WP_LANG_DIR . '/plugins/partikulier-' . $pk_locale . '.mo',
-    $pk_locale
-);
-if (!isset($GLOBALS['l10n']['partikulier']) || !$GLOBALS['l10n']['partikulier'] instanceof WP_Translations) {
-    load_textdomain('partikulier', __DIR__ . '/languages/' . $pk_locale . '.mo', $pk_locale);
-}
-load_plugin_textdomain(
-    'partikulier',
-    false,
-    dirname(plugin_basename(__FILE__)) . '/languages'
-);
+// Domaine « partikulier » — le plugin est la source canonique (lot C1 :
+// catalogues <locale>.mo consolidés, contrats C1A-011/013) et détient LE
+// chargeur unique (lot C3, CDC §3.2 I18N-1 — « un seul mécanisme de
+// traduction actif ») : chargement canonique au bootstrap (locale du site,
+// correctif C1A-013 — WP <= 6.6 ne charge pas le nommage <locale>.mo via
+// load_plugin_textdomain() seul), puis les trois points runtime (init@5,
+// after_setup_theme@1, wp@1 — domaines « partikulier » et « es » d'Estatik)
+// sont inscrits par I18nDomainLoader::register_runtime(). Le thème 6.19.0+
+// ne charge plus AUCUN textdomain quand ce plugin est actif (extinction C3
+// documentée — repli autonome REG-5 sans plugin ; retrait physique des
+// copies dormantes au lot C4).
+require_once __DIR__ . '/src/Domain/I18n/I18nDomainLoader.php';
+\Partikulier\Core\Domain\I18n\I18nDomainLoader::load_bootstrap_domain();
+\Partikulier\Core\Domain\I18n\I18nDomainLoader::register_runtime();
 
 require_once __DIR__ . '/src/Database/Schema.php';
 require_once __DIR__ . '/src/Database/Migrator.php';

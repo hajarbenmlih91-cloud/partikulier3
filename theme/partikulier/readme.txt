@@ -5,7 +5,7 @@ Tags: real-estate, property, listings, immobilier, performance, avif
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 6.18.9
+Stable tag: 6.19.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -46,6 +46,13 @@ Caracteristiques :
 * Le theme surcharge automatiquement les templates d'Estatik via le dossier `estatik4/front/`.
 
 == Changelog ==
+
+= 6.19.0 =
+
+* Lot C3 de la refonte (CDC v1.2 §3.2 I18N-1 — « un seul mécanisme de traduction actif ») : EXTINCTION du chargeur runtime des textdomains côté thème. Le chargement des domaines « partikulier » (catalogues canoniques `languages/ar.mo` et `languages/en_US.mo`, nommage `<locale>.mo`) et « es » d'Estatik (correctif 6.17.31 du popup d'authentification, trois sources candidates) est désormais servi par le chargeur unique de partikulier-core 2.9.0 (`Partikulier\Core\Domain\I18n\I18nDomainLoader`, inscrit au bootstrap : chargement canonique à la locale du site — correctif C1A-013 pour WP <= 6.6 — puis points runtime init@5 / after_setup_theme@1 / wp@1).
+* Les trois chargeurs du trait `inc/class-localization-runtime.php` (`load_textdomain`, `load_active_textdomain`, `load_estatik_textdomain`) deviennent DORMANTS quand le chargeur unique du plugin est chargé — le thème ne charge plus AUCUN textdomain en présence du plugin. Sans plugin, le repli autonome historique 6.18.x est conservé à l'identique (REG-5 — preuve par le contrat du lot : `partikulier-core/tests/i18n-unified-mechanism-contract.php`).
+* Mécanisme unique strict : avec le plugin actif, exactement UN chargeur de textdomains (plugin) et UN filtre gettext (plugin, lot C2) servent le site ; l'adaptateur Polylang (`class-listing-translations.php` / `class-listing-urls.php` + hooks `pll_*`) reste l'adaptateur unique côté thème, conformément au Tableau 10 du CDC. Aucune table, aucune écriture, le schéma reste 2.6.0 (aucune migration au lot C3). Le retrait physique des chargeurs dormants relève du lot C4.
+* Aucun autre changement runtime : ni gabarit, ni style, ni JavaScript. Requiert partikulier-core 2.9.0 pour la délégation ; fonctionne sinon de manière autonome.
 
 = 6.18.9 =
 

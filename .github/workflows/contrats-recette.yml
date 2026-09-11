@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  PK_VERSION: '2.8.0'
+  PK_VERSION: '2.9.0'
 
 permissions:
   contents: read
@@ -61,7 +61,7 @@ jobs:
       - name: Amorcer les invariants historiques des contrats B2 à B5
         run: |
           php -r 'require "wp/wp-load.php"; global $wpdb; $now = gmdate("Y-m-d H:i:s"); update_option("pk_n8n_settings", ["automation_api_secret" => "ci-contract-secret", "active_key_id" => "N", "hmac_mode" => "off"], false); $leads = $wpdb->prefix . "pk_buyer_leads"; $existing = (int) $wpdb->get_var("SELECT COUNT(*) FROM $leads"); for ($i = $existing; $i < 10; $i++) { $seed = "ci-historical-lead-$i"; $wpdb->insert($leads, ["phone_hash" => hash_hmac("sha256", $seed, wp_salt("auth")), "phone_encrypted" => base64_encode($seed), "first_seen_at" => $now, "last_seen_at" => $now], ["%s", "%s", "%s", "%s"]); } $audit = new \Partikulier\Core\AuditLogger(); $adoptions = (array) $wpdb->get_results("SELECT metadata_json FROM {$wpdb->prefix}pk_audit_log"); foreach ([["B2", "leads"], ["B3", "alerts"], ["B4", "automation"], ["B5", "owner_stats"], ["B6", "translation_variants"]] as [$lot, $domain]) { $found = false; foreach ($adoptions as $row) { $meta = json_decode((string) $row->metadata_json, true); if (($meta["lot"] ?? "") === $lot && ($meta["domain"] ?? "") === $domain) { $found = true; break; } } if (!$found) { $audit->record("domain_adopted", "schema", null, ["lot" => $lot, "domain" => $domain]); } } $events = $wpdb->prefix . "pk_automation_events"; for ($i = 1; $i <= 2; $i++) { $wpdb->insert($events, ["event_id" => "ci-historical-event-$i", "event_type" => "fixture", "source" => "ci", "payload_hash" => hash("sha256", "fixture-$i"), "status" => "received", "received_at" => $now], ["%s", "%s", "%s", "%s", "%s", "%s"]); } $saves = $wpdb->prefix . "pk_property_saves"; for ($i = 1; $i <= 4; $i++) { $wpdb->insert($saves, ["property_id" => $i, "visitor_hash" => hash("sha256", "ci-visitor-$i"), "created_at" => $now, "updated_at" => $now], ["%d", "%s", "%s", "%s"]); } echo "historical fixtures ready: leads=".(int) $wpdb->get_var("SELECT COUNT(*) FROM $leads")." events=".(int) $wpdb->get_var("SELECT COUNT(*) FROM $events")." saves=".(int) $wpdb->get_var("SELECT COUNT(*) FROM $saves")."\n";'
-      - name: Exécuter les 16 suites dynamiques
+      - name: Exécuter les 17 suites dynamiques
         env:
           PK_WP_DIR: ${{ github.workspace }}/wp
           PK_COMMIT: ${{ github.sha }}
@@ -75,7 +75,7 @@ jobs:
                        leads-contract leads-domain-contract alerts-domain-contract \
                        automation-domain-contract owner-stats-domain-contract \
                        translation-variants-domain-contract i18n-chrome-domain-contract \
-                       i18n-content-domain-contract; do
+                       i18n-content-domain-contract i18n-unified-mechanism-contract; do
             if php wp-content/plugins/partikulier-core/tests/$suite.php \
                  > ../preuves-run/contrats/$suite.json \
                  2> ../preuves-run/contrats/$suite.err; then
@@ -85,9 +85,9 @@ jobs:
               exit 1
             fi
           done
-      - name: Vérifier l’oracle 184/184
+      - name: Vérifier l’oracle 199/199
         run: |
-          php -r '$tot=0; $pas=0; foreach (glob("preuves-run/contrats/*.json") as $f) { $d=json_decode(file_get_contents($f), true); if (($d["status"] ?? "") !== "PASS") { fwrite(STDERR, basename($f).": status != PASS\n"); exit(1); } $tot += (int) $d["total"]; $pas += (int) $d["passed"]; } echo "contrats dynamiques : $pas/$tot\n"; if ($tot !== 184 || $pas !== 184) { fwrite(STDERR, "oracle inattendu (attendu 184/184)\n"); exit(1); }'
+          php -r '$tot=0; $pas=0; foreach (glob("preuves-run/contrats/*.json") as $f) { $d=json_decode(file_get_contents($f), true); if (($d["status"] ?? "") !== "PASS") { fwrite(STDERR, basename($f).": status != PASS\n"); exit(1); } $tot += (int) $d["total"]; $pas += (int) $d["passed"]; } echo "contrats dynamiques : $pas/$tot\n"; if ($tot !== 199 || $pas !== 199) { fwrite(STDERR, "oracle inattendu (attendu 199/199 — lot C3 : 16 suites historiques 184 assertions + i18n-unified-mechanism 15)\n"); exit(1); }'
       - name: Publier les résultats
         if: always()
         uses: actions/upload-artifact@v4

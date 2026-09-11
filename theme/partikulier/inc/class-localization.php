@@ -41,6 +41,14 @@
  * du lot C2). Extinction PROGRESSIVE documentée : les copies de données
  * côté thème sont dormantes, leur retrait physique relève du lot C4.
  *
+ * Lot C3 (mécanisme unique strict) : le CHARGEUR RUNTIME des textdomains
+ * (domaines « partikulier » et « es ») rejoint également le plugin
+ * (\Partikulier\Core\Domain\I18n\I18nDomainLoader, plugin 2.9+) — les trois
+ * chargeurs du trait Runtime sont dormants quand le chargeur unique est
+ * chargé (voir class-localization-runtime.php). Sans le plugin, le repli
+ * autonome historique reste actif à l'identique (REG-5, preuve par contrat
+ * du lot C3 — cf. tests/i18n-unified-mechanism-contract.php).
+ *
  * @package Partikulier
  */
 
