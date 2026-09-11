@@ -8,7 +8,7 @@ if [[ "$OUT_INPUT" = /* ]]; then
 else
   OUT="$ROOT/$OUT_INPUT"
 fi
-PLUGIN_VERSION="2.9.1"
+PLUGIN_VERSION="2.10.0"
 THEME_VERSION="6.19.1"
 
 rm -rf "$OUT"

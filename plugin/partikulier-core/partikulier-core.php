@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Partikulier Core
  * Description: Cœur métier contractuel de Partikulier : données, politiques et REST.
- * Version: 2.9.1
+ * Version: 2.10.0
  * Requires PHP: 8.1
  */
 
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-const PARTIKULIER_CORE_VERSION = '2.9.1';
+const PARTIKULIER_CORE_VERSION = '2.10.0';
 const PARTIKULIER_CORE_FILE = __FILE__;
 
 // Domaine « partikulier » — le plugin est la source canonique (lot C1 :
@@ -36,6 +36,15 @@ require_once __DIR__ . '/src/Database/Schema.php';
 require_once __DIR__ . '/src/Database/Migrator.php';
 require_once __DIR__ . '/src/Rest/RouteRegistry.php';
 require_once __DIR__ . '/src/Domain/DomainRegistry.php';
+/*
+ * Lot D (découpage, arbitrage « Référence + plugin ») : les traits composant
+ * les quatre services découpés sont chargés AVANT leurs classes shells —
+ * même discipline que le précédent B6 (modules du monolithe i18n du thème,
+ * chargés avant le shell Partikulier_Localization).
+ */
+require_once __DIR__ . '/src/Integration/SynchronizerHooksTrait.php';
+require_once __DIR__ . '/src/Integration/SynchronizerProjectionTrait.php';
+require_once __DIR__ . '/src/Integration/SynchronizerMaintenanceTrait.php';
 require_once __DIR__ . '/src/Integration/ListingSynchronizer.php';
 require_once __DIR__ . '/src/ListingRepository.php';
 require_once __DIR__ . '/src/HealthCheck.php';
@@ -49,9 +58,17 @@ require_once __DIR__ . '/src/HealthCheck.php';
  * chargement : coût de bootstrap négligeable, mesuré par REG-2.
  */
 require_once __DIR__ . '/src/Domain/Premium/PremiumService.php';
+require_once __DIR__ . '/src/Domain/Payments/PaymentsOrdersTrait.php';
+require_once __DIR__ . '/src/Domain/Payments/PaymentsSubscriptionsTrait.php';
 require_once __DIR__ . '/src/Domain/Payments/PaymentService.php';
+require_once __DIR__ . '/src/Domain/Leads/LeadsContactTrait.php';
+require_once __DIR__ . '/src/Domain/Leads/LeadsRestTrait.php';
+require_once __DIR__ . '/src/Domain/Leads/LeadsPrivacyTrait.php';
+require_once __DIR__ . '/src/Domain/Leads/LeadsAdminTrait.php';
 require_once __DIR__ . '/src/Domain/Leads/LeadService.php';
 require_once __DIR__ . '/src/Domain/Alerts/AlertService.php';
+require_once __DIR__ . '/src/Domain/Automation/AutomationPolicyTrait.php';
+require_once __DIR__ . '/src/Domain/Automation/AutomationHmacTrait.php';
 require_once __DIR__ . '/src/Domain/Automation/AutomationService.php';
 require_once __DIR__ . '/src/Domain/OwnerStats/OwnerStatsService.php';
 require_once __DIR__ . '/src/Domain/TranslationVariants/TranslationVariantsService.php';
