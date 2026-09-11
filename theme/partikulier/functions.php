@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
         exit;
 }
 
-define( 'PARTIKULIER_VERSION', '6.19.1' );
+define( 'PARTIKULIER_VERSION', '6.20.0' );
 
 add_filter(
     'language_attributes',
@@ -179,6 +179,9 @@ $partikulier_modules = array(
         '/inc/class-sitemap.php',
         '/inc/class-cache.php',
         '/inc/class-security.php',
+        /* Lot E (SECU-1) : passerelle unique des appels système — chargée
+         * AVANT class-avif.php qui l'utilise pour avifenc/vips. */
+        '/inc/class-exec-whitelist.php',
         '/inc/class-avif.php',
         '/inc/class-geo.php',
         '/inc/class-search-filters.php',

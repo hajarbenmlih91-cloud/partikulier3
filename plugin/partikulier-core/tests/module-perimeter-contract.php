@@ -28,7 +28,7 @@
  *    énumérés (aucun nouveau), exclusions documentées : pk-diagnostic.php
  *    (outil de diagnostic, 2623 l., traitement au lot E) et
  *    estatik4/front/property/single.php (gabarit de substitution Estatik) ;
- *  - DA-010 : santé — plugin 2.10.0, thème 6.19.1 (inchangé par le lot),
+ *  - DA-010 : santé — plugin 2.10.1, thème 6.20.0 (lot E — blindage AVIF),
  *    schéma figé 2.6.0, 8/8 domaines, 0 collision ;
  *  - DA-011 : hygiène du banc — les invariants des lots A/B restent intacts
  *    (le contrat est de lecture seule : aucune écriture).
@@ -228,14 +228,14 @@ $assert('DA-009', $themeOversized === $frozenBaseline,
         ? sprintf('baseline thème gelée : %d fichiers préexistants >400 l. (dette hors campagne, arbitrage « Référence + plugin ») — exclusions documentées : %s', count($frozenBaseline), implode(', ', $documentedExclusions))
         : 'écart à la baseline : +' . implode(', ', array_diff($themeOversized, $frozenBaseline)) . ' / -' . implode(', ', array_diff($frozenBaseline, $themeOversized)));
 
-/* DA-010 — santé : plugin 2.10.0 (lot D), thème 6.19.1 inchangé, schéma figé, 8/8, 0 collision. */
+/* DA-010 — santé : plugin 2.10.1 (lot E), thème 6.20.0, schéma figé, 8/8, 0 collision. */
 $themeVersion = wp_get_theme()->get('Version');
 $health = (new HealthCheck())->get();
 $pluginDomains = count(array_filter($health['domains'] ?? [], static fn($d): bool => ($d['owner'] ?? '') === 'plugin'));
-$assert('DA-010', PARTIKULIER_CORE_VERSION === '2.10.0' && $themeVersion === '6.19.1'
+$assert('DA-010', PARTIKULIER_CORE_VERSION === '2.10.1' && $themeVersion === '6.20.0'
     && \Partikulier\Core\Database\Schema::VERSION === '2.6.0' && ($health['status'] ?? '') === 'ok'
     && $pluginDomains === 8 && (int) ($health['routes']['collisions'] ?? -1) === 0,
-    sprintf('santé : %s, plugin %s, thème %s (inchangé par le lot D), schéma %s (zéro migration), %d/8 domaines, 0 collision',
+    sprintf('santé : %s, plugin %s, thème %s (lot E — blindage AVIF), schéma %s (zéro migration), %d/8 domaines, 0 collision',
         ($health['status'] ?? '?'), PARTIKULIER_CORE_VERSION, $themeVersion, \Partikulier\Core\Database\Schema::VERSION, $pluginDomains));
 
 /* DA-011 — hygiène du banc (contrat de lecture seule : aucune écriture). */

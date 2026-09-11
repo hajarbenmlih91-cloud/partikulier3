@@ -213,10 +213,10 @@ try {
         sprintf('variantes : service plugin %s, garde de délégation thème %s, owner health=%s',
             $variantsService ? 'présent' : 'absent', $variantsGuard ? 'présente' : 'absente', $health['domains']['translation_variants']['owner'] ?? '?'));
 
-    // 14) Santé et versions : 2.10.0 / 6.19.1 (lot D — plugin 2.10.0, thème C4 inchangé), schéma figé 2.6.0, 8/8, 0 collision.
+    // 14) Santé et versions : 2.10.1 / 6.20.0 (lot E — blindage AVIF : plugin 2.10.1, thème 6.20.0), schéma figé 2.6.0, 8/8, 0 collision.
     $themeVersion = wp_get_theme()->get('Version');
     $pluginDomains = count(array_filter($health['domains'] ?? [], static fn($d) => ($d['owner'] ?? '') === 'plugin'));
-    $assert('C3A-014', PARTIKULIER_CORE_VERSION === '2.10.0' && $themeVersion === '6.19.1'
+    $assert('C3A-014', PARTIKULIER_CORE_VERSION === '2.10.1' && $themeVersion === '6.20.0'
         && Schema::VERSION === '2.6.0' && $pluginDomains === 8
         && (int) ($health['routes']['collisions'] ?? -1) === 0,
         sprintf('santé : plugin %s, thème %s, schéma %s (zéro migration C3/C4), %d/8 domaines, 0 collision',

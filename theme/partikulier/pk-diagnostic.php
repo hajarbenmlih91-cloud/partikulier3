@@ -586,10 +586,19 @@ if ( ! function_exists( 'partikulier_pk_diag_serveur_mono_ouvrier' ) ) {
                         return false;
                 }
                 $desactive = array_map( 'trim', array_filter( explode( ',', (string) ini_get( 'disable_functions' ) ) ) );
-                if ( ! function_exists( 'shell_exec' ) || in_array( 'shell_exec', $desactive, true ) ) {
+                if ( ! function_exists( 'exec' ) || in_array( 'exec', $desactive, true ) ) {
                         return true; // impossible de verifier: on suppose le cas sur, on n'attend pas 8 s par page
                 }
-                $nb = (int) trim( (string) @shell_exec( 'ps -o comm= -C php,php8.4,php8.3,php8.2 2>/dev/null | wc -l' ) );
+                /* Lot E (SECU-1) : l'appel systeme passe par la passerelle unique
+                   du theme (liste blanche + empreinte) — plus aucun shell_exec
+                   direct dans la sonde. */
+                if ( ! class_exists( 'Partikulier_Exec_Whitelist' ) ) {
+                        return true; // passerelle non chargee : cas sur presume
+                }
+                $sonde = Partikulier_Exec_Whitelist::run( 'ps', array(
+                        array( 'type' => 'flag', 'value' => '-o comm= -C php,php8.4,php8.3,php8.2' ),
+                ) );
+                $nb = ! empty( $sonde['ok'] ) ? count( (array) $sonde['output'] ) : 0;
                 return $nb > 0 && $nb <= 2;
         }
 }
@@ -1831,18 +1840,28 @@ if ( ! function_exists( 'partikulier_pk_diag_run' ) ) {
                         }
                 }
                 $lig( 'serveur logiciel', isset( $_SERVER['SERVER_SOFTWARE'] ) ? (string) $_SERVER['SERVER_SOFTWARE'] : 'inconnu (CLI ou serveur interne)' );
-                $binaires = array( '/usr/bin/avifenc', '/usr/local/bin/avifenc', '/usr/bin/vips', '/usr/local/bin/vips' );
+                /* Lot E (SECU-1) : disponibilite vue par la passerelle unique
+                   Partikulier_Exec_Whitelist (chemin absolu resolu + empreinte). */
+                $passerelle = class_exists( 'Partikulier_Exec_Whitelist' ) ? 'Partikulier_Exec_Whitelist' : '';
                 $aucun_binaire = true;
-                foreach ( $binaires as $b ) {
-                        $etat = is_executable( $b ) ? 'EXECUTABLE' : ( file_exists( $b ) ? 'present mais non executable' : 'ABSENT' );
-                        if ( 'ABSENT' !== $etat ) {
-                                $aucun_binaire = false;
+                foreach ( array( 'avifenc', 'vips' ) as $bin_key ) {
+                        if ( $passerelle ) {
+                                $resolu = $passerelle::resolve( $bin_key );
+                                $lig( 'binaire ' . $bin_key, (string) $resolu['path'] . ' : ' . (string) $resolu['state'] . ( (bool) $resolu['pinned'] ? ' (empreinte epinglee)' : ' (empreinte non epinglee)' ) );
+                                if ( 'ok' === (string) $resolu['state'] ) {
+                                        $aucun_binaire = false;
+                                }
+                        } else {
+                                $lig( 'binaire ' . $bin_key, 'passerelle non chargee' );
                         }
-                        $lig( 'binaire ' . $b, $etat );
+                }
+                if ( $passerelle ) {
+                        $journal_gw = $passerelle::journal_path();
+                        $lig( 'journal des appels systeme', ( is_string( $journal_gw ) && is_file( $journal_gw ) ) ? ( $journal_gw . ' (' . number_format( (int) filesize( $journal_gw ) ) . ' o)' ) : 'aucun appel encore journalise (' . ( is_string( $journal_gw ) ? $journal_gw : 'chemin inconnu' ) . ')' );
                 }
                 $supports = function_exists( 'wp_image_editor_supports' ) ? (bool) wp_image_editor_supports( array( 'mime_type' => 'image/avif' ) ) : false;
                 $lig( 'wp_image_editor_supports(image/avif)', $supports );
-                $lig( 'repli avifenc utilisable par le theme', ( is_executable( '/usr/bin/avifenc' ) || is_executable( '/usr/local/bin/avifenc' ) ) && function_exists( 'exec' ) && ! in_array( 'exec', $dis, true ) );
+                $lig( 'repli avifenc utilisable par le theme', $passerelle ? $passerelle::is_available( 'avifenc' ) : false );
                 $encode = null;
                 $note_avif = '';
                 $mime = static function ( $f ) { return function_exists( 'finfo_file' ) ? (string) ( new finfo( FILEINFO_MIME_TYPE ) )->file( $f ) : 'inconnu'; };
@@ -1943,7 +1962,7 @@ if ( ! function_exists( 'partikulier_pk_diag_run' ) ) {
                 }
                 if ( false === $encode && $aucun_binaire ) {
                         $problemes[] = 'AVIF indisponible sur cet hebergement : editeur incapable et aucun binaire avifenc/vips executable';
-                        $actions[] = 'a trancher dans le registre CDC (basculer sur webp ou accepter jpeg en servant les tailles WP), pas en modifiant le theme : class-avif.php ne journalise pas son echec';
+                        $actions[] = 'a trancher dans le registre CDC (basculer sur webp ou accepter jpeg en servant les tailles WP), pas en modifiant le theme : depuis le lot E, chaque echec de conversion est journalise par la passerelle (uploads/partikulier/exec-journal.log)';
                 } elseif ( false === $encode && $supports ) {
                         $problemes[] = 'wp_image_editor_supports(image/avif) dit OUI mais l\'encodage reel a echoue : ' . $note_avif;
                         $actions[] = 'faux positif (l\'appel dit oui, l\'encodeur ne produit rien) : ne pas compter sur l\'AVIF tant que ce test ne passe pas';

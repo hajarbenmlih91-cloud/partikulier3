@@ -112,40 +112,33 @@ class Partikulier_AVIF {
 
 	/**
 	 * Repli AVIF natif lorsqu’il est installé par l’hébergeur.
+	 * Lot E (SECU-1) : l’appel système passe par la passerelle unique
+	 * Partikulier_Exec_Whitelist — plus aucun exec() direct dans ce fichier.
 	 */
 	private static function convert_with_avifenc( $file, $avif ) {
-		$binary = '/usr/bin/avifenc';
-		if ( ! is_executable( $binary ) || ! function_exists( 'exec' ) ) {
-			return false;
-		}
+		$result = Partikulier_Exec_Whitelist::run( 'avifenc', array(
+			array( 'type' => 'flag',   'value' => '--min 25 --max 25' ),
+			array( 'type' => 'file',   'value' => $file ),
+			array( 'type' => 'target', 'value' => $avif ),
+		) );
 
-		$command = escapeshellarg( $binary ) . ' --min 25 --max 25 ' . escapeshellarg( $file ) . ' ' . escapeshellarg( $avif ) . ' 2>&1';
-		$output = array();
-		$code   = 1;
-		@exec( $command, $output, $code ); // nosemgrep: php.lang.security.exec-use.exec-use -- binaire absolu, chemin média et cible protégés par escapeshellarg
-
-
-		return 0 === $code && file_exists( $avif ) && filesize( $avif ) > 0;
+		return ! empty( $result['ok'] ) && file_exists( $avif ) && filesize( $avif ) > 0;
 	}
 
 	/**
 	 * Repli local lorsqu’un hébergeur ne compile pas GD/Imagick avec l’encodeur AVIF.
-	 * Vips est utilisé seulement s’il est explicitement disponible sur le serveur.
+	 * Vips est utilisé seulement s’il est explicitement disponible sur le serveur
+	 * (liste blanche + empreinte, via la passerelle unique du lot E).
 	 */
 	private static function convert_with_vips( $file, $avif ) {
-		$binary = '/usr/bin/vips';
-		if ( ! is_executable( $binary ) || ! function_exists( 'exec' ) ) {
-			return false;
-		}
-
 		$target = $avif . '[Q=' . absint( self::QUALITY ) . ']';
-		$command = escapeshellarg( $binary ) . ' copy ' . escapeshellarg( $file ) . ' ' . escapeshellarg( $target ) . ' 2>&1';
-		$output = array();
-		$code   = 1;
-		@exec( $command, $output, $code ); // nosemgrep: php.lang.security.exec-use.exec-use -- binaire absolu, chemin média et cible protégés par escapeshellarg
+		$result = Partikulier_Exec_Whitelist::run( 'vips', array(
+			array( 'type' => 'flag',   'value' => 'copy' ),
+			array( 'type' => 'file',   'value' => $file ),
+			array( 'type' => 'target', 'value' => $target ),
+		) );
 
-
-		return 0 === $code && file_exists( $avif ) && filesize( $avif ) > 0;
+		return ! empty( $result['ok'] ) && file_exists( $avif ) && filesize( $avif ) > 0;
 	}
 
 	/**
