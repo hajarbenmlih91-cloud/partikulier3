@@ -29,10 +29,9 @@ class Partikulier_Setup {
         }
 
 	        public static function setup() {
-	                if ( ! class_exists( 'Partikulier\\Core\\Domain\\DomainRegistry' ) ) {
-	                        load_theme_textdomain( 'partikulier', PARTIKULIER_DIR . '/languages' );
-	                }
-
+		/* Lot C4 — le chargement du textdomain est retiré : le chargeur
+		 * unique du plugin partikulier-core 2.9+ (I18nDomainLoader) détient
+		 * le mécanisme ; le kit traducteur vit côté plugin. */
                 add_theme_support( 'automatic-feed-links' );
                 add_theme_support( 'title-tag' );
                 add_theme_support( 'post-thumbnails' );

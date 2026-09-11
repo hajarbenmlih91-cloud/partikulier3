@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  PK_VERSION: '2.9.0'
+  PK_VERSION: '2.9.1'
 
 permissions:
   contents: read
@@ -87,7 +87,7 @@ jobs:
           done
       - name: Vérifier l’oracle 199/199
         run: |
-          php -r '$tot=0; $pas=0; foreach (glob("preuves-run/contrats/*.json") as $f) { $d=json_decode(file_get_contents($f), true); if (($d["status"] ?? "") !== "PASS") { fwrite(STDERR, basename($f).": status != PASS\n"); exit(1); } $tot += (int) $d["total"]; $pas += (int) $d["passed"]; } echo "contrats dynamiques : $pas/$tot\n"; if ($tot !== 199 || $pas !== 199) { fwrite(STDERR, "oracle inattendu (attendu 199/199 — lot C3 : 16 suites historiques 184 assertions + i18n-unified-mechanism 15)\n"); exit(1); }'
+          php -r '$tot=0; $pas=0; foreach (glob("preuves-run/contrats/*.json") as $f) { $d=json_decode(file_get_contents($f), true); if (($d["status"] ?? "") !== "PASS") { fwrite(STDERR, basename($f).": status != PASS\n"); exit(1); } $tot += (int) $d["total"]; $pas += (int) $d["passed"]; } echo "contrats dynamiques : $pas/$tot\n"; if ($tot !== 199 || $pas !== 199) { fwrite(STDERR, "oracle inattendu (attendu 199/199 — lot C4 : 17 suites, état i18n final épinglé par les contrats C3/C4)\n"); exit(1); }'
       - name: Publier les résultats
         if: always()
         uses: actions/upload-artifact@v4

@@ -21,7 +21,7 @@
  *  - chaîne figée REG-3 : la traduction .mo canonique passe prioritairement
  *    (filtre réel testé via load_textdomain du catalogue ar), les domaines
  *    étrangers ('es', 'default') sont intacts ;
- *  - hygiène : modules ≤300 lignes, versions 2.8.0/6.18.9, schéma figé
+ *  - hygiène : modules ≤300 lignes, versions 2.9.1/6.19.1 (lot C4), schéma figé
  *    2.6.0 (aucune migration C2), 8/8 domaines plugin, 0 collision, 20
  *    tables au manifeste.
  *
@@ -148,7 +148,7 @@ try {
     //    du service unifié et ressort avec la valeur .mo — parité stricte
     //    avec le repli local et le service direct sur la même entrée.
     if (function_exists('unload_textdomain')) { unload_textdomain('partikulier'); }
-    $moAr = $themeDir . '/languages/ar.mo';
+    $moAr = $pluginDir . '/languages/ar.mo';
     $loaded = load_textdomain('partikulier', $moAr);
     $aideViaFilter = translate_with_gettext_context('Aide', '', 'partikulier');
     $aideViaLocal = Partikulier_Localization::translate_polylang_string_local($aideViaFilter, 'Aide', 'partikulier');
@@ -157,11 +157,11 @@ try {
         sprintf("filtre réel : __('Aide') → '%s' via le filtre du service unifié (catalogue ar chargé sur le domaine réel, domaine déchargé au préalable) — parité locale et service directe",
             $aideViaFilter));
 
-    // 10) Versions et santé : 2.9.0 / 6.19.0 (lot C3), schéma figé 2.6.0, 8/8, 0 collision.
+    // 10) Versions et santé : 2.9.1 / 6.19.1 (lot C4), schéma figé 2.6.0, 8/8, 0 collision.
     $themeVersion = wp_get_theme()->get('Version');
     $health = (new HealthCheck())->get();
     $pluginDomains = count(array_filter($health['domains'] ?? [], static fn($d) => ($d['owner'] ?? '') === 'plugin'));
-    $assert('C2A-010', PARTIKULIER_CORE_VERSION === '2.9.0' && $themeVersion === '6.19.0'
+    $assert('C2A-010', PARTIKULIER_CORE_VERSION === '2.9.1' && $themeVersion === '6.19.1'
         && Schema::VERSION === '2.6.0' && $pluginDomains === 8
         && (int) ($health['routes']['collisions'] ?? -1) === 0,
         sprintf('versions : plugin %s, thème %s, schéma %s (figé — zéro migration C2), %d/8 domaines, 0 collision',

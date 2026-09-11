@@ -5,7 +5,7 @@ Tags: real-estate, property, listings, immobilier, performance, avif
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 6.19.0
+Stable tag: 6.19.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -46,6 +46,13 @@ Caracteristiques :
 * Le theme surcharge automatiquement les templates d'Estatik via le dossier `estatik4/front/`.
 
 == Changelog ==
+
+= 6.19.1 =
+
+* Lot C4 de la refonte (CDC v1.2 §3.2 I18N-1 — « un seul mécanisme de traduction actif ») : RETRAIT PHYSIQUE des chargeurs et copies dormants côté thème, appliqué sur la base 6.19.0 livrée au lot C3. Les trois chargeurs marqués dormants au C3 (accrochages init@5, wp@1, wp@2 et appel anticipé du domaine « es ») sont supprimés du code du thème — plus aucune méthode de chargement de textdomain n'existe côté thème, aucun accrochage fantôme ne subsiste.
+* Consolidation des catalogues : la copie de parité du kit traducteur (`languages/ar.mo`, `ar.po`, `en_US.mo`, `en_US.po`, `partikulier.pot` — identiques octet pour octet au kit canonique du plugin, empreintes SHA-256 du lot) est retirée du thème. Le kit canonique vit dans partikulier-core 2.9+ (`languages/`), le domaine « partikulier » est servi exclusivement par son chargeur unique. Le catalogue arabe du popup d'authentification d'Estatik reste servi depuis `languages/estatik/es-ar.mo` du thème — deuxième source candidate que le chargeur unique consulte (le plugin Estatik n'embarque aucun catalogue arabe).
+* Dégradation sans plugin désormais documentée au contrat du lot (`partikulier-core/tests/i18n-unified-mechanism-contract.php`, mis à jour en 2.9.1 : extinction physique consolidée, kit consolidé côté plugin, versions épinglées 2.9.1/6.19.1) : sans le plugin, le site est servi en langue source française (msgids), le chrome conservant ses dictionnaires de repli. Aucune table, aucune écriture, le schéma reste 2.6.0.
+* Aucun autre changement runtime : ni gabarit, ni style, ni JavaScript. Requiert partikulier-core 2.9+ ; les versions antérieures du thème (6.18.x) conservent leur chemin autonome historique.
 
 = 6.19.0 =
 

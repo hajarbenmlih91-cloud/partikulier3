@@ -36,18 +36,21 @@
  * canoniques (ports VERBATIM) ; le thème lui fournit son registre chrome
  * (provide_registry — donnée du thème : clés du shell + réglages) et cesse
  * d'enregistrer son propre filtre. Sans le plugin, le repli autonome
- * historique 6.18.x est conservé à l'identique (dégradation gracieuse
- * REG-5 — les deux chemins servent les mêmes chaînes, preuve par contrat
- * du lot C2). Extinction PROGRESSIVE documentée : les copies de données
- * côté thème sont dormantes, leur retrait physique relève du lot C4.
+ * historique est conservé (dégradation gracieuse REG-5 — les deux chemins
+ * servent les mêmes chaînes, preuve par contrat du lot C2). Les diction-
+ * naires de repli restent la voie de résolution documentée sans plugin.
  *
- * Lot C3 (mécanisme unique strict) : le CHARGEUR RUNTIME des textdomains
- * (domaines « partikulier » et « es ») rejoint également le plugin
- * (\Partikulier\Core\Domain\I18n\I18nDomainLoader, plugin 2.9+) — les trois
- * chargeurs du trait Runtime sont dormants quand le chargeur unique est
- * chargé (voir class-localization-runtime.php). Sans le plugin, le repli
- * autonome historique reste actif à l'identique (REG-5, preuve par contrat
- * du lot C3 — cf. tests/i18n-unified-mechanism-contract.php).
+ * Lot C4 (extinction FINALE — retrait physique sur la base 6.19.0) : les
+ * accrochages de chargement de textdomains (init@5, wp@1, wp@2 et l'appel
+ * anticipé du domaine « es ») sont retirés de init(), et le trait Runtime
+ * ne porte plus AUCUNE méthode de chargement — le chargeur unique du plugin
+ * (\Partikulier\Core\Domain\I18n\I18nDomainLoader, 2.9+) est le seul
+ * mécanisme de chargement, le kit traducteur du domaine vit côté plugin
+ * (copie de parité du thème retirée). Sans plugin : langue source française
+ * (msgids) pour le domaine, dictionnaires de repli pour le chrome —
+ * dégradation documentée au contrat du lot (tests/i18n-unified-mechanism-
+ * contract.php, mis à jour en 2.9.1 : extinction physique, versions
+ * épinglées 2.9.1/6.19.1).
  *
  * @package Partikulier
  */
@@ -76,19 +79,11 @@ class Partikulier_Localization {
         use Partikulier_Localization_Variants;
 
                 public static function init() {
-                        add_action( 'init', array( __CLASS__, 'load_textdomain' ), 5 );
-                        add_action( 'wp', array( __CLASS__, 'load_active_textdomain' ), 1 );
-                        /* 6.17.31 : le popup d'authentification imprimé au wp_footer
-                         * par Estatik restait anglais dans toutes les langues — le
-                         * plugin charge son domaine à plugins_loaded avec la locale
-                         * du SITE (en_US), ses catalogues es-fr_FR.mo (1420 chaînes)
-                         * n'étaient jamais servis. Même mécanisme de rechargement
-                         * que load_active_textdomain(), pour le domaine « es ». */
-                        add_action( 'wp', array( __CLASS__, 'load_estatik_textdomain' ), 2 );
-                        /* Appel anticipé (chargement du thème, avant l'init
-                         * d'Estatik) : si Polylang connaît déjà la langue, les
-                         * réglages se figent directement dans la bonne locale. */
-                        self::load_estatik_textdomain();
+                        /* Lot C4 — RETRAIT PHYSIQUE : les accrochages de chargement
+                         * de textdomains (init@5, wp@1, wp@2 et l'appel anticipé du
+                         * domaine « es ») sont retirés — le chargeur unique du plugin
+                         * partikulier-core 2.9+ (I18nDomainLoader, inscrit à son
+                         * bootstrap) détient l'ensemble du mécanisme. */
                         add_action( 'template_redirect', array( __CLASS__, 'maybe_redirect_browser_language' ), 1 );
                         add_action( 'init', array( __CLASS__, 'maybe_install' ), 6 );
                         add_action( 'admin_init', array( __CLASS__, 'register_polylang_strings' ) );

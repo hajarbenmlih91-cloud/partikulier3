@@ -1,6 +1,6 @@
 # Partikulier — documentation du thème
 
-**Version 6.18.9 · septembre 2026**
+**Version 6.19.1 · septembre 2026**
 
 > Ce fichier remplace une documentation qui décrivait la version 1.2.0 d'origine et était devenue trompeuse (palette orange, 11 modules, envoi d'e-mail de confirmation — plus rien de tout cela n'est exact).
 

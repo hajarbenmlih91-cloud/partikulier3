@@ -16,8 +16,9 @@
  *    chemins (couture publique, service plugin direct, repli *_local) ;
  *  - parité de l'API post-dépendante : 30 annonces publiées × title_from_post
  *    (ar/en) + rooms_label_from_post + localized_type/localized_place ;
- *  - consolidation des catalogues : doublons legacy absents, en-têtes .mo
- *    canoniques (hash_addr de fin de table) relus par le lecteur pomo
+ *  - consolidation des catalogues (état C4 : kit canonique côté plugin,
+ *    copie de parité du thème retirée) : doublons legacy absents, en-têtes
+ *    .mo canoniques (hash_addr de fin de table) relus par le lecteur pomo
  *    HISTORIQUE et par le chargeur runtime (double lecteur — l'ancienne
  *    forme hash_addr=0 était rejetée par pomo), parité des entrées ;
  *  - hygiène : modules ≤300 lignes (7 classes plugin + 5 traits + shell),
@@ -264,16 +265,16 @@ try {
     $assert('C1A-010', $hookOk,
         'zéro hook/cron/route dans la couche CONTENU de Domain/I18n — bibliothèque pure (aucune inscription ; la couche chrome C2 détient l\'unique filtre gettext, enregistré par le bootstrap)' . ($hookHits !== [] ? ' — hits : ' . implode(', ', $hookHits) : ''));
 
-    // 11) Catalogues : canoniques <locale>.mo présents (le JIT de WP charge
-    //     ce nommage pour un thème hors WP_LANG_DIR), doublons
-    //     partikulier-<locale>.mo absents, en-têtes canoniques.
+    // 11) Catalogues (état C4) : kit canonique <locale>.mo côté PLUGIN,
+    //     doublons legacy partikulier-<locale>.mo absents, copie de parité
+    //     du thème retirée, en-têtes canoniques.
     $moSpec = [
         'ar' => ['file' => 'ar.mo', 'count' => 131],
         'en' => ['file' => 'en_US.mo', 'count' => 72],
     ];
     $catOk = true; $catNotes = [];
     foreach ($moSpec as $lang => $spec) {
-        $path = $themeDir . '/languages/' . $spec['file'];
+        $path = $pluginDir . '/languages/' . $spec['file'];
         $raw = @file_get_contents($path);
         if ($raw === false || strlen($raw) < 28) { $catOk = false; $catNotes[] = $spec['file'] . ' illisible'; continue; }
         $hdr = unpack('Vmagic/Vrev/Vtotal/Vorig/Vtrans/Vhash_len/Vhash_addr', substr($raw, 0, 28));
@@ -285,31 +286,34 @@ try {
     }
     $legacy = [$themeDir . '/languages/partikulier-ar.mo', $themeDir . '/languages/partikulier-en_US.mo'];
     $legacyAbsent = !file_exists($legacy[0]) && !file_exists($legacy[1]);
-    $assert('C1A-011', $catOk && $legacyAbsent,
-        sprintf('catalogues : ar.mo (131 entrées, hash_addr=%d) et en_US.mo (72 entrées, hash_addr=%d) canoniques — nommage <locale>.mo que charge le JIT du thème ; doublons partikulier-*.mo absents',
+    $copiesTheme = [$themeDir . '/languages/ar.mo', $themeDir . '/languages/en_US.mo', $themeDir . '/languages/partikulier.pot'];
+    $copiesRetirees = !file_exists($copiesTheme[0]) && !file_exists($copiesTheme[1]) && !file_exists($copiesTheme[2]);
+    $assert('C1A-011', $catOk && $legacyAbsent && $copiesRetirees,
+        sprintf('catalogues : ar.mo (131 entrées, hash_addr=%d) et en_US.mo (72 entrées, hash_addr=%d) canoniques dans le kit plugin — doublons partikulier-*.mo absents, copie de parité du thème retirée (lot C4)',
             28 + 16 * 131, 28 + 16 * 72) . ($catNotes !== [] ? ' — ' . implode('; ', $catNotes) : ''));
 
     // 12) Double lecteur : le pomo HISTORIQUE (rejetait hash_addr=0) relit
     //     les deux catalogues recompilés.
     if (!class_exists('MO')) { require_once $wpDir . '/wp-includes/pomo/mo.php'; }
-    $pomoAr = new MO(); $okAr = $pomoAr->import_from_file($themeDir . '/languages/ar.mo');
-    $pomoEn = new MO(); $okEn = $pomoEn->import_from_file($themeDir . '/languages/en_US.mo');
+    $pomoAr = new MO(); $okAr = $pomoAr->import_from_file($pluginDir . '/languages/ar.mo');
+    $pomoEn = new MO(); $okEn = $pomoEn->import_from_file($pluginDir . '/languages/en_US.mo');
     $assert('C1A-012', $okAr && $okEn && count($pomoAr->entries) === 131 && count($pomoEn->entries) === 72,
         sprintf('lecteur pomo historique : ar.mo %d entrées, en_US.mo %d entrées (lisible par pomo ET WP_Translation_File — hash_addr=0 était rejeté par pomo)',
             $okAr ? count($pomoAr->entries) : 0, $okEn ? count($pomoEn->entries) : 0));
 
-    // 13) Chargeur runtime : le domaine résout réellement les chaînes — y
-    //     compris par le JIT du thème (nommage <locale>.mo), exactement comme
-    //     en production avant le premier rechargement à la locale active.
+    // 13) Chargeur runtime (état C4) : le domaine résout réellement les
+    //     chaînes depuis le kit canonique du PLUGIN — exactement comme en
+    //     production où le chargeur unique (I18nDomainLoader) sert ces
+    //     catalogues.
     $probe = 'partikulier-c1-probe';
-    load_textdomain($probe, $themeDir . '/languages/ar.mo');
+    load_textdomain($probe, $pluginDir . '/languages/ar.mo');
     $aideAr = translate_with_gettext_context('Aide', '', $probe);
-    load_textdomain($probe . '-en', $themeDir . '/languages/en_US.mo');
+    load_textdomain($probe . '-en', $pluginDir . '/languages/en_US.mo');
     $annulerEn = translate_with_gettext_context('Annuler', '', $probe . '-en');
     $jitClass = get_class(get_translations_for_domain('partikulier'));
     $annulerJit = translate_with_gettext_context('Annuler', '', 'partikulier');
     $assert('C1A-013', $aideAr === 'المساعدة' && $annulerEn === 'Cancel' && $annulerJit === 'Cancel',
-        sprintf('chargeur runtime : \'Aide\' → \'المساعدة\' (ar) et \'Annuler\' → \'Cancel\' (en_US) via load_textdomain des catalogues canoniques ; JIT du thème résout \'Annuler\' → \'%s\' (%s)', $annulerJit, $jitClass));
+        sprintf('chargeur runtime : \'Aide\' → \'المساعدة\' (ar) et \'Annuler\' → \'Cancel\' (en_US) via load_textdomain des catalogues canoniques du plugin ; domaine réel \'partikulier\' résout \'Annuler\' → \'%s\' (%s)', $annulerJit, $jitClass));
 
     // 14) Santé : aucune migration C1, 8/8 domaines plugin, 0 collision.
     $health = (new HealthCheck())->get();

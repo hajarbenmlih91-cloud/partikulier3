@@ -3,25 +3,29 @@
  * Module runtime de la localisation (lot B6, découpe REG-3 de
  * class-localization.php — 990 lignes historiques).
  *
- * Charge les textdomains du thème (domaine « partikulier » puis rechargement
- * à la locale active ; domaine « es » d'Estatik avec ses trois sources
- * candidates — correctif 6.17.31 du popup d'authentification), optimise les
- * requêtes d'annonces (N+1, pagination 24) et redirige la première visite
- * humaine de la racine selon Accept-Language (robots neutralisés sur le
- * filtre officiel de Polylang — pas de cloaking par langue).
+ * Optimise les requêtes d'annonces (N+1, pagination 24) et redirige la
+ * première visite humaine de la racine selon Accept-Language (robots
+ * neutralisés sur le filtre officiel de Polylang — pas de cloaking par
+ * langue).
  *
  * Code déplacé VERBATIM depuis class-localization.php (aucune modification de
  * comportement — le mécanisme actif ne change pas au découpage, CDC 3.7
  * REG-3 ; la migration de mécanisme relève du lot C).
  *
- * Lot C3 (extinction, CDC v1.2 §3.2 I18N-1 — mécanisme unique strict) : les
- * TROIS chargeurs de textdomains (load_textdomain, load_active_textdomain,
- * load_estatik_textdomain) sont DORMANTS quand le chargeur unique du plugin
- * est chargé (\Partikulier\Core\Domain\I18n\I18nDomainLoader, plugin 2.9+) :
- * bootstrap + init@5 + after_setup_theme@1 + wp@1 lui appartiennent, pour
- * les domaines « partikulier » ET « es ». Sans le plugin, ce chemin autonome
- * historique reste actif à l'identique (dégradation gracieuse REG-5) ; le
- * retrait physique des copies dormantes relève du lot C4.
+ * Lot C4 (extinction FINALE, CDC v1.2 §3.2 I18N-1 — retrait physique, base
+ * 6.19.0) : les trois chargeurs de textdomains marqués dormants au lot C3
+ * (init@5, wp@1 et wp@2 + l'appel anticipé) sont RETIRÉS du code du thème —
+ * leurs gardes et leurs accrochages ont disparu avec eux. Le chargement des
+ * domaines « partikulier » et « es » d'Estatik appartient désormais au
+ * chargeur unique du plugin (\Partikulier\Core\Domain\I18n\I18nDomainLoader,
+ * plugin 2.9+, inscrit au bootstrap) et les catalogues du domaine vivent
+ * côté plugin (kit canonique languages/ du plugin, copie de parité retirée
+ * du thème au même lot) ; le catalogue arabe du popup d'authentification
+ * reste servi depuis languages/estatik/ du thème, source que le chargeur
+ * unique consulte (deuxième source candidate). Sans le plugin, le site est
+ * servi en langue source française (msgids) — dégradation documentée au
+ * contrat du lot (partikulier-core/tests/i18n-unified-mechanism-contract,
+ * assertions C3A-011/012).
  *
  * @package Partikulier
  */
@@ -64,104 +68,13 @@ trait Partikulier_Localization_Runtime {
                                 }
         }
 
-                /**
-                 * Charge les fichiers gettext du thème avant tout dictionnaire de repli.
-                 */
-                public static function load_textdomain() {
-                                if ( ! class_exists( 'Partikulier\\Core\\Domain\\DomainRegistry' ) ) {
-                                        load_theme_textdomain( 'partikulier', PARTIKULIER_DIR . '/languages' );
-                                }
-                        }
-
-                        /**
-                         * Polylang peut definir son slug actif apres le chargement initial de WP.
-                         * On recharge alors le fichier theme correspondant au slug public.
-                         *
-                         * Lot C1 (consolidation des catalogues) : le JIT de WP
-                         * (_load_textdomain_just_in_time) charge <locale>.mo pour
-                         * un theme dont le repertoire languages/ est hors
-                         * WP_LANG_DIR — ce nommage legacy est donc LE nom
-                         * canonique des catalogues du theme. Les doublons
-                         * partikulier-<locale>.mo (copies byte pour byte,
-                         * preuve T0 — jamais charges par le JIT) ont ete
-                         * supprimes du lot ; ar.mo et en_US.mo restent les
-                         * deux seuls catalogues, recompiles sous forme
-                         * canonique (hash_addr de fin de table, lisible par
-                         * les DEUX lecteurs gettext de WordPress).
-                         */
-                        public static function load_active_textdomain() {
-                                if ( class_exists( 'Partikulier\\Core\\Domain\\DomainRegistry' ) ) {
-                                        return;
-                                }
-                                $slug = function_exists( 'pll_current_language' ) ? pll_current_language( 'slug' ) : '';
-                                $locale = 'en' === $slug ? 'en_US' : ( 'ar' === $slug ? 'ar' : '' );
-                                if ( ! $locale ) {
-                                        return;
-                                }
-                                $file = trailingslashit( PARTIKULIER_DIR ) . 'languages/' . $locale . '.mo';
-                                if ( is_readable( $file ) ) {
-                                        load_textdomain( 'partikulier', $file );
-                                }
-                        }
-
-                /**
-                 * Recharge le domaine « es » (Estatik) avec la locale de la page.
-                 *
-                 * 6.17.31 : Estatik charge son textdomain à plugins_loaded avec la
-                 * locale du SITE (en_US sur ce déploiement) — le popup
-                 * d'authentification imprimé au wp_footer restait donc anglais
-                 * dans les vues FR/AR alors que le plugin embarque un catalogue
-                 * français complet. Le thème embarque en plus un petit catalogue
-                 * arabe (languages/estatik/es-ar.mo) couvrant le chrome visible
-                 * de ce popup. Sources consultées dans l'ordre : catalogue du
-                 * plugin, catalogue embarqué par le thème, emplacement
-                 * communautaire standard WP_LANG_DIR.
-                 */
-                public static function load_estatik_textdomain() {
-                        /* Lot C3 — EXTINCTION : le chargeur unique du plugin
-                         * (I18nDomainLoader, après_setup_theme@1 + wp@1) est
-                         * LE mécanisme actif quand il est chargé ; ce chemin
-                         * autonome ne sert que sans plugin (REG-5). */
-                        if ( class_exists( '\Partikulier\Core\Domain\I18n\I18nDomainLoader' ) ) {
-                                return;
-                        }
-                        if ( is_admin() || wp_doing_ajax() || wp_doing_cron() ) {
-                                return;
-                        }
-                        $slug = function_exists( 'pll_current_language' ) ? pll_current_language( 'slug' ) : '';
-                        if ( '' === $slug ) {
-                                return;
-                        }
-                        $locale = 'en' === $slug ? 'en_US' : ( 'fr' === $slug ? 'fr_FR' : ( 'ar' === $slug ? 'ar' : '' ) );
-                        if ( ! $locale || ! function_exists( 'unload_textdomain' ) ) {
-                                return;
-                        }
-
-                        $candidates = array();
-                        if ( defined( 'WP_PLUGIN_DIR' ) ) {
-                                $candidates[] = trailingslashit( WP_PLUGIN_DIR ) . 'estatik/languages/es-' . $locale . '.mo';
-                        }
-                        $candidates[] = trailingslashit( PARTIKULIER_DIR ) . 'languages/estatik/es-' . $locale . '.mo';
-                        if ( defined( 'WP_LANG_DIR' ) ) {
-                                $candidates[] = trailingslashit( WP_LANG_DIR ) . 'plugins/es-' . $locale . '.mo';
-                        }
-
-                        foreach ( $candidates as $file ) {
-                                if ( is_readable( $file ) ) {
-                                        unload_textdomain( 'es' );
-                                        load_textdomain( 'es', $file );
-                                        /* Le conteneur de réglages d'Estatik met en cache
-                                         * statique les default_value résolus par __() à la
-                                         * première lecture — on le force à se re-résoudre
-                                         * avec le catalogue fraîchement chargé (les titres
-                                         * du popup viennent de ces réglages). */
-                                        if ( class_exists( 'Es_Settings_Container' ) && method_exists( 'Es_Settings_Container', 'get_available_settings' ) ) {
-                                                Es_Settings_Container::get_available_settings( true );
-                                        }
-                                        return;
-                                }
-                        }
-                }
+        /* Lot C4 — RETRAIT PHYSIQUE des chargeurs de textdomains : les trois
+         * méthodes qui vivaient ici (init@5, wp@1 et wp@2, plus l'appel
+         * anticipé du domaine « es ») sont supprimées du code, gardes et
+         * accrochages compris — voir l'en-tête du module. Le chargement
+         * runtime des domaines « partikulier » et « es » appartient au
+         * chargeur unique du plugin (partikulier-core 2.9+). Les méthodes
+         * conservées ci-dessous ne touchent à aucun textdomain. */
 
                 /**
                  * Redirige uniquement la première visite humaine de la racine selon

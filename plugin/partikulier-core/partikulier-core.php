@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Partikulier Core
  * Description: Cœur métier contractuel de Partikulier : données, politiques et REST.
- * Version: 2.9.0
+ * Version: 2.9.1
  * Requires PHP: 8.1
  */
 
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-const PARTIKULIER_CORE_VERSION = '2.9.0';
+const PARTIKULIER_CORE_VERSION = '2.9.1';
 const PARTIKULIER_CORE_FILE = __FILE__;
 
 // Domaine « partikulier » — le plugin est la source canonique (lot C1 :
@@ -22,10 +22,12 @@ const PARTIKULIER_CORE_FILE = __FILE__;
 // correctif C1A-013 — WP <= 6.6 ne charge pas le nommage <locale>.mo via
 // load_plugin_textdomain() seul), puis les trois points runtime (init@5,
 // after_setup_theme@1, wp@1 — domaines « partikulier » et « es » d'Estatik)
-// sont inscrits par I18nDomainLoader::register_runtime(). Le thème 6.19.0+
-// ne charge plus AUCUN textdomain quand ce plugin est actif (extinction C3
-// documentée — repli autonome REG-5 sans plugin ; retrait physique des
-// copies dormantes au lot C4).
+// sont inscrits par I18nDomainLoader::register_runtime(). Le thème 6.19.1+
+// ne charge plus AUCUN textdomain et n'embarque plus AUCUNE copie du kit du
+// domaine « partikulier » (lot C4 — retrait physique des chargeurs et copies
+// dormants : extinction finale). Le catalogue arabe du popup d'Estatik reste
+// servi depuis languages/estatik/ du thème, source vivante que CE chargeur
+// consulte (deuxième source candidate).
 require_once __DIR__ . '/src/Domain/I18n/I18nDomainLoader.php';
 \Partikulier\Core\Domain\I18n\I18nDomainLoader::load_bootstrap_domain();
 \Partikulier\Core\Domain\I18n\I18nDomainLoader::register_runtime();

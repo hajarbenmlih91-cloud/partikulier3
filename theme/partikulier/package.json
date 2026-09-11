@@ -1,7 +1,7 @@
 {
   "name": "partikulier-theme-tests",
   "private": true,
-  "version": "6.19.0",
+  "version": "6.19.1",
   "description": "Harnais de non-regression visuelle du theme Partikulier.",
   "type": "module",
   "scripts": {
