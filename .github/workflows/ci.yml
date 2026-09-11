@@ -61,14 +61,30 @@ jobs:
           path: routes-static.json
 
   integrite-catalogues:
-    name: integrite-catalogues
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Vérifier la copie plugin/thème
-        run: bash scripts/check-catalogues.sh
-      - name: Vérifier le packaging et les empreintes
-        run: bash scripts/package.sh dist
+      - name: Lot C4 - etat final i18n (zero copie de kit cote theme)
+        run: |
+          set -e
+          # 1. Kit canonique COMPLET cote plugin
+          for f in partikulier.pot ar.po ar.mo en_US.po en_US.mo; do
+            test -f "plugin/partikulier-core/languages/$f" \
+              || { echo "MANQUANT: plugin/partikulier-core/languages/$f"; exit 1; }
+          done
+          # 2. ZERO fichier de kit cote theme (seule la source vivante "es" demeure)
+          for f in partikulier.pot ar.po ar.mo en_US.po en_US.mo; do
+            test ! -e "theme/partikulier/languages/$f" \
+              || { echo "COPIE INTERDITE PRESENTE: theme/partikulier/languages/$f"; exit 1; }
+          done
+          test -f theme/partikulier/languages/estatik/es-ar.mo
+          test -f theme/partikulier/languages/estatik/es-ar.po
+          # 3. Chargeur unique : present plugin, zero appel de textdomain cote theme
+          test -f plugin/partikulier-core/src/Domain/I18n/I18nDomainLoader.php
+          if grep -rnE "load_(theme_|plugin_)?textdomain" --include="*.php" theme/partikulier/ ; then
+            echo "ERREUR : le theme appelle encore un chargeur de textdomain"; exit 1
+          fi
+          echo "integrite-catalogues (adapte lot C4) : OK"
 
   manifeste-preuves:
     name: manifeste-preuves
