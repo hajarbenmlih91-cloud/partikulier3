@@ -85,7 +85,10 @@ class Partikulier_Localization {
                          * partikulier-core 2.9+ (I18nDomainLoader, inscrit à son
                          * bootstrap) détient l'ensemble du mécanisme. */
                         add_action( 'template_redirect', array( __CLASS__, 'maybe_redirect_browser_language' ), 1 );
-                        add_action( 'init', array( __CLASS__, 'maybe_install' ), 6 );
+                        /* Lot F — EXTINCTION : l'accrochage maybe_install@6 est
+                         * retiré — l'installation du schéma pk_property_variants
+                         * est propriété du plugin partikulier-core 2.6+ (lot B6) ;
+                         * le vestige autonome du trait Variants est éteint. */
                         add_action( 'admin_init', array( __CLASS__, 'register_polylang_strings' ) );
                         /* Lot C2 — EXTINCTION du filtre gettext : quand le service
                          * unifié du plugin (I18nChromeService) est chargé, LE

@@ -24,11 +24,14 @@
  *    double et que le trait la fournit) ;
  *  - DA-008 : ordre de chargement — les require_once des traits précèdent
  *    ceux des classes shells dans le bootstrap ;
- *  - DA-009 : baseline thème GELÉE — exactement les 15 fichiers préexistants
- *    énumérés (aucun nouveau), exclusions documentées : pk-diagnostic.php
- *    (outil de diagnostic, 2623 l., traitement au lot E) et
+ *  - DA-009 : baseline thème GELÉE, actualisée au lot F — exactement les 13
+ *    fichiers préexistants énumérés (aucun nouveau) : l'extinction des 8
+ *    vestiges (17 CREATE TABLE) fait repasser class-buyer-qualification.php
+ *    (619 → 167 l.) et class-n8n-security.php (421 → 154 l.) sous le seuil
+ *    de 400 lignes ; exclusions documentées : pk-diagnostic.php (outil de
+ *    diagnostic, 2623 l., cloisonné au lot E) et
  *    estatik4/front/property/single.php (gabarit de substitution Estatik) ;
- *  - DA-010 : santé — plugin 2.10.1, thème 6.20.0 (lot E — blindage AVIF),
+ *  - DA-010 : santé — plugin 2.10.2, thème 6.20.1 (lot F — extinction finale),
  *    schéma figé 2.6.0, 8/8 domaines, 0 collision ;
  *  - DA-011 : hygiène du banc — les invariants des lots A/B restent intacts
  *    (le contrat est de lecture seule : aucune écriture).
@@ -188,12 +191,11 @@ foreach ($orderPairs as [$traitFile, $classFile]) {
 $assert('DA-008', $orderErrors === [],
     $orderErrors === [] ? 'bootstrap : les 11 require_once de traits précèdent leurs 4 classes shells' : 'ordre incorrect : ' . implode(' ; ', $orderErrors));
 
-/* DA-009 — baseline thème gelée : exactement les 15 fichiers préexistants, aucun nouveau. */
+/* DA-009 — baseline thème gelée, actualisée au lot F : exactement les 13 fichiers préexistants (extinction des 8 vestiges : buyer-qualification et n8n-security sous le seuil). */
 $themeRoot = (string) get_template_directory();
 $frozenBaseline = [
     'inc/class-listing-approval.php',
     'inc/class-form.php',
-    'inc/class-buyer-qualification.php',
     'inc/class-page-doctor.php',
     'inc/class-search-filters.php',
     'inc/class-jsonld.php',
@@ -203,7 +205,6 @@ $frozenBaseline = [
     'inc/class-seo.php',
     'inc/class-cache.php',
     'inc/class-settings.php',
-    'inc/class-n8n-security.php',
     'inc/class-morocco-places.php',
     'inc/class-leads-admin.php',
 ];
@@ -225,17 +226,17 @@ sort($themeOversized);
 sort($frozenBaseline);
 $assert('DA-009', $themeOversized === $frozenBaseline,
     $themeOversized === $frozenBaseline
-        ? sprintf('baseline thème gelée : %d fichiers préexistants >400 l. (dette hors campagne, arbitrage « Référence + plugin ») — exclusions documentées : %s', count($frozenBaseline), implode(', ', $documentedExclusions))
+        ? sprintf('baseline thème gelée (actualisée lot F) : %d fichiers préexistants >400 l. (extinction des 8 vestiges — buyer-qualification et n8n-security sous le seuil) — exclusions documentées : %s', count($frozenBaseline), implode(', ', $documentedExclusions))
         : 'écart à la baseline : +' . implode(', ', array_diff($themeOversized, $frozenBaseline)) . ' / -' . implode(', ', array_diff($frozenBaseline, $themeOversized)));
 
-/* DA-010 — santé : plugin 2.10.1 (lot E), thème 6.20.0, schéma figé, 8/8, 0 collision. */
+/* DA-010 — santé : plugin 2.10.2 (lot F), thème 6.20.1, schéma figé, 8/8, 0 collision. */
 $themeVersion = wp_get_theme()->get('Version');
 $health = (new HealthCheck())->get();
 $pluginDomains = count(array_filter($health['domains'] ?? [], static fn($d): bool => ($d['owner'] ?? '') === 'plugin'));
-$assert('DA-010', PARTIKULIER_CORE_VERSION === '2.10.1' && $themeVersion === '6.20.0'
+$assert('DA-010', PARTIKULIER_CORE_VERSION === '2.10.2' && $themeVersion === '6.20.1'
     && \Partikulier\Core\Database\Schema::VERSION === '2.6.0' && ($health['status'] ?? '') === 'ok'
     && $pluginDomains === 8 && (int) ($health['routes']['collisions'] ?? -1) === 0,
-    sprintf('santé : %s, plugin %s, thème %s (lot E — blindage AVIF), schéma %s (zéro migration), %d/8 domaines, 0 collision',
+    sprintf('santé : %s, plugin %s, thème %s (lot F — extinction finale), schéma %s (zéro migration), %d/8 domaines, 0 collision',
         ($health['status'] ?? '?'), PARTIKULIER_CORE_VERSION, $themeVersion, \Partikulier\Core\Database\Schema::VERSION, $pluginDomains));
 
 /* DA-011 — hygiène du banc (contrat de lecture seule : aucune écriture). */

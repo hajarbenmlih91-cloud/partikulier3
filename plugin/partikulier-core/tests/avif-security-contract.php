@@ -35,7 +35,7 @@
  *  - SE-011 : conversion cohérente — média réel : si l'éditeur WP supporte
  *    AVIF, le .avif est écrit non vide (mode normal) ; sinon aucun .avif et
  *    aucune fatale (mode dégradé). Jamais l'inverse ;
- *  - SE-012 : périmètre diagnostic + versions (thème 6.20.0, plugin 2.10.1,
+ *  - SE-012 : périmètre diagnostic + versions (thème 6.20.1, plugin 2.10.2,
  *    src plugin inchangé) + hygiène class-avif (≤400 l., zéro exec direct).
  *
  * Rejouable : PK_WP_DIR=... PK_COMMIT=<sha> php partikulier-core/tests/avif-security-contract.php
@@ -311,7 +311,7 @@ try {
     $avifLignes = count((array) file($fichierAvifModule));
     $versionTheme = (string) wp_get_theme()->get('Version');
     $assert('SE-012', $sitesDiagnostic === [] && $diagPasseParPasserelle && $sitesAvif === [] && $avifLignes <= 400
-        && $versionTheme === '6.20.0' && PARTIKULIER_CORE_VERSION === '2.10.1',
+        && $versionTheme === '6.20.1' && PARTIKULIER_CORE_VERSION === '2.10.2',
         sprintf('pk-diagnostic : 0 appel direct (passe par la passerelle) ; class-avif %d l. sans exec direct ; thème %s, plugin %s (src inchangé, +contrat)',
             $avifLignes, $versionTheme, PARTIKULIER_CORE_VERSION));
 

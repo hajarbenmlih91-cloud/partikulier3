@@ -2,13 +2,14 @@
 /**
  * Fondations internes des annonces premium Partikulier.
  *
- * Depuis le lot B1 de la refonte (CDC v1.2), ce module est une COUTURE : le
- * domaine premium (journal pk_premium_history, méta et transitions) est
- * propriété du plugin partikulier-core 2.1+. Chaque opération est déléguée
- * à \Partikulier\Core\Domain\Premium\PremiumService quand la classe existe;
- * sans le plugin, le chemin autonome historique 6.17.x est conservé à
- * l'identique (dégradation gracieuse REG-5 — les deux chemins écrivent les
- * mêmes tables avec la même logique).
+ * Lot F de la refonte (CDC v1.2 — extinction finale) : le domaine premium
+ * (journal pk_premium_history, méta et transitions) est propriété du plugin
+ * partikulier-core 2.1+ depuis le lot B1 ; le VESTIGE autonome 6.17.x est
+ * physiquement retiré — installation du journal et écritures directes sont
+ * éteints. Chaque opération délègue exclusivement à
+ * \Partikulier\Core\Domain\Premium\PremiumService, qui est requis. L'ÉCRAN
+ * d'administration (rendu, nonce, redirection) reste au thème (arbitrage B1 :
+ * UI au thème, politique au plugin).
  *
  * Aucun affichage public ni tri n’est activé par ce module. Les décisions
  * métier G3 (durée, rôles, plafond et procédure de retrait) restent requises
@@ -23,8 +24,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class Partikulier_Premium {
 
-        const DB_VERSION = '1.0.0';
-        const OPTION_DB_VERSION = 'pk_premium_db_version';
         const OPTION_PUBLIC_ENABLED = 'pk_premium_public_enabled';
         const META_STATUS = '_pk_premium_status';
         const META_STARTS_AT = '_pk_premium_starts_at';
@@ -34,7 +33,6 @@ class Partikulier_Premium {
         const STATUS_REVOKED = 'revoked';
 
         public static function init() {
-                add_action( 'init', array( __CLASS__, 'maybe_install' ), 5 );
                 add_action( 'admin_menu', array( __CLASS__, 'register_menu' ) );
                 add_action( 'admin_post_pk_grant_premium', array( __CLASS__, 'handle_grant' ) );
                 add_action( 'admin_post_pk_revoke_premium', array( __CLASS__, 'handle_revoke' ) );
@@ -77,6 +75,7 @@ class Partikulier_Premium {
 
         /**
          * Lot B1 : le plugin est-il propriétaire du domaine premium ?
+         * (lot F : oui — conditionne chaque délégation).
          */
         private static function core_premium() {
                 return class_exists( '\Partikulier\Core\Domain\Premium\PremiumService' )
@@ -85,63 +84,18 @@ class Partikulier_Premium {
         }
 
         /**
-         * Crée le journal des attributions premium. Les données d’un propriétaire
-         * sont référencées par son identifiant WordPress, jamais dupliquées en clair.
-         * Lot B1 : sans délégation possible, le chemin historique reste (le plugin
-         * installe et administre seul sinon).
+         * Nom canonique du journal premium — délégation au service propriétaire
+         * (probe contractuelle PREM : l'égalité thème/plugin fait foi).
          */
-        public static function maybe_install() {
-                if ( self::core_premium() ) {
-                        return;
-                }
-                if ( self::DB_VERSION === get_option( self::OPTION_DB_VERSION ) ) {
-                        return;
-                }
-
-                global $wpdb;
-                require_once ABSPATH . 'wp-admin/includes/upgrade.php';
-                $table = self::table_name();
-                $charset = $wpdb->get_charset_collate();
-
-                dbDelta( "CREATE TABLE {$table} (
-                        id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-                        property_id bigint(20) unsigned NOT NULL,
-                        owner_id bigint(20) unsigned NOT NULL,
-                        status varchar(16) NOT NULL,
-                        selection_reason text NOT NULL,
-                        granted_by bigint(20) unsigned NOT NULL,
-                        granted_at datetime NOT NULL,
-                        starts_at datetime NOT NULL,
-                        ends_at datetime NOT NULL,
-                        revoked_by bigint(20) unsigned NOT NULL DEFAULT 0,
-                        revoked_at datetime NULL,
-                        revocation_reason text NULL,
-                        PRIMARY KEY  (id),
-                        KEY property_status (property_id,status),
-                        KEY status_ends_at (status,ends_at),
-                        KEY owner_status (owner_id,status)
-                ) {$charset};" );
-
-                update_option( self::OPTION_DB_VERSION, self::DB_VERSION, false );
-                if ( false === get_option( self::OPTION_PUBLIC_ENABLED, false ) ) {
-                        add_option( self::OPTION_PUBLIC_ENABLED, '0', '', false );
-                }
-        }
-
         public static function table_name() {
-                if ( self::core_premium() ) {
-                        return self::core_premium()::table_name();
-                }
-                global $wpdb;
-                return $wpdb->prefix . 'pk_premium_history';
+                return self::core_premium() ? self::core_premium()::table_name() : '';
         }
 
         private static function recent_rows() {
                 if ( self::core_premium() ) {
                         return self::core_premium()::recent_rows();
                 }
-                global $wpdb;
-                return $wpdb->get_results( 'SELECT * FROM ' . self::table_name() . ' ORDER BY granted_at DESC, id DESC LIMIT 50' );
+                return array();
         }
 
         private static function require_admin() {
@@ -169,11 +123,12 @@ class Partikulier_Premium {
                 if ( self::core_premium() ) {
                         return self::core_premium()::is_public_enabled();
                 }
-                return '1' === (string) get_option( self::OPTION_PUBLIC_ENABLED, '0' );
+                return false;
         }
 
         /**
-         * Attribue un créneau premium dans le journal. Cette méthode n’est pas
+         * Attribue un créneau premium dans le journal — délégation au service
+         * du plugin (mêmes gardes, même traçabilité). Cette méthode n’est pas
          * raccordée à une interface tant que les règles G3 ne sont pas validées.
          *
          * @param int    $property_id Identifiant Estatik.
@@ -187,71 +142,18 @@ class Partikulier_Premium {
                 if ( self::core_premium() ) {
                         return self::core_premium()::grant( (int) $property_id, (int) $granted_by, (string) $reason, (string) $starts_at, (string) $ends_at );
                 }
-                $property_id = absint( $property_id );
-                $granted_by = absint( $granted_by );
-                $reason = sanitize_textarea_field( $reason );
-                $starts_at = self::normalize_datetime( $starts_at );
-                $ends_at = self::normalize_datetime( $ends_at );
-
-                if ( ! $property_id || PARTIKULIER_ESTATIK_POST_TYPE !== get_post_type( $property_id ) ) {
-                        return new WP_Error( 'pk_premium_property', __( 'Annonce premium invalide.', 'partikulier' ) );
-                }
-                if ( ! $granted_by || ! user_can( $granted_by, 'manage_options' ) ) {
-                        return new WP_Error( 'pk_premium_permission', __( 'Autorisation premium insuffisante.', 'partikulier' ) );
-                }
-                if ( ! $reason ) {
-                        return new WP_Error( 'pk_premium_reason', __( 'Un motif de sélection est obligatoire.', 'partikulier' ) );
-                }
-                if ( ! $starts_at || ! $ends_at || strtotime( $ends_at . ' UTC' ) <= strtotime( $starts_at . ' UTC' ) ) {
-                        return new WP_Error( 'pk_premium_dates', __( 'La période premium est invalide.', 'partikulier' ) );
-                }
-
-                global $wpdb;
-                $owner_id = (int) get_post_field( 'post_author', $property_id );
-                $now = current_time( 'mysql', true );
-                $inserted = $wpdb->insert(
-                        self::table_name(),
-                        array(
-                                'property_id' => $property_id,
-                                'owner_id' => $owner_id,
-                                'status' => self::STATUS_ACTIVE,
-                                'selection_reason' => $reason,
-                                'granted_by' => $granted_by,
-                                'granted_at' => $now,
-                                'starts_at' => $starts_at,
-                                'ends_at' => $ends_at,
-                        ),
-                        array( '%d', '%d', '%s', '%s', '%d', '%s', '%s', '%s' )
-                );
-                if ( false === $inserted ) {
-                        return new WP_Error( 'pk_premium_storage', __( 'Impossible d’enregistrer l’attribution premium.', 'partikulier' ) );
-                }
-
-                update_post_meta( $property_id, self::META_STATUS, self::STATUS_ACTIVE );
-                update_post_meta( $property_id, self::META_STARTS_AT, $starts_at );
-                update_post_meta( $property_id, self::META_ENDS_AT, $ends_at );
-
-                return (int) $wpdb->insert_id;
+                return new WP_Error( 'pk_core_required', __( 'Le journal premium exige le plugin partikulier-core.', 'partikulier' ) );
         }
 
         /**
-         * Vérifie l’état courant et bascule une attribution échue sans dépendre de
-         * WP-Cron : la première lecture après échéance la rend immédiatement inactive.
+         * Vérifie l’état courant et bascule une attribution échue — délégation
+         * au service du plugin (première lecture après échéance inactive).
          */
         public static function is_active( $property_id ) {
                 if ( self::core_premium() ) {
                         return self::core_premium()::is_active( (int) $property_id );
                 }
-                $property_id = absint( $property_id );
-                if ( self::STATUS_ACTIVE !== get_post_meta( $property_id, self::META_STATUS, true ) ) {
-                        return false;
-                }
-                $ends_at = (string) get_post_meta( $property_id, self::META_ENDS_AT, true );
-                if ( ! $ends_at || strtotime( $ends_at . ' UTC' ) <= time() ) {
-                        self::expire( $property_id );
-                        return false;
-                }
-                return true;
+                return false;
         }
 
         public static function expire( $property_id ) {
@@ -259,22 +161,14 @@ class Partikulier_Premium {
                         self::core_premium()::expire( (int) $property_id );
                         return;
                 }
-                self::close_current( $property_id, self::STATUS_EXPIRED, 0, __( 'Expiration automatique.', 'partikulier' ) );
+                return;
         }
 
         public static function revoke( $property_id, $revoked_by, $reason ) {
                 if ( self::core_premium() ) {
                         return self::core_premium()::revoke( (int) $property_id, (int) $revoked_by, (string) $reason );
                 }
-                $revoked_by = absint( $revoked_by );
-                if ( ! $revoked_by || ! user_can( $revoked_by, 'manage_options' ) ) {
-                        return new WP_Error( 'pk_premium_permission', __( 'Autorisation premium insuffisante.', 'partikulier' ) );
-                }
-                if ( ! sanitize_textarea_field( $reason ) ) {
-                        return new WP_Error( 'pk_premium_reason', __( 'Un motif de retrait est obligatoire.', 'partikulier' ) );
-                }
-                self::close_current( $property_id, self::STATUS_REVOKED, $revoked_by, $reason );
-                return true;
+                return new WP_Error( 'pk_core_required', __( 'Le journal premium exige le plugin partikulier-core.', 'partikulier' ) );
         }
 
         public static function render_admin_page() {
@@ -305,29 +199,6 @@ class Partikulier_Premium {
                         </tbody></table>
                 </div>
                 <?php
-        }
-
-        private static function close_current( $property_id, $status, $actor_id, $reason ) {
-                global $wpdb;
-                $property_id = absint( $property_id );
-                $wpdb->query(
-                        $wpdb->prepare(
-                                'UPDATE ' . self::table_name() . ' SET status = %s, revoked_by = %d, revoked_at = %s, revocation_reason = %s WHERE property_id = %d AND status = %s',
-                                $status,
-                                absint( $actor_id ),
-                                current_time( 'mysql', true ),
-                                sanitize_textarea_field( $reason ),
-                                $property_id,
-                                self::STATUS_ACTIVE
-                        )
-                );
-                update_post_meta( $property_id, self::META_STATUS, $status );
-        }
-
-        private static function normalize_datetime( $value ) {
-                $value = trim( (string) $value );
-                $timestamp = strtotime( $value . ' UTC' );
-                return $timestamp ? gmdate( 'Y-m-d H:i:s', $timestamp ) : '';
         }
 }
 

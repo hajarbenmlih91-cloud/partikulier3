@@ -8,8 +8,8 @@ if [[ "$OUT_INPUT" = /* ]]; then
 else
   OUT="$ROOT/$OUT_INPUT"
 fi
-PLUGIN_VERSION="2.10.1"
-THEME_VERSION="6.20.0"
+PLUGIN_VERSION="2.10.2"
+THEME_VERSION="6.20.1"
 
 rm -rf "$OUT"
 mkdir -p "$OUT"
