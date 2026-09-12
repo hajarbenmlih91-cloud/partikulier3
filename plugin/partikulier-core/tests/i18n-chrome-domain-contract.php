@@ -157,11 +157,11 @@ try {
         sprintf("filtre réel : __('Aide') → '%s' via le filtre du service unifié (catalogue ar chargé sur le domaine réel, domaine déchargé au préalable) — parité locale et service directe",
             $aideViaFilter));
 
-    // 10) Versions et santé : 2.10.3 / 6.20.2 (lot F — extinction finale : plugin 2.10.3, thème 6.20.2), schéma figé 2.6.0, 8/8, 0 collision.
+    // 10) Versions et santé : 2.10.4 / 6.20.3 (lot F — extinction finale : plugin 2.10.4, thème 6.20.3), schéma figé 2.6.0, 8/8, 0 collision.
     $themeVersion = wp_get_theme()->get('Version');
     $health = (new HealthCheck())->get();
     $pluginDomains = count(array_filter($health['domains'] ?? [], static fn($d) => ($d['owner'] ?? '') === 'plugin'));
-    $assert('C2A-010', PARTIKULIER_CORE_VERSION === '2.10.3' && $themeVersion === '6.20.2'
+    $assert('C2A-010', PARTIKULIER_CORE_VERSION === '2.10.4' && $themeVersion === '6.20.3'
         && Schema::VERSION === '2.6.0' && $pluginDomains === 8
         && (int) ($health['routes']['collisions'] ?? -1) === 0,
         sprintf('versions : plugin %s, thème %s, schéma %s (figé — zéro migration C2), %d/8 domaines, 0 collision',

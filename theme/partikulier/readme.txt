@@ -5,7 +5,7 @@ Tags: real-estate, property, listings, immobilier, performance, avif
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 6.19.1
+Stable tag: 6.20.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -46,6 +46,10 @@ Caracteristiques :
 * Le theme surcharge automatiquement les templates d'Estatik via le dossier `estatik4/front/`.
 
 == Changelog ==
+
+= 6.20.3 =
+
+* Correction AVIF (cause racine de l'échec SE-011 en CI) : sur un hébergement où Imagick REVENDIQUE le format AVIF (Imagick::queryFormats) mais ne peut pas l'encoder (libheif installée avec ses seuls plugins de décodage — cas constaté sur Ubuntu 24.04 + PPA ondrej/php), WordPress choisissait l'éditeur Imagick par priorité, writeImage() « réussissait » silencieusement en écrivant un fichier de 0 octet, et GD — pourtant capable via imageavif() — n'était jamais essayé. La conversion essaie désormais CHAQUE éditeur AVIF-capable de la liste wp_image_editors jusqu'à obtention d'un .avif réellement non vide (cible purgée entre chaque essai), avant les replis avifenc/vips de la passerelle du lot E. Nouveau verrou contractuel SE-015 (oracle 237/237).
 
 = 6.19.1 =
 

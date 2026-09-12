@@ -88,13 +88,8 @@ class Partikulier_AVIF {
 
 		}
 		if ( wp_image_editor_supports( array( 'mime_type' => 'image/avif' ) ) ) {
-			$editor = wp_get_image_editor( $file );
-			if ( ! is_wp_error( $editor ) ) {
-					$editor->set_quality( self::QUALITY );
-					$result = $editor->save( $avif, 'image/avif' );
-				if ( ! is_wp_error( $result ) && ! empty( $result['path'] ) && file_exists( $result['path'] ) && filesize( $result['path'] ) > 0 ) {
-					return true;
-				}
+			if ( self::convert_with_wp_editor( $file, $avif ) ) {
+				return true;
 			}
 		}
 
@@ -108,6 +103,67 @@ class Partikulier_AVIF {
 
 		}
 		return $converted;
+	}
+
+	/**
+	 * Essai de chaque editeur WordPress AVIF-capable, chacun son tour,
+	 * jusqu'a obtention d'un fichier reellement non vide.
+	 *
+	 * Cause racine du correctif (constatee en CI sur hote Ubuntu 24.04
+	 * + PPA ondrej/php) : un Imagick peut REVENDIQUER le format AVIF
+	 * (Imagick::queryFormats) tout en etant incapable d'encoder — libheif
+	 * installee avec ses seuls plugins de DEcodage (aomdec, libde265)
+	 * et sans plugin d'ENcodage (aomenc manquant). WordPress choisit
+	 * l'editeur par priorite (Imagick avant GD), writeImage() « reussit »
+	 * alors silencieusement en ecrivant un fichier de 0 octet, et GD —
+	 * parfaitement capable via imageavif() — n'etait jamais essaye.
+	 *
+	 * On itere donc sur la liste wp_image_editors : des qu'un essai ne
+	 * produit pas un .avif non vide (erreur, fichier absent ou vide), on
+	 * purge la cible et on tente l'editeur suivant. Les replis avifenc
+	 * et vips (passerelle unique du lot E) restent en chaine derriere.
+	 *
+	 * @param string $file  Chemin de l'image source.
+	 * @param string $avif  Chemin du fichier .avif attendu.
+	 * @return bool True si un editeur a livre un .avif non vide.
+	 */
+	private static function convert_with_wp_editor( $file, $avif ) {
+		$classes = apply_filters( 'wp_image_editors', array( 'WP_Image_Editor_Imagick', 'WP_Image_Editor_GD' ) );
+		if ( ! is_array( $classes ) ) {
+			$classes = array();
+		}
+		foreach ( $classes as $classe ) {
+			if ( ! is_string( $classe ) || ! class_exists( $classe ) ) {
+				continue;
+			}
+			if ( ! call_user_func( array( $classe, 'test' ) )
+				|| ! call_user_func( array( $classe, 'supports_mime_type' ), 'image/avif' ) ) {
+				continue;
+			}
+			try {
+				$editor = new $classe( $file );
+				$charge = $editor->load();
+				if ( is_wp_error( $charge ) ) {
+						continue;
+				}
+				$editor->set_quality( self::QUALITY );
+				$result = $editor->save( $avif, 'image/avif' );
+			} catch ( Throwable $e ) {
+				continue;
+			}
+			if ( ! is_wp_error( $result )
+				&& file_exists( $avif )
+				&& (int) filesize( $avif ) > 0 ) {
+				return true;
+			}
+			// Essai sterile (ex. Imagick « menteur » : fichier
+			// vide malgre un retour sans erreur) : on purge la
+			// cible avant de tenter l'editeur suivant.
+			if ( file_exists( $avif ) && 0 === filesize( $avif ) ) {
+				wp_delete_file( $avif ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations
+			}
+		}
+		return false;
 	}
 
 	/**

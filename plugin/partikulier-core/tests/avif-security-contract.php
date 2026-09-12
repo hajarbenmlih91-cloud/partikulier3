@@ -8,7 +8,7 @@
  * avifenc, vips) et pk-diagnostic.php (sonde mono-ouvrier : ps). Le contrat
  * verrouille les garanties exigées par le CDC §3.4 :
  *
- * Assertions SE-001 à SE-012 :
+ * Assertions SE-001 à SE-015 :
  *  - SE-001 : le module unique est chargé et reste sous le plafond CA-4
  *    (<400 l., délibérément monolithique : le cloisonnement exige UN module) ;
  *  - SE-002 : AUCUN appel système hors du module — scan lexical
@@ -35,7 +35,7 @@
  *  - SE-011 : conversion cohérente — média réel : si l'éditeur WP supporte
  *    AVIF, le .avif est écrit non vide (mode normal) ; sinon aucun .avif et
  *    aucune fatale (mode dégradé). Jamais l'inverse ;
- *  - SE-012 : périmètre diagnostic + versions (thème 6.20.2, plugin 2.10.3,
+ *  - SE-012 : périmètre diagnostic + versions (thème 6.20.3, plugin 2.10.4,
  *    src plugin inchangé) + hygiène class-avif (≤400 l., zéro exec direct) ;
  *  - SE-013 : cible-lien — un lien symbolique posé sur la cible (pointant
  *    hors uploads) est REFUSÉ (raison « cible-lien », journal REFUS:cible-lien),
@@ -45,7 +45,13 @@
  *  - SE-014 : délai d'exécution — binaire endormi (sleep 60) tué au bout du
  *    délai (filtre partikulier_exec_timeout), raison « timeout », durée
  *    bornée, journal EXEC:timeout, proc_close()=-1 maîtrisé (drain avant
- *    fermeture : le test lui-même ne pend jamais).
+ *    fermeture : le test lui-même ne pend jamais) ;
+ *  - SE-015 : repli multi-éditeurs — un éditeur en tête qui revendique AVIF
+ *    et « réussit » en écrivant 0 octet (panneau Imagick/libheif constatée
+ *    en CI Ubuntu 24.04 : plugins de décodage sans plugin d'encodage) ne
+ *    doit pas priver le site de son .avif : l'éditeur suivant capable
+ *    livre le fichier non vide (correctif 6.20.3 : itération sur tous les
+ *    éditeurs AVIF-capables, cible purgée entre chaque essai).
  *
  * Rejouable : PK_WP_DIR=... PK_COMMIT=<sha> php partikulier-core/tests/avif-security-contract.php
  */
@@ -320,7 +326,7 @@ try {
     $avifLignes = count((array) file($fichierAvifModule));
     $versionTheme = (string) wp_get_theme()->get('Version');
     $assert('SE-012', $sitesDiagnostic === [] && $diagPasseParPasserelle && $sitesAvif === [] && $avifLignes <= 400
-        && $versionTheme === '6.20.2' && PARTIKULIER_CORE_VERSION === '2.10.3',
+        && $versionTheme === '6.20.3' && PARTIKULIER_CORE_VERSION === '2.10.4',
         sprintf('pk-diagnostic : 0 appel direct (passe par la passerelle) ; class-avif %d l. sans exec direct ; thème %s, plugin %s (src inchangé, +contrat)',
             $avifLignes, $versionTheme, PARTIKULIER_CORE_VERSION));
 
@@ -389,6 +395,69 @@ try {
         sprintf('délai : dormeur (sleep 60, épinglé) tué au bout du délai (filtre à 1 s) — durée %d ms, test %d ms (aucune pendaison : drain avant proc_close, piège -1 maîtrisé), journal EXEC:timeout, exit_code null',
             $msDormeur, $duree));
     @unlink($dormeur);
+
+    /* SE-015 — repli multi-éditeurs : un éditeur AVIF « menteur » en tête de
+       liste ne doit pas priver le site de son .avif. Cause racine constatée
+       en CI (hôte Ubuntu 24.04 + PPA ondrej/php) : Imagick revendique AVIF
+       (queryFormats) mais libheif n'a que ses plugins de décodage —
+       writeImage() « réussit » en écrivant 0 octet ; GD (imageavif, capable)
+       n'était jamais essayé car un seul éditeur était tenté. Le correctif
+       itère sur tous les éditeurs capables jusqu'à un .avif réellement non
+       vide. Le contrat simule la panne de façon déterministe : un éditeur
+       menteur (revendique AVIF, écrit un fichier vide en prétendant
+       réussir) injecté en tête, un éditeur honnête en second — la
+       conversion réelle doit livrer le fichier non vide. */
+    class PK_Contrat_Editeur_Menteur extends WP_Image_Editor_GD {
+        public static function supports_mime_type( $mime_type ) { return true; }
+        public function save( $filename = null, $mime_type = null ) {
+            if ( is_string( $filename ) ) { @file_put_contents( $filename, '' ); }
+            return array( 'path' => (string) $filename, 'file' => basename( (string) $filename ), 'width' => 64, 'height' => 48, 'mime-type' => 'image/avif' );
+        }
+    }
+    class PK_Contrat_Editeur_Honnete extends WP_Image_Editor_GD {
+        public static function supports_mime_type( $mime_type ) { return true; }
+        public function save( $filename = null, $mime_type = null ) {
+            if ( is_string( $filename ) ) { @file_put_contents( $filename, (string) file_get_contents( $this->file ) ); }
+            return array( 'path' => (string) $filename, 'file' => basename( (string) $filename ), 'width' => 64, 'height' => 48, 'mime-type' => 'image/avif' );
+        }
+    }
+    $injecteFaux = static function ( $editors ) {
+        return array( 'PK_Contrat_Editeur_Menteur', 'PK_Contrat_Editeur_Honnete', 'WP_Image_Editor_GD' );
+    };
+    add_filter( 'wp_image_editors', $injecteFaux );
+    $meta15 = null;
+    $att15 = 0;
+    $fichierAvif15 = '';
+    $octetsAttendus = 0;
+    $entree15 = $testDir . '/entree15.png';
+    $img15 = @imagecreatetruecolor(64, 48);
+    if (is_resource($img15) || (is_object($img15) && $img15 instanceof GdImage)) {
+        @imagepng($img15, $entree15);
+        @imagedestroy($img15);
+    }
+    $contenu15 = is_file($entree15) ? (string) file_get_contents($entree15) : '';
+    $upload15 = ($contenu15 !== '') ? wp_upload_bits('pk-contrat-repli.png', null, $contenu15) : array('error' => 'source absente');
+    if (empty($upload15['error'])) {
+        $fichierSource15 = (string) $upload15['file'];
+        $octetsAttendus = strlen($contenu15);
+        $att15 = (int) wp_insert_attachment([
+            'post_mime_type' => 'image/png',
+            'post_title' => 'pk contrat repli editeurs',
+            'post_status' => 'inherit',
+        ], $fichierSource15);
+        if ($att15 > 0) {
+            $meta15 = wp_generate_attachment_metadata($att15, $fichierSource15);
+            $fichierAvif15 = $fichierSource15 . '.avif';
+        }
+    }
+    $ecrit15 = is_file($fichierAvif15) && (int) filesize($fichierAvif15) === $octetsAttendus && $octetsAttendus > 0;
+    $assert('SE-015', is_array($meta15) && $ecrit15,
+        sprintf('repli multi-éditeurs : éditeur menteur en tête (revendique AVIF, écrit 0 octet) => l\'éditeur suivant livre le .avif (%s) — fichier %d o = octets de l\'éditeur honnête, pas la copie vide',
+            $ecrit15 ? 'non vide' : 'ABSENT', is_file($fichierAvif15) ? (int) filesize($fichierAvif15) : 0));
+    remove_filter( 'wp_image_editors', $injecteFaux );
+    if ($att15 > 0) { wp_delete_attachment($att15, true); }
+    if ($fichierAvif15 !== '' && is_file($fichierAvif15)) { @unlink($fichierAvif15); }
+    @unlink($entree15);
 
 } catch (Throwable $e) {
     $assert('SE-999', false, 'exception inattendue : ' . $e->getMessage() . ' @ ' . basename($e->getFile()) . ':' . $e->getLine());

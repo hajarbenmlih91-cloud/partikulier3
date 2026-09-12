@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Partikulier Core
  * Description: Cœur métier contractuel de Partikulier : données, politiques et REST.
- * Version: 2.10.3
+ * Version: 2.10.4
  * Requires PHP: 8.1
  */
 
@@ -12,7 +12,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-const PARTIKULIER_CORE_VERSION = '2.10.3';
+const PARTIKULIER_CORE_VERSION = '2.10.4';
 const PARTIKULIER_CORE_FILE = __FILE__;
 
 // Domaine « partikulier » — le plugin est la source canonique (lot C1 :
