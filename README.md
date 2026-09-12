@@ -1,17 +1,17 @@
 # Partikulier 3
 
-Monorepo de livraison du portail immobilier **Partikulier** : thème WordPress et plugin cœur métier, issus du lot C2 certifié fourni avec ce projet.
+Monorepo de livraison du portail immobilier **Partikulier** : thème WordPress et plugin cœur métier, maintenus et validés sur les lots C à F.
 
 ## Contenu
 
 | Chemin | Rôle | Version |
 |---|---|---:|
-| `plugin/partikulier-core` | Plugin cœur : domaines métier, REST, santé, migrations et contrats | 2.8.0 |
-| `theme/partikulier` | Thème immobilier : templates, front, i18n FR/EN/AR, Estatik et QA | 6.18.9 |
+| `plugin/partikulier-core` | Plugin cœur : domaines métier, REST, santé, migrations et contrats | 2.10.4 |
+| `theme/partikulier` | Thème immobilier : templates, front, i18n FR/EN/AR, Estatik et QA | 6.20.3 |
 | `scripts/package.sh` | Packaging reproductible des deux livrables | — |
 | `docs/` | Architecture, installation et release | — |
 
-Le thème délègue au plugin les domaines métier disponibles et conserve un mode de repli compatible lorsque le plugin est désactivé. Les deux composants sont livrés ensemble pour garantir la compatibilité des contrats i18n C1/C2.
+Le thème délègue au plugin les domaines métier disponibles et conserve un mode de repli compatible lorsque le plugin est désactivé. Les deux composants sont livrés ensemble pour garantir la compatibilité des contrats i18n et des lots C à F.
 
 ## Prérequis
 
@@ -51,9 +51,9 @@ Le script exclut les dépôts Git, caches, secrets, artefacts de test et dossier
 
 Le lot source a été vérifié par somme SHA-256 avant intégration. Les preuves textuelles de recette B1→B6, les journaux, contrats JSON, rapports et l’audit du monorepo sont regroupés dans [`preuves/`](preuves/), avec le [manifeste de campagne](preuves/MANIFESTE.md). Les preuves historiques restent distinctes des contrats rejouables dans `plugin/partikulier-core/tests/` et `theme/partikulier/tests/`.
 
-La campagne fournie documente **695/695 assertions PASS** sur les lots B1→B6 et **189/189 assertions PASS** sur l’audit du monorepo. Les snapshots SQLite et captures PNG sont publiés séparément dans la [Release `preuves-b1-b6`](https://github.com/hajarbenmlih91-cloud/partikulier3/releases/tag/preuves-b1-b6), conformément à [`preuves/ARTEFACTS-BINAIRES.md`](preuves/ARTEFACTS-BINAIRES.md). Les contrôles nécessitant WordPress vivant sont explicitement séparés des contrôles statiques.
+La campagne historique documente **695/695 assertions PASS** sur les lots B1→B6 et **189/189 assertions PASS** sur l’audit du monorepo. Les lots C à F sont traçables dans l’historique Git et couverts par les workflows [`CI`](.github/workflows/ci.yml) et [`Contrats de recette WordPress`](.github/workflows/contrats-recette.yml). L’état courant vise **20 suites dynamiques et 237/237 assertions**, dont les contrôles de sécurité AVIF SE-013, SE-014 et SE-015. Les snapshots SQLite et captures PNG sont publiés séparément dans la [Release `preuves-b1-b6`](https://github.com/hajarbenmlih91-cloud/partikulier3/releases/tag/preuves-b1-b6), conformément à [`preuves/ARTEFACTS-BINAIRES.md`](preuves/ARTEFACTS-BINAIRES.md). Les contrôles nécessitant WordPress vivant sont explicitement séparés des contrôles statiques.
 
-Les versions, les checksums et le détail du périmètre sont documentés dans [`docs/RELEASE.md`](docs/RELEASE.md). Pour l’exploitation, consulter [`docs/INSTALLATION.md`](docs/INSTALLATION.md).
+Les versions, les checksums et le détail du périmètre des lots C à F sont documentés dans [`docs/RELEASE.md`](docs/RELEASE.md) et les rapports de [`preuves/rapports/`](preuves/rapports/). Pour l’exploitation, consulter [`docs/INSTALLATION.md`](docs/INSTALLATION.md).
 
 ## Licence
 
