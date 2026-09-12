@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  PK_VERSION: '2.10.2'
+  PK_VERSION: '2.10.3'
 
 permissions:
   contents: read
@@ -87,9 +87,9 @@ jobs:
               exit 1
             fi
           done
-      - name: Vérifier l’oracle 234/234
+      - name: Vérifier l’oracle 236/236
         run: |
-          php -r '$tot=0; $pas=0; foreach (glob("preuves-run/contrats/*.json") as $f) { $d=json_decode(file_get_contents($f), true); if (($d["status"] ?? "") !== "PASS") { fwrite(STDERR, basename($f).": status != PASS\n"); exit(1); } $tot += (int) $d["total"]; $pas += (int) $d["passed"]; } echo "contrats dynamiques : $pas/$tot\n"; if ($tot !== 234 || $pas !== 234) { fwrite(STDERR, "oracle inattendu (attendu 234/234 — lot F : 20 suites, 222 lot E + 12 vestige-extinction, extinction physique des 8 vestiges)\n"); exit(1); }'
+          php -r '$tot=0; $pas=0; foreach (glob("preuves-run/contrats/*.json") as $f) { $d=json_decode(file_get_contents($f), true); if (($d["status"] ?? "") !== "PASS") { fwrite(STDERR, basename($f).": status != PASS\n"); exit(1); } $tot += (int) $d["total"]; $pas += (int) $d["passed"]; } echo "contrats dynamiques : $pas/$tot\n"; if ($tot !== 236 || $pas !== 236) { fwrite(STDERR, "oracle inattendu (attendu 236/236 — 20 suites : 234 lot F + 2 revue sécurité (SE-013 cible-lien, SE-014 délai exec))\n"); exit(1); }'
       - name: Publier les résultats
         if: always()
         uses: actions/upload-artifact@v4

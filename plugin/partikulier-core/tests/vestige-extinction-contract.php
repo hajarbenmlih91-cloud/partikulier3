@@ -36,7 +36,7 @@
  *  - FE-010 : appels système — exactement 1 site exec() dans le runtime
  *    thème+plugin (la passerelle SECU-1 du lot E, scan lexical par tokens)
  *    et gardes ABSPATH 100 % dans inc/ ;
- *  - FE-011 : santé — plugin 2.10.2, thème 6.20.1, schéma figé 2.6.0,
+ *  - FE-011 : santé — plugin 2.10.3, thème 6.20.2, schéma figé 2.6.0,
  *    8/8 domaines plugin, 0 collision ;
  *  - FE-012 : hygiène du banc + INTEG-1 — leads=10, favoris=4,
  *    événements=2, variantes=0, annonces=30, zéro annonce fantôme
@@ -280,7 +280,7 @@ try {
     $themeVersion = wp_get_theme()->get('Version');
     $health = (new HealthCheck())->get();
     $pluginDomains = count(array_filter($health['domains'] ?? [], static fn($d): bool => ($d['owner'] ?? '') === 'plugin'));
-    $assert('FE-011', PARTIKULIER_CORE_VERSION === '2.10.2' && $themeVersion === '6.20.1'
+    $assert('FE-011', PARTIKULIER_CORE_VERSION === '2.10.3' && $themeVersion === '6.20.2'
         && \Partikulier\Core\Database\Schema::VERSION === '2.6.0' && ($health['status'] ?? '') === 'ok'
         && $pluginDomains === 8 && (int) ($health['routes']['collisions'] ?? -1) === 0,
         sprintf('santé : %s, plugin %s, thème %s (lot F — extinction finale), schéma %s (zéro migration), %d/8 domaines, 0 collision',

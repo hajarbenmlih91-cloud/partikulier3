@@ -35,8 +35,17 @@
  *  - SE-011 : conversion cohérente — média réel : si l'éditeur WP supporte
  *    AVIF, le .avif est écrit non vide (mode normal) ; sinon aucun .avif et
  *    aucune fatale (mode dégradé). Jamais l'inverse ;
- *  - SE-012 : périmètre diagnostic + versions (thème 6.20.1, plugin 2.10.2,
- *    src plugin inchangé) + hygiène class-avif (≤400 l., zéro exec direct).
+ *  - SE-012 : périmètre diagnostic + versions (thème 6.20.2, plugin 2.10.3,
+ *    src plugin inchangé) + hygiène class-avif (≤400 l., zéro exec direct) ;
+ *  - SE-013 : cible-lien — un lien symbolique posé sur la cible (pointant
+ *    hors uploads) est REFUSÉ (raison « cible-lien », journal REFUS:cible-lien),
+ *    piège [Q=75] couvert : le test is_link porte sur le chemin physique,
+ *    suffixe retiré AVANT (vips l'interprète, il n'existe pas sur disque),
+ *    fichier hors uploads jamais écrit au-travers du lien ;
+ *  - SE-014 : délai d'exécution — binaire endormi (sleep 60) tué au bout du
+ *    délai (filtre partikulier_exec_timeout), raison « timeout », durée
+ *    bornée, journal EXEC:timeout, proc_close()=-1 maîtrisé (drain avant
+ *    fermeture : le test lui-même ne pend jamais).
  *
  * Rejouable : PK_WP_DIR=... PK_COMMIT=<sha> php partikulier-core/tests/avif-security-contract.php
  */
@@ -311,9 +320,75 @@ try {
     $avifLignes = count((array) file($fichierAvifModule));
     $versionTheme = (string) wp_get_theme()->get('Version');
     $assert('SE-012', $sitesDiagnostic === [] && $diagPasseParPasserelle && $sitesAvif === [] && $avifLignes <= 400
-        && $versionTheme === '6.20.1' && PARTIKULIER_CORE_VERSION === '2.10.2',
+        && $versionTheme === '6.20.2' && PARTIKULIER_CORE_VERSION === '2.10.3',
         sprintf('pk-diagnostic : 0 appel direct (passe par la passerelle) ; class-avif %d l. sans exec direct ; thème %s, plugin %s (src inchangé, +contrat)',
             $avifLignes, $versionTheme, PARTIKULIER_CORE_VERSION));
+
+    /* SE-013 — cible-lien : lien symbolique sur la cible refusé, [Q=n] retiré avant le test. */
+    $secret = sys_get_temp_dir() . '/pk-secret-cible-lien.txt';
+    @file_put_contents($secret, 'intact');
+    $copie = $testDir . '/copie.sh';
+    @file_put_contents($copie, "#!/bin/sh\nexec cp \"\$1\" \"\$2\"\n");
+    @chmod($copie, 0755);
+    $ajouteCopie = static function ($entries) use ($copie) {
+        if (is_array($entries)) { $entries['copie'] = ['candidates' => [$copie], 'sha256' => (string) hash_file('sha256', $copie)]; }
+        return $entries;
+    };
+    add_filter('partikulier_exec_whitelist', $ajouteCopie, 30);
+    $lien  = $testDir . '/lien.avif';
+    $lienQ = $testDir . '/lien-q.avif';
+    $entree3 = $testDir . '/entree3.png';
+    @file_put_contents($entree3, 'x');
+    @symlink($secret, $lien);
+    @symlink($secret, $lienQ);
+    $rLien = Partikulier_Exec_Whitelist::run('copie', [
+        ['type' => 'file', 'value' => $entree3],
+        ['type' => 'target', 'value' => $lien],
+    ]);
+    $rLienQ = Partikulier_Exec_Whitelist::run('copie', [
+        ['type' => 'file', 'value' => $entree3],
+        ['type' => 'target', 'value' => $lienQ . '[Q=75]'],
+    ]);
+    $journal13 = Partikulier_Exec_Whitelist::journal_path();
+    $lignes13 = (is_string($journal13) && is_file($journal13)) ? (array) file($journal13, FILE_IGNORE_NEW_LINES) : [];
+    $traceLien = (bool) array_filter($lignes13, static fn($l): bool => (bool) preg_match('/\tREFUS:cible-lien\t/', (string) $l));
+    $secretIntact = is_file($secret) && 'intact' === (string) @file_get_contents($secret) && 6 === (int) @filesize($secret);
+    $assert('SE-013', empty($rLien['ok']) && 'cible-lien' === (string) ($rLien['reason'] ?? '')
+        && empty($rLienQ['ok']) && 'cible-lien' === (string) ($rLienQ['reason'] ?? '')
+        && $traceLien && $secretIntact && !is_link($testDir . '/copie.sh'),
+        sprintf('cible-lien : lien symbolique refusé (raison « cible-lien », journal REFUS:cible-lien), piège [Q=75] couvert (suffixe retiré avant le test is_link), fichier hors uploads jamais écrit au-travers du lien (%s)',
+            $secretIntact ? 'intact' : 'ÉCRASÉ'));
+    remove_filter('partikulier_exec_whitelist', $ajouteCopie, 30);
+    @unlink($lien); @unlink($lienQ); @unlink($copie); @unlink($secret); @unlink($entree3);
+
+    /* SE-014 — délai d'exécution : binaire endormi tué, EXEC:timeout journalisé. */
+    $dormeur = $testDir . '/dormeur.sh';
+    @file_put_contents($dormeur, "#!/bin/sh\nexec sleep 60\n");
+    @chmod($dormeur, 0755);
+    $ajouteDormeur = static function ($entries) use ($dormeur) {
+        if (is_array($entries)) { $entries['dormeur'] = ['candidates' => [$dormeur], 'sha256' => (string) hash_file('sha256', $dormeur)]; }
+        return $entries;
+    };
+    add_filter('partikulier_exec_whitelist', $ajouteDormeur, 30);
+    $filtreDelai = static function () { return 1.0; };
+    add_filter('partikulier_exec_timeout', $filtreDelai);
+    $avant = microtime(true);
+    $rDormeur = Partikulier_Exec_Whitelist::run('dormeur', [
+        ['type' => 'flag', 'value' => '60'],
+    ]);
+    $duree = (int) round((microtime(true) - $avant) * 1000);
+    remove_filter('partikulier_exec_timeout', $filtreDelai);
+    remove_filter('partikulier_exec_whitelist', $ajouteDormeur, 30);
+    $journal14 = Partikulier_Exec_Whitelist::journal_path();
+    $lignes14 = (is_string($journal14) && is_file($journal14)) ? (array) file($journal14, FILE_IGNORE_NEW_LINES) : [];
+    $traceTimeout = (bool) array_filter($lignes14, static fn($l): bool => (bool) preg_match('/\tEXEC:timeout\t[0-9]+\t/', (string) $l));
+    $msDormeur = (int) ($rDormeur['duration_ms'] ?? -1);
+    $assert('SE-014', empty($rDormeur['ok']) && 'timeout' === (string) ($rDormeur['reason'] ?? '')
+        && $msDormeur >= 900 && $msDormeur <= 8000 && $duree <= 8000
+        && $traceTimeout && array_key_exists('exit_code', $rDormeur) && null === $rDormeur['exit_code'],
+        sprintf('délai : dormeur (sleep 60, épinglé) tué au bout du délai (filtre à 1 s) — durée %d ms, test %d ms (aucune pendaison : drain avant proc_close, piège -1 maîtrisé), journal EXEC:timeout, exit_code null',
+            $msDormeur, $duree));
+    @unlink($dormeur);
 
 } catch (Throwable $e) {
     $assert('SE-999', false, 'exception inattendue : ' . $e->getMessage() . ' @ ' . basename($e->getFile()) . ':' . $e->getLine());
