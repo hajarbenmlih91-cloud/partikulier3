@@ -161,7 +161,7 @@ try {
     $themeVersion = wp_get_theme()->get('Version');
     $health = (new HealthCheck())->get();
     $pluginDomains = count(array_filter($health['domains'] ?? [], static fn($d) => ($d['owner'] ?? '') === 'plugin'));
-    $assert('C2A-010', PARTIKULIER_CORE_VERSION === '2.10.4' && $themeVersion === '6.20.3'
+    $assert('C2A-010', PARTIKULIER_CORE_VERSION === '2.10.5' && $themeVersion === '6.20.4'
         && Schema::VERSION === '2.6.0' && $pluginDomains === 8
         && (int) ($health['routes']['collisions'] ?? -1) === 0,
         sprintf('versions : plugin %s, thème %s, schéma %s (figé — zéro migration C2), %d/8 domaines, 0 collision',
