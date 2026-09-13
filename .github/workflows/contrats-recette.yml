@@ -44,7 +44,14 @@ jobs:
         run: |
           wp core download --version=6.6 --path=wp
           wp config create --path=wp --dbname=partikulier --dbuser=root --dbpass=root --dbhost=127.0.0.1:3306 --skip-check
-          wp core install --path=wp --url=http://partikulier.local --title=Partikulier \
+          # Identité du site = origine réellement attaquée par le contrat
+          # front-assets (échec du run 34760865434) : « partikulier.local » est
+          # un hôte fictif SANS port. redirect_canonical (canonical.php :613-616
+          # et :726-738) conservait alors l'hôte de la requête mais supprimait
+          # son port 8099 → 301 vers http://127.0.0.1/ (port 80, rien n'y
+          # écoute) → Node échouait en « fetch failed » (6/7). Même philosophie
+          # que le banc de qualification : home == l'origine servie, port inclus.
+          wp core install --path=wp --url=http://127.0.0.1:8099 --title=Partikulier \
             --admin_user=admin --admin_password=admin --admin_email=admin@example.com --skip-email
           wp plugin install estatik --activate --path=wp
           rsync -a --delete --exclude='.git' --exclude='.github' plugin/partikulier-core/ wp/wp-content/plugins/partikulier-core/
@@ -102,7 +109,21 @@ jobs:
           # 34759770385 : « No such file or directory »).
           php -S 127.0.0.1:8099 -t wp theme/partikulier/tests/router-ci.php > preuves-run/front-assets-server.log 2>&1 &
           SRV=$!
-          for i in $(seq 1 60); do curl -s -o /dev/null http://127.0.0.1:8099/ && break; sleep 0.5; done
+          # Sonde de santé durcie (run 34760865434) : exiger un vrai HTTP 200 sur /
+          # — l'ancienne boucle sortait 0 sur le 301 canonique (toute réponse HTTP
+          # compte pour curl) et laissait passer un serveur incapable de servir
+          # les pages (faux vert).
+          sain=false
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8099/ || true)
+            if [ "$code" = "200" ]; then sain=true; break; fi
+            sleep 0.5
+          done
+          if [ "$sain" != true ]; then
+            echo "FAIL  front-assets (sonde HTTP : pas de 200 sur /, code=$code)" | tee -a preuves-run/journal.txt
+            kill "$SRV" 2>/dev/null || true
+            exit 1
+          fi
           PK_BASE=http://127.0.0.1:8099 \
           PK_ESTATIK_FILE=$PWD/wp/wp-content/plugins/estatik/estatik.php \
             node theme/partikulier/tests/front-assets.mjs > preuves-run/contrats/front-assets.json
