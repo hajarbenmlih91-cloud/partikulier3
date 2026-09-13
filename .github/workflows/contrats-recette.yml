@@ -96,13 +96,17 @@ jobs:
           set -euo pipefail
           # permaliens « jolis » : le contrat attaque les vraies URLs (/location/…)
           wp rewrite structure '/%postname%/' --path=wp
-          php -S 127.0.0.1:8099 -t wp theme/partikulier/tests/router-ci.php > front-assets-server.log 2>&1 &
+          # Sorties dans preuves-run/ à la RACINE du job : cette étape ne fait
+          # PAS « cd wp » (contrairement à l'étape des 23 suites) — un préfixe
+          # « ../ » s'échapperait du workspace du runner (échec du run
+          # 34759770385 : « No such file or directory »).
+          php -S 127.0.0.1:8099 -t wp theme/partikulier/tests/router-ci.php > preuves-run/front-assets-server.log 2>&1 &
           SRV=$!
           for i in $(seq 1 60); do curl -s -o /dev/null http://127.0.0.1:8099/ && break; sleep 0.5; done
           PK_BASE=http://127.0.0.1:8099 \
           PK_ESTATIK_FILE=$PWD/wp/wp-content/plugins/estatik/estatik.php \
-            node theme/partikulier/tests/front-assets.mjs > ../preuves-run/contrats/front-assets.json
-          echo "PASS  front-assets" | tee -a ../preuves-run/journal.txt
+            node theme/partikulier/tests/front-assets.mjs > preuves-run/contrats/front-assets.json
+          echo "PASS  front-assets" | tee -a preuves-run/journal.txt
           kill "$SRV" 2>/dev/null || true
       - name: Vérifier l'oracle 264/264 (237 + SE-016/017/018/020)
         run: |
