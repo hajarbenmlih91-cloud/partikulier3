@@ -17,11 +17,27 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Partikulier_Estatik {
 
         public static function init() {
-                // Garantit les dépendances Estatik avant tout enqueue du framework.
+                /* SE-018 (E-1801, campagne post-audit — P1-4) : Estatik 4.3.x branche
+                 * DEUX callbacks publics sur wp_enqueue_scripts —
+                 * register_global_assets (class-assets-init.php:14, qui appelle
+                 * es_framework_instance()->load_scripts() : es-datetime-picker
+                 * [dep jquery], es-framework [deps jquery + es-select2 +
+                 * jquery-ui-sortable] + le style es-select2) et frontend_assets
+                 * (:20). Le retrait d'origine ne couvrait que le second — la
+                 * moitié du problème, source mesurée du jQuery frontal par
+                 * l'audit. Retrait des DEUX, priorité 1 (avant l'exécution des
+                 * callbacks Estatik à priorité 10). Le back-office reste
+                 * intouché (aucun retrait sur admin_enqueue_scripts). */
+                add_action( 'wp_enqueue_scripts', function() {
+                        remove_action( 'wp_enqueue_scripts', array( 'Es_Assets', 'register_global_assets' ) );
+                        remove_action( 'wp_enqueue_scripts', array( 'Es_Assets', 'frontend_assets' ) );
+                }, 1 );
+
+                /* SE-018 (E-1806) : repli de dépendances maintenu mais borné —
+                 * la méthode vérifie désormais le contexte propriétaire elle-même
+                 * (voir register_dependency_fallbacks). */
                 add_action( 'wp_enqueue_scripts', array( __CLASS__, 'register_dependency_fallbacks' ), 0 );
 
-// Desactiver les styles dynamiques Estatik qui causent des requetes N+1.
-add_action( 'wp_enqueue_scripts', function() { remove_action( 'wp_enqueue_scripts', array( 'Es_Assets', 'frontend_assets' ) ); }, 1 );
                 if ( ! self::plugin_active() ) {
                         add_action( 'admin_notices', array( __CLASS__, 'admin_notice' ) );
                         // Si le plugin est installe mais non active, tenter activation.
@@ -167,14 +183,23 @@ add_action( 'wp_enqueue_scripts', function() { remove_action( 'wp_enqueue_script
         }
 
         /**
-         * Enregistre les dépendances Estatik si un autre composant les a retirées trop tôt.
-         * Aucun script n'est forcé : les handles sont seulement rendus disponibles pour
-         * les scripts Estatik qui les déclarent comme dépendances.
+         * Enregistre les dépendances Estatik si un autre composant les a retirées
+         * trop tôt. Aucun script n'est forcé : les handles sont seulement rendus
+         * disponibles pour les scripts Estatik qui les déclarent comme
+         * dépendances.
+         *
+         * SE-018 (E-1806) : le repli ne peut plus ressusciter es-select2 /
+         * es-datetime-picker (tous deux à dépendance jQuery) hors des pages
+         * propriétaires — il est conditionné au même contexte que l'exemption
+         * du filet dequeue_heavy (DP-6 option a : exception propriétaire
+         * documentée — galerie, filtres, sélection, upload). Sur les pages
+         * éditoriales, plus AUCUN chemin ne re-enregistre de poignée
+         * jQuery-dépendante (invariant E-1806).
          *
          * @return void
          */
         public static function register_dependency_fallbacks() {
-                if ( ! defined( 'ES_PLUGIN_URL' ) ) {
+                if ( ! defined( 'ES_PLUGIN_URL' ) || self::is_property_context() ) {
                         return;
                 }
 
@@ -190,6 +215,15 @@ add_action( 'wp_enqueue_scripts', function() { remove_action( 'wp_enqueue_script
         /**
          * Retire le CSS par defaut d'Estatik (le theme fournit le sien, plus leger).
          * On garde les styles de la carte interactive si Google Maps est active.
+         *
+         * SE-018 (E-1802, filet consolidé) : la liste s'étend à es-framework (le
+         * script enfilé qui tire jQuery + jquery-ui-sortable par résolution de
+         * dépendances), es-frontend, es-properties et wp-color-picker (handle du
+         * cœur WP enfilé par le framework Estatik côté public — remarque 2 de la
+         * revue croisée) ; chaque poignée passe par wp_dequeue_script PUIS
+         * wp_deregister_script — le dequeue seul est vain contre la résolution
+         * de dépendances (un handle encore enregistré est réactivé dès qu'un
+         * script enfilé le déclare). Priorité 100 : après tous les enqueues.
          */
                 public static function dequeue_heavy() {
                         wp_dequeue_style( 'es-styles' );
@@ -199,18 +233,32 @@ add_action( 'wp_enqueue_scripts', function() { remove_action( 'wp_enqueue_script
 
                         // Ces bibliothèques ne sont pas nécessaires sur les pages éditoriales.
                         // Les pages annonces, dépôt, favoris et tableau de bord les conservent
-                        // pour ne pas casser galerie, filtres, sélection ou upload.
-                        $property_context = is_post_type_archive( PARTIKULIER_ESTATIK_POST_TYPE )
-                                || is_singular( PARTIKULIER_ESTATIK_POST_TYPE )
-                                || is_page( array( 'deposer', 'deposer-en', 'deposer-ar', 'deposer-une-annonce', 'deposer-annonce', 'mes-annonces', 'mes-annonces-en', 'mes-annonces-ar', 'favoris', 'favoris-en', 'favoris-ar' ) );
-                        if ( $property_context ) {
+                        // pour ne pas casser galerie, filtres, sélection ou upload
+                        // (DP-6 option a : exception propriétaire documentée).
+                        if ( self::is_property_context() ) {
                                 return;
                         }
 
-                        foreach ( array( 'es-select2', 'select2', 'select2-js', 'es-slick', 'slick', 'slick-js', 'es-magnific', 'magnific-popup', 'es-datetime-picker', 'datetimepicker', 'jquery-ui-core', 'jquery-ui-datepicker', 'clipboard' ) as $handle ) {
+                        foreach ( array( 'es-select2', 'select2', 'select2-js', 'es-slick', 'slick', 'slick-js', 'es-magnific', 'magnific-popup', 'es-datetime-picker', 'datetimepicker', 'jquery-ui-core', 'jquery-ui-datepicker', 'es-framework', 'es-frontend', 'es-properties', 'wp-color-picker', 'clipboard' ) as $handle ) {
                                 wp_dequeue_script( $handle );
+                                wp_deregister_script( $handle );
                         }
                 }
+
+        /**
+         * Contexte propriétaire (DP-6) : archives et fiches du CPT Estatik,
+         * pages de dépôt, favoris et tableau de bord — les parcours dont
+         * galerie, filtres, sélection et upload reposent sur les scripts
+         * jQuery-dépendants. Exception assumée du périmètre « zéro jQuery »
+         * (E-1805), partagée par le filet E-1802 et le repli E-1806.
+         *
+         * @return bool
+         */
+        public static function is_property_context() {
+                return is_post_type_archive( PARTIKULIER_ESTATIK_POST_TYPE )
+                        || is_singular( PARTIKULIER_ESTATIK_POST_TYPE )
+                        || is_page( array( 'deposer', 'deposer-en', 'deposer-ar', 'deposer-une-annonce', 'deposer-annonce', 'mes-annonces', 'mes-annonces-en', 'mes-annonces-ar', 'favoris', 'favoris-en', 'favoris-ar' ) );
+        }
 
         /**
          * Retire les meta generator d'Estatik.
