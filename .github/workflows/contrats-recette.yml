@@ -61,10 +61,12 @@ jobs:
       - name: Amorcer les invariants historiques des contrats B2 à B5
         run: |
           php -r 'require "wp/wp-load.php"; global $wpdb; $now = gmdate("Y-m-d H:i:s"); update_option("pk_n8n_settings", ["automation_api_secret" => "ci-contract-secret", "active_key_id" => "N", "hmac_mode" => "off"], false); $leads = $wpdb->prefix . "pk_buyer_leads"; $existing = (int) $wpdb->get_var("SELECT COUNT(*) FROM $leads"); for ($i = $existing; $i < 10; $i++) { $seed = "ci-historical-lead-$i"; $wpdb->insert($leads, ["phone_hash" => hash_hmac("sha256", $seed, wp_salt("auth")), "phone_encrypted" => base64_encode($seed), "first_seen_at" => $now, "last_seen_at" => $now], ["%s", "%s", "%s", "%s"]); } $audit = new \Partikulier\Core\AuditLogger(); $adoptions = (array) $wpdb->get_results("SELECT metadata_json FROM {$wpdb->prefix}pk_audit_log"); foreach ([["B2", "leads"], ["B3", "alerts"], ["B4", "automation"], ["B5", "owner_stats"], ["B6", "translation_variants"]] as [$lot, $domain]) { $found = false; foreach ($adoptions as $row) { $meta = json_decode((string) $row->metadata_json, true); if (($meta["lot"] ?? "") === $lot && ($meta["domain"] ?? "") === $domain) { $found = true; break; } } if (!$found) { $audit->record("domain_adopted", "schema", null, ["lot" => $lot, "domain" => $domain]); } } $events = $wpdb->prefix . "pk_automation_events"; for ($i = 1; $i <= 2; $i++) { $wpdb->insert($events, ["event_id" => "ci-historical-event-$i", "event_type" => "fixture", "source" => "ci", "payload_hash" => hash("sha256", "fixture-$i"), "status" => "received", "received_at" => $now], ["%s", "%s", "%s", "%s", "%s", "%s"]); } $saves = $wpdb->prefix . "pk_property_saves"; for ($i = 1; $i <= 4; $i++) { $wpdb->insert($saves, ["property_id" => $i, "visitor_hash" => hash("sha256", "ci-visitor-$i"), "created_at" => $now, "updated_at" => $now], ["%d", "%s", "%s", "%s"]); } echo "historical fixtures ready: leads=".(int) $wpdb->get_var("SELECT COUNT(*) FROM $leads")." events=".(int) $wpdb->get_var("SELECT COUNT(*) FROM $events")." saves=".(int) $wpdb->get_var("SELECT COUNT(*) FROM $saves")."\n";'
-      - name: Exécuter les 21 suites dynamiques (20 + SE-016)
+      - name: Exécuter les 22 suites dynamiques (20 + SE-016 + SE-017)
         env:
           PK_WP_DIR: ${{ github.workspace }}/wp
           PK_COMMIT: ${{ github.sha }}
+          PK_REPO_DIR: ${{ github.workspace }}
+          PK_THEME_DIR: ${{ github.workspace }}/theme/partikulier
         run: |
           set -euo pipefail
           mkdir -p preuves-run/contrats
@@ -78,7 +80,7 @@ jobs:
                        translation-variants-domain-contract i18n-chrome-domain-contract \
                        i18n-content-domain-contract i18n-unified-mechanism-contract \
                        module-perimeter-contract avif-security-contract \
-                       vestige-extinction-contract; do
+                       vestige-extinction-contract artifact-hygiene-contract; do
             if php wp-content/plugins/partikulier-core/tests/$suite.php \
                  > ../preuves-run/contrats/$suite.json \
                  2> ../preuves-run/contrats/$suite.err; then
@@ -90,7 +92,7 @@ jobs:
           done
       - name: Vérifier l’oracle 237/237
         run: |
-          php -r '$tot=0; $pas=0; foreach (glob("preuves-run/contrats/*.json") as $f) { $d=json_decode(file_get_contents($f), true); if (($d["status"] ?? "") !== "PASS") { fwrite(STDERR, basename($f).": status != PASS\n"); exit(1); } $tot += (int) $d["total"]; $pas += (int) $d["passed"]; } echo "contrats dynamiques : $pas/$tot\n"; if ($tot !== 246 || $pas !== 246) { fwrite(STDERR, "oracle inattendu (attendu 246/246 — 21 suites : 234 lot F + 2 revue sécurité (SE-013 cible-lien, SE-014 délai exec) + 1 repli multi-éditeurs (SE-015, correctif 6.20.3 : éditeur « menteur » AVIF → éditeur suivant) + 1 couverture des gardes (ROUTE-006, SE-016) + 8 sécurité erase-lead (SE16-001→008))\n"); exit(1); }'
+          php -r '$tot=0; $pas=0; foreach (glob("preuves-run/contrats/*.json") as $f) { $d=json_decode(file_get_contents($f), true); if (($d["status"] ?? "") !== "PASS") { fwrite(STDERR, basename($f).": status != PASS\n"); exit(1); } $tot += (int) $d["total"]; $pas += (int) $d["passed"]; } echo "contrats dynamiques : $pas/$tot\n"; if ($tot !== 249 || $pas !== 249) { fwrite(STDERR, "oracle inattendu (attendu 249/249 — 22 suites : 234 lot F + 2 revue sécurité (SE-013 cible-lien, SE-014 délai exec) + 1 repli multi-éditeurs (SE-015, correctif 6.20.3) + 1 couverture des gardes (ROUTE-006, SE-016) + 8 sécurité erase-lead (SE16-001→008) + 3 hygiène artefact (AH-001→003, SE-017))\n"); exit(1); }'
       - name: Publier les résultats
         if: always()
         uses: actions/upload-artifact@v4

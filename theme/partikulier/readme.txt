@@ -6,8 +6,8 @@ Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 8.0
 Stable tag: 6.20.3
-License: GPLv2 or later
-License URI: https://www.gnu.org/licenses/gpl-2.0.html
+License: GNU General Public License v3 or later
+License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
 Portail immobilier de particuliers. Annonces gratuites, ultra-rapide, SEO et LLM-ready.
 
@@ -50,10 +50,11 @@ Caracteristiques :
 = 6.20.4 =
 
 * BREAKING — Renforcement de l'authentification de la route REST d'effacement de lead (SE-016, campagne post-audit) : la route exige désormais la preuve de possession d'un secret dédié (option `lead_erase_api_secret`, en-tête `X-Partikulier-Lead-Erase` ou `Authorization: Bearer`), avec limiteur d'échecs anti-forçage (10/heure/IP, 429 au-delà) et journal d'audit de chaque tentative. Les workflows n8n doivent envoyer le header — une fenêtre de transition explicite (`lead_erase_transition_active`) accepte temporairement le secret n8n en journalisant chaque usage comme déprécié. Note de migration : `docs/NOTE-MIGRATION-ERASE-LEAD.md`. Aucun autre changement runtime : ni gabarit, ni style, ni JavaScript. Requiert partikulier-core 2.10.5.
+* Hygiène de l'artefact (SE-017, campagne post-audit) : `screenshot.png` ajouté à la racine du thème (1200×900, PNG, 263 Ko — rendu réel de la page d'accueil) ; licence harmonisée GPLv3+ partout (readme.txt aligné sur style.css et LICENSE) ; `package.sh` exclut désormais `tests/`, `__screens__/`, `__baseline__/` et les scripts shell des zips distribuable — les zips livrés embarquaient les suites de recette et `staging-tout.sh` (constat P0-2 de l'audit, côté artefact) ; nouveau contrôle CI « artefact propre » sur chaque build. Les scripts de recette restent dans le dépôt (hors zip).
 
 = 6.20.3 =
 
-* Correction AVIF (cause racine de l'échec SE-011 en CI) : sur un hébergement où Imagick REVENDIQUE le format AVIF (Imagick::queryFormats) mais ne peut pas l'encoder (libheif installée avec ses seuls plugins de décodage — cas constaté sur Ubuntu 24.04 + PPA ondrej/php), WordPress choisissait l'éditeur Imagick par priorité, writeImage() « réussissait » silencieusement en écrivant un fichier de 0 octet, et GD — pourtant capable via imageavif() — n'était jamais essayé. La conversion essaie désormais CHAQUE éditeur AVIF-capable de la liste wp_image_editors jusqu'à obtention d'un .avif réellement non vide (cible purgée entre chaque essai), avant les replis avifenc/vips de la passerelle du lot E. Nouveau verrou contractuel SE-015 (oracle 237/237).
+* Correction AVIF (cause racine de l'échec SE-011 en CI) : sur un hébergement où Imagick REVENDIQUE le format AVIF (Imagick::queryFormats) mais ne peut pas l'encoder (libheif installée avec ses seuls plugins de décodage — cas constaté sur Ubuntu 24.04 + PPA ondrej/php), WordPress choisissait l'éditeur Imagick par priorité, writeImage() « réussissait » silencieusement en écrivant un fichier de 0 octet, et GD — pourtant capable via imageavif() — n'était jamais essayé. La conversion essaie désormais CHAQUE éditeur AVIF-capable de la liste wp_image_editors jusqu'à obtention d'un .avif réellement non vide (cible purgée entre chaque essai), avant les replis avifenc/vips de la passerelle du lot E. Nouveau verrou contractuel SE-015 (oracle 237/237 à l'époque — 249/249 après la campagne post-audit).
 
 = 6.19.1 =
 

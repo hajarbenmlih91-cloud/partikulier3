@@ -24,6 +24,27 @@ jobs:
         run: bash scripts/lint.sh
       - name: Build packages
         run: bash scripts/package.sh dist
+      - name: Artefact propre (SE-017, E-1702)
+        run: |
+          set -euo pipefail
+          # Motifs interdits dans les deux artefacts : suites de recette,
+          # artefacts visuels, scripts shell, VCS, dépendances.
+          for zip in dist/*.zip; do
+            echo "── contrôle du contenu : $zip ──"
+            unzip -Z1 "$zip" > /tmp/entries.txt
+            echo "  entrées : $(wc -l < /tmp/entries.txt)"
+            interdits=$(grep -E '(^|/)(tests|__screens__|__baseline__)(/|$)|\.sh$|(^|/)\.git(/|$)|node_modules/' /tmp/entries.txt || true)
+            if [ -n "$interdits" ]; then
+              echo "  ENTRÉES INTERDITES dans $zip :"
+              echo "$interdits" | sed 's/^/    /'
+              exit 1
+            fi
+            echo "  propre : 0 entrée interdite"
+          done
+          # La capture d'écran du thème (E-1701) doit voyager dans l'artefact.
+          unzip -Z1 dist/partikulier-theme-*.zip | grep -qx 'partikulier/screenshot.png' \
+            || { echo "screenshot.png absent du zip thème (E-1701)"; exit 1; }
+          echo "screenshot.png présent dans le zip thème"
       - name: Upload packages
         if: matrix.php == '8.3'
         uses: actions/upload-artifact@v4
