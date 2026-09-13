@@ -129,6 +129,40 @@ try {
     $themeAligned = strpos($functionsContent, RouteRegistry::FAST_PATH_PREFIX) !== false;
     $assert('ROUTE-005', $muAligned && $themeAligned,
         'ponts de performance alignés sur le registre (mu-plugin motifs exacts, functions.php préfixe)');
+
+    // 6) E-1608 (SE-016, campagne post-audit) — couverture des gardes : toute
+    //    route d'écriture du namespace expose un permission_callback non vide.
+    //    Inventaire AUTOMATIQUE du serveur REST (pas une liste figée) : la
+    //    table de couverture de l'Annexe A reste vivante — la route /erase-lead
+    //    sans garde (P0-1, déclaration plugin du lot B2) ne peut plus revenir
+    //    silencieusement, par quelque porte que ce soit (plugin, pont thème
+    //    register_route OU declare_rest_route).
+    $writeUnguarded = [];
+    $writeGuarded = 0;
+    foreach (rest_get_server()->get_routes() as $routePath => $endpoints) {
+        if (!str_starts_with((string) $routePath, '/' . \Partikulier\Core\Rest\RouteRegistry::NAMESPACE)
+            || $routePath === '/' . \Partikulier\Core\Rest\RouteRegistry::NAMESPACE) {
+            continue;
+        }
+        foreach ((array) $endpoints as $endpoint) {
+            $methods = array_map('strtoupper', array_keys((array) ($endpoint['methods'] ?? [])));
+            $writes = array_values(array_filter($methods, static fn(string $m): bool => in_array($m, ['POST', 'PUT', 'PATCH', 'DELETE'], true)));
+            if ($writes === []) {
+                continue;
+            }
+            $guard = $endpoint['permission_callback'] ?? null;
+            if (empty($guard) || !is_callable($guard)) {
+                $writeUnguarded[] = implode(',', $writes) . ' ' . $routePath;
+            } else {
+                $writeGuarded++;
+            }
+        }
+    }
+    sort($writeUnguarded);
+    $assert('ROUTE-006', $writeUnguarded === [],
+        $writeUnguarded === []
+            ? sprintf('couverture des gardes : %d points d\'entrée d\'écriture, tous avec permission_callback non vide (inventaire automatique — E-1608)', $writeGuarded)
+            : 'routes d\'écriture sans permission_callback : ' . implode(' ; ', $writeUnguarded));
 } catch (Throwable $error) {
     $assert('ROUTE-EXCEPTION', false, $error->getMessage());
 }

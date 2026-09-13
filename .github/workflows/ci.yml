@@ -45,7 +45,7 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           extensions: mbstring
-      - name: Contrat statique routes (S-ROUTE-004/005)
+      - name: Contrat statique routes (S-ROUTE-004/005/007)
         env:
           PK_PLUGIN_DIR: ${{ github.workspace }}/plugin/partikulier-core
           PK_THEME_DIR: ${{ github.workspace }}/theme/partikulier

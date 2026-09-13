@@ -65,6 +65,7 @@ require_once __DIR__ . '/src/Domain/Leads/LeadsContactTrait.php';
 require_once __DIR__ . '/src/Domain/Leads/LeadsRestTrait.php';
 require_once __DIR__ . '/src/Domain/Leads/LeadsPrivacyTrait.php';
 require_once __DIR__ . '/src/Domain/Leads/LeadsAdminTrait.php';
+require_once __DIR__ . '/src/Domain/Leads/LeadsEraseGuardTrait.php';
 require_once __DIR__ . '/src/Domain/Leads/LeadService.php';
 require_once __DIR__ . '/src/Domain/Alerts/AlertService.php';
 require_once __DIR__ . '/src/Domain/Automation/AutomationPolicyTrait.php';

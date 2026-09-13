@@ -16,6 +16,14 @@
  *                 publiés par RouteRegistry::FAST_PATH_PATTERNS, et le
  *                 functions.php du thème porte le préfixe
  *                 RouteRegistry::FAST_PATH_PREFIX.
+ *   S-ROUTE-007 (SE-016, campagne post-audit) : tout appel de déclaration
+ *                 de route — Partikulier_Automation_Bridge::declare_rest_route()
+ *                 côté thème (la porte du pont qui ne force PAS la garde, à
+ *                 la différence de register_route) ou RouteRegistry::declare()
+ *                 côté plugin — doit porter un permission_callback explicite
+ *                 dans ses arguments (extraction par appariement de
+ *                 parenthèses, complément statique de l'inventaire dynamique
+ *                 ROUTE-006 / E-1608).
  *
  * Le registre est chargé SANS WordPress : src/Rest/RouteRegistry.php est un
  * fichier de classe pur (declare + namespace + classe finale, aucun effet de
@@ -141,6 +149,90 @@ try {
     $prefixOk = strpos($prefix, '/wp-json/' . \Partikulier\Core\Rest\RouteRegistry::NAMESPACE . '/') === 0;
     $assert('S-ROUTE-006', $nsOk && $prefixOk,
         'namespace partikulier/v1 déclaré par la seule constante du registre ; préfixe du pont cohérent');
+
+    // 6) S-ROUTE-007 (E-1608, complément v4) — extraction des blocs d'arguments
+    //    de chaque appel de déclaration (appariement de parenthèses) : tout
+    //    appel doit porter un permission_callback explicite.
+    $extractCallSites = static function (string $content, string $token): array {
+        $sites = [];
+        $offset = 0;
+        $tokenLength = strlen($token);
+        while (($pos = strpos($content, $token, $offset)) !== false) {
+            $open = $pos + $tokenLength - 1; // le « ( » final du token lui-même
+            $depth = 0;
+            $length = strlen($content);
+            for ($i = $open; $i < $length; $i++) {
+                $char = $content[$i];
+                if ($char === '(') {
+                    $depth++;
+                } elseif ($char === ')') {
+                    $depth--;
+                    if ($depth === 0) {
+                        break;
+                    }
+                }
+            }
+            $sites[] = substr($content, $open, $i - $open + 1);
+            $offset = $i + 1;
+        }
+        return $sites;
+    };
+    $unguardedSites = static function (array $files, string $token, array $excluded, string $stripPrefix) use ($extractCallSites): array {
+        $offenders = [];
+        foreach ($files as $file) {
+            $file = (string) $file;
+            if (in_array($file, $excluded, true)) {
+                continue;
+            }
+            $content = (string) file_get_contents($file);
+            foreach ($extractCallSites($content, $token) as $site) {
+                if (strpos($site, "'permission_callback'") === false) {
+                    $offenders[] = str_replace($stripPrefix, '', $file);
+                }
+            }
+        }
+        return $offenders;
+    };
+
+    // 6a) S-ROUTE-007a — côté thème : la porte declare_rest_route du pont ne
+    //     force pas la garde (asymétrie documentée) : chaque appel direct doit
+    //     la fournir. Le pont lui-même (définition + register_route qui force)
+    //     est exclu de la passe.
+    if ($themeProvided) {
+        $themeFiles = array_merge(
+            glob($themeDir . '/inc/*.php') ?: [],
+            [$themeDir . '/functions.php']
+        );
+        $offendersBridge = $unguardedSites(
+            $themeFiles,
+            'declare_rest_route(',
+            [$themeDir . '/inc/class-automation-bridge.php'],
+            $themeDir
+        );
+        $assert('S-ROUTE-007a', $offendersBridge === [],
+            'thème : tout appel declare_rest_route porte un permission_callback explicite (trouvés sans garde : '
+            . ($offendersBridge ? implode(', ', $offendersBridge) : 'aucun') . ')');
+    } else {
+        $limitations[] = 'S-ROUTE-007a (thème) non exécuté : PK_THEME_DIR absent — mode runner, dépôt plugin isolé';
+    }
+
+    // 6b) S-ROUTE-007b — côté plugin : toute déclaration RouteRegistry::declare
+    //     doit porter la garde (le registre n'en force aucune — la porte
+    //     /erase-lead du lot B2 y vivait sans garde).
+    $pluginFiles = array_merge(
+        glob($pluginDir . '/src/*.php') ?: [],
+        glob($pluginDir . '/src/*/*.php') ?: [],
+        glob($pluginDir . '/*.php') ?: []
+    );
+    $offendersRegistry = $unguardedSites(
+        $pluginFiles,
+        'RouteRegistry::declare(',
+        [$pluginDir . '/src/Rest/RouteRegistry.php'],
+        $pluginDir
+    );
+    $assert('S-ROUTE-007b', $offendersRegistry === [],
+        'plugin : tout appel RouteRegistry::declare porte un permission_callback explicite (trouvés sans garde : '
+        . ($offendersRegistry ? implode(', ', $offendersRegistry) : 'aucun') . ')');
 } catch (Throwable $error) {
     $assert('S-ROUTE-EXCEPTION', false, $error->getMessage());
 }

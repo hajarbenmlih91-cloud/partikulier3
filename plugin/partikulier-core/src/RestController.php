@@ -125,12 +125,18 @@ final class RestController
 
         // Lot B2 — rétention du domaine leads : effacement explicite d'un lead
         // au canal WhatsApp/n8n. Route reprise du thème (owner theme → plugin,
-        // même espace de noms, mêmes arguments — port fidèle : pas de
-        // permission_callback, l'authentification n8n est assurée en amont par
-        // l'orchestrateur, comme sur les quatre routes de qualification).
+        // même espace de noms, mêmes arguments). SE-016 (P0-1, audit
+        // 12/09/2026) : le port fidèle avait laissé la route sans garde —
+        // « l'authentification n8n est assurée en amont par l'orchestrateur »
+        // était un pari de confiance réseau, rompu ici : la route exige
+        // désormais la preuve de possession du secret dédié
+        // lead_erase_api_secret (fenêtre de transition sur le secret n8n,
+        // E-1603 ; limiteur d'échecs anti-forçage, E-1604) — la garde que le
+        // repli du thème possédait déjà via le pont d'automatisation.
         RouteRegistry::declare('/erase-lead', [
             'methods' => 'POST',
             'callback' => static fn(\WP_REST_Request $request) => \Partikulier\Core\Domain\Leads\LeadService::rest_erase_request($request),
+            'permission_callback' => static fn(\WP_REST_Request $request) => \Partikulier\Core\Domain\Leads\LeadService::check_erase_secret($request),
         ], 'plugin');
 
         // Lot B4 — pont d'automatisation entrant : accusé d'événement

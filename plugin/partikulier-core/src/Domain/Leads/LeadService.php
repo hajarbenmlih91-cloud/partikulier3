@@ -38,6 +38,12 @@ final class LeadService
     public const RETENTION_DAYS_DEFAULT = 365;
     public const CRON_HOOK = 'pk_buyer_privacy_purge';
 
+    /* SE-016 (campagne post-audit) — seuils du limiteur de la garde
+     * d'effacement (LeadsEraseGuardTrait). Constantes de classe : le plugin
+     * requiert PHP 8.1, les constantes de trait n'arrivent qu'en 8.2. */
+    public const ERASE_FAILURES_PER_HOUR = 10;
+    public const ERASE_TRANSITION_THRESHOLD = 100;
+
     private const POST_TYPE = 'properties';
 
     /* Lot D (CDC v1.2 annexe C, arbitrage « Référence + plugin ») :
@@ -47,6 +53,7 @@ final class LeadService
     use LeadsRestTrait;
     use LeadsPrivacyTrait;
     use LeadsAdminTrait;
+    use LeadsEraseGuardTrait;
 
     /* ------------------------------------------------------------------ */
     /* Tableaux de nommage                                                */
