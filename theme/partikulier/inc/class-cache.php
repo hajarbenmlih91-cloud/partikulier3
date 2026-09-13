@@ -426,14 +426,24 @@ wp_delete_file( $f );
                 if ( is_admin() || wp_doing_ajax() || wp_doing_cron() || ( defined( 'DONOTCACHEPAGE' ) && DONOTCACHEPAGE ) ) {
                         return false;
                 }
-                // Le verbe HTTP est en majuscules par la RFC 9110 : sanitize_key() le
-                // minuscule et rend ce test toujours vrai, donc le module n'est jamais
-                // execute (regression introduite par le commit 4038040).
-                $method = isset( $_SERVER['REQUEST_METHOD'] ) ? strtoupper( (string) $_SERVER['REQUEST_METHOD'] ) : '';
-                if ( 'GET' !== $method ) {
+                // SE-020 (E-2004) : verbe HTTP assaini (sanitize_key, repli GET
+                // conforme RFC 3875 §4.1.2 — méthode absente = GET). ATTENTION :
+                // sanitize_key() MINUSCULE — la comparaison se fait en minuscules
+                // ('get'), sinon le test est toujours faux et le module ne
+                // s'exécute jamais (régression 4038040 déjà constatée).
+                // Le repli ne s'applique qu'aux SAPI de serveur (cli-server,
+                // fpm, cgi) : en SAPI « cli » (wp-cli, contrats in-process), le
+                // module doit demeurer inactif sinon le cache serait servi puis
+                // exit() au milieu d'une commande.
+                if ( php_sapi_name() === 'cli' ) {
                         return false;
                 }
-                if ( ! empty( $_GET ) ) {
+                $method = isset( $_SERVER['REQUEST_METHOD'] ) ? sanitize_key( wp_unslash( $_SERVER['REQUEST_METHOD'] ) ) : 'get'; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- assaini par sanitize_key (E-2004)
+                if ( 'get' !== $method ) {
+                        return false;
+                }
+                // SE-020 (E-2007) : test de présence global, aucune valeur lue.
+                if ( ! empty( $_GET ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- présence seule (E-2007)
                         return false;
                 }
                 if ( is_user_logged_in() || ! empty( $_SERVER['HTTP_AUTHORIZATION'] ) ) {

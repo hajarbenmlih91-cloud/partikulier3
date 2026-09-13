@@ -80,7 +80,7 @@ class Partikulier_Sitemap {
 		nocache_headers();
 		header( 'Content-Type: application/xml; charset=UTF-8' );
 		echo '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
-		echo $xml;
+		echo $xml; // phpcs:ignore WordPress.Security.EscapeOutput -- document XML construit champ par champ avec esc_xml() (l.184-187) (SE-020)
 		exit;
 	}
 

@@ -63,8 +63,11 @@ class Partikulier_JSONLD {
                         return;
                 }
 
-                $json = wp_json_encode( array( '@context' => 'https://schema.org', '@graph' => array_values( $graphs ) ), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
-                echo "\n" . '<script type="application/ld+json">' . $json . '</script>' . "\n";
+                $json = wp_json_encode( array( '@context' => 'https://schema.org', '@graph' => array_values( $graphs ) ), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP );
+                /* SE-020 : JSON_HEX_TAG neutralise toute séquence </script> dans une
+                   valeur (rupture du contexte script HTML) — défense en profondeur,
+                   wp_insert_post filtre déjà les titres (wp_filter_kses). */
+                echo "\n" . '<script type="application/ld+json">' . $json . '</script>' . "\n"; // phpcs:ignore WordPress.Security.EscapeOutput -- JSON-LD : document JSON encodé wp_json_encode + HEX_TAG (SE-020)
         }
 
         /**

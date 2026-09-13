@@ -58,6 +58,17 @@
  * @package Partikulier
  */
 
+/*
+ * SE-020 (E-2002) — exclusion documentee, niveau fichier, analyse securite :
+ * outil de diagnostic gated (entree admin : capability manage_options + nonce
+ * sur chaque action ; entree fichier : cle aleatoire, 403 sans cle). Les
+ * lectures $_SERVER (hote, logiciel, UA, REQUEST_URI) alimentent des mesures
+ * et la sortie est un rapport TEXTE/CSV (Content-Type texte), pas du HTML
+ * utilisateur. Tri occurrence par occurrence : preuves-lot-4/tri-se020.tsv
+ * (19 occurrences : 12 faux positifs, 7 risques acceptes documentes).
+ */
+// phpcs:ignoreFile WordPress.Security.ValidatedSanitizedInput,WordPress.Security.EscapeOutput -- outil de diagnostic gated, sortie texte (SE-020, tri documente)
+
 if ( ! defined( 'ABSPATH' ) ) {
         exit;
 }

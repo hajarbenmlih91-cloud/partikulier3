@@ -260,7 +260,7 @@ $statuses = self::followup_statuses();
                         </td>
                         <td>
                                 <span class="pk-leads-consent <?php echo esc_attr( $lead->opt_out_at ? 'is-opted-out' : ( $lead->granted_at && ! $lead->revoked_at ? 'is-granted' : 'is-missing' ) ); ?>"><?php echo esc_html( $consent ); ?></span>
-                                <small><?php printf( esc_html__( '%1$d / %2$d propriétaires aujourd’hui', 'partikulier' ), absint( $lead->today_contacts ), Partikulier_Buyer_Qualification::daily_limit() ); ?></small>
+                                <small><?php printf( esc_html__( '%1$d / %2$d propriétaires aujourd’hui', 'partikulier' ), absint( $lead->today_contacts ), Partikulier_Buyer_Qualification::daily_limit() ); // phpcs:ignore WordPress.Security.EscapeOutput -- printf : format esc_html__ + arguments entiers (SE-020) ?></small>
                         </td>
                         <td>
                                 <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">

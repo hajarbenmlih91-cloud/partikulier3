@@ -95,10 +95,10 @@ $is_type  = $queried instanceof WP_Term && PARTIKULIER_ESTATIK_TYPE_TAXONOMY ===
                                         }
                                         ?>
                                         <select name="pk_order" onchange="this.form.submit()" aria-label="<?php esc_attr_e( 'Tri', 'partikulier' ); ?>">
-                                                        <option value="recent"<?php selected( empty( $_GET['pk_order'] ) || 'recent' === $_GET['pk_order'] ); ?>><?php echo esc_html( class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_polylang_string( 'Plus récentes', 'Plus récentes', 'partikulier' ) : __( 'Plus récentes', 'partikulier' ) ); ?></option>
-                                                        <option value="price-asc"<?php selected( 'price-asc' === ( $_GET['pk_order'] ?? '' ) ); ?>><?php echo esc_html( class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_polylang_string( 'Prix croissant', 'Prix croissant', 'partikulier' ) : __( 'Prix croissant', 'partikulier' ) ); ?></option>
-                                                        <option value="price-desc"<?php selected( 'price-desc' === ( $_GET['pk_order'] ?? '' ) ); ?>><?php echo esc_html( class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_polylang_string( 'Prix décroissant', 'Prix décroissant', 'partikulier' ) : __( 'Prix décroissant', 'partikulier' ) ); ?></option>
-                                                        <option value="surface-desc"<?php selected( 'surface-desc' === ( $_GET['pk_order'] ?? '' ) ); ?>><?php echo esc_html( class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_polylang_string( 'Surface décroissante', 'Surface décroissante', 'partikulier' ) : __( 'Surface décroissante', 'partikulier' ) ); ?></option>
+                                                        <option value="recent"<?php selected( empty( $_GET['pk_order'] ) || 'recent' === $_GET['pk_order'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended,WordPress.Security.ValidatedSanitizedInput -- filtre public, comparaison selected() uniquement (SE-020/E-2007) ?>><?php echo esc_html( class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_polylang_string( 'Plus récentes', 'Plus récentes', 'partikulier' ) : __( 'Plus récentes', 'partikulier' ) ); ?></option>
+                                                        <option value="price-asc"<?php selected( 'price-asc' === ( $_GET['pk_order'] ?? '' ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended,WordPress.Security.ValidatedSanitizedInput -- filtre public, comparaison selected() uniquement (SE-020/E-2007) ?>><?php echo esc_html( class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_polylang_string( 'Prix croissant', 'Prix croissant', 'partikulier' ) : __( 'Prix croissant', 'partikulier' ) ); ?></option>
+                                                        <option value="price-desc"<?php selected( 'price-desc' === ( $_GET['pk_order'] ?? '' ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended,WordPress.Security.ValidatedSanitizedInput -- filtre public, comparaison selected() uniquement (SE-020/E-2007) ?>><?php echo esc_html( class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_polylang_string( 'Prix décroissant', 'Prix décroissant', 'partikulier' ) : __( 'Prix décroissant', 'partikulier' ) ); ?></option>
+                                                        <option value="surface-desc"<?php selected( 'surface-desc' === ( $_GET['pk_order'] ?? '' ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended,WordPress.Security.ValidatedSanitizedInput -- filtre public, comparaison selected() uniquement (SE-020/E-2007) ?>><?php echo esc_html( class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_polylang_string( 'Surface décroissante', 'Surface décroissante', 'partikulier' ) : __( 'Surface décroissante', 'partikulier' ) ); ?></option>
                                         </select>
                                 </form>
                         </div>
@@ -114,7 +114,7 @@ $is_type  = $queried instanceof WP_Term && PARTIKULIER_ESTATIK_TYPE_TAXONOMY ===
                         <?php
                         $pk_active_filters = 0;
                         foreach ( array( 'es_action', 'es_type', 'es_city', 'es_price_max' ) as $pk_filter_key ) {
-                                if ( isset( $_GET[ $pk_filter_key ] ) && '' !== trim( (string) wp_unslash( $_GET[ $pk_filter_key ] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+                                if ( isset( $_GET[ $pk_filter_key ] ) && '' !== trim( (string) wp_unslash( $_GET[ $pk_filter_key ] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended,WordPress.Security.ValidatedSanitizedInput -- présence/cast, valeur assainie (SE-020/E-2007)
                                         $pk_active_filters++;
                                 }
                         }
@@ -149,7 +149,7 @@ $is_type  = $queried instanceof WP_Term && PARTIKULIER_ESTATIK_TYPE_TAXONOMY ===
                                                                 );
                                                                 $pk_cumulative_args = array();
                                                                 foreach ( array( 'es_action', 'es_type', 'es_city', 'es_price_max', 'pk_order' ) as $pk_query_key ) {
-                                                                        if ( isset( $_GET[ $pk_query_key ] ) && ! is_array( $_GET[ $pk_query_key ] ) && '' !== (string) $_GET[ $pk_query_key ] ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+                                                                        if ( isset( $_GET[ $pk_query_key ] ) && ! is_array( $_GET[ $pk_query_key ] ) && '' !== (string) $_GET[ $pk_query_key ] ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended,WordPress.Security.ValidatedSanitizedInput -- présence/cast, valeur assainie (SE-020/E-2007)
                                                                                 $pk_cumulative_args[ $pk_query_key ] = sanitize_text_field( wp_unslash( $_GET[ $pk_query_key ] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
                                                                         }
                                                                 }
@@ -185,7 +185,7 @@ $is_type  = $queried instanceof WP_Term && PARTIKULIER_ESTATIK_TYPE_TAXONOMY ===
                                                                         '<li><a href="%1$s"%3$s>%2$s <span class="pk-filter-count">(%4$s)</span></a></li>',
                                                                         esc_url( add_query_arg( $type_args, pk_properties_archive_url() ) ),
                                                                         esc_html( Partikulier_Localization::translate_taxonomy_label( $term->name ) ),
-                                                                        $active,
+                                                                        $active, /* phpcs:ignore WordPress.Security.EscapeOutput -- ' aria-current="true"' ou '' : constante interne (SE-020) */
                                                                         esc_html( number_format_i18n( $term->count ) )
                                                                 );
                                                 }

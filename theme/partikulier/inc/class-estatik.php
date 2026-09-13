@@ -79,6 +79,14 @@ class Partikulier_Estatik {
          * de connexion : le filtre d'Estatik reconstruit l'URI de la page
          * d'authentification sans lui. Ne s'applique qu'au POST de connexion.
          *
+         * SE-020 (E-2005) : l'URL transportée est désormais validée
+         * wp_validate_redirect (same-site) — une URL externe est abandonnée
+         * (vecteur d'hameçonnage après connexion, reproduit sur banc). Le
+         * nonce recommandé par l'analyse statique est inapplicable ici : le
+         * formulaire de connexion est rendu par le shortcode vendu
+         * [es_authentication] d'Estatik (périmètre SE-021, code non modifié) ;
+         * la valeur n'est jamais persistée ni émise brute (rawurlencode).
+         *
          * @param string $uri URI de la page d'authentification.
          * @return string
          */
@@ -86,11 +94,11 @@ class Partikulier_Estatik {
                 if ( ! is_string( $uri ) || '' === $uri ) {
                         return $uri;
                 }
-                $redirect = isset( $_POST['redirect_url'] ) ? wp_unslash( $_POST['redirect_url'] ) : '';
+                $redirect = isset( $_POST['redirect_url'] ) ? wp_unslash( $_POST['redirect_url'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification,WordPress.Security.ValidatedSanitizedInput -- E-2005 : formulaire vendu Estatik (nonce inapplicable), valeur esc_url_raw + wp_validate_redirect ci-dessous
                 if ( ! $redirect || ! is_string( $redirect ) ) {
                         return $uri;
                 }
-                $redirect = esc_url_raw( $redirect );
+                $redirect = wp_validate_redirect( esc_url_raw( $redirect ), '' );
                 if ( ! $redirect ) {
                         return $uri;
                 }

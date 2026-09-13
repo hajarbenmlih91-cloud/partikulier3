@@ -355,7 +355,7 @@ add_action( 'parse_request', array( __CLASS__, 'redirect_legacy_early' ), 1 );
 			// ne transmet pas la variable interne. Le chemin public reste la
 			// source de vérité : /[lang]/annonce/[ville]/[slug]/ (ou quartier).
 			if ( ! $raw_slug ) {
-				$request_path = trim( (string) wp_parse_url( wp_unslash( $_SERVER['REQUEST_URI'] ?? '/' ), PHP_URL_PATH ), '/' );
+				$request_path = trim( (string) wp_parse_url( wp_unslash( $_SERVER['REQUEST_URI'] ?? '/' ), PHP_URL_PATH ), '/' ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- wp_parse_url + preg_match, captures re-sanitisées (SE-020)
 				if ( preg_match( '#^(?:(fr|en|ar)/)?annonce/(?:[^/]+/){1,2}([^/]+)/?$#', $request_path, $fallback ) ) {
 					$path_lang = isset( $fallback[1] ) ? sanitize_key( (string) $fallback[1] ) : '';
 					$raw_slug  = rawurldecode( (string) $fallback[2] );
@@ -491,7 +491,7 @@ add_action( 'parse_request', array( __CLASS__, 'redirect_legacy_early' ), 1 );
 		if ( is_admin() || wp_doing_ajax() ) {
 			return;
 		}
-		$request_path = wp_parse_url( wp_unslash( $_SERVER['REQUEST_URI'] ?? '/' ), PHP_URL_PATH );
+		$request_path = wp_parse_url( wp_unslash( $_SERVER['REQUEST_URI'] ?? '/' ), PHP_URL_PATH ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- wp_parse_url + preg_match, captures re-sanitisées (SE-020)
 		if ( ! preg_match( '#/property(?:/page/([0-9]+))?/?$#', (string) $request_path, $legacy_match ) ) {
 			return;
 		}
@@ -510,7 +510,7 @@ add_action( 'parse_request', array( __CLASS__, 'redirect_legacy_early' ), 1 );
 			}
 
 			// L’ancien endpoint d’archive doit répondre en 301, y compris sa pagination.
-			$request_path = wp_parse_url( wp_unslash( $_SERVER['REQUEST_URI'] ?? '/' ), PHP_URL_PATH );
+			$request_path = wp_parse_url( wp_unslash( $_SERVER['REQUEST_URI'] ?? '/' ), PHP_URL_PATH ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- wp_parse_url + preg_match, captures re-sanitisées (SE-020)
 			if ( preg_match( '#/property(?:/page/([0-9]+))?/?$#', (string) $request_path, $legacy_match ) ) {
 				$paged = ! empty( $legacy_match[1] ) ? (int) $legacy_match[1] : max( 1, (int) get_query_var( 'paged' ) );
 				$target = pk_properties_archive_url();
@@ -535,7 +535,7 @@ add_action( 'parse_request', array( __CLASS__, 'redirect_legacy_early' ), 1 );
 			return;
 		}
 
-			$current = wp_parse_url( wp_unslash( $_SERVER['REQUEST_URI'] ?? '/' ), PHP_URL_PATH );
+			$current = wp_parse_url( wp_unslash( $_SERVER['REQUEST_URI'] ?? '/' ), PHP_URL_PATH ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- wp_parse_url + comparaison de chemins (SE-020)
 			$target  = self::filter_link( $target, get_post( $post_id ) );
 			$wanted  = wp_parse_url( $target, PHP_URL_PATH );
 

@@ -181,7 +181,7 @@ class Partikulier_Owner_Insights {
         public static function handle_favorites_list() {
                 check_ajax_referer( 'pk_public', 'nonce' );
 
-                $raw = isset( $_POST['ids'] ) ? wp_unslash( $_POST['ids'] ) : '';
+                $raw = isset( $_POST['ids'] ) ? wp_unslash( $_POST['ids'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- array_map('absint') par élément juste après (SE-020)
                 $ids = array_filter( array_map( 'absint', explode( ',', (string) $raw ) ) );
                 $ids = array_slice( array_unique( $ids ), 0, 60 );
 

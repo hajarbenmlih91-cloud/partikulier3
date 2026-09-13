@@ -84,7 +84,7 @@ trait Partikulier_Localization_Runtime {
                         if ( ! function_exists( 'pll_home_url' ) || ! self::is_root_request() || is_user_logged_in() ) {
                                 return;
                         }
-                        $path = isset( $_SERVER['REQUEST_URI'] ) ? wp_parse_url( wp_unslash( $_SERVER['REQUEST_URI'] ), PHP_URL_PATH ) : '';
+                        $path = isset( $_SERVER['REQUEST_URI'] ) ? wp_parse_url( wp_unslash( $_SERVER['REQUEST_URI'] ), PHP_URL_PATH ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- wp_parse_url + comparaison (SE-020)
                         if ( '/' !== trailingslashit( (string) $path ) || self::is_robot_request() ) {
                                 return;
                         }
@@ -92,7 +92,7 @@ trait Partikulier_Localization_Runtime {
                         if ( ! $browser_enabled || ! empty( $_COOKIE['pll_language'] ) ) {
                                 return;
                         }
-                        $accept = isset( $_SERVER['HTTP_ACCEPT_LANGUAGE'] ) ? strtolower( (string) $_SERVER['HTTP_ACCEPT_LANGUAGE'] ) : '';
+                        $accept = isset( $_SERVER['HTTP_ACCEPT_LANGUAGE'] ) ? strtolower( (string) wp_unslash( $_SERVER['HTTP_ACCEPT_LANGUAGE'] ) ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- strtolower + preg_match, comparatif (SE-020)
                         $lang = false;
                         if ( preg_match( '/(?:^|,)\\s*ar(?:[-_][a-z]+)?(?:\\s*;|,|$)/i', $accept ) ) {
                                 $lang = 'ar';
@@ -111,7 +111,7 @@ trait Partikulier_Localization_Runtime {
                 }
 
                 private static function is_root_request() {
-                        $path = isset( $_SERVER['REQUEST_URI'] ) ? wp_parse_url( wp_unslash( $_SERVER['REQUEST_URI'] ), PHP_URL_PATH ) : '';
+                        $path = isset( $_SERVER['REQUEST_URI'] ) ? wp_parse_url( wp_unslash( $_SERVER['REQUEST_URI'] ), PHP_URL_PATH ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- wp_parse_url + comparaison (SE-020)
                         return '/' === trailingslashit( (string) $path );
                 }
 
@@ -134,7 +134,7 @@ trait Partikulier_Localization_Runtime {
                 }
 
                 private static function is_robot_request() {
-                        $ua = isset( $_SERVER['HTTP_USER_AGENT'] ) ? strtolower( (string) $_SERVER['HTTP_USER_AGENT'] ) : '';
+                        $ua = isset( $_SERVER['HTTP_USER_AGENT'] ) ? strtolower( (string) wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- strtolower + preg_match, comparatif (SE-020)
                         return '' !== $ua && (bool) preg_match( '/bot|crawler|spider|slurp|bingpreview|facebookexternalhit|linkedinbot|whatsapp/i', $ua );
                 }
 }

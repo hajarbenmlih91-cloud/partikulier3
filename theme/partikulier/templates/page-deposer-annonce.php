@@ -26,10 +26,10 @@ if ( $edit_id ) {
         }
         $editing_post = get_post( $edit_id );
         if ( ! $editing_post || PARTIKULIER_ESTATIK_POST_TYPE !== $editing_post->post_type ) {
-                wp_die( esc_html__( 'Cette annonce est introuvable.', 'partikulier' ), __( 'Annonce introuvable', 'partikulier' ), array( 'response' => 404 ) );
+                wp_die( esc_html__( 'Cette annonce est introuvable.', 'partikulier' ), esc_html__( 'Annonce introuvable', 'partikulier' ), array( 'response' => 404 ) );
         }
         if ( (int) get_current_user_id() !== (int) $editing_post->post_author && ! current_user_can( 'manage_options' ) ) {
-                wp_die( esc_html__( 'Vous n’êtes pas autorisé à modifier cette annonce.', 'partikulier' ), __( 'Accès refusé', 'partikulier' ), array( 'response' => 403 ) );
+                wp_die( esc_html__( 'Vous n’êtes pas autorisé à modifier cette annonce.', 'partikulier' ), esc_html__( 'Accès refusé', 'partikulier' ), array( 'response' => 403 ) );
         }
 }
 

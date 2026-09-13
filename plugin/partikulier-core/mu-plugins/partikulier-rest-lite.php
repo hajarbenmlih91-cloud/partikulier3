@@ -13,18 +13,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 function partikulier_is_public_listings_get() {
-    $method = isset( $_SERVER['REQUEST_METHOD'] ) ? strtoupper( (string) $_SERVER['REQUEST_METHOD'] ) : '';
-    if ( 'GET' !== $method ) {
+    // SE-020 (E-2004) : verbe assaini (sanitize_key + repli GET conforme
+    // RFC 3875 §4.1.2). Comparaison en minuscules : sanitize_key() minuscule
+    // systématiquement — comparer à 'GET' rendrait le test toujours faux.
+    $method = isset( $_SERVER['REQUEST_METHOD'] ) ? sanitize_key( wp_unslash( $_SERVER['REQUEST_METHOD'] ) ) : 'get'; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- assaini par sanitize_key (E-2004)
+    if ( 'get' !== $method ) {
         return false;
     }
-    $authorization = isset( $_SERVER['HTTP_AUTHORIZATION'] ) ? (string) $_SERVER['HTTP_AUTHORIZATION'] : '';
-    $cookie        = isset( $_SERVER['HTTP_COOKIE'] ) ? (string) $_SERVER['HTTP_COOKIE'] : '';
+    $authorization = isset( $_SERVER['HTTP_AUTHORIZATION'] ) ? (string) wp_unslash( $_SERVER['HTTP_AUTHORIZATION'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- comparaison de présence seule (SE-020 : jamais émise)
+    $cookie        = isset( $_SERVER['HTTP_COOKIE'] ) ? (string) wp_unslash( $_SERVER['HTTP_COOKIE'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- regex de session uniquement (SE-020 : jamais émise)
     if ( '' !== $authorization || preg_match( '/(?:wordpress_logged_in|wordpress_sec)_[^=]*=/i', $cookie ) ) {
         return false;
     }
 
-    $route = isset( $_GET['rest_route'] ) ? (string) wp_unslash( $_GET['rest_route'] ) : '';
-    $uri   = isset( $_SERVER['REQUEST_URI'] ) ? (string) wp_unslash( $_SERVER['REQUEST_URI'] ) : '';
+    $route = isset( $_GET['rest_route'] ) ? (string) wp_unslash( $_GET['rest_route'] ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended,WordPress.Security.ValidatedSanitizedInput -- route publique pattern-matchée (E-2007), jamais émise
+    $uri   = isset( $_SERVER['REQUEST_URI'] ) ? (string) wp_unslash( $_SERVER['REQUEST_URI'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- wp_parse_url + pattern-match, jamais émis (SE-020)
     $path  = (string) wp_parse_url( $uri, PHP_URL_PATH );
 
     return (bool) preg_match(

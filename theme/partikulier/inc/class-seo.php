@@ -265,7 +265,7 @@ class Partikulier_SEO {
                  * @return array<string,string>
                  */
                 private static function known_page_hreflang() {
-                        $request = isset( $_SERVER['REQUEST_URI'] ) ? rawurldecode( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '/';
+                        $request = isset( $_SERVER['REQUEST_URI'] ) ? rawurldecode( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '/'; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- décodage + correspondance hreflang, jamais émis (SE-020)
                         $home    = home_url( '/' );
                         $faq     = false;
                         $contact = false;
@@ -443,7 +443,7 @@ class Partikulier_SEO {
          * URL canonique propre (sans parametres de tracking, sans pagination).
          */
         public static function canonical_url() {
-                $request = isset( $_SERVER['REQUEST_URI'] ) ? wp_unslash( $_SERVER['REQUEST_URI'] ) : '/';
+                $request = isset( $_SERVER['REQUEST_URI'] ) ? wp_unslash( $_SERVER['REQUEST_URI'] ) : '/'; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- wp_parse_url puis esc_url() à l'émission (printf l.128) (SE-020)
                 $path    = wp_parse_url( $request, PHP_URL_PATH );
                 return set_url_scheme( home_url( $path ?: '/' ) );
         }

@@ -55,9 +55,9 @@ class Partikulier_Premium {
                 $result = self::grant(
                         absint( $_POST['property_id'] ?? 0 ),
                         get_current_user_id(),
-                        wp_unslash( $_POST['selection_reason'] ?? '' ),
-                        wp_unslash( $_POST['starts_at'] ?? '' ),
-                        wp_unslash( $_POST['ends_at'] ?? '' )
+                        wp_unslash( $_POST['selection_reason'] ?? '' ), // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- garde cap+nonce, casts + persistance préparée côté service (SE-020)
+                        wp_unslash( $_POST['starts_at'] ?? '' ), // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- garde cap+nonce, casts + persistance préparée côté service (SE-020)
+                        wp_unslash( $_POST['ends_at'] ?? '' ) // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- garde cap+nonce, casts + persistance préparée côté service (SE-020)
                 );
                 self::redirect_after_update( $result, 'granted' );
         }
@@ -68,7 +68,7 @@ class Partikulier_Premium {
                 $result = self::revoke(
                         absint( $_POST['property_id'] ?? 0 ),
                         get_current_user_id(),
-                        wp_unslash( $_POST['revocation_reason'] ?? '' )
+                        wp_unslash( $_POST['revocation_reason'] ?? '' ) // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- garde cap+nonce, casts + persistance préparée côté service (SE-020)
                 );
                 self::redirect_after_update( $result, 'revoked' );
         }

@@ -114,7 +114,7 @@ class Partikulier_N8n_Security {
                 if ( ! current_user_can( 'manage_options' ) || ! check_admin_referer( 'pk_save_n8n_settings' ) ) {
                         wp_die( esc_html__( 'Accès non autorisé.', 'partikulier' ), 403 );
                 }
-                $posted = wp_unslash( $_POST['pk_n8n'] ?? array() );
+                $posted = wp_unslash( $_POST['pk_n8n'] ?? array() ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- validation déléguée au service core (save_admin_settings, lot B4) (SE-020)
                 if ( self::core_automation() ) {
                         // Lot B4 : validation et enregistrement délégués au
                         // service (même garde de robustesse du secret, même

@@ -32,30 +32,32 @@ class Partikulier_Form {
                         if ( wp_doing_ajax() ) {
                                 wp_send_json_error( array( 'message' => __( 'Votre session a expiré. Rechargez la page avant de réessayer.', 'partikulier' ) ), 403 );
                         }
-                        wp_die( esc_html__( 'Votre session a expiré. Rechargez la page avant de réessayer.', 'partikulier' ), __( 'Erreur de sécurité', 'partikulier' ), array( 'response' => 403 ) );
+                        wp_die( esc_html__( 'Votre session a expiré. Rechargez la page avant de réessayer.', 'partikulier' ), esc_html__( 'Erreur de sécurité', 'partikulier' ), array( 'response' => 403 ) );
                 }
                 if ( ! Partikulier_Security::allow_listing_submission() ) {
                         $message = __( 'Trop de tentatives ont été effectuées. Réessayez dans une heure.', 'partikulier' );
                         if ( wp_doing_ajax() ) {
                                 wp_send_json_error( array( 'message' => $message ), 429 );
                         }
-                        wp_die( esc_html( $message ), __( 'Limite temporaire', 'partikulier' ), array( 'response' => 429 ) );
+                        wp_die( esc_html( $message ), esc_html__( 'Limite temporaire', 'partikulier' ), array( 'response' => 429 ) );
                 }
 
                 // Fallback sans JS : POST classique.
+                // SE-020 : $_FILES n'est pas slashe par wp_magic_quotes ; les fichiers
+                // sont validates (types, empreintes) par la chaîne média/AVIF aval.
                 if ( ! wp_doing_ajax() ) {
                         if ( empty( $_POST['pk_form_action'] ) || 'pk_submit_listing' !== $_POST['pk_form_action'] ) {
                                 return;
                         }
-                        $result = self::process( $_POST, isset( $_FILES['pk_photos'] ) ? $_FILES['pk_photos'] : null );
+                        $result = self::process( $_POST, isset( $_FILES['pk_photos'] ) ? $_FILES['pk_photos'] : null ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput,WordPress.Security.NonceVerification -- $_FILES non slashe + validation aval (SE-020) ; nonce vérifié en tête de handler
                         if ( is_wp_error( $result ) ) {
-                                wp_die( esc_html( $result->get_error_message() ), __( 'Erreur de publication', 'partikulier' ), array( 'response' => 400 ) );
+                                wp_die( esc_html( $result->get_error_message() ), esc_html__( 'Erreur de publication', 'partikulier' ), array( 'response' => 400 ) );
                         }
-                        wp_redirect( get_permalink( $result ) );
+                        wp_safe_redirect( get_permalink( $result ) );
                         exit;
                 }
 
-                $result = self::process( $_POST, isset( $_FILES['pk_photos'] ) ? $_FILES['pk_photos'] : null );
+                $result = self::process( $_POST, isset( $_FILES['pk_photos'] ) ? $_FILES['pk_photos'] : null ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput,WordPress.Security.NonceVerification -- $_FILES non slashe + validation aval (SE-020) ; nonce vérifié en tête de handler
                 if ( is_wp_error( $result ) ) {
                         wp_send_json_error( array( 'message' => $result->get_error_message() ), 400 );
                 }

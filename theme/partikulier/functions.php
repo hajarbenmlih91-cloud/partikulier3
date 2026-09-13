@@ -191,6 +191,9 @@ $partikulier_modules = array(
         '/inc/class-estatik.php',
         '/inc/class-n8n-security.php',
         '/inc/class-settings.php',
+        /* SE-020 (E-2003) : sanitiseur d'options (liste blanche) chargé AVANT
+         * class-customization.php qui l'applique à pk_opts/pk_theme_options. */
+        '/inc/class-options-sanitizer.php',
         '/inc/class-customization.php',
         '/inc/class-whatsapp-verification.php',
         '/inc/class-buyer-qualification.php',

@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<ruleset name="Partikulier">
+	<description>
+		Standard d'analyse statique du monorepo Partikulier (thème + plugin).
+		Créé au lot SE-020 (E-2007 : décision de risque documentée pour les
+		lectures $_GET publiques), complété au lot SE-019 (E-1901 : référence
+		unique pour la passe phpcbf et les exclusions de périmètre).
+		Périmètre : code runtime du thème et du plugin — code vendu Estatik
+		(estatik4/), vendor et scripts de recette (tests/) exclus.
+	</description>
+
+	<rule ref="WordPress">
+		<!--
+			E-2007 (SE-020, P1-6) — décision « risque accepté » documentée :
+			les 53 avertissements NonceVerification.Recommended couvrent des
+			lectures $_GET publiques (filtres de recherche, tri, pagination,
+			presence checks, autocomplétion) : lecture seule, sans persistance,
+			sanitisées à la lecture et échappées à l'émission. Le tri
+			occurrence par occurrence est versionné : preuves-lot-4/tri-se020.tsv.
+			La sévérité ERROR (NonceVerification.Missing, $_POST) reste ACTIVE :
+			toute future régression sur un gestionnaire d'écriture sera détectée.
+		-->
+		<exclude name="WordPress.Security.NonceVerification.Recommended"/>
+	</rule>
+
+	<!-- Code vendu Estatik (gabarits de substitution) : divergence tracée SE-021. -->
+	<exclude-pattern>*/estatik4/*</exclude-pattern>
+	<exclude-pattern>/theme/partikulier/estatik4/*</exclude-pattern>
+
+	<!-- Dépendances tierces. -->
+	<exclude-pattern>*/vendor/*</exclude-pattern>
+	<exclude-pattern>*/node_modules/*</exclude-pattern>
+
+	<!-- Scripts de recette : jamais embarqués dans l'artefact (E-1702). -->
+	<exclude-pattern>*/tests/*</exclude-pattern>
+	<exclude-pattern>*/tools/*</exclude-pattern>
+
+	<!-- Domaines de texte du monorepo. -->
+	<config name="text_domain" value="partikulier,partikulier-core"/>
+</ruleset>
