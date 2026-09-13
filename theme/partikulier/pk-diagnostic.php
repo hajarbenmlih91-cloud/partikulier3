@@ -11,7 +11,7 @@
  *     Tableau de bord -> partikulier -> « Diagnostic complet » : on choisit le
  *     perimetre, on clique, on lit, on telecharge le .txt et le .csv.
  *
- *  2. FICHIER POSE A LA RACINE DU WORDPRESS (CI, hebergeur, SSH)
+ *  2. FICHIER POSE A LA RACINE DU WordPress (CI, hebergeur, SSH)
  *     cp wp-content/themes/partikulier/pk-sonde.php . && php pk-sonde.php
  *     Cle generee toute seule ; `?retirer=1` supprime la cle.
  *
@@ -1169,7 +1169,7 @@ if ( ! function_exists( 'partikulier_pk_diag_run' ) ) {
                 $lig( 'site', home_url( '/' ) . '  (hote ' . $hote . ')' );
                 $lig( 'theme', $theme->get( 'Name' ) . ' v' . $theme->get( 'Version' ) . '  (' . $theme->get_stylesheet() . ')' );
                 $lig( 'sonde integree', 'v' . PK_SONDE_VERSION . ' · genere ' . gmdate( 'c' ) );
-                $lig( 'wordpress / php', get_bloginfo( 'version' ) . ' / ' . PHP_VERSION . ' (' . PHP_SAPI . ')' );
+                $lig( 'WordPress / php', get_bloginfo( 'version' ) . ' / ' . PHP_VERSION . ' (' . PHP_SAPI . ')' );
                 $lig( 'budget de temps', $budget . ' s (max_execution_time=' . ( $ini ?: 'illimite' ) . ')' );
                 $actifs = (array) get_option( 'active_plugins', array() );
                 $est = static function ( $f ) use ( $actifs ) {

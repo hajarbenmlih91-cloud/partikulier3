@@ -23,15 +23,14 @@ class Partikulier_Setup {
 
         public static function init() {
                 add_action( 'after_setup_theme', array( __CLASS__, 'setup' ) );
-                add_action( 'widgets_init', array( __CLASS__, 'widgets' ) );
                 add_action( 'init', array( __CLASS__, 'register_styles' ), 1 );
                 add_action( 'init', array( __CLASS__, 'register_image_sizes' ) );
         }
 
-	        public static function setup() {
-		/* Lot C4 — le chargement du textdomain est retiré : le chargeur
-		 * unique du plugin partikulier-core 2.9+ (I18nDomainLoader) détient
-		 * le mécanisme ; le kit traducteur vit côté plugin. */
+                public static function setup() {
+                /* Lot C4 — le chargement du textdomain est retiré : le chargeur
+                 * unique du plugin partikulier-core 2.9+ (I18nDomainLoader) détient
+                 * le mécanisme ; le kit traducteur vit côté plugin. */
                 add_theme_support( 'automatic-feed-links' );
                 add_theme_support( 'title-tag' );
                 add_theme_support( 'post-thumbnails' );
@@ -52,17 +51,15 @@ class Partikulier_Setup {
                 ) );
         }
 
-        public static function widgets() {
-                register_sidebar( array(
-                        'name'          => __( 'Sidebar annonce', 'partikulier' ),
-                        'id'            => 'sidebar-property',
-                        'description'   => __( 'Colonne de la page annonce unique.', 'partikulier' ),
-                        'before_widget' => '<section id="%1$s" class="widget %2$s">',
-                        'after_widget'  => '</section>',
-                        'before_title'  => '<h3 class="widget-title">',
-                        'after_title'   => '</h3>',
-                ) );
-        }
+        /*
+         * SE-022 (E-2204a, CDC v4.1 §8B) : l'enregistrement register_sidebar()
+         * « Sidebar annonce » a ete retire — jamais rendu (aucun
+         * dynamic_sidebar() dans le theme, colonne morte signalee par Theme
+         * Check au train 1). Arbitrage « pas de code mort » : on ne branche pas
+         * un rendu de widgets jamais ouvert ; l'enregistrement disparait.
+         * Les chaines restent dans les catalogues (inoffensives) jusqu'a la
+         * prochaine regeneration.
+         */
 
         /**
          * Fichier CSS principal enregistre (ne pas charger par defaut :

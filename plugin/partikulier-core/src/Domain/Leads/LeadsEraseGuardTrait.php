@@ -16,12 +16,21 @@
  * (E-1606). Les constantes vivent dans le shell LeadService (PHP 8.1 —
  * pas de constante de trait avant 8.2) ; module dédié au sens CA-4.
  *
+ * SE-022 (E-1609/E-2201, CDC v4.1 §8B) : la garde ne compte et n'audite
+ * qu'une fois par cycle de requête HTTP — le core ré-exécute le
+ * permission_callback via rest_send_allow_header() (rest_post_dispatch)
+ * pour construire l'en-tête Allow ; le verdict de la passe réelle est
+ * restitué (clé par objet requête, RequestCycle), les effets de bord ne
+ * rejouent pas. 429 à la 11e requête (10 servies), audit unique par échec.
+ *
  * @package Partikulier\Core
  */
 
 declare(strict_types=1);
 
 namespace Partikulier\Core\Domain\Leads;
+
+use Partikulier\Core\Rest\RequestCycle;
 
 trait LeadsEraseGuardTrait
 {
@@ -34,9 +43,36 @@ trait LeadsEraseGuardTrait
      * ensuite, fenêtre de transition E-1603 en dernier (chaque usage du secret
      * n8n y est journalisé comme déprécié).
      *
+     * SE-022 (E-1609/E-2201) : idempotence par cycle de requête. La passe
+     * Allow-header (rest_send_allow_header, rest_post_dispatch) ré-exécute le
+     * permission_callback sur la MÊME instance de WP_REST_Request — le verdict
+     * de la première passe est restitué tel quel (un 401 reste un 401, un 429
+     * reste un 429 : l'en-tête Allow reflète la passe réelle) et les effets de
+     * bord (compteur d'échecs, entrées d'audit, remise à zéro) ne s'exécutent
+     * qu'une fois. rest_do_request ne déclenche jamais rest_post_dispatch :
+     * l'identité par objet fait qu'une requête fraîche compte normalement,
+     * qu'un rejeu de la même instance ne double rien (E-1610, complément).
+     *
      * @return true|\WP_Error
      */
     public static function check_erase_secret(\WP_REST_Request $request)
+    {
+        $verdict = RequestCycle::recall($request, 'erase_verdict');
+        if ($verdict !== null) {
+            return $verdict;
+        }
+        $verdict = self::erase_evaluate($request);
+        RequestCycle::remember($request, 'erase_verdict', $verdict);
+        return $verdict;
+    }
+
+    /**
+     * Évaluation réelle de la garde — une seule fois par cycle de requête
+     * (les effets de bord vivent ici : compteur, audits, remise à zéro).
+     *
+     * @return true|\WP_Error
+     */
+    private static function erase_evaluate(\WP_REST_Request $request)
     {
         $ip = self::erase_client_ip();
         $policy = self::erase_rate_policy();

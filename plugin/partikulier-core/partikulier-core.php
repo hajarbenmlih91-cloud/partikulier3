@@ -35,6 +35,7 @@ require_once __DIR__ . '/src/Domain/I18n/I18nDomainLoader.php';
 require_once __DIR__ . '/src/Database/Schema.php';
 require_once __DIR__ . '/src/Database/Migrator.php';
 require_once __DIR__ . '/src/Rest/RouteRegistry.php';
+require_once __DIR__ . '/src/Rest/RequestCycle.php';
 require_once __DIR__ . '/src/Domain/DomainRegistry.php';
 /*
  * Lot D (découpage, arbitrage « Référence + plugin ») : les traits composant

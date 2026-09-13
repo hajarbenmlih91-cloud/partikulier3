@@ -14,12 +14,21 @@
  * mécanisme actif). Preuve : contrat module-perimeter-contract.php + rejeu
  * intégral des suites du domaine (oracle inchangé).
  *
+ * SE-022 (E-1609/E-2201, CDC v4.1 §8B) : idempotence par cycle de requête
+ * de l'unique effet de bord de la garde — audit_failure en mode log. La
+ * passe Allow-header ré-exécute le permission_callback : l'entrée d'audit
+ * d'échec ne s'écrit qu'à la première passe (RequestCycle::first_run, clé
+ * par objet requête) ; le verdict est recalculé à l'identique (contrôles
+ * purs), les autres modes (off/enforce) n'ont aucun effet de bord.
+ *
  * @package Partikulier\Core
  */
 
 declare(strict_types=1);
 
 namespace Partikulier\Core\Domain\Automation;
+
+use Partikulier\Core\Rest\RequestCycle;
 
 trait AutomationHmacTrait
 {
@@ -130,7 +139,13 @@ trait AutomationHmacTrait
 
         if (!$valid) {
             if ('log' === $mode) {
-                self::audit_failure($key_id ?: 'missing', 'invalid_signature');
+                /* SE-022 (E-2201) : une seule écriture d'audit par cycle de
+                 * requête — la ré-exécution Allow-header ne double pas le
+                 * compteur d'échecs HMAC (même classe de défaut que la garde
+                 * /erase-lead, constatée par le balayage des 18 routes). */
+                if (RequestCycle::first_run($request, 'hmac_audit_failure')) {
+                    self::audit_failure($key_id ?: 'missing', 'invalid_signature');
+                }
                 return true;
             }
             return new \WP_Error('pk_automation_signature', __('Requête non autorisée.', 'partikulier'), ['status' => 401]);
