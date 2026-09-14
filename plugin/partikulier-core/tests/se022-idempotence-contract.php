@@ -333,7 +333,7 @@ try {
         $ownerDeclares = (int) preg_match_all("/Partikulier_Automation_Bridge::declare_rest_route\(/", $owner);
         $ownerGuarded = (int) preg_match_all("/'permission_callback'\s*=>\s*array\(\s*__CLASS__,\s*'can_access_owner_dashboard'\s*\)/", $owner);
         $pure = false;
-        if (preg_match("/public static function can_access_owner_dashboard\(\)\s*\{(.*?)\n        \}/s", $owner, $m)) {
+        if (preg_match("/public static function can_access_owner_dashboard\(\)\s*\{(.*?)\n        \}/s", str_replace("\t", '        ', $owner), $m)) {
             $body = $m[1];
             $pure = strpos($body, 'is_user_logged_in') !== false
                 && !preg_match('/set_transient|get_transient|update_option|delete_option|->insert|->query|->update|->delete|wp_insert|wp_delete|wp_mail/', $body);
