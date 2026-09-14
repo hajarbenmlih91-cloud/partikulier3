@@ -84,18 +84,18 @@ class Partikulier_WhatsApp_Verification {
 				: '';
 
 			$default_template = 'Bonjour, je souhaite valider ma demande de publication Partikulier. Mon code est : {code}';
-			if ( '' === trim( $template ) || $default_template === $template ) {
-				$lang = function_exists( 'pll_get_post_language' ) ? sanitize_key( (string) pll_get_post_language( $post_id, 'slug' ) ) : '';
-				if ( ! $lang ) {
-					$lang = function_exists( 'pll_current_language' ) ? sanitize_key( (string) pll_current_language( 'slug' ) ) : 'fr';
-				}
-				$templates = array(
-					'fr' => $default_template,
-					'en' => 'Hello, I would like to validate my Partikulier listing publication request. My code is: {code}',
-					'ar' => 'مرحباً، أريد التحقق من طلب نشر إعلاني على بارتكولييه. الرمز الخاص بي هو: {code}',
-				);
-				$template = isset( $templates[ $lang ] ) ? $templates[ $lang ] : $templates['fr'];
+		if ( '' === trim( $template ) || $default_template === $template ) {
+			$lang = function_exists( 'pll_get_post_language' ) ? sanitize_key( (string) pll_get_post_language( $post_id, 'slug' ) ) : '';
+			if ( ! $lang ) {
+				$lang = function_exists( 'pll_current_language' ) ? sanitize_key( (string) pll_current_language( 'slug' ) ) : 'fr';
 			}
+			$templates = array(
+				'fr' => $default_template,
+				'en' => 'Hello, I would like to validate my Partikulier listing publication request. My code is: {code}',
+				'ar' => 'مرحباً، أريد التحقق من طلب نشر إعلاني على بارتكولييه. الرمز الخاص بي هو: {code}',
+			);
+			$template  = isset( $templates[ $lang ] ) ? $templates[ $lang ] : $templates['fr'];
+		}
 
 		$city = '';
 		if ( $post ) {
@@ -110,12 +110,12 @@ class Partikulier_WhatsApp_Verification {
 		$text = strtr(
 			$template,
 			array(
-				'{code}'   => $code,
-				'{titre}'  => $post ? $post->post_title : '',
-				'{ville}'  => $city,
-				'{prix}'   => $price ? number_format_i18n( (int) $price ) . ' MAD' : '',
-				'{lien}'   => $post ? get_permalink( $post ) : '',
-				'{nom}'    => $post ? (string) get_post_meta( $post->ID, '_pk_owner_name', true ) : '',
+				'{code}'  => $code,
+				'{titre}' => $post ? $post->post_title : '',
+				'{ville}' => $city,
+				'{prix}'  => $price ? number_format_i18n( (int) $price ) . ' MAD' : '',
+				'{lien}'  => $post ? get_permalink( $post ) : '',
+				'{nom}'   => $post ? (string) get_post_meta( $post->ID, '_pk_owner_name', true ) : '',
 			)
 		);
 
@@ -154,10 +154,10 @@ class Partikulier_WhatsApp_Verification {
 	 * @param WP_Post $post Annonce courante.
 	 */
 	public static function render_meta_box( $post ) {
-		$status      = get_post_meta( $post->ID, '_pk_status', true );
-		$code        = get_post_meta( $post->ID, '_pk_whatsapp_verification_code', true );
+		$status       = get_post_meta( $post->ID, '_pk_status', true );
+		$code         = get_post_meta( $post->ID, '_pk_whatsapp_verification_code', true );
 		$requested_at = get_post_meta( $post->ID, '_pk_whatsapp_validation_requested_at', true );
-		$verified_at = get_post_meta( $post->ID, '_pk_whatsapp_verified_at', true );
+		$verified_at  = get_post_meta( $post->ID, '_pk_whatsapp_verified_at', true );
 
 		if ( self::STATUS_PENDING === $status ) {
 			echo '<p><strong>' . esc_html__( 'En attente de rapprochement manuel.', 'partikulier' ) . '</strong></p>';

@@ -17,41 +17,41 @@
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
-        return;
+		return;
 }
 
 class Partikulier_Payment_Foundation {
 
-        const STATUS_DISABLED = 'disabled';
+		const STATUS_DISABLED = 'disabled';
 
-        /**
-         * Lot B1 : le plugin est-il propriétaire du domaine paiements ?
-         * (lot F : oui — conditionne chaque délégation).
-         */
-        private static function core_payments() {
-                return class_exists( '\Partikulier\Core\Domain\Payments\PaymentService' )
-                        ? '\Partikulier\Core\Domain\Payments\PaymentService'
-                        : null;
-        }
+		/**
+		 * Lot B1 : le plugin est-il propriétaire du domaine paiements ?
+		 * (lot F : oui — conditionne chaque délégation).
+		 */
+	private static function core_payments() {
+			return class_exists( '\Partikulier\Core\Domain\Payments\PaymentService' )
+					? '\Partikulier\Core\Domain\Payments\PaymentService'
+					: null;
+	}
 
-        /**
-         * Noms canoniques des tables du domaine — délégation au service
-         * propriétaire (probes contractuelles PAY-002 : l'égalité
-         * thème/plugin fait foi que les deux côtés désignent les mêmes tables).
-         */
-        public static function orders_table() {
-                return self::core_payments() ? self::core_payments()::orders_table() : '';
-        }
+		/**
+		 * Noms canoniques des tables du domaine — délégation au service
+		 * propriétaire (probes contractuelles PAY-002 : l'égalité
+		 * thème/plugin fait foi que les deux côtés désignent les mêmes tables).
+		 */
+	public static function orders_table() {
+			return self::core_payments() ? self::core_payments()::orders_table() : '';
+	}
 
-        public static function subscriptions_table() {
-                return self::core_payments() ? self::core_payments()::subscriptions_table() : '';
-        }
+	public static function subscriptions_table() {
+			return self::core_payments() ? self::core_payments()::subscriptions_table() : '';
+	}
 
-        /** @return WP_Error Toujours désactivé tant que le gate paiement est fermé. */
-        public static function create_order() {
-                if ( self::core_payments() ) {
-                        return self::core_payments()::create_order();
-                }
-                return new WP_Error( 'pk_payment_disabled', __( 'Le paiement est désactivé.', 'partikulier' ) );
-        }
+		/** @return WP_Error Toujours désactivé tant que le gate paiement est fermé. */
+	public static function create_order() {
+		if ( self::core_payments() ) {
+				return self::core_payments()::create_order();
+		}
+			return new WP_Error( 'pk_payment_disabled', __( 'Le paiement est désactivé.', 'partikulier' ) );
+	}
 }

@@ -26,112 +26,112 @@ namespace Partikulier\Core\Domain\I18n;
 
 final class I18nContentService
 {
-    /**
-     * Langues prises en charge.
-     *
-     * @return string[]
-     */
-    public static function languages()
-    {
-        return ListingLexicon::languages();
-    }
+	/**
+	 * Langues prises en charge.
+	 *
+	 * @return string[]
+	 */
+	public static function languages()
+	{
+		return ListingLexicon::languages();
+	}
 
-    /**
-     * Titre de l'annonce dans une langue donnée.
-     *
-     * @param array  $v    Données normalisées.
-     * @param string $lang Langue.
-     * @return string
-     */
-    public static function title( $v, $lang )
-    {
-        return ListingTextService::title( $v, $lang );
-    }
+	/**
+	 * Titre de l'annonce dans une langue donnée.
+	 *
+	 * @param array  $v    Données normalisées.
+	 * @param string $lang Langue.
+	 * @return string
+	 */
+	public static function title( $v, $lang )
+	{
+		return ListingTextService::title( $v, $lang );
+	}
 
-    /**
-     * Description complète dans une langue donnée.
-     *
-     * @param array  $v    Données normalisées.
-     * @param string $lang Langue.
-     * @return string
-     */
-    public static function description( $v, $lang )
-    {
-        return ListingTextService::description( $v, $lang );
-    }
+	/**
+	 * Description complète dans une langue donnée.
+	 *
+	 * @param array  $v    Données normalisées.
+	 * @param string $lang Langue.
+	 * @return string
+	 */
+	public static function description( $v, $lang )
+	{
+		return ListingTextService::description( $v, $lang );
+	}
 
-    /**
-     * Meta description calibrée (155 desktop, essentiel dans les 120 premiers).
-     *
-     * @param array  $v    Données normalisées.
-     * @param string $lang Langue.
-     * @return string
-     */
-    public static function meta_description( $v, $lang )
-    {
-        return ListingSeoTextService::meta_description( $v, $lang );
-    }
+	/**
+	 * Meta description calibrée (155 desktop, essentiel dans les 120 premiers).
+	 *
+	 * @param array  $v    Données normalisées.
+	 * @param string $lang Langue.
+	 * @return string
+	 */
+	public static function meta_description( $v, $lang )
+	{
+		return ListingSeoTextService::meta_description( $v, $lang );
+	}
 
-    /**
-     * Texte alternatif d'une photo, dans la langue voulue.
-     *
-     * @param array  $v     Données normalisées.
-     * @param string $lang  Langue.
-     * @param int    $index Rang de la photo.
-     * @return string
-     */
-    public static function image_alt( $v, $lang, $index = 0 )
-    {
-        return ListingSeoTextService::image_alt( $v, $lang, $index );
-    }
+	/**
+	 * Texte alternatif d'une photo, dans la langue voulue.
+	 *
+	 * @param array  $v     Données normalisées.
+	 * @param string $lang  Langue.
+	 * @param int    $index Rang de la photo.
+	 * @return string
+	 */
+	public static function image_alt( $v, $lang, $index = 0 )
+	{
+		return ListingSeoTextService::image_alt( $v, $lang, $index );
+	}
 
-    /**
-     * Traduit un libellé de type dans la langue demandée.
-     *
-     * @param string $type Type source.
-     * @param string $lang Langue cible.
-     * @return string
-     */
-    public static function localized_type( $type, $lang = '' )
-    {
-        return ListingPostTextService::localized_type( $type, $lang );
-    }
+	/**
+	 * Traduit un libellé de type dans la langue demandée.
+	 *
+	 * @param string $type Type source.
+	 * @param string $lang Langue cible.
+	 * @return string
+	 */
+	public static function localized_type( $type, $lang = '' )
+	{
+		return ListingPostTextService::localized_type( $type, $lang );
+	}
 
-    /**
-     * Traduit un lieu libre en conservant les quartiers inconnus.
-     *
-     * @param string $place Lieu source.
-     * @param string $lang  Langue cible.
-     * @return string
-     */
-    public static function localized_place( $place, $lang = '' )
-    {
-        return ListingPostTextService::localized_place( $place, $lang );
-    }
+	/**
+	 * Traduit un lieu libre en conservant les quartiers inconnus.
+	 *
+	 * @param string $place Lieu source.
+	 * @param string $lang  Langue cible.
+	 * @return string
+	 */
+	public static function localized_place( $place, $lang = '' )
+	{
+		return ListingPostTextService::localized_place( $place, $lang );
+	}
 
-    /**
-     * Construit un titre localisé pour une annonce legacy sans traduction
-     * liée. Un titre arabe manuel existant est toujours prioritaire.
-     *
-     * @param \WP_Post|int $post Annonce.
-     * @param string       $lang Langue cible.
-     * @return string
-     */
-    public static function title_from_post( $post, $lang = '' )
-    {
-        return ListingPostTextService::title_from_post( $post, $lang );
-    }
+	/**
+	 * Construit un titre localisé pour une annonce legacy sans traduction
+	 * liée. Un titre arabe manuel existant est toujours prioritaire.
+	 *
+	 * @param \WP_Post|int $post Annonce.
+	 * @param string       $lang Langue cible.
+	 * @return string
+	 */
+	public static function title_from_post( $post, $lang = '' )
+	{
+		return ListingPostTextService::title_from_post( $post, $lang );
+	}
 
-    /**
-     * Retourne la composition lisible des chambres/salons pour une carte.
-     *
-     * @param \WP_Post|int $post Annonce.
-     * @param string       $lang Langue cible.
-     * @return string
-     */
-    public static function rooms_label_from_post( $post, $lang = '' )
-    {
-        return ListingPostTextService::rooms_label_from_post( $post, $lang );
-    }
+	/**
+	 * Retourne la composition lisible des chambres/salons pour une carte.
+	 *
+	 * @param \WP_Post|int $post Annonce.
+	 * @param string       $lang Langue cible.
+	 * @return string
+	 */
+	public static function rooms_label_from_post( $post, $lang = '' )
+	{
+		return ListingPostTextService::rooms_label_from_post( $post, $lang );
+	}
 }
 

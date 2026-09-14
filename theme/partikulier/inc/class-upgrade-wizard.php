@@ -287,7 +287,7 @@ class Partikulier_Upgrade_Wizard {
 	 * @param string   $button   Libelle du bouton.
 	 */
 	private static function step_box( $number, $title, $done, $unlocked, $status, $samples, $action, $button ) {
-		$border = $done ? '#00a32a' : ( $unlocked ? '#2271b1' : '#dcdcde' );
+		$border  = $done ? '#00a32a' : ( $unlocked ? '#2271b1' : '#dcdcde' );
 		$opacity = $unlocked ? '1' : '.55';
 		?>
 		<div style="background:#fff;border:1px solid #dcdcde;border-left:4px solid <?php echo esc_attr( $border ); ?>;padding:16px 20px;margin:14px 0;max-width:46em;opacity:<?php echo esc_attr( $opacity ); ?>">
@@ -309,7 +309,7 @@ class Partikulier_Upgrade_Wizard {
 				<span style="color:#8c8f94"><?php esc_html_e( 'Verrouillé — terminez l’étape précédente.', 'partikulier' ); ?></span>
 			<?php elseif ( $action ) : ?>
 				<a class="button button-primary" href="<?php echo esc_url( self::action_url( $action ) ); ?>"
-				   onclick="return confirm('<?php echo esc_js( __( 'Avez-vous sauvegardé votre base de données ? Cette opération modifie vos données.', 'partikulier' ) ); ?>');">
+					onclick="return confirm('<?php echo esc_js( __( 'Avez-vous sauvegardé votre base de données ? Cette opération modifie vos données.', 'partikulier' ) ); ?>');">
 					<?php echo esc_html( $button ); ?>
 				</a>
 			<?php else : ?>

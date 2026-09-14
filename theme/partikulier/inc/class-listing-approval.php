@@ -22,9 +22,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class Partikulier_Listing_Approval {
 
-	const MENU_SLUG = 'pk-approvals';
-	const ACTION    = 'pk_approve_listing';
-		const ACTION_RESEND = 'pk_resend_credentials';
+	const MENU_SLUG                     = 'pk-approvals';
+	const ACTION                        = 'pk_approve_listing';
+		const ACTION_RESEND             = 'pk_resend_credentials';
 		const META_LAST_RESEND_ACCEPTED = '_pk_credentials_last_resend_accepted_at';
 		const META_LAST_RESEND_LEGACY   = '_pk_credentials_last_resent_at';
 		const META_MIGRATION_OPTION     = 'pk_credentials_resend_meta_migrated_v1';
@@ -138,9 +138,9 @@ class Partikulier_Listing_Approval {
 					</thead>
 					<tbody>
 					<?php foreach ( $pending as $post ) :
-						$name  = get_post_meta( $post->ID, '_pk_owner_name', true );
-						$phone = get_post_meta( $post->ID, '_pk_owner_phone', true );
-						$code  = get_post_meta( $post->ID, '_pk_whatsapp_verification_code', true );
+						$name    = get_post_meta( $post->ID, '_pk_owner_name', true );
+						$phone   = get_post_meta( $post->ID, '_pk_owner_phone', true );
+						$code    = get_post_meta( $post->ID, '_pk_whatsapp_verification_code', true );
 						$blocked = class_exists( 'Partikulier_Place_Requests' ) && Partikulier_Place_Requests::is_blocked( $post->ID );
 						?>
 						<tr>
@@ -162,7 +162,7 @@ class Partikulier_Listing_Approval {
 								<?php else : ?>
 									<a class="button button-primary" href="<?php echo esc_url( self::decision_url( $post->ID, 'approve' ) ); ?>"><?php esc_html_e( 'Publier', 'partikulier' ); ?></a>
 									<a class="button" href="<?php echo esc_url( self::decision_url( $post->ID, 'reject' ) ); ?>"
-									   onclick="return confirm('<?php echo esc_js( __( 'Refuser cette annonce ?', 'partikulier' ) ); ?>');"><?php esc_html_e( 'Refuser', 'partikulier' ); ?></a>
+										onclick="return confirm('<?php echo esc_js( __( 'Refuser cette annonce ?', 'partikulier' ) ); ?>');"><?php esc_html_e( 'Refuser', 'partikulier' ); ?></a>
 								<?php endif; ?>
 							</td>
 						</tr>
@@ -197,7 +197,7 @@ class Partikulier_Listing_Approval {
 							</td>
 							<td>
 								<a class="button" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=' . self::ACTION_RESEND . '&listing=' . $post->ID ), self::ACTION_RESEND . '_' . $post->ID ) ); ?>"
-								   onclick="return confirm('<?php echo esc_js( __( 'Générer un nouveau mot de passe ? L’ancien ne fonctionnera plus.', 'partikulier' ) ); ?>');">
+									onclick="return confirm('<?php echo esc_js( __( 'Générer un nouveau mot de passe ? L’ancien ne fonctionnera plus.', 'partikulier' ) ); ?>');">
 									<?php esc_html_e( 'Nouveau mot de passe', 'partikulier' ); ?>
 								</a>
 							</td>
@@ -309,10 +309,10 @@ class Partikulier_Listing_Approval {
 		$post_id = isset( $_GET['listing'] ) ? absint( $_GET['listing'] ) : 0;
 		check_admin_referer( self::ACTION_RESEND . '_' . $post_id );
 
-			$request_id = wp_generate_uuid4();
+			$request_id  = wp_generate_uuid4();
 			$credentials = self::prepare_credentials( $post_id, true );
 			update_post_meta( $post_id, '_pk_credentials_resend_request_id', $request_id );
-			$sent        = self::notify_n8n( $post_id, $credentials, $request_id );
+			$sent = self::notify_n8n( $post_id, $credentials, $request_id );
 
 		self::store_credentials_notice( $credentials, $sent, get_post_meta( $post_id, '_pk_n8n_error', true ) );
 
@@ -352,16 +352,16 @@ class Partikulier_Listing_Approval {
 	 * Le transient contient uniquement un ciphertext AES-GCM à durée courte.
 	 */
 	private static function store_credentials_notice( $credentials, $sent, $error = '' ) {
-		$data = array(
+		$data   = array(
 			'login'    => (string) ( $credentials['login'] ?? '' ),
 			'password' => (string) ( $credentials['password'] ?? '' ),
 			'phone'    => (string) ( $credentials['phone'] ?? '' ),
 			'sent'     => (bool) $sent,
 			'error'    => (string) $error,
 		);
-		$key = hash( 'sha256', wp_salt( 'auth' ), true );
-		$iv  = function_exists( 'random_bytes' ) ? random_bytes( 12 ) : openssl_random_pseudo_bytes( 12 );
-		$tag = '';
+		$key    = hash( 'sha256', wp_salt( 'auth' ), true );
+		$iv     = function_exists( 'random_bytes' ) ? random_bytes( 12 ) : openssl_random_pseudo_bytes( 12 );
+		$tag    = '';
 		$cipher = openssl_encrypt( wp_json_encode( $data ), 'aes-256-gcm', $key, OPENSSL_RAW_DATA, $iv, $tag );
 		if ( false !== $cipher && $tag ) {
 			set_transient( 'pk_last_credentials', array(
@@ -382,7 +382,7 @@ class Partikulier_Listing_Approval {
 		if ( ! is_array( $stored ) || empty( $stored['cipher'] ) || empty( $stored['iv'] ) || empty( $stored['tag'] ) ) {
 			return false;
 		}
-		$key = hash( 'sha256', wp_salt( 'auth' ), true );
+		$key  = hash( 'sha256', wp_salt( 'auth' ), true );
 		$json = openssl_decrypt( base64_decode( $stored['cipher'] ), 'aes-256-gcm', $key, OPENSSL_RAW_DATA, base64_decode( $stored['iv'] ), base64_decode( $stored['tag'] ) );
 		if ( false === $json ) {
 			delete_transient( 'pk_last_credentials' );
@@ -483,7 +483,7 @@ class Partikulier_Listing_Approval {
 			update_post_meta( $post_id, '_pk_n8n_status', 'error' );
 			return false;
 		}
-		$url = trim( (string) Partikulier_N8n_Security::get( 'n8n_webhook_url' ) );
+		$url   = trim( (string) Partikulier_N8n_Security::get( 'n8n_webhook_url' ) );
 		$parts = wp_parse_url( $url );
 		if ( ! $url || empty( $parts['host'] ) || 'https' !== strtolower( (string) ( $parts['scheme'] ?? '' ) ) ) {
 			update_post_meta( $post_id, '_pk_n8n_error', __( 'Webhook n8n absent ou non HTTPS.', 'partikulier' ) );
@@ -540,29 +540,29 @@ class Partikulier_Listing_Approval {
 	 */
 	private static function payload( $post_id, $credentials, $request_id = '' ) {
 			return array(
-				'event'    => 'listing_approved',
+				'event'             => 'listing_approved',
 				'resend_request_id' => sanitize_text_field( $request_id ),
-			'listing'  => array(
+			'listing'               => array(
 				'id'    => (int) $post_id,
 				'title' => get_the_title( $post_id ),
 				'url'   => get_permalink( $post_id ),
 				'price' => get_post_meta( $post_id, 'es_property_price', true ),
 			),
-			'owner'    => array(
+			'owner'                 => array(
 				'name'  => $credentials['display_name'] ?? '',
 				'phone' => $credentials['phone'] ?? '',
 				'email' => $credentials['email'] ?? '',
 			),
-			'account'  => array(
-				'login'     => $credentials['login'] ?? '',
-				'password'  => $credentials['password'] ?? '',
-				'login_url' => $credentials['login_url'] ?? pk_login_page_url(),
+			'account'               => array(
+				'login'            => $credentials['login'] ?? '',
+				'password'         => $credentials['password'] ?? '',
+				'login_url'        => $credentials['login_url'] ?? pk_login_page_url(),
 				// false => l'annonceur a deja recu ses identifiants : n8n doit
 				// envoyer un message de mise en ligne, sans identifiants.
 				'send_credentials' => ! empty( $credentials['password'] ),
 			),
-			'sent_at'  => current_time( 'mysql' ),
-		);
+			'sent_at'               => current_time( 'mysql' ),
+			);
 	}
 
 	/**
@@ -591,27 +591,27 @@ class Partikulier_Listing_Approval {
 	 * @return WP_REST_Response
 	 */
 			/**
-		 * Migre une seule fois l'ancien nom de méta vers le contrat v2.2.
-		 * L'ancienne valeur est conservée comme trace de compatibilité.
-		 */
-		public static function migrate_resend_meta() {
-			if ( get_option( self::META_MIGRATION_OPTION, false ) ) {
-				return;
-			}
-
-			global $wpdb;
-			$rows = $wpdb->get_results( $wpdb->prepare( "SELECT post_id, meta_value FROM {$wpdb->postmeta} WHERE meta_key = %s", self::META_LAST_RESEND_LEGACY ) );
-			foreach ( $rows as $row ) {
-				if ( ! get_post_meta( (int) $row->post_id, self::META_LAST_RESEND_ACCEPTED, true ) ) {
-					update_post_meta( (int) $row->post_id, self::META_LAST_RESEND_ACCEPTED, sanitize_text_field( (string) $row->meta_value ) );
-				}
-			}
-			add_option( self::META_MIGRATION_OPTION, gmdate( 'c' ), '', true );
+			 * Migre une seule fois l'ancien nom de méta vers le contrat v2.2.
+			 * L'ancienne valeur est conservée comme trace de compatibilité.
+			 */
+	public static function migrate_resend_meta() {
+		if ( get_option( self::META_MIGRATION_OPTION, false ) ) {
+			return;
 		}
 
-		public static function rest_resend_accepted( WP_REST_Request $request ) {
+		global $wpdb;
+		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT post_id, meta_value FROM {$wpdb->postmeta} WHERE meta_key = %s", self::META_LAST_RESEND_LEGACY ) );
+		foreach ( $rows as $row ) {
+			if ( ! get_post_meta( (int) $row->post_id, self::META_LAST_RESEND_ACCEPTED, true ) ) {
+				update_post_meta( (int) $row->post_id, self::META_LAST_RESEND_ACCEPTED, sanitize_text_field( (string) $row->meta_value ) );
+			}
+		}
+		add_option( self::META_MIGRATION_OPTION, gmdate( 'c' ), '', true );
+	}
 
-		$post_id = absint( $request->get_param( 'listing_id' ) );
+	public static function rest_resend_accepted( WP_REST_Request $request ) {
+
+		$post_id    = absint( $request->get_param( 'listing_id' ) );
 		$request_id = sanitize_text_field( (string) $request->get_param( 'resend_request_id' ) );
 		if ( ! $post_id || ! $request_id ) {
 			return new WP_Error( 'invalid_resend_ack', __( 'listing_id et resend_request_id sont obligatoires.', 'partikulier' ), array( 'status' => 400 ) );
@@ -620,15 +620,15 @@ class Partikulier_Listing_Approval {
 		if ( ! hash_equals( $expected, $request_id ) ) {
 			return new WP_Error( 'stale_resend_ack', __( 'Demande de renvoi inconnue ou périmée.', 'partikulier' ), array( 'status' => 409 ) );
 		}
-					$accepted_at = get_post_meta( $post_id, self::META_LAST_RESEND_ACCEPTED, true );
-			if ( ! $accepted_at ) {
-				$accepted_at = get_post_meta( $post_id, self::META_LAST_RESEND_LEGACY, true );
-			}
-			if ( $accepted_at ) {
+				$accepted_at = get_post_meta( $post_id, self::META_LAST_RESEND_ACCEPTED, true );
+		if ( ! $accepted_at ) {
+			$accepted_at = get_post_meta( $post_id, self::META_LAST_RESEND_LEGACY, true );
+		}
+		if ( $accepted_at ) {
 
 			return new WP_REST_Response( array( 'accepted' => true, 'idempotent' => true ), 200 );
 		}
-					update_post_meta( $post_id, self::META_LAST_RESEND_ACCEPTED, current_time( 'mysql', true ) );
+				update_post_meta( $post_id, self::META_LAST_RESEND_ACCEPTED, current_time( 'mysql', true ) );
 
 		delete_post_meta( $post_id, '_pk_credentials_resend_pending' );
 		return new WP_REST_Response( array( 'accepted' => true, 'idempotent' => false ), 200 );

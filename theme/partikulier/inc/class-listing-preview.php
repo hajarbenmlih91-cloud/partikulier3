@@ -240,7 +240,7 @@ class Partikulier_Listing_Preview {
 
 		// Phrase d'accroche placee EN TETE : « Propriétaire vend studio... ».
 		// Formule deterministe liee au role reel de l'annonceur, jamais aleatoire.
-		$opener = '';
+		$opener     = '';
 		$place_text = self::place_label( $v );
 		if ( '' !== $place_text ) {
 			$who  = __( 'Propriétaire', 'partikulier' );
@@ -267,7 +267,7 @@ class Partikulier_Listing_Preview {
 		// Phrase de cloture : capte « particulier à particulier », sans mentir
 		// (l'annonceur est toujours le proprietaire du bien).
 		if ( '' !== $place_text ) {
-			$transaction = 'louer' === $v['action'] ? __( 'à la location', 'partikulier' ) : __( 'à la vente', 'partikulier' );
+			$transaction  = 'louer' === $v['action'] ? __( 'à la location', 'partikulier' ) : __( 'à la vente', 'partikulier' );
 			$description .= ' ' . sprintf(
 				/* translators: 1: transaction, 2: lieu, 3: le propriétaire. */
 				__( 'Bien de particulier à particulier proposé %1$s à %2$s, en contact direct avec %3$s, sans commission ni intermédiaire.', 'partikulier' ),
@@ -371,9 +371,9 @@ class Partikulier_Listing_Preview {
 	 * @return string
 	 */
 	public static function build_image_alt( $v, $index = 0 ) {
-		$is_studio  = 'studio' === strtolower( $v['type'] ) || '0' === (string) $v['bedrooms'];
-		$type       = $is_studio ? __( 'Studio', 'partikulier' ) : $v['type'];
-		$place      = self::place_label( $v );
+		$is_studio   = 'studio' === strtolower( $v['type'] ) || '0' === (string) $v['bedrooms'];
+		$type        = $is_studio ? __( 'Studio', 'partikulier' ) : $v['type'];
+		$place       = self::place_label( $v );
 		$transaction = 'louer' === $v['action'] ? __( 'à louer', 'partikulier' ) : __( 'à vendre', 'partikulier' );
 
 		// --- Photo principale : la plus riche. C'est elle que Google Images
@@ -412,7 +412,7 @@ class Partikulier_Listing_Preview {
 			__( 'détail du logement', 'partikulier' ),
 			__( 'seconde perspective', 'partikulier' ),
 		);
-		$angle = $angles[ ( $index - 1 ) % count( $angles ) ];
+		$angle  = $angles[ ( $index - 1 ) % count( $angles ) ];
 
 		$alt = $type;
 		if ( '' !== $place ) {

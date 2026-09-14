@@ -27,8 +27,8 @@ if ( extension_loaded( 'mbstring' ) ) {
 }
 
 /* Les constantes de cas sont definies ici, pas dans le bloc mb_convert_case : si
-   l'hebergeur fournit mb_convert_case SANS mb_strtolower (config rare mais vue),
-   l'autre fonction aurait cherche une constante inexistante. */
+	l'hebergeur fournit mb_convert_case SANS mb_strtolower (config rare mais vue),
+	l'autre fonction aurait cherche une constante inexistante. */
 if ( ! defined( 'PARTIKULIER_MB_CASE_UPPER' ) ) {
 	define( 'PARTIKULIER_MB_CASE_UPPER', 0 );
 	define( 'PARTIKULIER_MB_CASE_LOWER', 1 );
@@ -184,9 +184,9 @@ if ( ! function_exists( 'mb_substr' ) ) {
 
 if ( ! function_exists( 'mb_strpos' ) ) {
 	function mb_strpos( $haystack, $needle, $offset = 0, $encoding = null ) { // phpcs:ignore WordPress.NamingConventions
-		$h    = partikulier_mb_ordinals( (string) $haystack );
-		$ne   = partikulier_mb_ordinals( (string) $needle );
-		$m    = count( $ne );
+		$h     = partikulier_mb_ordinals( (string) $haystack );
+		$ne    = partikulier_mb_ordinals( (string) $needle );
+		$m     = count( $ne );
 		$total = count( $h );
 		if ( 0 === $m ) {
 			return 0;

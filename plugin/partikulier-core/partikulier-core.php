@@ -8,12 +8,12 @@
 
 declare(strict_types=1);
 
-if (!defined('ABSPATH')) {
-    exit;
+if ( ! defined('ABSPATH') ) {
+	exit;
 }
 
 const PARTIKULIER_CORE_VERSION = '2.10.5';
-const PARTIKULIER_CORE_FILE = __FILE__;
+const PARTIKULIER_CORE_FILE    = __FILE__;
 
 // Domaine « partikulier » — le plugin est la source canonique (lot C1 :
 // catalogues <locale>.mo consolidés, contrats C1A-011/013) et détient LE
@@ -113,11 +113,11 @@ require_once __DIR__ . '/src/Domain/I18n/I18nChromeService.php';
  * cesse de les enregistrer quand le service existe.
  */
 add_action('plugins_loaded', static function (): void {
-    if (!class_exists(\Partikulier\Core\Domain\Leads\LeadService::class)) {
-        return;
-    }
-    add_action('init', [\Partikulier\Core\Domain\Leads\LeadService::class, 'maybe_schedule_retention'], 20);
-    add_action(\Partikulier\Core\Domain\Leads\LeadService::CRON_HOOK, [\Partikulier\Core\Domain\Leads\LeadService::class, 'purge_expired']);
+	if ( ! class_exists(\Partikulier\Core\Domain\Leads\LeadService::class) ) {
+		return;
+	}
+	add_action('init', [\Partikulier\Core\Domain\Leads\LeadService::class, 'maybe_schedule_retention'], 20);
+	add_action(\Partikulier\Core\Domain\Leads\LeadService::CRON_HOOK, [\Partikulier\Core\Domain\Leads\LeadService::class, 'purge_expired']);
 }, 2);
 
 /*
@@ -136,10 +136,10 @@ add_action('plugins_loaded', static function (): void {
  * /automation-event est déclarée par le RestController (owner plugin).
  */
 add_action('plugins_loaded', static function (): void {
-    if (!class_exists(\Partikulier\Core\Domain\Automation\AutomationService::class)) {
-        return;
-    }
-    add_action('init', [\Partikulier\Core\Domain\Automation\AutomationService::class, 'maybe_migrate'], 5);
+	if ( ! class_exists(\Partikulier\Core\Domain\Automation\AutomationService::class) ) {
+		return;
+	}
+	add_action('init', [\Partikulier\Core\Domain\Automation\AutomationService::class, 'maybe_migrate'], 5);
 }, 2);
 
 /*
@@ -151,11 +151,11 @@ add_action('plugins_loaded', static function (): void {
  * arbitrage B5, cf. OwnerStatsService).
  */
 add_action('plugins_loaded', static function (): void {
-    if (!class_exists(\Partikulier\Core\Domain\OwnerStats\OwnerStatsService::class)) {
-        return;
-    }
-    add_action('init', [\Partikulier\Core\Domain\OwnerStats\OwnerStatsService::class, 'maybe_schedule_purge'], 20);
-    add_action(\Partikulier\Core\Domain\OwnerStats\OwnerStatsService::CRON_HOOK, [\Partikulier\Core\Domain\OwnerStats\OwnerStatsService::class, 'purge_expired_saves']);
+	if ( ! class_exists(\Partikulier\Core\Domain\OwnerStats\OwnerStatsService::class) ) {
+		return;
+	}
+	add_action('init', [\Partikulier\Core\Domain\OwnerStats\OwnerStatsService::class, 'maybe_schedule_purge'], 20);
+	add_action(\Partikulier\Core\Domain\OwnerStats\OwnerStatsService::CRON_HOOK, [\Partikulier\Core\Domain\OwnerStats\OwnerStatsService::class, 'purge_expired_saves']);
 }, 2);
 
 /*
@@ -180,10 +180,10 @@ add_action('plugins_loaded', static function (): void {
  * dormantes côté thème relève du lot C4.
  */
 add_action('plugins_loaded', static function (): void {
-    if (!class_exists(\Partikulier\Core\Domain\I18n\I18nChromeService::class)) {
-        return;
-    }
-    \Partikulier\Core\Domain\I18n\I18nChromeService::register_gettext_filter();
+	if ( ! class_exists(\Partikulier\Core\Domain\I18n\I18nChromeService::class) ) {
+		return;
+	}
+	\Partikulier\Core\Domain\I18n\I18nChromeService::register_gettext_filter();
 }, 2);
 
 /**
@@ -193,56 +193,56 @@ add_action('plugins_loaded', static function (): void {
  */
 function partikulier_core_should_load_rest(): bool
 {
-    if (PHP_SAPI === 'cli') {
-        return true;
-    }
-    if (defined('REST_REQUEST') && REST_REQUEST) {
-        return true;
-    }
-    if (defined('WP_CLI') && WP_CLI) {
-        return true;
-    }
-    if (is_admin()) {
-        return true;
-    }
-    $request_uri = isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash((string) $_SERVER['REQUEST_URI'])) : '';
-    return str_contains($request_uri, '/wp-json/') || isset($_GET['rest_route']); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- route detection, not form processing
+	if ( PHP_SAPI === 'cli' ) {
+		return true;
+	}
+	if ( defined('REST_REQUEST') && REST_REQUEST ) {
+		return true;
+	}
+	if ( defined('WP_CLI') && WP_CLI ) {
+		return true;
+	}
+	if ( is_admin() ) {
+		return true;
+	}
+	$request_uri = isset($_SERVER['REQUEST_URI']) ? sanitize_text_field(wp_unslash( (string) $_SERVER['REQUEST_URI'])) : '';
+	return str_contains($request_uri, '/wp-json/') || isset($_GET['rest_route']); // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- route detection, not form processing
 }
 
 function partikulier_core_should_load_jobs(): bool
 {
-    if (PHP_SAPI === 'cli') {
-        return true;
-    }
-    if (defined('WP_CLI') && WP_CLI) {
-        return true;
-    }
-    if (defined('DOING_CRON') && DOING_CRON) {
-        return true;
-    }
-    return is_admin();
+	if ( PHP_SAPI === 'cli' ) {
+		return true;
+	}
+	if ( defined('WP_CLI') && WP_CLI ) {
+		return true;
+	}
+	if ( defined('DOING_CRON') && DOING_CRON ) {
+		return true;
+	}
+	return is_admin();
 }
 
 function partikulier_core_load_rest_classes(): void
 {
-    static $loaded = false;
-    if ($loaded) {
-        return;
-    }
-    require_once __DIR__ . '/src/Services.php';
-    require_once __DIR__ . '/src/AuditLogger.php';
-    require_once __DIR__ . '/src/ListingPolicy.php';
-    require_once __DIR__ . '/src/ListingService.php';
-    require_once __DIR__ . '/src/SearchService.php';
-    require_once __DIR__ . '/src/TranslationService.php';
-    require_once __DIR__ . '/src/RateLimiter.php';
-    require_once __DIR__ . '/src/RestController.php';
-    require_once __DIR__ . '/src/Integration/LeadBridge.php';
-    $loaded = true;
+	static $loaded = false;
+	if ( $loaded ) {
+		return;
+	}
+	require_once __DIR__ . '/src/Services.php';
+	require_once __DIR__ . '/src/AuditLogger.php';
+	require_once __DIR__ . '/src/ListingPolicy.php';
+	require_once __DIR__ . '/src/ListingService.php';
+	require_once __DIR__ . '/src/SearchService.php';
+	require_once __DIR__ . '/src/TranslationService.php';
+	require_once __DIR__ . '/src/RateLimiter.php';
+	require_once __DIR__ . '/src/RestController.php';
+	require_once __DIR__ . '/src/Integration/LeadBridge.php';
+	$loaded = true;
 }
 
-if (partikulier_core_should_load_rest()) {
-    partikulier_core_load_rest_classes();
+if ( partikulier_core_should_load_rest() ) {
+	partikulier_core_load_rest_classes();
 }
 
 use Partikulier\Core\Database\Migrator;
@@ -252,53 +252,53 @@ use Partikulier\Core\RestController;
 use Partikulier\Core\Rest\RouteRegistry;
 
 add_action('plugins_loaded', static function (): void {
-    if (!class_exists('\\wpdb')) {
-        return;
-    }
-    $GLOBALS['partikulier_core_migrator'] = new Migrator();
-    $GLOBALS['partikulier_core_health'] = new HealthCheck();
+	if ( ! class_exists('\\wpdb') ) {
+		return;
+	}
+	$GLOBALS['partikulier_core_migrator'] = new Migrator();
+	$GLOBALS['partikulier_core_health']   = new HealthCheck();
 
-    // INTEG-1 : la synchronisation temps réel est enregistrée sur toute requête
-    // (administration, REST, WP-CLI, cron) — les hooks ne coûtent rien sans
-    // événement properties.
-    $GLOBALS['partikulier_core_sync'] = new ListingSynchronizer();
-    $GLOBALS['partikulier_core_sync']->register();
+	// INTEG-1 : la synchronisation temps réel est enregistrée sur toute requête
+	// (administration, REST, WP-CLI, cron) — les hooks ne coûtent rien sans
+	// événement properties.
+	$GLOBALS['partikulier_core_sync'] = new ListingSynchronizer();
+	$GLOBALS['partikulier_core_sync']->register();
 
-    if (partikulier_core_should_load_jobs()) {
-        require_once __DIR__ . '/src/Services.php';
-        $GLOBALS['partikulier_core_jobs'] = new \Partikulier\Core\JobRunner();
-        $GLOBALS['partikulier_core_jobs']->register();
-    }
-    if (partikulier_core_should_load_rest()) {
-        partikulier_core_load_rest_classes();
-        $GLOBALS['partikulier_core_rest'] = new RestController();
-    }
+	if ( partikulier_core_should_load_jobs() ) {
+		require_once __DIR__ . '/src/Services.php';
+		$GLOBALS['partikulier_core_jobs'] = new \Partikulier\Core\JobRunner();
+		$GLOBALS['partikulier_core_jobs']->register();
+	}
+	if ( partikulier_core_should_load_rest() ) {
+		partikulier_core_load_rest_classes();
+		$GLOBALS['partikulier_core_rest'] = new RestController();
+	}
 
-    // Passage de version : la migration 2.0.0 (reconstruction journalisée de
-    // la projection, extinction des leads-commentaires, retrait du cron
-    // quotidien) s'exécute exactement une fois, verrouillée contre les
-    // exécutions concurrentes.
-    $migrator = $GLOBALS['partikulier_core_migrator'];
-    if ($migrator instanceof Migrator && $migrator->currentVersion() !== \Partikulier\Core\Database\Schema::VERSION) {
-        $migrator->migrate();
-    }
+	// Passage de version : la migration 2.0.0 (reconstruction journalisée de
+	// la projection, extinction des leads-commentaires, retrait du cron
+	// quotidien) s'exécute exactement une fois, verrouillée contre les
+	// exécutions concurrentes.
+	$migrator = $GLOBALS['partikulier_core_migrator'];
+	if ( $migrator instanceof Migrator && $migrator->currentVersion() !== \Partikulier\Core\Database\Schema::VERSION ) {
+		$migrator->migrate();
+	}
 }, 5);
 
 // Supporte aussi les appels programmatiques à rest_do_request() depuis WP-CLI,
 // les tests PHP et les tâches internes, qui n’ont pas d’URI REST entrante.
 add_action('rest_api_init', static function (): void {
-    partikulier_core_load_rest_classes();
-    if (!isset($GLOBALS['partikulier_core_rest'])) {
-        $GLOBALS['partikulier_core_rest'] = new RestController();
-    }
+	partikulier_core_load_rest_classes();
+	if ( ! isset($GLOBALS['partikulier_core_rest']) ) {
+		$GLOBALS['partikulier_core_rest'] = new RestController();
+	}
 }, 1);
 
 register_activation_hook(__FILE__, static function (): void {
-    (new Migrator())->migrate();
+	( new Migrator() )->migrate();
 });
 
 register_deactivation_hook(__FILE__, static function (): void {
-    // La désactivation ne supprime jamais les données : les migrations sont conservées.
+	// La désactivation ne supprime jamais les données : les migrations sont conservées.
 });
 
 /* ---------------------------------------------------------------------------
@@ -312,43 +312,43 @@ register_deactivation_hook(__FILE__, static function (): void {
  * on ne le recharge pas (garde function_exists ci-dessous).
  * ------------------------------------------------------------------------ */
 add_action('plugins_loaded', static function (): void {
-    $dossier = __DIR__ . '/mu-plugins';
-    if (!is_dir($dossier)) {
-        return;
-    }
-    /* Liste ouverte : tout *.php livre dans mu-plugins/ est charge, dans l'ordre
-       alphabetique. La liste fermee precedente faisait silencieusement sauter un
-       fichier ajoute plus tard — le genre de silence que le diagnostic doit
-       refuser. Des garde-fous existent deja : include_once (jamais deux fois) et
-       le saut du fichier que wp-content/mu-plugins a deja charge. */
-    $fichiers = glob($dossier . '/*.php');
-    if (!is_array($fichiers)) {
-        return;
-    }
-    sort($fichiers);
-    foreach ($fichiers as $f) {
-        $nom = basename($f);
-        if (!is_readable($f)) {
-            continue;
-        }
-        /* WPMU_PLUGIN_DIR (= wp-content/mu-plugins), PAS WP_PLUGIN_DIR/mu-plugins :
-           l'ancien chemin regardait wp-content/plugins/mu-plugins, un dossier que
-           personne n'utilise. Mesure sur banc : avec les mu-plugins reellement
-           installes dans wp-content/mu-plugins, le garde ne les voyait pas, les deux
-           copies etaient chargees (include_once ne dedupe que le MEME chemin), et
-           partikulier_diagnostic_headers() etait redeclare → fatal sur tout le site.
-           Le garde doit tester l'emplacement reel de WordPress. */
-        if (defined('WPMU_PLUGIN_DIR') && is_readable(WPMU_PLUGIN_DIR . '/' . $nom)) {
-            continue; // deja charge par WordPress
-        }
-        include_once $f;
-    }
+	$dossier = __DIR__ . '/mu-plugins';
+	if ( ! is_dir($dossier) ) {
+		return;
+	}
+	/* Liste ouverte : tout *.php livre dans mu-plugins/ est charge, dans l'ordre
+		alphabetique. La liste fermee precedente faisait silencieusement sauter un
+		fichier ajoute plus tard — le genre de silence que le diagnostic doit
+		refuser. Des garde-fous existent deja : include_once (jamais deux fois) et
+		le saut du fichier que wp-content/mu-plugins a deja charge. */
+	$fichiers = glob($dossier . '/*.php');
+	if ( ! is_array($fichiers) ) {
+		return;
+	}
+	sort($fichiers);
+	foreach ( $fichiers as $f ) {
+		$nom = basename($f);
+		if ( ! is_readable($f) ) {
+			continue;
+		}
+		/* WPMU_PLUGIN_DIR (= wp-content/mu-plugins), PAS WP_PLUGIN_DIR/mu-plugins :
+			l'ancien chemin regardait wp-content/plugins/mu-plugins, un dossier que
+			personne n'utilise. Mesure sur banc : avec les mu-plugins reellement
+			installes dans wp-content/mu-plugins, le garde ne les voyait pas, les deux
+			copies etaient chargees (include_once ne dedupe que le MEME chemin), et
+			partikulier_diagnostic_headers() etait redeclare → fatal sur tout le site.
+			Le garde doit tester l'emplacement reel de WordPress. */
+		if ( defined('WPMU_PLUGIN_DIR') && is_readable(WPMU_PLUGIN_DIR . '/' . $nom) ) {
+			continue; // deja charge par WordPress
+		}
+		include_once $f;
+	}
 }, 1);
 
 /* Rappel visible si le theme installe n'embarque pas le module de diagnostic :
-   mieux vaut le dire que laisser croire qu'il n'y a rien a controler. */
+	mieux vaut le dire que laisser croire qu'il n'y a rien a controler. */
 add_action('admin_notices', static function () {
-    if (!current_user_can('manage_options')) { return; }
-    if (file_exists(get_template_directory() . '/pk-diagnostic.php')) { return; }
-    echo '<div class="notice notice-warning"><p>Partikulier Core : le theme actif ne contient pas <code>pk-diagnostic.php</code> — le televerser depuis le paquet d\'installation (le diagnostic complet du site n\'est pas disponible sans lui).</p></div>';
+	if ( ! current_user_can('manage_options') ) { return; }
+	if ( file_exists(get_template_directory() . '/pk-diagnostic.php') ) { return; }
+	echo '<div class="notice notice-warning"><p>Partikulier Core : le theme actif ne contient pas <code>pk-diagnostic.php</code> — le televerser depuis le paquet d\'installation (le diagnostic complet du site n\'est pas disponible sans lui).</p></div>';
 });

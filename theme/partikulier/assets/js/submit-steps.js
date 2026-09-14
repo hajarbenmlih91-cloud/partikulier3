@@ -12,49 +12,49 @@
 	"use strict";
 
 	var form = document.getElementById("pk-submit-form");
-	if (!form || typeof pkConfig === "undefined") {
+	if ( ! form || typeof pkConfig === "undefined") {
 		return;
 	}
 
-	var steps = Array.prototype.slice.call(form.querySelectorAll(".pk-step"));
-	var cityInput = document.getElementById("pk-city");
-	var cityList = document.getElementById("pk-city-list");
-	var cityName = document.getElementById("pk-city-name");
-	var districtWrap = document.getElementById("pk-district-wrap");
+	var steps         = Array.prototype.slice.call(form.querySelectorAll(".pk-step"));
+	var cityInput     = document.getElementById("pk-city");
+	var cityList      = document.getElementById("pk-city-list");
+	var cityName      = document.getElementById("pk-city-name");
+	var districtWrap  = document.getElementById("pk-district-wrap");
 	var districtInput = document.getElementById("pk-district");
-	var districtList = document.getElementById("pk-district-list");
-	var districtName = document.getElementById("pk-district-name");
+	var districtList  = document.getElementById("pk-district-list");
+	var districtName  = document.getElementById("pk-district-name");
 
 	/* ---------------------------------------------------------- etapes */
 
 		var stepIndicators = Array.prototype.slice.call(form.querySelectorAll("[data-step-indicator]"));
-		var stepperStatus = document.getElementById("pk-stepper-status");
+		var stepperStatus  = document.getElementById("pk-stepper-status");
 
-		function updateStepper(n) {
-			stepIndicators.forEach(function (indicator) {
-				var step = parseInt(indicator.dataset.stepIndicator, 10);
-				indicator.classList.toggle("is-current", step === n);
-				indicator.classList.toggle("is-complete", step < n);
-				if (step === n) {
-					indicator.setAttribute("aria-current", "step");
-				} else {
-					indicator.removeAttribute("aria-current");
-				}
-			});
-			if (stepperStatus) {
-				var current = form.querySelector('[data-step-indicator="' + n + '"] .pk-stepper-label');
-				stepperStatus.textContent = n + " / " + stepIndicators.length + " — " + (current ? current.textContent : "");
+	function updateStepper(n) {
+		stepIndicators.forEach(function (indicator) {
+			var step = parseInt(indicator.dataset.stepIndicator, 10);
+			indicator.classList.toggle("is-current", step === n);
+			indicator.classList.toggle("is-complete", step < n);
+			if (step === n) {
+				indicator.setAttribute("aria-current", "step");
+			} else {
+				indicator.removeAttribute("aria-current");
 			}
+		});
+		if (stepperStatus) {
+			var current               = form.querySelector('[data-step-indicator="' + n + '"] .pk-stepper-label');
+			stepperStatus.textContent = n + " / " + stepIndicators.length + " — " + (current ? current.textContent : "");
 		}
+	}
 
-		function showStep(n) {
-			steps.forEach(function (section) {
-				section.hidden = parseInt(section.dataset.step, 10) !== n;
-			});
-			updateStepper(n);
-			var top = form.getBoundingClientRect().top + window.pageYOffset - 24;
-			window.scrollTo({ top: top, behavior: "smooth" });
-		}
+	function showStep(n) {
+		steps.forEach(function (section) {
+			section.hidden = parseInt(section.dataset.step, 10) !== n;
+		});
+		updateStepper(n);
+		var top = form.getBoundingClientRect().top + window.pageYOffset - 24;
+		window.scrollTo({ top: top, behavior: "smooth" });
+	}
 
 		updateStepper(1);
 
@@ -70,7 +70,7 @@
 				return;
 			}
 			field.classList.remove("pk-invalid");
-			if (field.required && !String(field.value).trim()) {
+			if (field.required && ! String(field.value).trim()) {
 				field.classList.add("pk-invalid");
 				if (ok) {
 					field.focus();
@@ -81,21 +81,21 @@
 
 		// L'etape 1 exige un lieu : soit choisi dans la liste, soit propose.
 		if (step === 1) {
-			var proposal = document.getElementById("pk-proposal");
-			var proposedCity = document.getElementById("pk-proposed-city");
-			var usingProposal = proposal && !proposal.hidden;
+			var proposal      = document.getElementById("pk-proposal");
+			var proposedCity  = document.getElementById("pk-proposed-city");
+			var usingProposal = proposal && ! proposal.hidden;
 
 			if (usingProposal) {
-				if (!proposedCity.value.trim()) {
+				if ( ! proposedCity.value.trim()) {
 					proposedCity.classList.add("pk-invalid");
 					proposedCity.focus();
 					ok = false;
 				}
-			} else if (!cityName.value) {
+			} else if ( ! cityName.value) {
 				cityInput.classList.add("pk-invalid");
 				cityInput.focus();
 				ok = false;
-			} else if (!districtWrap.hidden && !districtName.value) {
+			} else if ( ! districtWrap.hidden && ! districtName.value) {
 				districtInput.classList.add("pk-invalid");
 				districtInput.focus();
 				ok = false;
@@ -107,25 +107,25 @@
 	/* -------------------------------------- proposition de lieu absent */
 
 	var proposalToggle = document.getElementById("pk-place-missing-toggle");
-	var proposalBox = document.getElementById("pk-proposal");
+	var proposalBox    = document.getElementById("pk-proposal");
 	if (proposalToggle && proposalBox) {
 		proposalToggle.addEventListener("click", function () {
-			var opening = proposalBox.hidden;
-			proposalBox.hidden = !opening;
+			var opening                = proposalBox.hidden;
+			proposalBox.hidden         = ! opening;
 			proposalToggle.textContent = opening
 				? "Finalement, choisir dans la liste"
 				: "Je ne trouve pas ma ville ou mon quartier";
 
 			if (opening) {
 				// La saisie libre remplace la selection : on repart propre.
-				cityInput.value = "";
-				cityName.value = "";
-				districtName.value = "";
+				cityInput.value     = "";
+				cityName.value      = "";
+				districtName.value  = "";
 				districtWrap.hidden = true;
-				cityList.hidden = true;
+				cityList.hidden     = true;
 				document.getElementById("pk-proposed-city").focus();
 			} else {
-				document.getElementById("pk-proposed-city").value = "";
+				document.getElementById("pk-proposed-city").value     = "";
 				document.getElementById("pk-proposed-district").value = "";
 			}
 		});
@@ -133,23 +133,23 @@
 
 	// Choisir un lieu de la liste annule une proposition en cours.
 	function closeProposal() {
-		if (proposalBox && !proposalBox.hidden) {
-			proposalBox.hidden = true;
-			proposalToggle.textContent = "Je ne trouve pas ma ville ou mon quartier";
-			document.getElementById("pk-proposed-city").value = "";
+		if (proposalBox && ! proposalBox.hidden) {
+			proposalBox.hidden                                    = true;
+			proposalToggle.textContent                            = "Je ne trouve pas ma ville ou mon quartier";
+			document.getElementById("pk-proposed-city").value     = "";
 			document.getElementById("pk-proposed-district").value = "";
 		}
 	}
 
 	form.addEventListener("click", function (e) {
 		var btn = e.target.closest("[data-goto]");
-		if (!btn) {
+		if ( ! btn) {
 			return;
 		}
-		var target = parseInt(btn.dataset.goto, 10);
+		var target  = parseInt(btn.dataset.goto, 10);
 		var current = parseInt(btn.closest(".pk-step").dataset.step, 10);
 
-		if (target > current && !validateStep(current)) {
+		if (target > current && ! validateStep(current)) {
 			return;
 		}
 		if (target === 3) {
@@ -178,7 +178,7 @@
 
 	// Superficie de terrasse conditionnelle.
 	var terraceHidden = form.querySelector('input[name="pk_terrace"]');
-	var terraceField = document.getElementById("pk-terrace-surface-field");
+	var terraceField  = document.getElementById("pk-terrace-surface-field");
 	if (terraceHidden && terraceField) {
 		terraceHidden.addEventListener("change", function () {
 			terraceField.hidden = terraceHidden.value !== "Oui";
@@ -189,17 +189,17 @@
 	var agentRefusal = document.getElementById("pk-agent-refusal");
 
 	function refreshAgentRefusal() {
-		if (!agentRefusal) return false;
-		var chosen = form.querySelector('input[name="pk_role"]:checked');
-		var isAgent = chosen && chosen.value === "agent";
-		agentRefusal.hidden = !isAgent;
+		if ( ! agentRefusal) return false;
+		var chosen          = form.querySelector('input[name="pk_role"]:checked');
+		var isAgent         = chosen && chosen.value === "agent";
+		agentRefusal.hidden = ! isAgent;
 
 		// Le parcours s'arrete la : inutile de laisser croire qu'on peut avancer.
 		form.querySelectorAll('.pk-step[data-step="1"] [data-goto]').forEach(function (btn) {
-			btn.disabled = !!isAgent;
-			btn.classList.toggle("pk-btn-disabled", !!isAgent);
+			btn.disabled = ! ! isAgent;
+			btn.classList.toggle("pk-btn-disabled", ! ! isAgent);
 		});
-		return !!isAgent;
+		return ! ! isAgent;
 	}
 
 	form.querySelectorAll(".pk-choice input[type=radio]").forEach(function (radio) {
@@ -237,22 +237,22 @@
 
 	function renderList(listEl, results, onPick) {
 		listEl.innerHTML = "";
-		if (!results.length) {
+		if ( ! results.length) {
 			listEl.hidden = true;
 			return;
 		}
 		results.forEach(function (item) {
-			var li = document.createElement("li");
+			var li       = document.createElement("li");
 			li.className = "pk-suggest-item";
 			li.setAttribute("role", "option");
 			li.tabIndex = 0;
 
-			var label = document.createElement("span");
-			label.className = "pk-suggest-label";
+			var label         = document.createElement("span");
+			label.className   = "pk-suggest-label";
 			label.textContent = item.label;
 
-			var meta = document.createElement("span");
-			meta.className = "pk-suggest-meta";
+			var meta         = document.createElement("span");
+			meta.className   = "pk-suggest-meta";
 			meta.textContent = item.meta || "";
 
 			li.appendChild(label);
@@ -281,14 +281,14 @@
 	}
 
 	function openDistricts(city) {
-		districtWrap.hidden = false;
+		districtWrap.hidden       = false;
 		districtInput.placeholder = "Choisissez un quartier de " + city;
-		districtInput.value = "";
-		districtName.value = "";
+		districtInput.value       = "";
+		districtName.value        = "";
 		fetchPlaces({ scope: "district", city: city }).then(function (results) {
 			renderList(districtList, results, function (item) {
 				districtInput.value = item.district;
-				districtName.value = item.district;
+				districtName.value  = item.district;
 				districtInput.classList.remove("pk-invalid");
 			});
 		});
@@ -296,23 +296,23 @@
 
 	if (cityInput) {
 		cityInput.addEventListener("input", debounce(function () {
-			cityName.value = "";
-			districtName.value = "";
+			cityName.value      = "";
+			districtName.value  = "";
 			districtWrap.hidden = true;
-			var q = cityInput.value.trim();
-			if (!q) { cityList.hidden = true; return; }
+			var q               = cityInput.value.trim();
+			if ( ! q) { cityList.hidden = true; return; }
 
 			fetchPlaces({ q: q, scope: "city" }).then(function (results) {
 				renderList(cityList, results, function (item) {
 					// Quartier choisi directement : ville + quartier remplis d'un coup.
 					if (item.district) {
-						cityInput.value = item.district + ", " + item.city;
-						cityName.value = item.city;
-						districtName.value = item.district;
+						cityInput.value     = item.district + ", " + item.city;
+						cityName.value      = item.city;
+						districtName.value  = item.district;
 						districtWrap.hidden = true;
 					} else {
 						cityInput.value = item.city;
-						cityName.value = item.city;
+						cityName.value  = item.city;
 						openDistricts(item.city);
 					}
 					closeProposal();
@@ -336,7 +336,7 @@
 				.then(function (results) {
 					renderList(districtList, results, function (item) {
 						districtInput.value = item.district;
-						districtName.value = item.district;
+						districtName.value  = item.district;
 						districtInput.classList.remove("pk-invalid");
 					});
 				});
@@ -351,10 +351,10 @@
 
 	/* ---------------------------------------------------------- photos */
 
-	var photoInput = document.getElementById("pk-photos");
+	var photoInput   = document.getElementById("pk-photos");
 	var photoPreview = document.getElementById("pk-photo-preview");
-	var dropzone = document.getElementById("pk-dropzone");
-	var MAX_PHOTOS = 15;
+	var dropzone     = document.getElementById("pk-dropzone");
+	var MAX_PHOTOS   = 15;
 
 	if (photoInput && photoPreview) {
 		// On garde notre propre liste : un <input multiple> ne permet pas de
@@ -364,13 +364,13 @@
 		function renderPhotos() {
 			photoPreview.innerHTML = "";
 			chosen.forEach(function (file, index) {
-				var li = document.createElement("li");
-				var img = document.createElement("img");
-				img.alt = file.name;
-				img.src = URL.createObjectURL(file);
+				var li     = document.createElement("li");
+				var img    = document.createElement("img");
+				img.alt    = file.name;
+				img.src    = URL.createObjectURL(file);
 				img.onload = function () { URL.revokeObjectURL(img.src); };
 				li.appendChild(img);
-				li.title = "Retirer " + file.name;
+				li.title        = "Retirer " + file.name;
 				li.style.cursor = "pointer";
 				li.addEventListener("click", function () {
 					chosen.splice(index, 1);
@@ -396,7 +396,7 @@
 			var files = Array.prototype.slice.call(list).filter(function (f) {
 				// On accepte tout fichier image, y compris HEIC dont le type
 				// MIME est parfois vide sur iPhone.
-				return !f.type || f.type.indexOf("image/") === 0 || /\.(jpe?g|png|webp|avif|heic|heif)$/i.test(f.name);
+				return ! f.type || f.type.indexOf("image/") === 0 || /\.(jpe?g|png|webp|avif|heic|heif)$/i.test(f.name);
 			});
 
 			var room = MAX_PHOTOS - chosen.length;
@@ -459,30 +459,30 @@
 		fetch(pkConfig.ajaxUrl, { method: "POST", body: fd, credentials: "same-origin" })
 			.then(function (r) { return r.json(); })
 			.then(function (data) {
-				if (!data || !data.success) { return; }
+				if ( ! data || ! data.success) { return; }
 				var p = data.data;
 
 				document.getElementById("pk-preview-kicker").textContent = p.kicker || "";
-				document.getElementById("pk-preview-title").textContent = p.title || "";
-				document.getElementById("pk-preview-desc").textContent = p.description || "";
-				document.getElementById("pk-preview-price").textContent = p.price || "";
+				document.getElementById("pk-preview-title").textContent  = p.title || "";
+				document.getElementById("pk-preview-desc").textContent   = p.description || "";
+				document.getElementById("pk-preview-price").textContent  = p.price || "";
 
-				var facts = document.getElementById("pk-preview-facts");
+				var facts       = document.getElementById("pk-preview-facts");
 				facts.innerHTML = "";
 				(p.facts || []).forEach(function (fact) {
-					var li = document.createElement("li");
+					var li         = document.createElement("li");
 					li.textContent = fact;
 					facts.appendChild(li);
 				});
 
 				var titleField = document.getElementById("pk-title");
-				if (titleField && !titleField.dataset.touched) {
+				if (titleField && ! titleField.dataset.touched) {
 					titleField.value = p.title || "";
 				}
 				document.getElementById("pk-description").value = p.description || "";
 
 				// Vignette : premiere photo choisie.
-				var media = document.getElementById("pk-preview-media");
+				var media       = document.getElementById("pk-preview-media");
 				media.innerHTML = "";
 				if (photoInput && photoInput.files && photoInput.files[0]) {
 					var img = document.createElement("img");
@@ -505,7 +505,7 @@
 	if (extra) {
 		extra.addEventListener("input", function () {
 			var base = document.getElementById("pk-description");
-			if (!base.dataset.base) { base.dataset.base = base.value; }
+			if ( ! base.dataset.base) { base.dataset.base = base.value; }
 			base.value = extra.value.trim() ? base.dataset.base + "\n\n" + extra.value.trim() : base.dataset.base;
 		});
 	}

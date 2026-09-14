@@ -22,11 +22,11 @@ class Partikulier_Header {
 	public static function localize_archive_items( $items, $args ) {
 		foreach ( $items as $item ) {
 				$path = (string) wp_parse_url( $item->url, PHP_URL_PATH );
-				if ( '/' === untrailingslashit( $path ) && function_exists( 'pk_localized_home_url' ) ) {
-					$item->url = pk_localized_home_url();
-					continue;
-				}
-				if ( preg_match( '#/(?:property|annonces)(?:/page/([0-9]+))?/?$#', $path, $match ) ) {
+			if ( '/' === untrailingslashit( $path ) && function_exists( 'pk_localized_home_url' ) ) {
+				$item->url = pk_localized_home_url();
+				continue;
+			}
+			if ( preg_match( '#/(?:property|annonces)(?:/page/([0-9]+))?/?$#', $path, $match ) ) {
 				$item->url = pk_properties_archive_url();
 				if ( ! empty( $match[1] ) ) {
 					$item->url = trailingslashit( $item->url ) . 'page/' . absint( $match[1] ) . '/';
@@ -39,14 +39,14 @@ class Partikulier_Header {
 	public static function fallback_menu( $args ) {
 		$items = array(
 			( function_exists( 'pk_localized_home_url' ) ? pk_localized_home_url() : home_url( '/' ) ) => __( 'Accueil', 'partikulier' ),
-			pk_properties_archive_url()                     => __( 'Annonces', 'partikulier' ),
+			pk_properties_archive_url()               => __( 'Annonces', 'partikulier' ),
 				pk_page_url( 'deposer', '/deposer/' ) => __( 'Déposer une annonce', 'partikulier' ),
 		);
 		$items = array_filter( $items );
 		echo '<ul class="' . esc_attr( $args['menu_class'] ) . '">';
 		foreach ( $items as $url => $label ) {
 				$current_home = function_exists( 'pk_localized_home_url' ) ? pk_localized_home_url() : home_url( '/' );
-				$is_current = ( untrailingslashit( $url ) === untrailingslashit( $current_home ) );
+				$is_current   = ( untrailingslashit( $url ) === untrailingslashit( $current_home ) );
 			printf(
 				'<li class="pk-menu-item%s"><a href="%s">%s</a></li>',
 				$is_current ? ' pk-current' : '',
@@ -74,10 +74,10 @@ class Partikulier_Menu_Walker extends Walker_Nav_Menu {
 		if ( ! $data_object instanceof WP_Post ) {
 			return;
 		}
-		$item       = $data_object;
-		$indent     = ( $depth > 0 ) ? str_repeat( "\t", $depth ) : '';
-		$classes    = empty( $item->classes ) ? array() : (array) $item->classes;
-		$classes[]  = 'pk-menu-item';
+		$item      = $data_object;
+		$indent    = ( $depth > 0 ) ? str_repeat( "\t", $depth ) : '';
+		$classes   = empty( $item->classes ) ? array() : (array) $item->classes;
+		$classes[] = 'pk-menu-item';
 		if ( in_array( 'menu-item-has-children', $classes, true ) ) {
 			$classes[] = 'pk-has-children';
 		}
@@ -93,7 +93,7 @@ class Partikulier_Menu_Walker extends Walker_Nav_Menu {
 			'rel'    => ! empty( $item->xfn ) ? $item->xfn : '',
 			'href'   => ! empty( $item->url ) ? $item->url : '',
 		);
-		$atts = array_filter( $atts );
+		$atts        = array_filter( $atts );
 
 		$attributes = '';
 		foreach ( $atts as $attr => $value ) {

@@ -8,37 +8,37 @@
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 get_header();
 
-	$recent = get_posts( array(
-		'post_type' => PARTIKULIER_ESTATIK_POST_TYPE,
-		'post_status' => 'publish',
-		'posts_per_page' => 6,
-		'no_found_rows' => true,
-		'orderby' => array( 'post_date', 'ID' ),
-		'order' => 'DESC',
-		'meta_query' => Partikulier_Dashboard::active_listing_meta_query(),
+	$recent   = get_posts( array(
+		'post_type'              => PARTIKULIER_ESTATIK_POST_TYPE,
+		'post_status'            => 'publish',
+		'posts_per_page'         => 6,
+		'no_found_rows'          => true,
+		'orderby'                => array( 'post_date', 'ID' ),
+		'order'                  => 'DESC',
+		'meta_query'             => Partikulier_Dashboard::active_listing_meta_query(),
 		'update_post_term_cache' => true,
 		'update_post_meta_cache' => true,
 	) );
 	$featured = ! empty( $recent ) ? array( $recent[0] ) : array();
-// Prefixe pk_home_ : card-property.php et search-form.php ecrasent $types
-// (variables globales partagees par require). Bug constate au rendu :
-// une seule tuile de type s'affichait, vide, apres la boucle des cartes.
-$pk_home_types = get_terms( array( 'taxonomy' => PARTIKULIER_ESTATIK_TYPE_TAXONOMY, 'hide_empty' => false, 'number' => 6 ) );
-$pk_home_cities = Partikulier_Geo::top_cities( 8 );
-$regions = Partikulier_Geo::top_regions( 8 );
-$hero_url = Partikulier_Customization::hero_url();
-$hero_alt = Partikulier_Customization::hero_alt( Partikulier_Localization::translate_polylang_string( 'Maison lumineuse à vendre entre particuliers', 'Maison lumineuse à vendre entre particuliers', 'partikulier' ) );
-$home = home_url( '/' );
-$archive = pk_properties_archive_url();
-if ( is_wp_error( $archive ) || ! is_string( $archive ) ) { $archive = home_url( '/' ); }
-$deposit = pk_page_url( 'deposer', '/deposer/' );
+	// Prefixe pk_home_ : card-property.php et search-form.php ecrasent $types
+	// (variables globales partagees par require). Bug constate au rendu :
+	// une seule tuile de type s'affichait, vide, apres la boucle des cartes.
+	$pk_home_types  = get_terms( array( 'taxonomy' => PARTIKULIER_ESTATIK_TYPE_TAXONOMY, 'hide_empty' => false, 'number' => 6 ) );
+	$pk_home_cities = Partikulier_Geo::top_cities( 8 );
+	$regions        = Partikulier_Geo::top_regions( 8 );
+	$hero_url       = Partikulier_Customization::hero_url();
+	$hero_alt       = Partikulier_Customization::hero_alt( Partikulier_Localization::translate_polylang_string( 'Maison lumineuse à vendre entre particuliers', 'Maison lumineuse à vendre entre particuliers', 'partikulier' ) );
+	$home           = home_url( '/' );
+	$archive        = pk_properties_archive_url();
+	if ( is_wp_error( $archive ) || ! is_string( $archive ) ) { $archive = home_url( '/' ); }
+	$deposit      = pk_page_url( 'deposer', '/deposer/' );
 	$pk_home_lang = class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::current_language() : 'fr';
-	$tagline = Partikulier_Customization::editorial( 'home_title', Partikulier_Settings::get( 'site_tagline' ) );
-	$intro = Partikulier_Customization::editorial( 'home_intro', Partikulier_Settings::get( 'site_intro' ) );
-		$badge_1 = Partikulier_Customization::editorial( 'badge_1', class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_polylang_string( 'Zéro commission', 'Zéro commission', 'partikulier' ) : 'Zéro commission' );
-		$badge_2 = Partikulier_Customization::editorial( 'badge_2', class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_polylang_string( 'Vendeur identifié', 'Vendeur identifié', 'partikulier' ) : 'Vendeur identifié' );
-		$badge_3 = Partikulier_Customization::editorial( 'badge_3', class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_polylang_string( 'Contact direct', 'Contact direct', 'partikulier' ) : 'Contact direct' );
-?>
+	$tagline      = Partikulier_Customization::editorial( 'home_title', Partikulier_Settings::get( 'site_tagline' ) );
+	$intro        = Partikulier_Customization::editorial( 'home_intro', Partikulier_Settings::get( 'site_intro' ) );
+		$badge_1  = Partikulier_Customization::editorial( 'badge_1', class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_polylang_string( 'Zéro commission', 'Zéro commission', 'partikulier' ) : 'Zéro commission' );
+		$badge_2  = Partikulier_Customization::editorial( 'badge_2', class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_polylang_string( 'Vendeur identifié', 'Vendeur identifié', 'partikulier' ) : 'Vendeur identifié' );
+		$badge_3  = Partikulier_Customization::editorial( 'badge_3', class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_polylang_string( 'Contact direct', 'Contact direct', 'partikulier' ) : 'Contact direct' );
+	?>
 
 	<section class="pk-editorial-hero" aria-label="<?php echo esc_attr( Partikulier_Localization::translate_polylang_string( 'Recherche principale', 'Recherche principale', 'partikulier' ) ); ?>">
 		<div class="pk-editorial-hero__media"><img src="<?php echo esc_url( $hero_url ); ?>" alt="<?php echo esc_attr( $hero_alt ); ?>" width="1600" height="686" fetchpriority="high" decoding="async"><div class="pk-editorial-hero__veil"></div></div>

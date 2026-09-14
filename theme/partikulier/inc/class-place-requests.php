@@ -114,14 +114,14 @@ class Partikulier_Place_Requests {
 		$key  = 'pk_' . $post_id . '_' . wp_generate_password( 6, false, false );
 
 		$rows[ $key ] = array(
-			'id'        => $key,
-			'post_id'   => (int) $post_id,
-			'city'      => sanitize_text_field( $city ),
-			'district'  => sanitize_text_field( $district ),
-			'city_id'   => (int) $city_id,
-			'status'    => self::STATUS_PENDING,
-			'created'   => current_time( 'mysql' ),
-			'author'    => (int) get_post_field( 'post_author', $post_id ),
+			'id'       => $key,
+			'post_id'  => (int) $post_id,
+			'city'     => sanitize_text_field( $city ),
+			'district' => sanitize_text_field( $district ),
+			'city_id'  => (int) $city_id,
+			'status'   => self::STATUS_PENDING,
+			'created'  => current_time( 'mysql' ),
+			'author'   => (int) get_post_field( 'post_author', $post_id ),
 		);
 
 		update_option( self::OPTION, $rows, false );

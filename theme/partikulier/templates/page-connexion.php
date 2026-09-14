@@ -22,57 +22,57 @@
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
-        exit;
+		exit;
 }
 
 // Déjà connecté : aucune raison de rester sur la page de connexion.
 if ( is_user_logged_in() ) {
-        wp_safe_redirect( pk_page_url( 'mes-annonces', '/mes-annonces/' ) );
-        exit;
+		wp_safe_redirect( pk_page_url( 'mes-annonces', '/mes-annonces/' ) );
+		exit;
 }
 
 get_header();
 ?>
 
 <section class="pk-auth">
-        <div class="pk-container pk-auth-container">
+		<div class="pk-container pk-auth-container">
                 <?php echo Partikulier_Geo::breadcrumbs_html(); // phpcs:ignore ?>
 
-                <header class="pk-auth-head">
-                        <p class="pk-editorial-kicker"><?php esc_html_e( 'Espace propriétaire', 'partikulier' ); ?></p>
-                        <h1 class="pk-auth-title">
-                                <?php esc_html_e( 'Vos annonces', 'partikulier' ); ?>
-                                <span class="pk-hero-accent"><?php esc_html_e( 'vous attendent.', 'partikulier' ); ?></span>
-                        </h1>
-                        <p class="pk-auth-subtitle">
-                                <?php esc_html_e( 'Connectez-vous pour les gérer, suivre leurs vues et vos contacts directs.', 'partikulier' ); ?>
-                        </p>
-                </header>
+				<header class="pk-auth-head">
+						<p class="pk-editorial-kicker"><?php esc_html_e( 'Espace propriétaire', 'partikulier' ); ?></p>
+						<h1 class="pk-auth-title">
+								<?php esc_html_e( 'Vos annonces', 'partikulier' ); ?>
+								<span class="pk-hero-accent"><?php esc_html_e( 'vous attendent.', 'partikulier' ); ?></span>
+						</h1>
+						<p class="pk-auth-subtitle">
+								<?php esc_html_e( 'Connectez-vous pour les gérer, suivre leurs vues et vos contacts directs.', 'partikulier' ); ?>
+						</p>
+				</header>
 
-                <div class="pk-auth-card">
-                        <?php
-                        if ( shortcode_exists( 'es_authentication' ) ) {
-                                // Le shortcode lit lui-même ?auth_item et ?redirect_url.
-                                echo do_shortcode( '[es_authentication]' );
-                        } else {
-                                // Estatik absent : repli documenté vers wp-login.
-                                echo '<p class="pk-auth-fallback">' . esc_html__( 'Le module de connexion n’est pas disponible pour le moment.', 'partikulier' ) . '</p>';
-                                echo '<a class="pk-btn pk-btn-primary" href="' . esc_url( wp_login_url() ) . '">' . esc_html__( 'Se connecter', 'partikulier' ) . '</a>';
-                        }
-                        ?>
-                </div>
+				<div class="pk-auth-card">
+						<?php
+						if ( shortcode_exists( 'es_authentication' ) ) {
+								// Le shortcode lit lui-même ?auth_item et ?redirect_url.
+								echo do_shortcode( '[es_authentication]' );
+						} else {
+								// Estatik absent : repli documenté vers wp-login.
+								echo '<p class="pk-auth-fallback">' . esc_html__( 'Le module de connexion n’est pas disponible pour le moment.', 'partikulier' ) . '</p>';
+								echo '<a class="pk-btn pk-btn-primary" href="' . esc_url( wp_login_url() ) . '">' . esc_html__( 'Se connecter', 'partikulier' ) . '</a>';
+						}
+						?>
+				</div>
 
-                <ul class="pk-auth-trust" aria-label="<?php esc_attr_e( 'Garanties Partikulier', 'partikulier' ); ?>">
-                        <li><?php esc_html_e( 'Zéro commission', 'partikulier' ); ?></li>
-                        <li><?php esc_html_e( 'Contact direct', 'partikulier' ); ?></li>
-                        <li><?php esc_html_e( 'Vendeur identifié', 'partikulier' ); ?></li>
-                </ul>
+				<ul class="pk-auth-trust" aria-label="<?php esc_attr_e( 'Garanties Partikulier', 'partikulier' ); ?>">
+						<li><?php esc_html_e( 'Zéro commission', 'partikulier' ); ?></li>
+						<li><?php esc_html_e( 'Contact direct', 'partikulier' ); ?></li>
+						<li><?php esc_html_e( 'Vendeur identifié', 'partikulier' ); ?></li>
+				</ul>
 
-                <p class="pk-auth-note">
-                        <?php esc_html_e( 'La consultation des annonces et le dépôt restent possibles sans compte.', 'partikulier' ); ?>
-                        <a href="<?php echo esc_url( pk_properties_archive_url() ); ?>"><?php esc_html_e( 'Parcourir les annonces', 'partikulier' ); ?></a>
-                </p>
-        </div>
+				<p class="pk-auth-note">
+						<?php esc_html_e( 'La consultation des annonces et le dépôt restent possibles sans compte.', 'partikulier' ); ?>
+						<a href="<?php echo esc_url( pk_properties_archive_url() ); ?>"><?php esc_html_e( 'Parcourir les annonces', 'partikulier' ); ?></a>
+				</p>
+		</div>
 </section>
 
 <?php

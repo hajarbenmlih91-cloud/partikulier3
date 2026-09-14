@@ -173,8 +173,8 @@ class Partikulier_AVIF {
 	 */
 	private static function convert_with_avifenc( $file, $avif ) {
 		$result = Partikulier_Exec_Whitelist::run( 'avifenc', array(
-			array( 'type' => 'flag',   'value' => '--min 25 --max 25' ),
-			array( 'type' => 'file',   'value' => $file ),
+			array( 'type' => 'flag', 'value' => '--min 25 --max 25' ),
+			array( 'type' => 'file', 'value' => $file ),
 			array( 'type' => 'target', 'value' => $avif ),
 		) );
 
@@ -189,8 +189,8 @@ class Partikulier_AVIF {
 	private static function convert_with_vips( $file, $avif ) {
 		$target = $avif . '[Q=' . absint( self::QUALITY ) . ']';
 		$result = Partikulier_Exec_Whitelist::run( 'vips', array(
-			array( 'type' => 'flag',   'value' => 'copy' ),
-			array( 'type' => 'file',   'value' => $file ),
+			array( 'type' => 'flag', 'value' => 'copy' ),
+			array( 'type' => 'file', 'value' => $file ),
 			array( 'type' => 'target', 'value' => $target ),
 		) );
 
@@ -296,23 +296,23 @@ class Partikulier_AVIF {
 		 * @param int $post_id ID de l'annonce.
 		 * @return string|false
 		 */
-		public static function first_image( $post_id ) {
-			$thumb = get_post_thumbnail_id( $post_id );
-			if ( $thumb ) {
-				$url = wp_get_attachment_image_url( $thumb, 'pk-hero' );
-				if ( $url ) {
-					return $url;
-				}
+	public static function first_image( $post_id ) {
+		$thumb = get_post_thumbnail_id( $post_id );
+		if ( $thumb ) {
+			$url = wp_get_attachment_image_url( $thumb, 'pk-hero' );
+			if ( $url ) {
+				return $url;
 			}
-			$gallery = get_post_meta( $post_id, 'es_property_gallery', true );
-			if ( is_array( $gallery ) && $gallery ) {
-				$url = wp_get_attachment_image_url( (int) $gallery[0], 'pk-hero' );
-				if ( $url ) {
-					return $url;
-				}
-			}
-			return false;
 		}
+		$gallery = get_post_meta( $post_id, 'es_property_gallery', true );
+		if ( is_array( $gallery ) && $gallery ) {
+			$url = wp_get_attachment_image_url( (int) $gallery[0], 'pk-hero' );
+			if ( $url ) {
+				return $url;
+			}
+		}
+		return false;
+	}
 
 		/**
 		 * Retourne une URL d’image uniquement si la ressource locale est non vide
@@ -322,32 +322,32 @@ class Partikulier_AVIF {
 		 * @param string $size Taille WordPress.
 		 * @return string|false
 		 */
-		public static function valid_image_url( $attachment_id, $size = 'thumbnail' ) {
-			$image = wp_get_attachment_image_src( (int) $attachment_id, $size );
-			if ( ! is_array( $image ) || empty( $image[0] ) ) {
-				return false;
-			}
-
-			$upload = wp_get_upload_dir();
-			if ( ! empty( $upload['baseurl'] ) && 0 === strpos( $image[0], $upload['baseurl'] ) ) {
-				$path = str_replace( $upload['baseurl'], $upload['basedir'], $image[0] );
-				if ( ! is_file( $path ) || filesize( $path ) <= 0 || ( function_exists( 'getimagesize' ) && false === @getimagesize( $path ) ) ) { // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
-					return false;
-				}
-			}
-
-			return $image[0];
+	public static function valid_image_url( $attachment_id, $size = 'thumbnail' ) {
+		$image = wp_get_attachment_image_src( (int) $attachment_id, $size );
+		if ( ! is_array( $image ) || empty( $image[0] ) ) {
+			return false;
 		}
 
-		public static function avif_path_for_url( $url ) {
-			// Certains hébergements servent les fichiers `.avif` avec `text/plain`.
-			// Dans ce cas, le navigateur peut parfois décoder l’octet mais le contrat
-			// image exige un MIME image valide. Le fallback WebP/JPEG reste donc la
-			// livraison par défaut ; l’AVIF n’est activé qu’après vérification serveur.
-			if ( ! defined( 'PARTIKULIER_ENABLE_AVIF_DELIVERY' ) || ! PARTIKULIER_ENABLE_AVIF_DELIVERY ) {
+		$upload = wp_get_upload_dir();
+		if ( ! empty( $upload['baseurl'] ) && 0 === strpos( $image[0], $upload['baseurl'] ) ) {
+			$path = str_replace( $upload['baseurl'], $upload['basedir'], $image[0] );
+			if ( ! is_file( $path ) || filesize( $path ) <= 0 || ( function_exists( 'getimagesize' ) && false === @getimagesize( $path ) ) ) { // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
 				return false;
 			}
-			$avif_url = $url . '.avif';
+		}
+
+		return $image[0];
+	}
+
+	public static function avif_path_for_url( $url ) {
+		// Certains hébergements servent les fichiers `.avif` avec `text/plain`.
+		// Dans ce cas, le navigateur peut parfois décoder l’octet mais le contrat
+		// image exige un MIME image valide. Le fallback WebP/JPEG reste donc la
+		// livraison par défaut ; l’AVIF n’est activé qu’après vérification serveur.
+		if ( ! defined( 'PARTIKULIER_ENABLE_AVIF_DELIVERY' ) || ! PARTIKULIER_ENABLE_AVIF_DELIVERY ) {
+			return false;
+		}
+		$avif_url = $url . '.avif';
 		// Verifier l'existence physique (upload dir local).
 		$upload = wp_get_upload_dir();
 		$base   = $upload['baseurl'];

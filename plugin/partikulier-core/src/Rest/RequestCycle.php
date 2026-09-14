@@ -33,48 +33,48 @@ namespace Partikulier\Core\Rest;
 
 final class RequestCycle
 {
-    /** @var \WeakMap<\WP_REST_Request, array<string, mixed>>|null */
-    private static ?\WeakMap $cycles = null;
+	/** @var \WeakMap<\WP_REST_Request, array<string, mixed>>|null */
+	private static ?\WeakMap $cycles = null;
 
-    /**
-     * Marque l'effet $effect comme exécuté pour ce cycle de requête et
-     * retourne true s'il n'avait PAS encore été exécuté (première passe) —
-     * false sinon (ré-exécution Allow-header : effet à sauter).
-     */
-    public static function first_run(\WP_REST_Request $request, string $effect): bool
-    {
-        self::$cycles ??= new \WeakMap();
-        $state = self::$cycles->offsetExists($request) ? self::$cycles[$request] : [];
-        if (isset($state[$effect])) {
-            return false;
-        }
-        $state[$effect] = true;
-        self::$cycles[$request] = $state;
-        return true;
-    }
+	/**
+	 * Marque l'effet $effect comme exécuté pour ce cycle de requête et
+	 * retourne true s'il n'avait PAS encore été exécuté (première passe) —
+	 * false sinon (ré-exécution Allow-header : effet à sauter).
+	 */
+	public static function first_run( \WP_REST_Request $request, string $effect ): bool
+	{
+		self::$cycles ??= new \WeakMap();
+		$state          = self::$cycles->offsetExists($request) ? self::$cycles[ $request ] : [];
+		if ( isset($state[ $effect ]) ) {
+			return false;
+		}
+		$state[ $effect ]         = true;
+		self::$cycles[ $request ] = $state;
+		return true;
+	}
 
-    /**
-     * Met en cache une valeur (verdict, comptage) pour ce cycle — la passe
-     * Allow-header restitue le verdict de la passe réelle au lieu de le
-     * deviner.
-     */
-    public static function remember(\WP_REST_Request $request, string $key, mixed $value): void
-    {
-        self::$cycles ??= new \WeakMap();
-        $state = self::$cycles->offsetExists($request) ? self::$cycles[$request] : [];
-        $state[$key] = $value;
-        self::$cycles[$request] = $state;
-    }
+	/**
+	 * Met en cache une valeur (verdict, comptage) pour ce cycle — la passe
+	 * Allow-header restitue le verdict de la passe réelle au lieu de le
+	 * deviner.
+	 */
+	public static function remember( \WP_REST_Request $request, string $key, mixed $value ): void
+	{
+		self::$cycles           ??= new \WeakMap();
+		$state                    = self::$cycles->offsetExists($request) ? self::$cycles[ $request ] : [];
+		$state[ $key ]            = $value;
+		self::$cycles[ $request ] = $state;
+	}
 
-    /**
-     * Restitue la valeur mise en cache pour ce cycle, null si absente.
-     */
-    public static function recall(\WP_REST_Request $request, string $key): mixed
-    {
-        if (self::$cycles === null || !self::$cycles->offsetExists($request)) {
-            return null;
-        }
-        $state = self::$cycles[$request];
-        return $state[$key] ?? null;
-    }
+	/**
+	 * Restitue la valeur mise en cache pour ce cycle, null si absente.
+	 */
+	public static function recall( \WP_REST_Request $request, string $key ): mixed
+	{
+		if ( self::$cycles === null || ! self::$cycles->offsetExists($request) ) {
+			return null;
+		}
+		$state = self::$cycles[ $request ];
+		return $state[ $key ] ?? null;
+	}
 }

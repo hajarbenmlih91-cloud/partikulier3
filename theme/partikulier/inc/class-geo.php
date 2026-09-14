@@ -32,7 +32,7 @@ class Partikulier_Geo {
 		$html .= '<ol itemscope itemtype="https://schema.org/BreadcrumbList">';
 		foreach ( $crumbs as $i => $crumb ) {
 			$is_last = ( $i === count( $crumbs ) - 1 );
-			$html .= '<li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">';
+			$html   .= '<li itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">';
 			if ( ! $is_last ) {
 				$html .= '<a itemprop="item" href="' . esc_url( $crumb['url'] ) . '"><span itemprop="name">' . esc_html( $crumb['name'] ) . '</span></a>';
 			} else {
@@ -79,7 +79,7 @@ class Partikulier_Geo {
 			$label = ( 'ar' === $lang && class_exists( 'Partikulier_Listing_I18n' ) )
 				? Partikulier_Listing_I18n::localized_type( $t->name, $lang )
 				: $t->name;
-			$out .= '<option value="' . esc_attr( $t->slug ) . '">' . esc_html( $label ) . '</option>';
+			$out  .= '<option value="' . esc_attr( $t->slug ) . '">' . esc_html( $label ) . '</option>';
 		}
 		return $out;
 	}
@@ -139,13 +139,13 @@ class Partikulier_Geo {
 	/**
 	 * URL de la ville d'une annonce (pour le bouton "Voir les annonces de cette ville").
 	 */
-		public static function city_link( $post_id ) {
-			$terms = get_the_terms( $post_id, PARTIKULIER_ESTATIK_LOCATION_TAXONOMY );
-			if ( $terms && ! is_wp_error( $terms ) ) {
-				return function_exists( 'pk_term_url' ) ? pk_term_url( $terms[0] ) : get_term_link( $terms[0] );
-			}
-			return pk_properties_archive_url();
+	public static function city_link( $post_id ) {
+		$terms = get_the_terms( $post_id, PARTIKULIER_ESTATIK_LOCATION_TAXONOMY );
+		if ( $terms && ! is_wp_error( $terms ) ) {
+			return function_exists( 'pk_term_url' ) ? pk_term_url( $terms[0] ) : get_term_link( $terms[0] );
 		}
+		return pk_properties_archive_url();
+	}
 }
 
 Partikulier_Geo::init();

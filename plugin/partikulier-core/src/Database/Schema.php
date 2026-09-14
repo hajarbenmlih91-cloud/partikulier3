@@ -58,14 +58,14 @@ namespace Partikulier\Core\Database;
 
 final class Schema
 {
-    public const VERSION = '2.6.0';
+	public const VERSION = '2.6.0';
 
-    /** @return array<string, string> */
-    public static function statements(string $prefix): array
-    {
-        $prefix = preg_replace('/[^A-Za-z0-9_]/', '', $prefix) ?: 'wp_';
-        return [
-            'listings' => "CREATE TABLE {$prefix}pk_listings (
+	/** @return array<string, string> */
+	public static function statements( string $prefix ): array
+	{
+		$prefix = preg_replace('/[^A-Za-z0-9_]/', '', $prefix) ?: 'wp_';
+		return [
+			'listings'              => "CREATE TABLE {$prefix}pk_listings (
                 id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
                 owner_user_id bigint(20) unsigned NOT NULL,
                 external_id varchar(64) NOT NULL,
@@ -86,7 +86,7 @@ final class Schema
                 KEY owner_status (owner_user_id, status),
                 KEY search_order (status, price, area)
             ) {$GLOBALS['wpdb']->get_charset_collate()};",
-            'audit' => "CREATE TABLE {$prefix}pk_audit_log (
+			'audit'                 => "CREATE TABLE {$prefix}pk_audit_log (
                 id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
                 correlation_id char(36) NOT NULL,
                 actor_user_id bigint(20) unsigned NULL,
@@ -100,7 +100,7 @@ final class Schema
                 KEY object_lookup (object_type, object_id),
                 KEY created_at (created_at)
             ) {$GLOBALS['wpdb']->get_charset_collate()};",
-            'idempotency' => "CREATE TABLE {$prefix}pk_idempotency (
+			'idempotency'           => "CREATE TABLE {$prefix}pk_idempotency (
                 id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
                 event_id varchar(128) NOT NULL,
                 event_hash char(64) NOT NULL,
@@ -112,11 +112,11 @@ final class Schema
                 KEY expires_at (expires_at)
             ) {$GLOBALS['wpdb']->get_charset_collate()};",
 
-            // Domaine paiements/premium (lot B1) — repris du thème 6.17.x,
-            // formulations à l'identique (REG-6) : mêmes colonnes, mêmes clés,
-            // mêmes noms d'index. dbDelta rejoué sur une table existante est
-            // un no-op ; sur une installation neuve, il la crée.
-            'payment_orders' => "CREATE TABLE {$prefix}pk_payment_orders (
+			// Domaine paiements/premium (lot B1) — repris du thème 6.17.x,
+			// formulations à l'identique (REG-6) : mêmes colonnes, mêmes clés,
+			// mêmes noms d'index. dbDelta rejoué sur une table existante est
+			// un no-op ; sur une installation neuve, il la crée.
+			'payment_orders'        => "CREATE TABLE {$prefix}pk_payment_orders (
                 id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
                 property_id bigint(20) unsigned NOT NULL,
                 owner_id bigint(20) unsigned NOT NULL,
@@ -134,7 +134,7 @@ final class Schema
                 KEY property_status (property_id,status),
                 KEY owner_status (owner_id,status)
             ) {$GLOBALS['wpdb']->get_charset_collate()};",
-            'premium_subscriptions' => "CREATE TABLE {$prefix}pk_premium_subscriptions (
+			'premium_subscriptions' => "CREATE TABLE {$prefix}pk_premium_subscriptions (
                 id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
                 property_id bigint(20) unsigned NOT NULL,
                 owner_id bigint(20) unsigned NOT NULL,
@@ -149,7 +149,7 @@ final class Schema
                 KEY property_status (property_id,status),
                 KEY payment_order (payment_order_id)
             ) {$GLOBALS['wpdb']->get_charset_collate()};",
-            'premium_history' => "CREATE TABLE {$prefix}pk_premium_history (
+			'premium_history'       => "CREATE TABLE {$prefix}pk_premium_history (
                 id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
                 property_id bigint(20) unsigned NOT NULL,
                 owner_id bigint(20) unsigned NOT NULL,
@@ -168,12 +168,12 @@ final class Schema
                 KEY owner_status (owner_id,status)
             ) {$GLOBALS['wpdb']->get_charset_collate()};",
 
-            // Domaine leads/qualification/WhatsApp (lot B2) — repris du thème
-            // 6.17.x, formulations à l'identique (REG-6) : mêmes colonnes,
-            // mêmes clés, mêmes noms d'index. Aucun numéro n'est stocké en
-            // clair dans les clés de recherche : un HMAC sert à retrouver et
-            // limiter un même demandeur (port fidèle du dispositif).
-            'buyer_leads' => "CREATE TABLE {$prefix}pk_buyer_leads (
+			// Domaine leads/qualification/WhatsApp (lot B2) — repris du thème
+			// 6.17.x, formulations à l'identique (REG-6) : mêmes colonnes,
+			// mêmes clés, mêmes noms d'index. Aucun numéro n'est stocké en
+			// clair dans les clés de recherche : un HMAC sert à retrouver et
+			// limiter un même demandeur (port fidèle du dispositif).
+			'buyer_leads'           => "CREATE TABLE {$prefix}pk_buyer_leads (
                 id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
                 phone_hash char(64) NOT NULL,
                 phone_encrypted longtext NOT NULL,
@@ -183,7 +183,7 @@ final class Schema
                 PRIMARY KEY  (id),
                 UNIQUE KEY phone_hash (phone_hash)
             ) {$GLOBALS['wpdb']->get_charset_collate()};",
-            'interest_events' => "CREATE TABLE {$prefix}pk_interest_events (
+			'interest_events'       => "CREATE TABLE {$prefix}pk_interest_events (
                 id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
                 lead_id bigint(20) unsigned NOT NULL,
                 property_id bigint(20) unsigned NOT NULL,
@@ -195,7 +195,7 @@ final class Schema
                 UNIQUE KEY provider_message_id (provider_message_id),
                 KEY lead_property (lead_id,property_id)
             ) {$GLOBALS['wpdb']->get_charset_collate()};",
-            'contact_limits' => "CREATE TABLE {$prefix}pk_contact_limits (
+			'contact_limits'        => "CREATE TABLE {$prefix}pk_contact_limits (
                 id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
                 lead_id bigint(20) unsigned NOT NULL,
                 day_key date NOT NULL,
@@ -203,7 +203,7 @@ final class Schema
                 PRIMARY KEY  (id),
                 UNIQUE KEY lead_day (lead_id,day_key)
             ) {$GLOBALS['wpdb']->get_charset_collate()};",
-            'contact_disclosures' => "CREATE TABLE {$prefix}pk_contact_disclosures (
+			'contact_disclosures'   => "CREATE TABLE {$prefix}pk_contact_disclosures (
                 id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
                 lead_id bigint(20) unsigned NOT NULL,
                 property_id bigint(20) unsigned NOT NULL,
@@ -215,7 +215,7 @@ final class Schema
                 KEY lead_day (lead_id,day_key),
                 KEY lead_owner_day (lead_id,owner_id,day_key)
             ) {$GLOBALS['wpdb']->get_charset_collate()};",
-            'buyer_preferences' => "CREATE TABLE {$prefix}pk_buyer_preferences (
+			'buyer_preferences'     => "CREATE TABLE {$prefix}pk_buyer_preferences (
                 id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
                 lead_id bigint(20) unsigned NOT NULL,
                 budget_max bigint(20) unsigned NULL,
@@ -227,7 +227,7 @@ final class Schema
                 PRIMARY KEY  (id),
                 UNIQUE KEY lead_id (lead_id)
             ) {$GLOBALS['wpdb']->get_charset_collate()};",
-            'whatsapp_consents' => "CREATE TABLE {$prefix}pk_whatsapp_consents (
+			'whatsapp_consents'     => "CREATE TABLE {$prefix}pk_whatsapp_consents (
                 id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
                 lead_id bigint(20) unsigned NOT NULL,
                 scope varchar(64) NOT NULL,
@@ -238,7 +238,7 @@ final class Schema
                 PRIMARY KEY  (id),
                 UNIQUE KEY lead_scope (lead_id,scope)
             ) {$GLOBALS['wpdb']->get_charset_collate()};",
-            'whatsapp_messages' => "CREATE TABLE {$prefix}pk_whatsapp_messages (
+			'whatsapp_messages'     => "CREATE TABLE {$prefix}pk_whatsapp_messages (
                 id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
                 provider_message_id varchar(191) NOT NULL,
                 lead_id bigint(20) unsigned NOT NULL,
@@ -248,7 +248,7 @@ final class Schema
                 PRIMARY KEY  (id),
                 UNIQUE KEY provider_message_id (provider_message_id)
             ) {$GLOBALS['wpdb']->get_charset_collate()};",
-            'lead_followups' => "CREATE TABLE {$prefix}pk_lead_followups (
+			'lead_followups'        => "CREATE TABLE {$prefix}pk_lead_followups (
                 lead_id bigint(20) unsigned NOT NULL,
                 status varchar(32) NOT NULL DEFAULT 'new',
                 note text NULL,
@@ -258,12 +258,12 @@ final class Schema
                 KEY status_updated (status,updated_at)
             ) {$GLOBALS['wpdb']->get_charset_collate()};",
 
-            // Domaine alertes (lot B3) — repris du thème 6.17.x,
-            // formulations à l'identique (REG-6) : mêmes colonnes, mêmes clés,
-            // mêmes noms d'index. Les alertes ne sont créées qu'après
-            // consentement WhatsApp explicite (similar_listings, lu via le
-            // LeadService du lot B2 — lecture croisée inter-domaines).
-            'saved_alerts' => "CREATE TABLE {$prefix}pk_saved_alerts (
+			// Domaine alertes (lot B3) — repris du thème 6.17.x,
+			// formulations à l'identique (REG-6) : mêmes colonnes, mêmes clés,
+			// mêmes noms d'index. Les alertes ne sont créées qu'après
+			// consentement WhatsApp explicite (similar_listings, lu via le
+			// LeadService du lot B2 — lecture croisée inter-domaines).
+			'saved_alerts'          => "CREATE TABLE {$prefix}pk_saved_alerts (
                 id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
                 lead_id bigint(20) unsigned NOT NULL,
                 criteria longtext NOT NULL,
@@ -278,7 +278,7 @@ final class Schema
                 UNIQUE KEY lead_signature (lead_id,criteria_signature),
                 KEY status_updated (status,updated_at)
             ) {$GLOBALS['wpdb']->get_charset_collate()};",
-            'alert_deliveries' => "CREATE TABLE {$prefix}pk_alert_deliveries (
+			'alert_deliveries'      => "CREATE TABLE {$prefix}pk_alert_deliveries (
                 id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
                 alert_id bigint(20) unsigned NOT NULL,
                 property_id bigint(20) unsigned NOT NULL,
@@ -289,12 +289,12 @@ final class Schema
                 KEY status_created (status,created_at)
             ) {$GLOBALS['wpdb']->get_charset_collate()};",
 
-            // Domaine automatisation n8n (lot B4) — repris du thème 6.17.x,
-            // formulations à l'identique (REG-6) : mêmes colonnes, mêmes clés,
-            // mêmes noms d'index. Le pont ne fait que journaliser des accusés
-            // d'événements (payload haché, jamais persisté) ; l'audit HMAC
-            // regroupe les échecs de signature par clé et par heure.
-            'automation_events' => "CREATE TABLE {$prefix}pk_automation_events (
+			// Domaine automatisation n8n (lot B4) — repris du thème 6.17.x,
+			// formulations à l'identique (REG-6) : mêmes colonnes, mêmes clés,
+			// mêmes noms d'index. Le pont ne fait que journaliser des accusés
+			// d'événements (payload haché, jamais persisté) ; l'audit HMAC
+			// regroupe les échecs de signature par clé et par heure.
+			'automation_events'     => "CREATE TABLE {$prefix}pk_automation_events (
                 id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
                 event_id varchar(191) NOT NULL,
                 event_type varchar(64) NOT NULL,
@@ -306,16 +306,16 @@ final class Schema
                 UNIQUE KEY event_id (event_id),
                 KEY type_received (event_type,received_at)
             ) {$GLOBALS['wpdb']->get_charset_collate()};",
-            'n8n_hmac_audit' => "CREATE TABLE {$prefix}pk_n8n_hmac_audit (id bigint(20) unsigned NOT NULL AUTO_INCREMENT,key_id varchar(64) NOT NULL,hour_key datetime NOT NULL,failure_count int unsigned NOT NULL DEFAULT 0,last_reason varchar(64) NOT NULL,PRIMARY KEY(id),UNIQUE KEY key_hour (key_id,hour_key)) {$GLOBALS['wpdb']->get_charset_collate()};",
+			'n8n_hmac_audit'        => "CREATE TABLE {$prefix}pk_n8n_hmac_audit (id bigint(20) unsigned NOT NULL AUTO_INCREMENT,key_id varchar(64) NOT NULL,hour_key datetime NOT NULL,failure_count int unsigned NOT NULL DEFAULT 0,last_reason varchar(64) NOT NULL,PRIMARY KEY(id),UNIQUE KEY key_hour (key_id,hour_key)) {$GLOBALS['wpdb']->get_charset_collate()};",
 
-            // Domaine statistiques propriétaire (lot B5) — repris du thème
-            // 6.17.x, formulation à l'identique (REG-6) : mêmes colonnes,
-            // mêmes clés, mêmes noms d'index (y compris le double espace
-            // historique après PRIMARY KEY). Une ligne active par annonce et
-            // navigateur pseudonymisé (HMAC non réversible) — les favoris
-            // visiteurs restent locaux, seuls des agrégats anonymes sont
-            // exposés au propriétaire.
-            'property_saves' => "CREATE TABLE {$prefix}pk_property_saves (
+			// Domaine statistiques propriétaire (lot B5) — repris du thème
+			// 6.17.x, formulation à l'identique (REG-6) : mêmes colonnes,
+			// mêmes clés, mêmes noms d'index (y compris le double espace
+			// historique après PRIMARY KEY). Une ligne active par annonce et
+			// navigateur pseudonymisé (HMAC non réversible) — les favoris
+			// visiteurs restent locaux, seuls des agrégats anonymes sont
+			// exposés au propriétaire.
+			'property_saves'        => "CREATE TABLE {$prefix}pk_property_saves (
                 id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
                 property_id bigint(20) unsigned NOT NULL,
                 visitor_hash char(64) NOT NULL,
@@ -327,14 +327,14 @@ final class Schema
                 KEY updated_at (updated_at)
             ) {$GLOBALS['wpdb']->get_charset_collate()};",
 
-            // Domaine variantes de traduction (lot B6) — repris du thème
-            // 6.17.x, formulation à l'identique (REG-6) : mêmes colonnes,
-            // mêmes clés, mêmes noms d'index (y compris le double espace
-            // historique après PRIMARY KEY). Le registre ne stocke AUCUN
-            // contenu : une ligne par emplacement de variante (annonce source
-            // × locale) — prepare_variant crée l'emplacement, link_variant
-            // attache l'annonce traduite, jamais de duplication de contenu.
-            'property_variants' => "CREATE TABLE {$prefix}pk_property_variants (
+			// Domaine variantes de traduction (lot B6) — repris du thème
+			// 6.17.x, formulation à l'identique (REG-6) : mêmes colonnes,
+			// mêmes clés, mêmes noms d'index (y compris le double espace
+			// historique après PRIMARY KEY). Le registre ne stocke AUCUN
+			// contenu : une ligne par emplacement de variante (annonce source
+			// × locale) — prepare_variant crée l'emplacement, link_variant
+			// attache l'annonce traduite, jamais de duplication de contenu.
+			'property_variants'     => "CREATE TABLE {$prefix}pk_property_variants (
                 id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
                 source_property_id bigint(20) unsigned NOT NULL,
                 locale varchar(8) NOT NULL,
@@ -348,50 +348,50 @@ final class Schema
                 KEY variant_property (variant_property_id),
                 KEY status_locale (status,locale)
             ) {$GLOBALS['wpdb']->get_charset_collate()};",
-        ];
-    }
+		];
+	}
 
-    /**
-     * Manifeste des vingt tables pk_ : table (sans préfixe) => descripteur.
-     * domain : clé du domaine ; owner : plugin|theme (propriétaire au jour de
-     * la version) ; lot : lot de la refonte qui migre la table vers le plugin.
-     *
-     * @return array<string, array{domain: string, label: string, owner: string, lot: string}>
-     */
-    public static function domainTables(): array
-    {
-        return [
-            // Domaine annonces — propriété du plugin depuis l'origine (lot A : projection temps réel).
-            'pk_listings' => ['domain' => 'listings', 'label' => 'Annonces', 'owner' => 'plugin', 'lot' => 'A'],
-            'pk_audit_log' => ['domain' => 'listings', 'label' => 'Annonces', 'owner' => 'plugin', 'lot' => 'A'],
-            'pk_idempotency' => ['domain' => 'listings', 'label' => 'Annonces', 'owner' => 'plugin', 'lot' => 'A'],
+	/**
+	 * Manifeste des vingt tables pk_ : table (sans préfixe) => descripteur.
+	 * domain : clé du domaine ; owner : plugin|theme (propriétaire au jour de
+	 * la version) ; lot : lot de la refonte qui migre la table vers le plugin.
+	 *
+	 * @return array<string, array{domain: string, label: string, owner: string, lot: string}>
+	 */
+	public static function domainTables(): array
+	{
+		return [
+			// Domaine annonces — propriété du plugin depuis l'origine (lot A : projection temps réel).
+			'pk_listings'              => ['domain' => 'listings', 'label' => 'Annonces', 'owner' => 'plugin', 'lot' => 'A'],
+			'pk_audit_log'             => ['domain' => 'listings', 'label' => 'Annonces', 'owner' => 'plugin', 'lot' => 'A'],
+			'pk_idempotency'           => ['domain' => 'listings', 'label' => 'Annonces', 'owner' => 'plugin', 'lot' => 'A'],
 
-            // Domaine paiements — propriété du plugin depuis le lot B1.
-            'pk_payment_orders' => ['domain' => 'payments', 'label' => 'Paiements', 'owner' => 'plugin', 'lot' => 'B1'],
-            'pk_premium_subscriptions' => ['domain' => 'payments', 'label' => 'Paiements', 'owner' => 'plugin', 'lot' => 'B1'],
-            'pk_premium_history' => ['domain' => 'premium', 'label' => 'Premium', 'owner' => 'plugin', 'lot' => 'B1'],
+			// Domaine paiements — propriété du plugin depuis le lot B1.
+			'pk_payment_orders'        => ['domain' => 'payments', 'label' => 'Paiements', 'owner' => 'plugin', 'lot' => 'B1'],
+			'pk_premium_subscriptions' => ['domain' => 'payments', 'label' => 'Paiements', 'owner' => 'plugin', 'lot' => 'B1'],
+			'pk_premium_history'       => ['domain' => 'premium', 'label' => 'Premium', 'owner' => 'plugin', 'lot' => 'B1'],
 
-            // Domaine leads/qualification/WhatsApp — propriété du plugin depuis le lot B2.
-            'pk_buyer_leads' => ['domain' => 'leads', 'label' => 'Leads et qualification', 'owner' => 'plugin', 'lot' => 'B2'],
-            'pk_interest_events' => ['domain' => 'leads', 'label' => 'Leads et qualification', 'owner' => 'plugin', 'lot' => 'B2'],
-            'pk_contact_limits' => ['domain' => 'leads', 'label' => 'Leads et qualification', 'owner' => 'plugin', 'lot' => 'B2'],
-            'pk_contact_disclosures' => ['domain' => 'leads', 'label' => 'Leads et qualification', 'owner' => 'plugin', 'lot' => 'B2'],
-            'pk_whatsapp_consents' => ['domain' => 'leads', 'label' => 'Leads et qualification', 'owner' => 'plugin', 'lot' => 'B2'],
-            'pk_whatsapp_messages' => ['domain' => 'leads', 'label' => 'Leads et qualification', 'owner' => 'plugin', 'lot' => 'B2'],
-            'pk_buyer_preferences' => ['domain' => 'leads', 'label' => 'Leads et qualification', 'owner' => 'plugin', 'lot' => 'B2'],
-            'pk_lead_followups' => ['domain' => 'leads', 'label' => 'Leads et qualification', 'owner' => 'plugin', 'lot' => 'B2'],
-            // Domaine alertes — propriété du plugin depuis le lot B3.
-            'pk_saved_alerts' => ['domain' => 'alerts', 'label' => 'Alertes enregistrées', 'owner' => 'plugin', 'lot' => 'B3'],
-            'pk_alert_deliveries' => ['domain' => 'alerts', 'label' => 'Alertes enregistrées', 'owner' => 'plugin', 'lot' => 'B3'],
+			// Domaine leads/qualification/WhatsApp — propriété du plugin depuis le lot B2.
+			'pk_buyer_leads'           => ['domain' => 'leads', 'label' => 'Leads et qualification', 'owner' => 'plugin', 'lot' => 'B2'],
+			'pk_interest_events'       => ['domain' => 'leads', 'label' => 'Leads et qualification', 'owner' => 'plugin', 'lot' => 'B2'],
+			'pk_contact_limits'        => ['domain' => 'leads', 'label' => 'Leads et qualification', 'owner' => 'plugin', 'lot' => 'B2'],
+			'pk_contact_disclosures'   => ['domain' => 'leads', 'label' => 'Leads et qualification', 'owner' => 'plugin', 'lot' => 'B2'],
+			'pk_whatsapp_consents'     => ['domain' => 'leads', 'label' => 'Leads et qualification', 'owner' => 'plugin', 'lot' => 'B2'],
+			'pk_whatsapp_messages'     => ['domain' => 'leads', 'label' => 'Leads et qualification', 'owner' => 'plugin', 'lot' => 'B2'],
+			'pk_buyer_preferences'     => ['domain' => 'leads', 'label' => 'Leads et qualification', 'owner' => 'plugin', 'lot' => 'B2'],
+			'pk_lead_followups'        => ['domain' => 'leads', 'label' => 'Leads et qualification', 'owner' => 'plugin', 'lot' => 'B2'],
+			// Domaine alertes — propriété du plugin depuis le lot B3.
+			'pk_saved_alerts'          => ['domain' => 'alerts', 'label' => 'Alertes enregistrées', 'owner' => 'plugin', 'lot' => 'B3'],
+			'pk_alert_deliveries'      => ['domain' => 'alerts', 'label' => 'Alertes enregistrées', 'owner' => 'plugin', 'lot' => 'B3'],
 
-            // Domaine automatisation — propriété du plugin depuis le lot B4.
-            'pk_automation_events' => ['domain' => 'automation', 'label' => 'Automatisation n8n', 'owner' => 'plugin', 'lot' => 'B4'],
-            'pk_n8n_hmac_audit' => ['domain' => 'automation', 'label' => 'Automatisation n8n', 'owner' => 'plugin', 'lot' => 'B4'],
-            // Domaine statistiques propriétaire — propriété du plugin depuis le lot B5.
-            'pk_property_saves' => ['domain' => 'owner_stats', 'label' => 'Statistiques propriétaire', 'owner' => 'plugin', 'lot' => 'B5'],
-            // Domaine variantes de traduction — propriété du plugin depuis le lot
-            // B6 (dernier des huit domaines ; conditionne le lot C).
-            'pk_property_variants' => ['domain' => 'translation_variants', 'label' => 'Variantes de traduction', 'owner' => 'plugin', 'lot' => 'B6'],
-        ];
-    }
+			// Domaine automatisation — propriété du plugin depuis le lot B4.
+			'pk_automation_events'     => ['domain' => 'automation', 'label' => 'Automatisation n8n', 'owner' => 'plugin', 'lot' => 'B4'],
+			'pk_n8n_hmac_audit'        => ['domain' => 'automation', 'label' => 'Automatisation n8n', 'owner' => 'plugin', 'lot' => 'B4'],
+			// Domaine statistiques propriétaire — propriété du plugin depuis le lot B5.
+			'pk_property_saves'        => ['domain' => 'owner_stats', 'label' => 'Statistiques propriétaire', 'owner' => 'plugin', 'lot' => 'B5'],
+			// Domaine variantes de traduction — propriété du plugin depuis le lot
+			// B6 (dernier des huit domaines ; conditionne le lot C).
+			'pk_property_variants'     => ['domain' => 'translation_variants', 'label' => 'Variantes de traduction', 'owner' => 'plugin', 'lot' => 'B6'],
+		];
+	}
 }

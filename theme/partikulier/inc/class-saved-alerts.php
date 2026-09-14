@@ -17,59 +17,59 @@
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
-        return;
+		return;
 }
 
 class Partikulier_Saved_Alerts {
 
-        const STATUS_ACTIVE = 'active';
-        const STATUS_PAUSED = 'paused';
-        const STATUS_STOPPED = 'stopped';
+		const STATUS_ACTIVE  = 'active';
+		const STATUS_PAUSED  = 'paused';
+		const STATUS_STOPPED = 'stopped';
 
-        /**
-         * Nom canonique de la table des alertes — délégation au service
-         * propriétaire (probe contractuelle B3 : l'égalité thème/plugin fait
-         * foi que les deux côtés désignent la même table).
-         */
-        public static function alerts_table() {
-                return self::core_alerts() ? self::core_alerts()::alerts_table() : '';
-        }
+		/**
+		 * Nom canonique de la table des alertes — délégation au service
+		 * propriétaire (probe contractuelle B3 : l'égalité thème/plugin fait
+		 * foi que les deux côtés désignent la même table).
+		 */
+	public static function alerts_table() {
+			return self::core_alerts() ? self::core_alerts()::alerts_table() : '';
+	}
 
-        public static function deliveries_table() {
-                return self::core_alerts() ? self::core_alerts()::deliveries_table() : '';
-        }
+	public static function deliveries_table() {
+			return self::core_alerts() ? self::core_alerts()::deliveries_table() : '';
+	}
 
-        /**
-         * Crée ou actualise une alerte après preuve de consentement. Les critères sont
-         * structurés afin que le futur orchestrateur ne déduise jamais de préférences
-         * supplémentaires à partir des clics ou des messages libres.
-         *
-         * @return int|WP_Error Identifiant d’alerte.
-         */
-        public static function save_alert( $lead_id, array $criteria, $locale, $frequency, $consent_message_id ) {
-                if ( self::core_alerts() ) {
-                        return self::core_alerts()::save_alert( $lead_id, $criteria, $locale, $frequency, $consent_message_id );
-                }
-                return new WP_Error( 'pk_core_required', __( 'Les alertes sauvegardées exigent le plugin partikulier-core.', 'partikulier' ) );
-        }
+		/**
+		 * Crée ou actualise une alerte après preuve de consentement. Les critères sont
+		 * structurés afin que le futur orchestrateur ne déduise jamais de préférences
+		 * supplémentaires à partir des clics ou des messages libres.
+		 *
+		 * @return int|WP_Error Identifiant d’alerte.
+		 */
+	public static function save_alert( $lead_id, array $criteria, $locale, $frequency, $consent_message_id ) {
+		if ( self::core_alerts() ) {
+				return self::core_alerts()::save_alert( $lead_id, $criteria, $locale, $frequency, $consent_message_id );
+		}
+			return new WP_Error( 'pk_core_required', __( 'Les alertes sauvegardées exigent le plugin partikulier-core.', 'partikulier' ) );
+	}
 
-        /** @return bool|WP_Error */
-        public static function change_status( $alert_id, $status ) {
-                if ( self::core_alerts() ) {
-                        return self::core_alerts()::change_status( $alert_id, $status );
-                }
-                return new WP_Error( 'pk_core_required', __( 'Les alertes sauvegardées exigent le plugin partikulier-core.', 'partikulier' ) );
-        }
+		/** @return bool|WP_Error */
+	public static function change_status( $alert_id, $status ) {
+		if ( self::core_alerts() ) {
+				return self::core_alerts()::change_status( $alert_id, $status );
+		}
+			return new WP_Error( 'pk_core_required', __( 'Les alertes sauvegardées exigent le plugin partikulier-core.', 'partikulier' ) );
+	}
 
-        /**
-         * Couture du lot B3, conservée au lot F : classe du service plugin
-         * quand il existe — dépositaire unique du domaine.
-         *
-         * @return class-string|null
-         */
-        private static function core_alerts() {
-                return class_exists( '\Partikulier\Core\Domain\Alerts\AlertService' )
-                        ? '\Partikulier\Core\Domain\Alerts\AlertService'
-                        : null;
-        }
+		/**
+		 * Couture du lot B3, conservée au lot F : classe du service plugin
+		 * quand il existe — dépositaire unique du domaine.
+		 *
+		 * @return class-string|null
+		 */
+	private static function core_alerts() {
+			return class_exists( '\Partikulier\Core\Domain\Alerts\AlertService' )
+					? '\Partikulier\Core\Domain\Alerts\AlertService'
+					: null;
+	}
 }

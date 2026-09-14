@@ -73,18 +73,18 @@ class Partikulier_Dashboard {
 
 		// Cookie unique par visiteur (24 h) pour eviter le matraquage.
 		$cookie_key = 'pk_v_' . $post_id;
-			if ( ! isset( $_COOKIE[ $cookie_key ] ) ) {
-				$views = (int) get_post_meta( $post_id, '_pk_views', true );
-				update_post_meta( $post_id, '_pk_views', $views + 1 );
-				setcookie( $cookie_key, '1', array(
-					'expires'  => time() + DAY_IN_SECONDS,
-					'path'     => COOKIEPATH ? COOKIEPATH : '/',
-					'domain'   => COOKIE_DOMAIN,
-					'secure'   => is_ssl(),
-					'httponly' => true,
-					'samesite' => 'Lax',
-				) );
-			}
+		if ( ! isset( $_COOKIE[ $cookie_key ] ) ) {
+			$views = (int) get_post_meta( $post_id, '_pk_views', true );
+			update_post_meta( $post_id, '_pk_views', $views + 1 );
+			setcookie( $cookie_key, '1', array(
+				'expires'  => time() + DAY_IN_SECONDS,
+				'path'     => COOKIEPATH ? COOKIEPATH : '/',
+				'domain'   => COOKIE_DOMAIN,
+				'secure'   => is_ssl(),
+				'httponly' => true,
+				'samesite' => 'Lax',
+			) );
+		}
 
 		wp_send_json_success( array( 'views' => (int) get_post_meta( $post_id, '_pk_views', true ) ) );
 	}

@@ -107,9 +107,9 @@ class Partikulier_Listing_Translations {
 						'value'   => (string) $raw_source,
 					);
 					continue;
-				}
-			$source_id = (int) $raw_source;
-			$source    = $source_id ? pll_get_post_translations( $source_id ) : array();
+			}
+			$source_id   = (int) $raw_source;
+			$source      = $source_id ? pll_get_post_translations( $source_id ) : array();
 			$replacement = $lang && ! empty( $source[ $lang ] ) ? (int) $source[ $lang ] : 0;
 			if ( ! $source_id || ! $lang || ! $replacement || $replacement === (int) $auto_id ) {
 				continue;
@@ -205,18 +205,18 @@ class Partikulier_Listing_Translations {
 
 			$title       = Partikulier_Listing_I18n::title( $values, $lang );
 			$description = Partikulier_Listing_I18n::description( $values, $lang );
-				if ( '' !== $extra ) {
-					// Le mot personnel est recopie tel quel : c'est la voix de
-					// l'annonceur, on ne la reecrit pas. Son bloc declare sa
-					// langue francaise pour eviter de le faire passer pour une
-					// traduction AR/EN.
-					$note_label = 'ar' === $lang ? 'كلمة المالك (بالفرنسية)' : "Owner's note (in French)";
-					$description .= sprintf(
-						"\n\n<p class=\"pk-owner-note\"><strong>%s</strong><br><span lang=\"fr\">%s</span></p>",
-						esc_html( $note_label ),
-						esc_html( $extra )
-					);
-				}
+			if ( '' !== $extra ) {
+				// Le mot personnel est recopie tel quel : c'est la voix de
+				// l'annonceur, on ne la reecrit pas. Son bloc declare sa
+				// langue francaise pour eviter de le faire passer pour une
+				// traduction AR/EN.
+				$note_label   = 'ar' === $lang ? 'كلمة المالك (بالفرنسية)' : "Owner's note (in French)";
+				$description .= sprintf(
+					"\n\n<p class=\"pk-owner-note\"><strong>%s</strong><br><span lang=\"fr\">%s</span></p>",
+					esc_html( $note_label ),
+					esc_html( $extra )
+				);
+			}
 
 			$existing = self::find_existing( $post_id, $lang );
 
@@ -313,7 +313,7 @@ class Partikulier_Listing_Translations {
 		// Taxonomies : Polylang peut avoir des termes par langue, on tente la
 		// traduction du terme et on retombe sur le terme source sinon.
 		$taxonomies = array(
-PARTIKULIER_ESTATIK_TYPE_TAXONOMY,
+		PARTIKULIER_ESTATIK_TYPE_TAXONOMY,
 				PARTIKULIER_ESTATIK_STATUS_TAXONOMY,
 				PARTIKULIER_ESTATIK_CATEGORY_TAXONOMY,
 			PARTIKULIER_ESTATIK_LOCATION_TAXONOMY,

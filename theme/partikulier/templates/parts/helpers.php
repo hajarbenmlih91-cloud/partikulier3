@@ -91,41 +91,41 @@ function pk_get_template( $slug ) {
  * fatale sous PHP 8 : ltrim() n'accepte pas un WP_Error.
  */
 if ( ! function_exists( 'pk_term_url' ) ) {
-			function pk_term_url( $term, $fallback = '' ) {
-				if ( is_object( $term ) && isset( $term->taxonomy ) && PARTIKULIER_ESTATIK_LOCATION_TAXONOMY === $term->taxonomy ) {
-					$archive = function_exists( 'pk_properties_archive_url' ) ? pk_properties_archive_url() : home_url( '/' );
-					return add_query_arg( 'location', sanitize_title( (string) $term->slug ), $archive );
-				}
-				$link = get_term_link( $term );
-			if ( is_wp_error( $link ) || ! is_string( $link ) ) {
+	function pk_term_url( $term, $fallback = '' ) {
+		if ( is_object( $term ) && isset( $term->taxonomy ) && PARTIKULIER_ESTATIK_LOCATION_TAXONOMY === $term->taxonomy ) {
+			$archive = function_exists( 'pk_properties_archive_url' ) ? pk_properties_archive_url() : home_url( '/' );
+			return add_query_arg( 'location', sanitize_title( (string) $term->slug ), $archive );
+		}
+		$link = get_term_link( $term );
+		if ( is_wp_error( $link ) || ! is_string( $link ) ) {
 				return $fallback ? $fallback : ( function_exists( 'pk_localized_home_url' ) ? pk_localized_home_url() : home_url( '/' ) );
-			}
+		}
 
-			// Estatik renvoie parfois une taxonomie sans le préfixe Polylang.
-			// Reprendre le terme traduit puis préfixer explicitement le chemin
-			// garantit que le crawl reste dans la langue de la page courante.
-			if ( function_exists( 'pll_current_language' ) && function_exists( 'pll_home_url' ) ) {
-				$language = sanitize_key( (string) pll_current_language( 'slug' ) );
-				if ( $language ) {
-					$term_id = is_object( $term ) && isset( $term->term_id ) ? (int) $term->term_id : 0;
-					if ( $term_id && function_exists( 'pll_get_term' ) ) {
-						$translated_id = (int) pll_get_term( $term_id, $language );
-						if ( $translated_id ) {
-							$translated_link = get_term_link( $translated_id, is_object( $term ) ? $term->taxonomy : '' );
-							if ( ! is_wp_error( $translated_link ) && is_string( $translated_link ) ) {
-								$link = $translated_link;
-							}
+				// Estatik renvoie parfois une taxonomie sans le préfixe Polylang.
+				// Reprendre le terme traduit puis préfixer explicitement le chemin
+				// garantit que le crawl reste dans la langue de la page courante.
+		if ( function_exists( 'pll_current_language' ) && function_exists( 'pll_home_url' ) ) {
+			$language = sanitize_key( (string) pll_current_language( 'slug' ) );
+			if ( $language ) {
+				$term_id = is_object( $term ) && isset( $term->term_id ) ? (int) $term->term_id : 0;
+				if ( $term_id && function_exists( 'pll_get_term' ) ) {
+					$translated_id = (int) pll_get_term( $term_id, $language );
+					if ( $translated_id ) {
+						$translated_link = get_term_link( $translated_id, is_object( $term ) ? $term->taxonomy : '' );
+						if ( ! is_wp_error( $translated_link ) && is_string( $translated_link ) ) {
+							$link = $translated_link;
 						}
 					}
-					$path = (string) wp_parse_url( $link, PHP_URL_PATH );
-					if ( ! preg_match( '#^/' . preg_quote( $language, '#' ) . '(?:/|$)#', $path ) ) {
-						$link = pk_localized_home_url( $language ) . ltrim( $path, '/' );
-					}
+				}
+				$path = (string) wp_parse_url( $link, PHP_URL_PATH );
+				if ( ! preg_match( '#^/' . preg_quote( $language, '#' ) . '(?:/|$)#', $path ) ) {
+					$link = pk_localized_home_url( $language ) . ltrim( $path, '/' );
 				}
 			}
-
-			return $link;
 		}
+
+				return $link;
+	}
 }
 
 /**
@@ -153,7 +153,7 @@ if ( ! function_exists( 'pk_price_html' ) ) {
  */
 if ( ! function_exists( 'pk_type_icon' ) ) {
 	function pk_type_icon( $slug = '' ) {
-		$slug = sanitize_title( (string) $slug );
+		$slug  = sanitize_title( (string) $slug );
 		$paths = array(
 			'appartement' => '<path d="M4 21V5a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v16"/><path d="M15 21V9h4a1 1 0 0 1 1 1v11"/><path d="M2 21h20"/><path d="M7 8h2M7 12h2M7 16h2"/>',
 			'maison'      => '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/>',
@@ -165,7 +165,7 @@ if ( ! function_exists( 'pk_type_icon' ) ) {
 			'loft'        => '<path d="M3 21V8l9-5 9 5v13"/><path d="M3 12h18M9 21V12M15 21V12"/>',
 			'studio'      => '<rect x="3" y="5" width="18" height="14" rx="1"/><path d="M3 15h18"/><path d="M7 15V9h4v6"/>',
 		);
-		$d = isset( $paths[ $slug ] ) ? $paths[ $slug ] : $paths['maison'];
+		$d     = isset( $paths[ $slug ] ) ? $paths[ $slug ] : $paths['maison'];
 		return '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' . $d . '</svg>';
 	}
 }

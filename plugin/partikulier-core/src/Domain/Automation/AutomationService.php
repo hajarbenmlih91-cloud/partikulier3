@@ -42,83 +42,83 @@ namespace Partikulier\Core\Domain\Automation;
 
 final class AutomationService
 {
-    /** Réglages n8n (option sérialisée). */
-    public const SETTINGS_OPTION = 'pk_n8n_settings';
-    private const MIGRATION_OPTION = '_pk_n8n_settings_migration_state';
-    private const MIGRATED_AT_OPTION = '_pk_n8n_settings_migrated_at';
+	/** Réglages n8n (option sérialisée). */
+	public const SETTINGS_OPTION     = 'pk_n8n_settings';
+	private const MIGRATION_OPTION   = '_pk_n8n_settings_migration_state';
+	private const MIGRATED_AT_OPTION = '_pk_n8n_settings_migrated_at';
 
-    /** Option historique du thème (Partikulier_Settings::OPTION) — lue par nom littéral, sans dépendance de classe. */
-    private const LEGACY_SETTINGS_OPTION = 'pk_theme_options';
+	/** Option historique du thème (Partikulier_Settings::OPTION) — lue par nom littéral, sans dépendance de classe. */
+	private const LEGACY_SETTINGS_OPTION = 'pk_theme_options';
 
-    public const MAX_FAILURES_PER_HOUR = 100;
+	public const MAX_FAILURES_PER_HOUR = 100;
 
-    /** Clés migrées depuis les options historiques du thème. */
-    private const MIGRATED_KEYS = ['n8n_webhook_url', 'automation_api_secret', 'hmac_mode', 'consent_text', 'channel_url', 'quota_per_day'];
+	/** Clés migrées depuis les options historiques du thème. */
+	private const MIGRATED_KEYS = ['n8n_webhook_url', 'automation_api_secret', 'hmac_mode', 'consent_text', 'channel_url', 'quota_per_day'];
 
-    /* Lot D (CDC v1.2 annexe C, arbitrage « Référence + plugin ») :
-     * méthodes déplacées VERBATIM dans des traits composés par la
-     * présente classe shell — API publique, hooks et constants inchangés. */
-    use AutomationPolicyTrait;
-    use AutomationHmacTrait;
+	/* Lot D (CDC v1.2 annexe C, arbitrage « Référence + plugin ») :
+	 * méthodes déplacées VERBATIM dans des traits composés par la
+	 * présente classe shell — API publique, hooks et constants inchangés. */
+	use AutomationPolicyTrait;
+	use AutomationHmacTrait;
 
-    /* ------------------------------------------------------------------ */
-    /* Pont entrant (accusés d'événements normalisés n8n)                 */
-    /* ------------------------------------------------------------------ */
+	/* ------------------------------------------------------------------ */
+	/* Pont entrant (accusés d'événements normalisés n8n)                 */
+	/* ------------------------------------------------------------------ */
 
-    /**
-     * Journalise de manière idempotente un accusé d'événement. Le payload
-     * est haché et n'est pas persisté : les numéros, messages et autres
-     * données personnelles restent dans les modules métier minimisés.
-     */
-    public static function receive_event(\WP_REST_Request $request)
-    {
-        $event_id = substr(sanitize_text_field((string) $request->get_param('event_id')), 0, 191);
-        $event_type = sanitize_key((string) $request->get_param('event_type'));
-        $source = sanitize_key((string) $request->get_param('source'));
-        $payload = $request->get_param('payload');
-        $allowed_types = ['whatsapp_inbound', 'whatsapp_status', 'payment_status'];
-        $prefix = 'n8n' === $source ? 'n8n-' : ('payment_provider' === $source ? 'pay-' : '');
-        if (!$event_id || !$prefix || 0 !== strpos($event_id, $prefix) || strlen($event_id) > 191 || !in_array($event_type, $allowed_types, true) || !in_array($source, ['n8n', 'payment_provider'], true)) {
-            return new \WP_Error('pk_automation_payload', __('Événement d’automatisation invalide.', 'partikulier'), ['status' => 400]);
-        }
+	/**
+	 * Journalise de manière idempotente un accusé d'événement. Le payload
+	 * est haché et n'est pas persisté : les numéros, messages et autres
+	 * données personnelles restent dans les modules métier minimisés.
+	 */
+	public static function receive_event( \WP_REST_Request $request )
+	{
+		$event_id      = substr(sanitize_text_field( (string) $request->get_param('event_id')), 0, 191);
+		$event_type    = sanitize_key( (string) $request->get_param('event_type'));
+		$source        = sanitize_key( (string) $request->get_param('source'));
+		$payload       = $request->get_param('payload');
+		$allowed_types = ['whatsapp_inbound', 'whatsapp_status', 'payment_status'];
+		$prefix        = 'n8n' === $source ? 'n8n-' : ( 'payment_provider' === $source ? 'pay-' : '' );
+		if ( ! $event_id || ! $prefix || 0 !== strpos($event_id, $prefix) || strlen($event_id) > 191 || ! in_array($event_type, $allowed_types, true) || ! in_array($source, ['n8n', 'payment_provider'], true) ) {
+			return new \WP_Error('pk_automation_payload', __('Événement d’automatisation invalide.', 'partikulier'), ['status' => 400]);
+		}
 
-        global $wpdb;
-        $table = self::events_table();
-        $encoded_payload = wp_json_encode(is_array($payload) || is_object($payload) ? $payload : ['value' => (string) $payload]);
-        $stored = $wpdb->insert(
-            $table,
-            [
-                'event_id' => $event_id,
-                'event_type' => $event_type,
-                'source' => $source,
-                'payload_hash' => hash_hmac('sha256', (string) $encoded_payload, wp_salt('auth')),
-                'status' => 'received',
-                'received_at' => current_time('mysql', true),
-            ],
-            ['%s', '%s', '%s', '%s', '%s', '%s']
-        );
-        if (false === $stored) {
-            $error = strtolower((string) $wpdb->last_error);
-            if (false !== strpos($error, 'duplicate') || false !== strpos($error, 'unique')) {
-                self::audit()->record('automation_event_duplicate', 'automation', null, ['event_id' => $event_id, 'event_type' => $event_type, 'source' => $source]);
-                return new \WP_REST_Response(['accepted' => true, 'duplicate' => true, 'processing' => 'disabled'], 200);
-            }
-            return new \WP_Error('pk_automation_storage', __('Impossible de journaliser l’événement.', 'partikulier'), ['status' => 500]);
-        }
-        self::audit()->record('automation_event_received', 'automation', null, ['event_id' => $event_id, 'event_type' => $event_type, 'source' => $source]);
-        return new \WP_REST_Response(['accepted' => true, 'duplicate' => false, 'processing' => 'disabled'], 200);
-    }
+		global $wpdb;
+		$table           = self::events_table();
+		$encoded_payload = wp_json_encode(is_array($payload) || is_object($payload) ? $payload : ['value' => (string) $payload]);
+		$stored          = $wpdb->insert(
+			$table,
+			[
+				'event_id'     => $event_id,
+				'event_type'   => $event_type,
+				'source'       => $source,
+				'payload_hash' => hash_hmac('sha256', (string) $encoded_payload, wp_salt('auth')),
+				'status'       => 'received',
+				'received_at'  => current_time('mysql', true),
+			],
+			['%s', '%s', '%s', '%s', '%s', '%s']
+		);
+		if ( false === $stored ) {
+			$error = strtolower( (string) $wpdb->last_error);
+			if ( false !== strpos($error, 'duplicate') || false !== strpos($error, 'unique') ) {
+				self::audit()->record('automation_event_duplicate', 'automation', null, ['event_id' => $event_id, 'event_type' => $event_type, 'source' => $source]);
+				return new \WP_REST_Response(['accepted' => true, 'duplicate' => true, 'processing' => 'disabled'], 200);
+			}
+			return new \WP_Error('pk_automation_storage', __('Impossible de journaliser l’événement.', 'partikulier'), ['status' => 500]);
+		}
+		self::audit()->record('automation_event_received', 'automation', null, ['event_id' => $event_id, 'event_type' => $event_type, 'source' => $source]);
+		return new \WP_REST_Response(['accepted' => true, 'duplicate' => false, 'processing' => 'disabled'], 200);
+	}
 
-    /** Adaptateur statique pour le callback RouteRegistry (owner plugin). */
-    public static function rest_receive_event(\WP_REST_Request $request)
-    {
-        return self::receive_event($request);
-    }
+	/** Adaptateur statique pour le callback RouteRegistry (owner plugin). */
+	public static function rest_receive_event( \WP_REST_Request $request )
+	{
+		return self::receive_event($request);
+	}
 
-    /** Registre d'audit : require déterministe (incident B1 — page publique). */
-    private static function audit(): \Partikulier\Core\AuditLogger
-    {
-        require_once __DIR__ . '/../../AuditLogger.php';
-        return new \Partikulier\Core\AuditLogger();
-    }
+	/** Registre d'audit : require déterministe (incident B1 — page publique). */
+	private static function audit(): \Partikulier\Core\AuditLogger
+	{
+		require_once __DIR__ . '/../../AuditLogger.php';
+		return new \Partikulier\Core\AuditLogger();
+	}
 }

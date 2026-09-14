@@ -53,16 +53,16 @@ class Partikulier_Security {
 	 * En-têtes défensifs compatibles avec les ressources actuelles du thème.
 	 * HSTS est envoyé seulement derrière HTTPS afin de rester sûr en sandbox.
 	 */
-		public static function send_public_headers() {
-			if ( is_admin() ) {
-				return;
-			}
-			$path = isset( $_SERVER['REQUEST_URI'] ) ? wp_parse_url( wp_unslash( $_SERVER['REQUEST_URI'] ), PHP_URL_PATH ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- wp_parse_url + comparaison (SE-020)
-			$is_root = '/' === trailingslashit( (string) $path );
-			if ( $is_root ) {
-				header( 'Cache-Control: private, no-store, max-age=0' );
-				header( 'Vary: Accept-Language, Cookie', false );
-			}
+	public static function send_public_headers() {
+		if ( is_admin() ) {
+			return;
+		}
+		$path    = isset( $_SERVER['REQUEST_URI'] ) ? wp_parse_url( wp_unslash( $_SERVER['REQUEST_URI'] ), PHP_URL_PATH ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- wp_parse_url + comparaison (SE-020)
+		$is_root = '/' === trailingslashit( (string) $path );
+		if ( $is_root ) {
+			header( 'Cache-Control: private, no-store, max-age=0' );
+			header( 'Vary: Accept-Language, Cookie', false );
+		}
 		header( 'X-Content-Type-Options: nosniff' );
 		header( 'X-Frame-Options: SAMEORIGIN' );
 		header( 'Referrer-Policy: strict-origin-when-cross-origin' );
@@ -81,8 +81,8 @@ class Partikulier_Security {
 		if ( current_user_can( 'manage_options' ) ) {
 			return true;
 		}
-		$ip = isset( $_SERVER['REMOTE_ADDR'] ) ? (string) wp_unslash( $_SERVER['REMOTE_ADDR'] ) : 'unknown'; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- haché (hash_hmac) en clef de transient, jamais émis (SE-020)
-		$key = 'pk_listing_rate_' . hash_hmac( 'sha256', $ip, wp_salt( 'nonce' ) );
+		$ip    = isset( $_SERVER['REMOTE_ADDR'] ) ? (string) wp_unslash( $_SERVER['REMOTE_ADDR'] ) : 'unknown'; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- haché (hash_hmac) en clef de transient, jamais émis (SE-020)
+		$key   = 'pk_listing_rate_' . hash_hmac( 'sha256', $ip, wp_salt( 'nonce' ) );
 		$limit = max( 1, (int) apply_filters( 'partikulier_listing_submission_limit', 5 ) );
 		$count = (int) get_transient( $key );
 		if ( $count >= $limit ) {

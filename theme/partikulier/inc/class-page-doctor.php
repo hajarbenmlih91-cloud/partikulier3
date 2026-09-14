@@ -42,17 +42,17 @@ class Partikulier_Page_Doctor {
 	 */
 	public static function known_pages() {
 		return array(
-			'accueil' => array(
+			'accueil'      => array(
 				'label' => __( 'Accueil', 'partikulier' ),
 				'url'   => home_url( '/' ),
 				'type'  => 'front',
 			),
-			'annonces' => array(
+			'annonces'     => array(
 				'label' => __( 'Toutes les annonces', 'partikulier' ),
 				'url'   => get_post_type_archive_link( PARTIKULIER_ESTATIK_POST_TYPE ),
 				'type'  => 'archive',
 			),
-			'deposer' => array(
+			'deposer'      => array(
 				'label'    => __( 'Déposer une annonce', 'partikulier' ),
 				'slugs'    => array( 'deposer-une-annonce', 'deposer-annonce', 'deposer', 'publier-une-annonce' ),
 				'template' => 'templates/page-deposer-annonce.php',
@@ -64,13 +64,13 @@ class Partikulier_Page_Doctor {
 				'template' => 'templates/page-mes-annonces.php',
 				'type'     => 'page',
 			),
-			'favoris' => array(
+			'favoris'      => array(
 				'label'    => __( 'Favoris', 'partikulier' ),
 				'slugs'    => array( 'favoris', 'mes-favoris' ),
 				'template' => 'templates/page-favoris.php',
 				'type'     => 'page',
 			),
-			'annonce' => array(
+			'annonce'      => array(
 				'label' => __( 'Fiche annonce (la plus récente)', 'partikulier' ),
 				'type'  => 'single',
 			),
@@ -103,7 +103,7 @@ class Partikulier_Page_Doctor {
 					's'              => $query,
 					'lang'           => '',
 				) );
-				$page = $found ? $found[0] : null;
+				$page  = $found ? $found[0] : null;
 			}
 			if ( ! $page ) {
 				return array(
@@ -215,8 +215,8 @@ class Partikulier_Page_Doctor {
 		// Cas particulier du depot : la validation WhatsApp est bloquante.
 		if ( 'templates/page-deposer-annonce.php' === $info['template'] ) {
 			/* La notice nomme le champ lu et la valeur trouvee : « absent » ne doit plus
-			   pouvoir vouloir dire « present, mais lu au mauvais endroit ».
-			   (C etait le cas : le Personnalisateur ecrivait dans loption pk_opts.) */
+				pouvoir vouloir dire « present, mais lu au mauvais endroit ».
+				(C etait le cas : le Personnalisateur ecrivait dans loption pk_opts.) */
 			$pk_brut     = Partikulier_Settings::get( 'whatsapp_validation_number' );
 			$pk_chiffres = preg_replace( '/[^0-9]/', '', (string) $pk_brut );
 			$pk_trace    = Partikulier_Settings::has_legacy( 'whatsapp_validation_number' )

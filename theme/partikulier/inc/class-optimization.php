@@ -139,8 +139,8 @@ class Partikulier_Optimization {
 		}
 		// Ne jamais toucher aux <pre>, <textarea>, <script>, <style>.
 		$protected = array();
-		$html = preg_replace_callback( '#(<pre.*?</pre>|<textarea.*?</textarea>|<script.*?</script>|<style.*?</style>)#is', function ( $m ) use ( &$protected ) {
-			$key = "\x00PK" . count( $protected ) . "\x00";
+		$html      = preg_replace_callback( '#(<pre.*?</pre>|<textarea.*?</textarea>|<script.*?</script>|<style.*?</style>)#is', function ( $m ) use ( &$protected ) {
+			$key               = "\x00PK" . count( $protected ) . "\x00";
 			$protected[ $key ] = $m[0];
 			return $key;
 		}, $html );

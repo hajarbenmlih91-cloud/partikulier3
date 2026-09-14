@@ -54,8 +54,8 @@ class Partikulier_Sitemap {
 	}
 
 	public static function robots_filter( $output, $public ) {
-		$output = preg_replace( '/^Sitemap:\s*.*$/mi', '', (string) $output );
-		$output = rtrim( $output ) . "\n";
+		$output  = preg_replace( '/^Sitemap:\s*.*$/mi', '', (string) $output );
+		$output  = rtrim( $output ) . "\n";
 		$output .= "Disallow: /?s=\n";
 		$output .= "Disallow: /search/\n";
 		$output .= "Sitemap: " . home_url( '/sitemap.xml' ) . "\n";
@@ -94,14 +94,14 @@ class Partikulier_Sitemap {
 		$urls[] = array( 'loc' => $home, 'lastmod' => mysql2date( 'Y-m-d', get_lastpostmodified( 'gmt' ) ), 'priority' => '1.0', 'changefreq' => 'hourly' );
 
 		// --- Pages publiques ---
-		$pages = get_posts( array(
-			'post_type'      => 'page',
-			'post_status'    => 'publish',
-			'numberposts'    => -1,
-			'no_found_rows'  => true,
+		$pages          = get_posts( array(
+			'post_type'     => 'page',
+			'post_status'   => 'publish',
+			'numberposts'   => -1,
+			'no_found_rows' => true,
 		) );
 		$excluded_pages = array( 'deposer', 'deposer-en', 'deposer-ar', 'deposer-une-annonce', 'deposer-annonce', 'mes-annonces', 'mes-annonces-en', 'mes-annonces-ar', 'favoris', 'favoris-en', 'favoris-ar', 'connexion', 'connexion-en', 'connexion-ar', 'annonces', 'catalogue' );
-		$seen_pages = array();
+		$seen_pages     = array();
 		foreach ( $pages as $p ) {
 			if ( in_array( $p->post_name, $excluded_pages, true ) ) {
 				continue;
@@ -117,7 +117,7 @@ class Partikulier_Sitemap {
 					continue;
 				}
 				$seen_pages[ $link ] = true;
-				$urls[] = array(
+				$urls[]              = array(
 					'loc'        => $link,
 					'lastmod'    => mysql2date( 'Y-m-d', $translated->post_modified_gmt ),
 					'priority'   => '0.8',
@@ -169,7 +169,7 @@ class Partikulier_Sitemap {
 					if ( ! is_wp_error( $link ) ) {
 						$urls[] = array(
 							'loc'        => $link,
-						'lastmod'    => mysql2date( 'Y-m-d', get_lastpostmodified( 'gmt', PARTIKULIER_ESTATIK_POST_TYPE ) ),
+						'lastmod'        => mysql2date( 'Y-m-d', get_lastpostmodified( 'gmt', PARTIKULIER_ESTATIK_POST_TYPE ) ),
 							'priority'   => $p[0],
 							'changefreq' => $p[1],
 						);

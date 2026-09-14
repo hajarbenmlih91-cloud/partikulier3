@@ -34,24 +34,24 @@ use Partikulier\Core\AuditLogger;
 
 final class ListingSynchronizer
 {
-    public const POST_TYPE = 'properties';
-    public const EXTERNAL_PREFIX = 'estatik:';
-    public const MAX_WRITES_PER_MINUTE = 60;
-    private const STATS_OPTION = 'partikulier_core_sync_stats';
+	public const POST_TYPE             = 'properties';
+	public const EXTERNAL_PREFIX       = 'estatik:';
+	public const MAX_WRITES_PER_MINUTE = 60;
+	private const STATS_OPTION         = 'partikulier_core_sync_stats';
 
-    /** @var array<int, true> */
-    private static array $upsertQueue = [];
+	/** @var array<int, true> */
+	private static array $upsertQueue = [];
 
-    /** @var array<int, true> */
-    private static array $deleteQueue = [];
+	/** @var array<int, true> */
+	private static array $deleteQueue = [];
 
-    private static bool $registered = false;
-    private static bool $flushing = false;
+	private static bool $registered = false;
+	private static bool $flushing   = false;
 
-    /* Lot D (CDC v1.2 annexe C, arbitrage « Référence + plugin ») :
-     * méthodes déplacées VERBATIM dans des traits composés par la
-     * présente classe shell — API publique, hooks et constants inchangés. */
-    use SynchronizerHooksTrait;
-    use SynchronizerProjectionTrait;
-    use SynchronizerMaintenanceTrait;
+	/* Lot D (CDC v1.2 annexe C, arbitrage « Référence + plugin ») :
+	 * méthodes déplacées VERBATIM dans des traits composés par la
+	 * présente classe shell — API publique, hooks et constants inchangés. */
+	use SynchronizerHooksTrait;
+	use SynchronizerProjectionTrait;
+	use SynchronizerMaintenanceTrait;
 }

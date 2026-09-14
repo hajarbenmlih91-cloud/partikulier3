@@ -25,18 +25,18 @@ class Partikulier_Settings {
 	 */
 	public static function fields() {
 		return array(
-			'general' => array(
-				'label' => 'Textes principaux',
+			'general'      => array(
+				'label'  => 'Textes principaux',
 				'fields' => array(
 					'site_tagline' => array(
 						'label'   => 'Phrase d\'accroche du hero (accueil)',
 						'default' => 'Vendez et louez entre particuliers.',
 					),
-					'site_intro' => array(
+					'site_intro'   => array(
 						'label'   => 'Description du hero (accueil)',
 						'default' => 'Déposez votre annonce immobilière gratuitement, sans commission, sans intermédiaire. Directement aux acheteurs et locataires.',
 					),
-					'btn_deposit' => array(
+					'btn_deposit'  => array(
 						'label'   => 'Bouton du hero « Déposer une annonce »',
 						'default' => 'Publier gratuitement',
 					),
@@ -44,14 +44,14 @@ class Partikulier_Settings {
 						'label'   => 'Bouton du hero « Voir les annonces »',
 						'default' => 'Chercher par ville',
 					),
-					'topbar_text' => array(
+					'topbar_text'  => array(
 						'label'   => 'Texte du bandeau du haut (topbar)',
 						'default' => 'Annonces 100% gratuites — Publiez en 2 minutes sans commission',
 					),
 				),
 			),
-			'services' => array(
-				'label' => 'Bande des 4 services (accueil)',
+			'services'     => array(
+				'label'  => 'Bande des 4 services (accueil)',
 				'fields' => array(
 					'service1_name' => array(
 						'label'   => 'Service 1 — titre',
@@ -87,18 +87,18 @@ class Partikulier_Settings {
 					),
 				),
 			),
-			'sections' => array(
-				'label' => 'Titres des sections (accueil)',
+			'sections'     => array(
+				'label'  => 'Titres des sections (accueil)',
 				'fields' => array(
-					'section_types_kicker' => array(
+					'section_types_kicker'  => array(
 						'label'   => 'Types de biens — petit titre au-dessus',
 						'default' => 'Trouvez votre bien',
 					),
-					'section_types_title' => array(
+					'section_types_title'   => array(
 						'label'   => 'Types de biens — titre',
 						'default' => 'Types de biens',
 					),
-					'section_types_desc' => array(
+					'section_types_desc'    => array(
 						'label'   => 'Types de biens — description',
 						'default' => 'Explorez les annonces par catégorie de bien immobilier.',
 					),
@@ -106,67 +106,67 @@ class Partikulier_Settings {
 						'label'   => 'Dernières annonces — petit titre au-dessus',
 						'default' => 'Fraîchement publiées',
 					),
-					'section_recent_title' => array(
+					'section_recent_title'  => array(
 						'label'   => 'Dernières annonces — titre',
 						'default' => 'Dernières annonces',
 					),
-					'section_recent_desc' => array(
+					'section_recent_desc'   => array(
 						'label'   => 'Dernières annonces — description',
 						'default' => 'Les annonces immobilières les plus récentes de tous les particuliers.',
 					),
-					'section_cities_title' => array(
+					'section_cities_title'  => array(
 						'label'   => 'Villes populaires — titre',
 						'default' => 'Villes populaires',
 					),
-					'section_cities_desc' => array(
+					'section_cities_desc'   => array(
 						'label'   => 'Villes populaires — description',
 						'default' => 'Découvrez les annonces des villes les plus actives.',
 					),
 				),
 			),
 			'verification' => array(
-				'label' => 'Validation WhatsApp',
+				'label'  => 'Validation WhatsApp',
 				'fields' => array(
 					'whatsapp_validation_number' => array(
 						'label'   => 'Numéro WhatsApp de validation (format international, sans espaces)',
 						'default' => '',
 					),
-					'whatsapp_message' => array(
+					'whatsapp_message'           => array(
 						'label'   => 'Message WhatsApp prérempli — balises : {code} {titre} {ville} {prix} {lien} {nom}',
 						'default' => 'Bonjour, je souhaite valider ma demande de publication Partikulier. Mon code est : {code}',
 						'type'    => 'textarea',
 					),
-					'buyer_whatsapp_number' => array(
+					'buyer_whatsapp_number'      => array(
 						'label'   => 'Numéro WhatsApp Business des demandes acquéreurs (format international, sans espaces)',
 						'default' => '',
 					),
-					'n8n_webhook_url' => array(
+					'n8n_webhook_url'            => array(
 						'label'   => 'URL du webhook n8n (recoit les annonces validees)',
 						'default' => '',
 					),
-					'automation_api_secret' => array(
+					'automation_api_secret'      => array(
 						'label'   => 'Secret API n8n / WhatsApp Business (ne jamais partager)',
 						'default' => '',
 						'type'    => 'password',
 					),
 				),
 			),
-			'footer' => array(
-				'label' => 'Pied de page',
+			'footer'       => array(
+				'label'  => 'Pied de page',
 				'fields' => array(
 					'footer_about_text' => array(
 						'label'   => 'Colonne « À propos » — texte',
 						'default' => 'Portail immobilier 100% gratuit entre particuliers. Publiez votre annonce sans commission ni intermédiaire.',
 					),
-					'footer_cta_title' => array(
+					'footer_cta_title'  => array(
 						'label'   => 'Bandeau d\'appel à l\'action — titre',
 						'default' => 'Votre bien mérite d\'être vu',
 					),
-					'footer_cta_text' => array(
+					'footer_cta_text'   => array(
 						'label'   => 'Bandeau d\'appel à l\'action — texte',
 						'default' => 'Déposez votre annonce en 2 minutes, sans inscription préalable.',
 					),
-					'footer_cta_btn' => array(
+					'footer_cta_btn'    => array(
 						'label'   => 'Bandeau d\'appel à l\'action — bouton',
 						'default' => 'Déposer mon annonce',
 					),
@@ -215,11 +215,11 @@ class Partikulier_Settings {
 		$opts      = get_option( self::OPTION, array() );
 		$localized = is_array( $opts ) && isset( $opts['localized'] ) && is_array( $opts['localized'] ) ? $opts['localized'] : array();
 		$current   = self::current_language();
-		$default = 'fr';
+		$default   = 'fr';
 		if ( function_exists( 'pll_default_language' ) ) {
 			try {
 				$polylang_default = (string) pll_default_language( 'slug' );
-				$default = isset( self::editorial_languages()[ $polylang_default ] ) ? $polylang_default : 'fr';
+				$default          = isset( self::editorial_languages()[ $polylang_default ] ) ? $polylang_default : 'fr';
 			} catch ( Throwable $exception ) {
 				// Le français reste le repli sûr si Polylang n’est pas initialisé.
 			}
@@ -232,10 +232,10 @@ class Partikulier_Settings {
 		}
 
 		if ( isset( $opts[ $key ] ) && '' !== (string) $opts[ $key ] ) {
-				$value = (string) $opts[ $key ];
+				$value      = (string) $opts[ $key ];
 				$translated = self::localized_default( $key, $value, $current );
 				return '' !== $translated ? $translated : $value;
-			}
+		}
 		$translated = self::localized_default( $key, $fallback, $current );
 		return '' !== $translated ? $translated : $fallback;
 	}
@@ -245,18 +245,18 @@ class Partikulier_Settings {
 	 * Une valeur localisée enregistrée garde toujours la priorité.
 	 */
 	private static function localized_default( $key, $value, $language ) {
-		$map = array(
-			'site_tagline' => array( 'en' => 'Buy and rent directly from private owners.', 'ar' => 'اشترِ واكترِ مباشرة من المالكين' ),
-			'site_intro' => array( 'en' => 'Post your property for free, with no commission or middleman. Reach buyers and tenants directly.', 'ar' => 'أضف عقارك مجاناً، بدون عمولة أو وسيط. تواصل مباشرة مع المشترين والمستأجرين.' ),
-			'btn_deposit' => array( 'en' => 'Post for free', 'ar' => 'أضف إعلاناً مجاناً' ),
-			'btn_listings' => array( 'en' => 'Search by city', 'ar' => 'ابحث حسب المدينة' ),
-			'topbar_text' => array( 'en' => '100% free listings — Publish in 2 minutes with no commission', 'ar' => 'إعلانات مجانية 100٪ — أضف إعلانك خلال دقيقتين بدون عمولة' ),
-			'service1_name' => array( 'en' => 'Free listings', 'ar' => 'إعلانات مجانية' ), 'service1_desc' => array( 'en' => 'Publish at no cost', 'ar' => 'انشر بدون تكلفة' ),
-			'service2_name' => array( 'en' => 'No commission', 'ar' => 'بدون عمولة' ), 'service2_desc' => array( 'en' => 'No middleman', 'ar' => 'بدون وسيط' ),
-			'service3_name' => array( 'en' => 'Video visits available', 'ar' => 'زيارات عبر الفيديو' ), 'service3_desc' => array( 'en' => 'Visit remotely', 'ar' => 'زر عن بُعد' ),
-			'service4_name' => array( 'en' => 'Online in 2 minutes', 'ar' => 'متاح خلال دقيقتين' ), 'service4_desc' => array( 'en' => 'No registration required', 'ar' => 'بدون تسجيل' ),
-			'section_types_kicker' => array( 'en' => 'Find your property', 'ar' => 'اعثر على عقارك' ), 'section_types_title' => array( 'en' => 'Property types', 'ar' => 'أنواع العقارات' ),
-			'section_types_desc' => array( 'en' => 'Explore listings by property category.', 'ar' => 'استكشف الإعلانات حسب فئة العقار.' ),
+		$map      = array(
+			'site_tagline'          => array( 'en' => 'Buy and rent directly from private owners.', 'ar' => 'اشترِ واكترِ مباشرة من المالكين' ),
+			'site_intro'            => array( 'en' => 'Post your property for free, with no commission or middleman. Reach buyers and tenants directly.', 'ar' => 'أضف عقارك مجاناً، بدون عمولة أو وسيط. تواصل مباشرة مع المشترين والمستأجرين.' ),
+			'btn_deposit'           => array( 'en' => 'Post for free', 'ar' => 'أضف إعلاناً مجاناً' ),
+			'btn_listings'          => array( 'en' => 'Search by city', 'ar' => 'ابحث حسب المدينة' ),
+			'topbar_text'           => array( 'en' => '100% free listings — Publish in 2 minutes with no commission', 'ar' => 'إعلانات مجانية 100٪ — أضف إعلانك خلال دقيقتين بدون عمولة' ),
+			'service1_name'         => array( 'en' => 'Free listings', 'ar' => 'إعلانات مجانية' ), 'service1_desc' => array( 'en' => 'Publish at no cost', 'ar' => 'انشر بدون تكلفة' ),
+			'service2_name'         => array( 'en' => 'No commission', 'ar' => 'بدون عمولة' ), 'service2_desc' => array( 'en' => 'No middleman', 'ar' => 'بدون وسيط' ),
+			'service3_name'         => array( 'en' => 'Video visits available', 'ar' => 'زيارات عبر الفيديو' ), 'service3_desc' => array( 'en' => 'Visit remotely', 'ar' => 'زر عن بُعد' ),
+			'service4_name'         => array( 'en' => 'Online in 2 minutes', 'ar' => 'متاح خلال دقيقتين' ), 'service4_desc' => array( 'en' => 'No registration required', 'ar' => 'بدون تسجيل' ),
+			'section_types_kicker'  => array( 'en' => 'Find your property', 'ar' => 'اعثر على عقارك' ), 'section_types_title' => array( 'en' => 'Property types', 'ar' => 'أنواع العقارات' ),
+			'section_types_desc'    => array( 'en' => 'Explore listings by property category.', 'ar' => 'استكشف الإعلانات حسب فئة العقار.' ),
 			'section_recent_kicker' => array( 'en' => 'Recently published', 'ar' => 'أضيفت حديثاً' ), 'section_recent_title' => array( 'en' => 'Latest listings', 'ar' => 'أحدث الإعلانات' ),
 		);
 		$defaults = array();
@@ -280,16 +280,16 @@ class Partikulier_Settings {
 			$opts = array();
 		}
 		/* Reprise a la lecture : la valeur a pu rester dans loption heritee « pk_opts ».
-		   On lit seulement — la consolidation (deplacer + supprimer) se fait dans
-		   migrate_legacy_pk_opts(), cote admin. Sans ce repli, tout un chacun voyait
-		   « champ vide » alors que le reglage etait fonctionnel. */
+			On lit seulement — la consolidation (deplacer + supprimer) se fait dans
+			migrate_legacy_pk_opts(), cote admin. Sans ce repli, tout un chacun voyait
+			« champ vide » alors que le reglage etait fonctionnel. */
 		if ( ( ! isset( $opts[ $key ] ) || '' === trim( (string) $opts[ $key ] ) ) && self::has_legacy( $key ) ) {
 			$leg = get_option( 'pk_opts', array() );
 			if ( is_array( $leg ) && isset( $leg[ $key ] ) && is_scalar( $leg[ $key ] ) ) {
 				$opts[ $key ] = sanitize_text_field( (string) $leg[ $key ] );
 			}
 		}
-		$value = '';
+		$value        = '';
 		$is_editorial = false;
 		foreach ( self::fields() as $group_key => $group ) {
 			if ( 'verification' !== $group_key && isset( $group['fields'][ $key ] ) ) {
@@ -366,15 +366,15 @@ class Partikulier_Settings {
 					: 'sanitize_text_field';
 
 				/* L'identifiant d'un reglage de type « option » EST le nom de l'option,
-				   suivi de [touche] pour ecrire dans un tableau : WordPress ecrit dans
-				   get_option( id_base ). Avec l'ancien « pk_opts[cle] », les valeurs saisies
-				   dans le Personnalisateur partaient dans une option fantome « pk_opts »
-				   que le theme ne lit jamais (prouve sur WP 7.1 : Settings::get() relisait
-				   '' apres publication, d'ou le voyant « WhatsApp absent » permanent, meme
-				   apres re-saisie). L'argument « option » etait ignore par le coeur.
-				   Partikulier_Settings_Customize_Setting (fichier charge apres celui-ci)
-				   connait en plus loption heritee, pour que le champ affiche la valeur
-				   deja saisie au lieu d'un champ vide. */
+					suivi de [touche] pour ecrire dans un tableau : WordPress ecrit dans
+					get_option( id_base ). Avec l'ancien « pk_opts[cle] », les valeurs saisies
+					dans le Personnalisateur partaient dans une option fantome « pk_opts »
+					que le theme ne lit jamais (prouve sur WP 7.1 : Settings::get() relisait
+					'' apres publication, d'ou le voyant « WhatsApp absent » permanent, meme
+					apres re-saisie). L'argument « option » etait ignore par le coeur.
+					Partikulier_Settings_Customize_Setting (fichier charge apres celui-ci)
+					connait en plus loption heritee, pour que le champ affiche la valeur
+					deja saisie au lieu d'un champ vide. */
 				$classe = class_exists( 'Partikulier_Settings_Customize_Setting' ) ? 'Partikulier_Settings_Customize_Setting' : 'WP_Customize_Setting';
 				$wp_customize->add_setting( new $classe(
 					$wp_customize,
@@ -387,10 +387,10 @@ class Partikulier_Settings {
 					)
 				) );
 				$wp_customize->add_control( 'pk_opts_' . $field_key, array(
-					'label'   => $field['label'],
-					'section' => 'pk_' . $group_key,
+					'label'    => $field['label'],
+					'section'  => 'pk_' . $group_key,
 					'settings' => self::OPTION . '[' . $field_key . ']',
-						'type'    => isset( $field['type'] ) ? $field['type'] : 'text',
+						'type' => isset( $field['type'] ) ? $field['type'] : 'text',
 					) );
 			}
 		}
@@ -427,7 +427,7 @@ class Partikulier_Settings {
 		if ( $fait ) {
 			return;
 		}
-		$fait = true;
+		$fait   = true;
 		$legacy = get_option( 'pk_opts', array() );
 		if ( ! is_array( $legacy ) || ! $legacy || ! current_user_can( 'manage_options' ) ) {
 			return;
