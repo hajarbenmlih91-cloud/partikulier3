@@ -1,0 +1,4 @@
+# SE-019 — passe phpcbf style-only (117 fichiers, +18788/-18788, diff -w vide).
+# Ce commit est ignoré par git blame pour préserver l'archéologie du code
+# (cf. .git-blame-ignore-revs de git documenté dans git config blame.ignoreRevsFile).
+53e2df5fb21117937c205fccdad07a04837acadf
