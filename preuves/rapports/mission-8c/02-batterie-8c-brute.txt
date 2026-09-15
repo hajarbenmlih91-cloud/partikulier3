@@ -1,0 +1,83 @@
+================================================================
+BATTERIE 8C — EXECUTION BRUTE — 2026-09-15 03:07 UTC
+Banc : WP 7.1 / PHP 8.4.24 / wp server (wp-cli) / MariaDB recréée vide
+Plugins actifs : partikulier-core 2.10.6 (zip publié), estatik 4.3.5, polylang 3.8.9
+Thème actif : partikulier 6.20.5 (zip publié) — theme-check INACTIF
+================================================================
+
+=== ÉTAPE 0 — EMPREINTES DES ASSETS TÉLÉCHARGÉS DEPUIS LA RELEASE ===
+03-A-INSTALLER-THEME-partikulier-6.20.5.zip: OK
+04-B-INSTALLER-PLUGIN-partikulier-core-2.10.6.zip: OK
+1119448 octets  /home/user/.release/train2/03-A-INSTALLER-THEME-partikulier-6.20.5.zip
+163273 octets  /home/user/.release/train2/04-B-INSTALLER-PLUGIN-partikulier-core-2.10.6.zip
+
+=== ÉTAPE 4 — HEALTH COMPLET ===
+status=ok database=ready core_version=2.10.6 schema_version=2.6.0
+routes: namespace=partikulier/v1 collisions=0
+domaines (8): ['alerts', 'automation', 'leads', 'listings', 'owner_stats', 'payments', 'premium', 'translation_variants'] == attendu: True
+owner plugin partout: True
+tables toutes true (20): True
+integrity: orphans=0 missing=0 served=3 live_posts=3
+
+=== ÉTAPE 5 — 6 PAGES FRONT ===
+page               code   octets  title / remarques
+/                   200    54153  Partikulier Sandbox
+/annonces/          200    55799  Annonces – Partikulier Sandbox
+/en/annonces/       200    52437  Listings – Partikulier Sandbox | lang=en-US
+/ar/annonces/       200    50589  الإعلانات – Partikulier Sandbox | dir=rtl OK ; lang=ar
+/contact/           200    38813  Contactez-nous – Partikulier Sandbox
+sitemap.xml → HTTP 200 (1004 o)
+
+=== ÉTAPE 6 — FICHE ANNONCE (JSON-LD + HREFLANG) ===
+fiche /property/riad-renove... → HTTP 200 (46093 o)
+JSON-LD RealEstateListing: PRESENT (name=Riad rénové avec patio — Marrakech Médina, price=450000 MAD)
+hreflang: <link rel="alternate" href="http://localhost:8080/property/riad-renove-avec-patio-marrakech-medina/" hreflang="fr" />
+hreflang: <link rel="alternate" href="http://localhost:8080/en/property/renovated-riad-with-patio-marrakech-medina/" hreflang="en" />
+hreflang: <link rel="alternate" hreflang="x-default" href="http://localhost:8080/property/riad-renove-avec-patio-marrakech-medina/">
+erreurs PHP dans le rendu: aucune
+fiche EN /en/property/renovated-riad... → 200
+
+=== ÉTAPE 7 — SMOKES DYNAMIQUES ===
+2 résultat(s) : Villa moderne avec piscine — Casablanca Calif | Riad rénové avec patio — Marrakech Médina
+2 annonces fr
+
+--- favori : POST /favorites anonyme → doit être refusé proprement ---
+{"code":"rest_forbidden","message":"D\u00e9sol\u00e9, vous n\u2019avez pas l\u2019autorisation de faire cela.","data":{"status":401}}
+--- favori : POST /favorites avec session authentifiée (admin) ---
+{"code":"rest_cookie_invalid_nonce","message":"La v\u00e9rification du cookie a \u00e9chou\u00e9","data":{"status":403}}
+{"code":"rest_cookie_invalid_nonce","message":"La v\u00e9rification du cookie a \u00e9chou\u00e9","data":{"status":403}}
+lignes pk_property_saves : 0
+
+=== ÉTAPE 8 — HYGIÈNE ===
+--- favori (reprise) : nonce extrait de la session web ---
+wp-admin connecté → 200
+nonce session : introuvable
+{"code":"rest_forbidden","message":"D\u00e9sol\u00e9, vous n\u2019avez pas l\u2019autorisation de faire cela.","data":{"status":401}}
+{"code":"rest_forbidden","message":"D\u00e9sol\u00e9, vous n\u2019avez pas l\u2019autorisation de faire cela.","data":{"status":401}}
+lignes pk_property_saves : 0
+
+=== ÉTAPE 8 — HYGIÈNE ===
+debug.log : absent (WP_DEBUG off)
+erreurs PHP log serveur : 1
+--- assets de l'accueil : codes HTTP ---
+  200  /wp-content/themes/partikulier/assets/js/main.js?ver=6.20.5
+assets front référencés : 1 ; en erreur : 0
+versions servies :
+  plugin : 2.10.6
+  thème  : 6.20.5
+
+--- favori ANONYME (protocole réel du bouton front : pk_sync_favorite) ---
+save    → HTTP 200 {"success":true,"data":{"saved":true}}
+remove  → HTTP 200 {"success":true,"data":{"saved":false}}
+re-save → HTTP 200 {"success":true,"data":{"saved":true}}
+DB wp_pk_property_saves : 1 ligne (property_id=12, visitor_hash=sha256 du visitor_id, pas d'ID brut)
+NOTE : la route REST /favorites (guardPrivate) exige is_user_logged_in() → 401 structurée en anonyme ;
+       le bouton front anonyme passe par admin-ajax pk_sync_favorite + nonce public + visitor_id.
+       Le test authentifié REST n'a pas abouti (mécanique cookie/nonce du banc wp-cli) → omission documentée.
+
+=== ÉTAPE 8 — HYGIÈNE (complément) ===
+  200  /wp-content/themes/partikulier/assets/css/style.css?ver=6.20.5
+  200  /wp-content/themes/partikulier/assets/js/main.js?ver=6.20.5
+assets front référencés : 2 ; en erreur : 0
+versions servies : plugin=2.10.6 thème=6.20.5
+debug.log : absent (WP_DEBUG off) ; log serveur : 0 erreur PHP (1 deprecation mysqld_safe hors PHP)
