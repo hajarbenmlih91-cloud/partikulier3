@@ -5,7 +5,7 @@ Tags: real-estate, property, listings, immobilier, performance, avif
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 6.20.4
+Stable tag: 6.20.5
 License: GNU General Public License v3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
@@ -50,6 +50,7 @@ Caracteristiques :
 = 6.20.5 =
 
 * Idempotence par cycle de requête des gardes REST à effet de bord (SE-022, lot 6 du train 2, CDC v4.1 §8B) : le core WordPress ré-exécute le permission_callback via rest_send_allow_header() pour l'en-tête Allow — côté plugin, la garde /erase-lead restitue son verdict et ne compte/audite qu'une fois par requête (429 à la 11e requête au lieu de la 6e, audit unique par échec), la garde HMAC n'écrit son audit d'échec (mode log) qu'une fois par requête. Côté thème : retrait de l'enregistrement register_sidebar() « Sidebar annonce » jamais rendu (aucun dynamic_sidebar() — arbitrage « pas de code mort », résidu Theme Check du train 1) et correction des casses « WordPress » dans pk-diagnostic.php. Aucun changement de gabarit, de style ni de JavaScript. Requiert partikulier-core 2.10.6.
+* Passe de reformatage style-only PHPCBF (SE-019, lot 5 du train 2, CDC v4.1 §8) : 117 fichiers reformatés (113 PHP + 4 assets CSS/JS), +18788/-18788 lignes — net strictement 0, et diff « -w » vide (0 octet, critère E-1903 : aucune modification au-delà des blancs, vérifié sur le commit de style contre son parent direct) ; 817 littéraux de traduction et 2 heredocs octet-pour-octet identiques. Liste blanche empirique de 14 fixers strictement intra-ligne ; les fixers token-transformants (ré-indentation de tableaux, normalisation d'accolades) sont versés au backlog SE-023, avec 9 alignements dérogés et 1 fermeture d'heredoc structurellement incorrigible documentés dans les preuves. Chaîne outil épinglée : PHPCS 3.13.6 / WPCS 3.4.1 / PHPCSUtils 1.2.3 / PHPCSExtra 1.5.1. Le fichier .git-blame-ignore-revs référence le commit de style (git blame attribue les lignes réindentées aux commits d'origine) et le harnais d'idempotence SE-022 est rendu insensible au style (SE22-009). Oracle de recette inchangé : 277/277 rejeu sur les bancs WordPress 6.6 et 7.1, run GitHub vert sur le commit publié. Aucun changement fonctionnel, de gabarit, de style visuel ni de JavaScript.
 
 = 6.20.4 =
 

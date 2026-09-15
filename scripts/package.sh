@@ -34,8 +34,8 @@ if [[ "$OUT_INPUT" = /* ]]; then
 else
   OUT="$ROOT/$OUT_INPUT"
 fi
-PLUGIN_VERSION="2.10.5"
-THEME_VERSION="6.20.4"
+PLUGIN_VERSION="2.10.6"
+THEME_VERSION="6.20.5"
 
 rm -rf "$OUT"
 mkdir -p "$OUT"
