@@ -32,7 +32,10 @@ $cities              = is_wp_error( $cities ) ? array() : $cities;
 $selected_action     = isset( $_GET['es_action'] ) ? sanitize_text_field( wp_unslash( $_GET['es_action'] ) ) : '';
 $selected_type       = isset( $_GET['es_type'] ) ? sanitize_text_field( wp_unslash( $_GET['es_type'] ) ) : '';
 $selected_price_max  = isset( $_GET['es_price_max'] ) ? sanitize_text_field( wp_unslash( $_GET['es_price_max'] ) ) : '';
-$selected_city_slug  = isset( $_GET['es_city'] ) ? sanitize_title( wp_unslash( $_GET['es_city'] ) ) : '';
+/* E-5105 (F-T17-2, lot sécurité 6.20.6) : garde scalaire — un paramètre
+   tableau est traité comme non résolu (''), jamais passé à sanitize_title()
+   (TypeError PHP 8 → 500). */
+$selected_city_slug  = isset( $_GET['es_city'] ) && is_scalar( $_GET['es_city'] ) ? sanitize_title( wp_unslash( $_GET['es_city'] ) ) : '';
 $selected_city_term  = $selected_city_slug ? get_term_by( 'slug', $selected_city_slug, PARTIKULIER_ESTATIK_LOCATION_TAXONOMY ) : false;
 $selected_city_label = ( $selected_city_term && ! is_wp_error( $selected_city_term ) ) ? $selected_city_term->name : '';
 ?>

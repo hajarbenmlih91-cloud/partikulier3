@@ -324,7 +324,10 @@ class Partikulier_Listing_URLs {
 			return $clauses;
 		}
 		$city_slug = sanitize_title( (string) ( $query->get( 'pk_city_slug' ) ?: $query->get( 'location' ) ) );
-		if ( '' === $city_slug && ! empty( $_GET['location'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		/* E-5105 (F-T17-2, lot sécurité 6.20.6) : garde scalaire homogène —
+		   supprime aussi le couplage fragile (cette ligne n'était protégée
+		   que par le cast (string) ci-dessus) et le warning PHP associé. */
+		if ( '' === $city_slug && ! empty( $_GET['location'] ) && is_scalar( $_GET['location'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			$city_slug = sanitize_title( wp_unslash( $_GET['location'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 		}
 		if ( '' === $city_slug ) {

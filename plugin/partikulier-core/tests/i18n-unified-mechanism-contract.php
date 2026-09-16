@@ -216,7 +216,7 @@ try {
     // 14) Santé et versions : 2.10.4 / 6.20.3 (lot F — extinction finale : plugin 2.10.4, thème 6.20.3), schéma figé 2.6.0, 8/8, 0 collision.
     $themeVersion = wp_get_theme()->get('Version');
     $pluginDomains = count(array_filter($health['domains'] ?? [], static fn($d) => ($d['owner'] ?? '') === 'plugin'));
-    $assert('C3A-014', PARTIKULIER_CORE_VERSION === '2.10.6' && $themeVersion === '6.20.5'
+    $assert('C3A-014', PARTIKULIER_CORE_VERSION === '2.10.7' && $themeVersion === '6.20.6'
         && Schema::VERSION === '2.6.0' && $pluginDomains === 8
         && (int) ($health['routes']['collisions'] ?? -1) === 0,
         sprintf('santé : plugin %s, thème %s, schéma %s (zéro migration C3/C4), %d/8 domaines, 0 collision',

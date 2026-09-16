@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  PK_VERSION: '2.10.6'
+  PK_VERSION: '2.10.7'
 
 permissions:
   contents: read
@@ -144,9 +144,24 @@ jobs:
             php plugin/partikulier-core/tests/se022-http-battery.php > preuves-run/contrats/se022-http-battery.json
           echo "PASS  se022-http-battery" | tee -a preuves-run/journal.txt
           kill "$SRV" 2>/dev/null || true
-      - name: Vérifier l'oracle 277/277 (237 + SE-016/017/018/020 + SE-022)
+      - name: Contrat E-5105 — paramètres tableau de la recherche (lot sécurité 6.20.6)
         run: |
-          php -r '$tot=0; $pas=0; foreach (glob("preuves-run/contrats/*.json") as $f) { $d=json_decode(file_get_contents($f), true); if (($d["status"] ?? "") !== "PASS") { fwrite(STDERR, basename($f).": status != PASS\n"); exit(1); } $tot += (int) $d["total"]; $pas += (int) $d["passed"]; } echo "contrats dynamiques : $pas/$tot\n"; if ($tot !== 277 || $pas !== 277) { fwrite(STDERR, "oracle inattendu (attendu 277/277 — 26 suites : 234 lot F + 2 revue sécurité (SE-013/SE-014) + 1 SE-015 + 1 ROUTE-006 (SE-016) + 8 erase-lead (SE16-001→008) + 3 hygiène artefact (AH-001→003, SE-017) + 7 front-assets (SE-018) + 8 sanitiseur d’options (OS-001→008, SE-020) + 9 idempotence par cycle (SE22-001→009, SE-022) + 4 batterie HTTP réel (SE22H-001→004, SE-022))\n"); exit(1); }'
+          set -euo pipefail
+          # Serveur front dédié (même discipline que SE-022) : la suite theme
+          # attaque l'archive properties en HTTP réel avec des paramètres
+          # tableau sur les 8 entrées des filtres de recherche.
+          php -S 127.0.0.1:8102 -t wp theme/partikulier/tests/router-ci.php > preuves-run/search-arrays-server.log 2>&1 &
+          SRV=$!
+          for i in $(seq 1 60); do curl -s -o /dev/null http://127.0.0.1:8102/ && break; sleep 0.5; done
+          PK_BASE=http://127.0.0.1:8102 \
+          PK_WP_DIR=$PWD/wp \
+          PK_COMMIT=${{ github.sha }} \
+            php theme/partikulier/tests/search-arrays-contract.php > preuves-run/contrats/search-arrays-contract.json
+          echo "PASS  search-arrays-contract" | tee -a preuves-run/journal.txt
+          kill "$SRV" 2>/dev/null || true
+      - name: Vérifier l'oracle 297/297 (237 + SE-016/017/018/020 + SE-022 + lot sécurité 2.10.7)
+        run: |
+          php -r '$tot=0; $pas=0; foreach (glob("preuves-run/contrats/*.json") as $f) { $d=json_decode(file_get_contents($f), true); if (($d["status"] ?? "") !== "PASS") { fwrite(STDERR, basename($f).": status != PASS\n"); exit(1); } $tot += (int) $d["total"]; $pas += (int) $d["passed"]; } echo "contrats dynamiques : $pas/$tot\n"; if ($tot !== 297 || $pas !== 297) { fwrite(STDERR, "oracle inattendu (attendu 297/297 — 27 suites : 234 lot F + 2 revue sécurité (SE-013/SE-014) + 1 SE-015 + 1 ROUTE-006 (SE-016) + 8 erase-lead (SE16-001→008) + 3 hygiène artefact (AH-001→003, SE-017) + 7 front-assets (SE-018) + 8 sanitiseur d’options (OS-001→008, SE-020) + 9 idempotence par cycle (SE22-001→009, SE-022) + 4 batterie HTTP réel (SE22H-001→004, SE-022) + lot sécurité 2.10.7 : 6 fermeture bypass HMAC + audit enforce (E49-001→006) + 5 complétude cascade RGPD (E55-001→005) + 9 paramètres tableau recherche (E5105-001→009))\n"); exit(1); }'
       - name: Publier les résultats
         if: always()
         uses: actions/upload-artifact@v4

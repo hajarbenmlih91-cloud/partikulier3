@@ -280,7 +280,7 @@ try {
     $themeVersion = wp_get_theme()->get('Version');
     $health = (new HealthCheck())->get();
     $pluginDomains = count(array_filter($health['domains'] ?? [], static fn($d): bool => ($d['owner'] ?? '') === 'plugin'));
-    $assert('FE-011', PARTIKULIER_CORE_VERSION === '2.10.6' && $themeVersion === '6.20.5'
+    $assert('FE-011', PARTIKULIER_CORE_VERSION === '2.10.7' && $themeVersion === '6.20.6'
         && \Partikulier\Core\Database\Schema::VERSION === '2.6.0' && ($health['status'] ?? '') === 'ok'
         && $pluginDomains === 8 && (int) ($health['routes']['collisions'] ?? -1) === 0,
         sprintf('santé : %s, plugin %s, thème %s (lot F — extinction finale), schéma %s (zéro migration), %d/8 domaines, 0 collision',

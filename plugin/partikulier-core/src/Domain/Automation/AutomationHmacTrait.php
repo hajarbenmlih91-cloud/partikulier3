@@ -135,17 +135,30 @@ trait AutomationHmacTrait
 			$canonical = strtoupper($request->get_method()) . "\n" . $path . "\n" . $timestamp . "\n" . $request->get_body();
 			$expected  = 'sha256=' . hash_hmac('sha256', $canonical, self::hmac_key($secret_for_key));
 			$valid     = hash_equals($expected, $signature);
+		} elseif ( $valid && '' === $secret_for_key ) {
+			/* E-4905 (F-T15-2, lot sécurité 2.10.7) : un Key-Id absent de
+			 * secret_keys() ne peut jamais produire une signature valide.
+			 * Avant ce correctif, la vérification hash_equals était sautée
+			 * lorsque la clé était inconnue et la requête restait acceptée en
+			 * enforce ; elle est désormais rejetée. Une rotation expirée
+			 * (clé précédente hors fenêtre, AutomationPolicyTrait::secret_keys)
+			 * emprunte le même chemin : le secret actif seul ne suffit pas. */
+			$valid = false;
 		}
 
 		if ( ! $valid ) {
+			/* E-4901 (F-T15-1, lot sécurité 2.10.7) : l'échec est journalisé
+			 * en enforce comme en log — un forçage de la garde ne doit plus
+			 * être invisible en production (le compteur anti-flood
+			 * MAX_FAILURES_PER_HOUR repose sur cette écriture).
+			 * SE-022 (E-2201) : une seule écriture d'audit par cycle de
+			 * requête — la ré-exécution Allow-header ne double pas le
+			 * compteur d'échecs HMAC (même classe de défaut que la garde
+			 * /erase-lead, constatée par le balayage des 18 routes). */
+			if ( RequestCycle::first_run($request, 'hmac_audit_failure') ) {
+				self::audit_failure($key_id ?: 'missing', 'invalid_signature');
+			}
 			if ( 'log' === $mode ) {
-				/* SE-022 (E-2201) : une seule écriture d'audit par cycle de
-				 * requête — la ré-exécution Allow-header ne double pas le
-				 * compteur d'échecs HMAC (même classe de défaut que la garde
-				 * /erase-lead, constatée par le balayage des 18 routes). */
-				if ( RequestCycle::first_run($request, 'hmac_audit_failure') ) {
-					self::audit_failure($key_id ?: 'missing', 'invalid_signature');
-				}
 				return true;
 			}
 			return new \WP_Error('pk_automation_signature', __('Requête non autorisée.', 'partikulier'), ['status' => 401]);

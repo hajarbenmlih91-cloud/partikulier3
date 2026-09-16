@@ -195,7 +195,8 @@ $is_type = $queried instanceof WP_Term && PARTIKULIER_ESTATIK_TYPE_TAXONOMY === 
 								</div>
 
 														<?php
-														$pk_filter_city_slug  = isset( $_GET['es_city'] ) ? sanitize_title( wp_unslash( $_GET['es_city'] ) ) : '';
+														/* E-5105 (F-T17-2, lot sécurité 6.20.6) : garde scalaire. */
+					$pk_filter_city_slug  = isset( $_GET['es_city'] ) && is_scalar( $_GET['es_city'] ) ? sanitize_title( wp_unslash( $_GET['es_city'] ) ) : '';
 														$pk_filter_city_term  = $pk_filter_city_slug ? get_term_by( 'slug', $pk_filter_city_slug, PARTIKULIER_ESTATIK_LOCATION_TAXONOMY ) : false;
 														$pk_filter_city_label = ( $pk_filter_city_term && ! is_wp_error( $pk_filter_city_term ) ) ? $pk_filter_city_term->name : '';
 														?>

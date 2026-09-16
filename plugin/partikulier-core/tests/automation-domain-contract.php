@@ -220,9 +220,12 @@ try {
 
         // 9) Mode log : mauvaise signature sur une clé CONNUE → requête
         //    acceptée + échec journalisé dans pk_n8n_hmac_audit (upsert par
-        //    clé/heure). NB : une clé inconnue saute la vérification (comportement
-        //    hérité du thème, porté fidèlement) — la sonde utilise donc la clé
-        //    active réelle. Mode restauré en finally.
+        //    clé/heure). NB (lot sécurité 2.10.7) : depuis E-4905 une clé
+        //    inconnue ne « saute » plus la vérification (rejet 401, voir
+        //    E49-001) ; la sonde utilise donc la clé active réelle. Depuis
+        //    E-4901 les échecs B4A-009/B4A-010 (enforce) sont aussi
+        //    journalisés : le compteur de la clé active vaut 3 à ce point
+        //    (2 échecs antérieurs + celui-ci). Mode restauré en finally.
         $settings = AutomationService::settings();
         $settings['hmac_mode'] = 'log';
         update_option(AutomationService::SETTINGS_OPTION, $settings, false);
@@ -241,8 +244,8 @@ try {
         $badSig = AutomationService::check_automation_secret($logModeRequest);
         $auditRow = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$prefix}pk_n8n_hmac_audit WHERE key_id = %s ORDER BY id DESC LIMIT 1", $knownKeyId), ARRAY_A);
         $assert('B4A-011', $badSig === true && is_array($auditRow)
-            && (string) $auditRow['last_reason'] === 'invalid_signature' && (int) $auditRow['failure_count'] === 1,
-            'mode log : mauvaise signature (clé connue) acceptée, échec journalisé (key_id/heure, raison invalid_signature)');
+            && (string) $auditRow['last_reason'] === 'invalid_signature' && (int) $auditRow['failure_count'] === 3,
+            'mode log : mauvaise signature (clé connue) acceptée, échec journalisé (key_id/heure, raison invalid_signature) ; compteur 3 depuis E-4901 (B4A-009 + B4A-010 + celui-ci)');
 
         // 10) Plafond d'échecs par heure : LEAST(failure_count+1, 100) — sonde
         //    autonome sur une clé dédiée (trois échecs consécutifs).
@@ -279,6 +282,124 @@ try {
         $assert('B4A-014', is_wp_error($weak) && $weak->get_error_code() === 'pk_n8n_secret_weak'
             && ($after['automation_api_secret'] ?? null) === ($before['automation_api_secret'] ?? null),
             'save_admin_settings : secret mono-caractère répété → pk_n8n_secret_weak, réglages inchangés');
+
+        /* --- E-4905/E-4906 + E-4901 (lot sécurité 2.10.7) — fermeture du
+           bypass Key-Id inconnu (F-T15-2) et journalisation des échecs en
+           enforce (F-T15-1). Le mode est remis sur « off » (= promotion
+           enforce, état du banc) : B4A-011 l'a basculé en log. */
+        $settingsEnforce = AutomationService::settings();
+        $settingsEnforce['hmac_mode'] = 'off';
+        update_option(AutomationService::SETTINGS_OPTION, $settingsEnforce, false);
+
+        // E49-001/002 : secret actif + Key-Id inconnu + signature arbitraire
+        // bien formée → REJET (avant E-4905 : 200 accepté) + 0 événement.
+        $bogusKeyId = 'e49-bogus-' . $run;
+        $hmacKeyIds[] = $bogusKeyId;
+        $bogusEventId = 'e49-bypass-' . $run;
+        $eventIds[] = $bogusEventId;
+        $tsNow = (string) time();
+        $bogusBody = wp_json_encode(['event_id' => $bogusEventId, 'probe' => 'e4905']);
+        $bogusRequest = $makeRequest(
+            ['event_id' => $bogusEventId],
+            [
+                'X-Partikulier-Automation' => $secret,
+                'X-Partikulier-Timestamp' => $tsNow,
+                'X-Partikulier-Key-Id' => $bogusKeyId,
+                'X-Partikulier-Signature' => 'sha256=' . str_repeat('b', 64),
+            ]
+        );
+        $bogusRequest->set_body($bogusBody);
+        $bogusResult = AutomationService::check_automation_secret($bogusRequest);
+        $assert('E49-001', is_wp_error($bogusResult) && $bogusResult->get_error_code() === 'pk_automation_signature',
+            'E-4905 : secret actif + Key-Id inconnu + signature arbitraire → 401 pk_automation_signature (le bypass F-T15-2 est fermé)');
+        $bogusEvents = (int) $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM {$prefix}pk_automation_events WHERE event_id = %s", $bogusEventId));
+        $assert('E49-002', $bogusEvents === 0,
+            'E-4905 : la requête rejetée n\'a inséré aucun événement (0 ligne pk_automation_events)');
+
+        // E49-003 : rotation expirée (clé précédente hors fenêtre) + secret
+        // actif → 401 même avec le secret actif (la clé expirée n'est plus
+        // dans secret_keys()).
+        $expiredKeyId = 'e49-expired-' . $run;
+        $hmacKeyIds[] = $expiredKeyId;
+        $settingsRotated = AutomationService::settings();
+        $settingsRotated['previous_key_id'] = $expiredKeyId;
+        $settingsRotated['previous_secret'] = $secret . '-rotation-' . $run;
+        $settingsRotated['previous_expires_at'] = gmdate('Y-m-d H:i:s', time() - 3600);
+        update_option(AutomationService::SETTINGS_OPTION, $settingsRotated, false);
+        $expiredEventId = 'e49-rotation-' . $run;
+        $eventIds[] = $expiredEventId;
+        $expiredBody = wp_json_encode(['event_id' => $expiredEventId, 'probe' => 'e4905-rotation']);
+        $expiredRequest = $makeRequest(
+            ['event_id' => $expiredEventId],
+            [
+                'X-Partikulier-Automation' => $secret,
+                'X-Partikulier-Timestamp' => (string) time(),
+                'X-Partikulier-Key-Id' => $expiredKeyId,
+                'X-Partikulier-Signature' => 'sha256=' . str_repeat('c', 64),
+            ]
+        );
+        $expiredRequest->set_body($expiredBody);
+        $expiredResult = AutomationService::check_automation_secret($expiredRequest);
+        $assert('E49-003', is_wp_error($expiredResult) && $expiredResult->get_error_code() === 'pk_automation_signature',
+            'E-4905 : rotation expirée (previous_expires_at dépassé) + secret actif → 401 (la clé expirée a disparu de secret_keys)');
+
+        // E49-004 : Key-Id CONNU et valide + signature calculée sur le bon
+        // canonique mais avec un SECRET DIFFÉRENT → 401 (le cas le plus
+        // proche d'une vraie tentative de contournement).
+        $wrongSecretEventId = 'e49-wrongsecret-' . $run;
+        $eventIds[] = $wrongSecretEventId;
+        $wrongSecretBody = wp_json_encode(['event_id' => $wrongSecretEventId, 'probe' => 'e4906-wrong-secret']);
+        $wrongSecretTs = (string) time();
+        $wrongSecretCanonical = "POST\n/partikulier/v1/automation-event\n" . $wrongSecretTs . "\n" . $wrongSecretBody;
+        $wrongSecretSignature = 'sha256=' . hash_hmac('sha256', $wrongSecretCanonical,
+            AutomationProbe::hmac_key('WRONG-SECRET-' . str_repeat('w', 48) . '-' . $run));
+        $wrongSecretRequest = $makeRequest(
+            ['event_id' => $wrongSecretEventId],
+            [
+                'X-Partikulier-Automation' => $secret,
+                'X-Partikulier-Timestamp' => $wrongSecretTs,
+                'X-Partikulier-Key-Id' => $keyId,
+                'X-Partikulier-Signature' => $wrongSecretSignature,
+            ]
+        );
+        $wrongSecretRequest->set_body($wrongSecretBody);
+        $wrongSecretResult = AutomationService::check_automation_secret($wrongSecretRequest);
+        $assert('E49-004', is_wp_error($wrongSecretResult) && $wrongSecretResult->get_error_code() === 'pk_automation_signature',
+            'E-4906 : Key-Id connu et valide + bon canonique + signature dérivée d\'un autre secret → 401 (contournement par mauvais secret refusé)');
+
+        // E49-005 (E-4901) : l'échec en enforce est journalisé — la tentative
+        // de bypass E49-001 a laissé une ligne d'audit (avant E-4901 : rien).
+        $bogusAudit = $wpdb->get_row($wpdb->prepare(
+            "SELECT last_reason, failure_count FROM {$prefix}pk_n8n_hmac_audit WHERE key_id = %s ORDER BY id DESC LIMIT 1",
+            $bogusKeyId), ARRAY_A);
+        $assert('E49-005', is_array($bogusAudit)
+            && (string) $bogusAudit['last_reason'] === 'invalid_signature' && (int) $bogusAudit['failure_count'] >= 1,
+            'E-4901 : le rejet en enforce est journalisé (ligne pk_n8n_hmac_audit, raison invalid_signature) — plus d\'angle mort de détection');
+
+        // E49-006 (garde SE-022) : la même requête rejouée dans le même cycle
+        // (passe Allow-header) ne double pas l'écriture d'audit.
+        $cycleKeyId = 'e49-cycle-' . $run;
+        $hmacKeyIds[] = $cycleKeyId;
+        $cycleEventId = 'e49-cycle-' . $run;
+        $eventIds[] = $cycleEventId;
+        $cycleBody = wp_json_encode(['event_id' => $cycleEventId, 'probe' => 'e4901-cycle']);
+        $cycleRequest = $makeRequest(
+            ['event_id' => $cycleEventId],
+            [
+                'X-Partikulier-Automation' => $secret,
+                'X-Partikulier-Timestamp' => (string) time(),
+                'X-Partikulier-Key-Id' => $cycleKeyId,
+                'X-Partikulier-Signature' => 'sha256=' . str_repeat('d', 64),
+            ]
+        );
+        $cycleRequest->set_body($cycleBody);
+        AutomationService::check_automation_secret($cycleRequest);
+        AutomationService::check_automation_secret($cycleRequest); // ré-exécution même objet (passe Allow-header)
+        $cycleAuditCount = (int) $wpdb->get_var($wpdb->prepare(
+            "SELECT failure_count FROM {$prefix}pk_n8n_hmac_audit WHERE key_id = %s", $cycleKeyId));
+        $assert('E49-006', $cycleAuditCount === 1,
+            'E-4901 + SE-022 : la même requête vérifiée deux fois dans le cycle n\'écrit qu\'une ligne d\'audit (garde RequestCycle effective)');
     }
 
     // 13) Couture du thème : l'appel via Partikulier_Automation_Bridge

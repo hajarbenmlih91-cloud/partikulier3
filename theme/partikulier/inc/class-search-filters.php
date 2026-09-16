@@ -402,9 +402,11 @@ class Partikulier_Search_Filters {
 					// Les routes /[lang]/location/{slug}/ transmettent une query var interne,
 					// tandis que les liens de l’interface utilisent ?location={slug}.
 					$city_slug = sanitize_title( (string) $query->get( 'pk_city_slug' ) );
-		if ( '' === $city_slug && ! empty( $_GET['location'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-				$city_slug = sanitize_title( wp_unslash( $_GET['location'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		}
+	/* E-5105 (F-T17-2, lot sécurité 6.20.6) : garde scalaire — un tableau
+	   est traité comme non résolu, jamais passé à sanitize_title(). */
+	if ( '' === $city_slug && ! empty( $_GET['location'] ) && is_scalar( $_GET['location'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$city_slug = sanitize_title( wp_unslash( $_GET['location'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+	}
 		if ( '' !== $city_slug && taxonomy_exists( PARTIKULIER_ESTATIK_LOCATION_TAXONOMY ) ) {
 				$city_term = get_term_by( 'slug', $city_slug, PARTIKULIER_ESTATIK_LOCATION_TAXONOMY );
 			if ( ! $city_term || is_wp_error( $city_term ) ) {

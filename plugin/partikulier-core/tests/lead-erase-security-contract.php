@@ -57,6 +57,101 @@ $wpdb->insert($leadsTable, [
     'last_seen_at' => gmdate('Y-m-d H:i:s'),
 ], ['%s', '%s', '%s', '%s']);
 $victimId = (int) $wpdb->insert_id;
+
+/* --- E-5501/E-5502/E-5503 (lot sécurité 2.10.7, F-T16-4) : complétude de la
+   cascade d'effacement. Lead dédié au run, doté d'une ligne dans CHACUNE des
+   tables portant lead_id — y compris pk_saved_alerts, la table que la cascade
+   publiée 2.10.6 oubliait. L'effacement passe par le même chemin de service
+   que la route /erase-lead (LeadService utilise LeadsPrivacyTrait). --- */
+$e55Phone = '337' . str_pad((string) random_int(10000000, 99999999), 8, '0', STR_PAD_LEFT);
+$wpdb->insert($leadsTable, [
+    'phone_hash' => hash_hmac('sha256', $e55Phone, wp_salt('auth')),
+    'phone_encrypted' => base64_encode($e55Phone),
+    'first_seen_at' => gmdate('Y-m-d H:i:s'),
+    'last_seen_at' => gmdate('Y-m-d H:i:s'),
+], ['%s', '%s', '%s', '%s']);
+$e55LeadId = (int) $wpdb->insert_id;
+$e55Now = gmdate('Y-m-d H:i:s');
+$e55Day = gmdate('Y-m-d');
+$e55Fixtures = [
+    'pk_interest_events' => ['lead_id' => $e55LeadId, 'property_id' => 1, 'reference_code' => 'E55-' . $run,
+        'property_snapshot' => '{}', 'provider_message_id' => 'e55-' . $run, 'created_at' => $e55Now],
+    'pk_contact_limits' => ['lead_id' => $e55LeadId, 'day_key' => $e55Day],
+    'pk_contact_disclosures' => ['lead_id' => $e55LeadId, 'property_id' => 1, 'owner_id' => 1,
+        'day_key' => $e55Day, 'sent_at' => $e55Now],
+    'pk_buyer_preferences' => ['lead_id' => $e55LeadId, 'areas' => '[]', 'layout_value' => 'apartment',
+        'transaction_value' => 'buy', 'source' => 'e55', 'updated_at' => $e55Now],
+    'pk_whatsapp_consents' => ['lead_id' => $e55LeadId, 'scope' => 'contact', 'policy_version' => 'e55',
+        'proof_message_id' => 'e55-' . $run],
+    'pk_whatsapp_messages' => ['provider_message_id' => 'e55-' . $run, 'lead_id' => $e55LeadId,
+        'direction' => 'in', 'message_type' => 'text', 'created_at' => $e55Now],
+    'pk_lead_followups' => ['lead_id' => $e55LeadId, 'updated_at' => $e55Now],
+    'pk_saved_alerts' => ['lead_id' => $e55LeadId, 'criteria' => '{"city":"e55"}',
+        'criteria_signature' => hash('sha256', 'e55-' . $run), 'consent_message_id' => 'e55-' . $run,
+        'created_at' => $e55Now, 'updated_at' => $e55Now],
+];
+foreach ($e55Fixtures as $suffix => $row) {
+    $wpdb->insert($prefix . $suffix, $row);
+}
+/* Livraisons de l'alerte (pk_alert_deliveries, clé alert_id sans lead_id) :
+   condition R6 du vérificateur croisé — purgées avec l'alerte. */
+$e55AlertId = (int) $wpdb->get_var($wpdb->prepare(
+    "SELECT id FROM {$prefix}pk_saved_alerts WHERE lead_id = %d LIMIT 1", $e55LeadId));
+$wpdb->insert($prefix . 'pk_alert_deliveries',
+    ['alert_id' => $e55AlertId, 'property_id' => 1, 'status' => 'candidate', 'created_at' => $e55Now],
+    ['%d', '%d', '%s', '%s']);
+$e55Erased = LeadService::erase_lead($e55LeadId);
+$e55AlertsLeft = (int) $wpdb->get_var($wpdb->prepare(
+    "SELECT COUNT(*) FROM {$prefix}pk_saved_alerts WHERE lead_id = %d", $e55LeadId));
+$assert('E55-001', $e55Erased === true && $e55AlertsLeft === 0,
+    'E-5501 : l\'alerte sauvegardée suit l\'effacement du lead (0 ligne pk_saved_alerts restante — régression F-T16-4 fermée)');
+$e55Residue = [];
+foreach (array_keys($e55Fixtures) as $suffix) {
+    $left = (int) $wpdb->get_var($wpdb->prepare(
+        "SELECT COUNT(*) FROM {$prefix}{$suffix} WHERE lead_id = %d", $e55LeadId));
+    if ($left > 0) {
+        $e55Residue[] = $suffix . '=' . $left;
+    }
+}
+$e55LeadRowLeft = (int) $wpdb->get_var($wpdb->prepare(
+    "SELECT COUNT(*) FROM {$leadsTable} WHERE id = %d", $e55LeadId));
+if ($e55LeadRowLeft > 0) {
+    $e55Residue[] = 'pk_buyer_leads=' . $e55LeadRowLeft;
+}
+$assert('E55-002', $e55Residue === [],
+    'E-5501 : zéro rémanence sur les 9 tables portant lead_id' . ($e55Residue ? ' (résidus : ' . implode(', ', $e55Residue) . ')' : ''));
+/* Invariant E-5502 (structurel) : toute table pk_* du schéma portant une
+   colonne lead_id figure dans la liste codée en dur de erase_lead() — le
+   test échouera pour toute table domaine future non couverte. */
+$e55TraitSource = (string) file_get_contents(WP_PLUGIN_DIR . '/partikulier-core/src/Domain/Leads/LeadsPrivacyTrait.php');
+$e55CascadeList = [];
+if (preg_match('/\$tables\s*=\s*\[(.*?)\];/s', $e55TraitSource, $e55Match)) {
+    preg_match_all("/'(pk_[a-z_]+)'/", $e55Match[1], $e55ListMatch);
+    $e55CascadeList = $e55ListMatch[1];
+}
+$e55SchemaTables = (array) $wpdb->get_col($wpdb->prepare(
+    "SELECT TABLE_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = %s AND COLUMN_NAME = 'lead_id' AND TABLE_NAME LIKE %s",
+    DB_NAME, $wpdb->prefix . 'pk\\_%'));
+$e55Missing = array_values(array_diff(
+    array_map(static fn(string $t): string => substr($t, strlen($wpdb->prefix)), $e55SchemaTables),
+    $e55CascadeList
+));
+$assert('E55-003', $e55CascadeList !== [] && $e55Missing === [],
+    'E-5502 : invariant de complétude — toute table pk_* à colonne lead_id est dans la cascade'
+    . ($e55Missing ? ' (manquantes : ' . implode(', ', $e55Missing) . ')' : ' (' . count($e55SchemaTables) . ' tables couvertes)'));
+$e55AuditRow = $wpdb->get_row($wpdb->prepare(
+    "SELECT metadata_json FROM {$auditTable} WHERE action = 'lead_erased' AND object_id = %d ORDER BY id DESC LIMIT 1",
+    $e55LeadId), ARRAY_A);
+$e55AuditMeta = is_array($e55AuditRow) ? json_decode((string) $e55AuditRow['metadata_json'], true) : null;
+/* NB : « tables = 9 » = les 9 tables portant lead_id (invariant E-5502).
+ * La 10e table touchée par erase, pk_alert_deliveries, est purgée par
+ * sous-requête alert_id et validée séparément par E55-005 ci-dessous. */
+$assert('E55-004', is_array($e55AuditMeta) && (int) ($e55AuditMeta['tables'] ?? 0) === 9,
+    'E-5501 : l\'audit lead_erased est écrit avec le nouveau compte de la cascade (tables = 9, tables lead_id)');
+$e55DelivLeft = (int) $wpdb->get_var($wpdb->prepare(
+    "SELECT COUNT(*) FROM {$prefix}pk_alert_deliveries WHERE alert_id = %d", $e55AlertId));
+$assert('E55-005', $e55DelivLeft === 0,
+    'E-5501 : les livraisons d\'alertes (pk_alert_deliveries, clé alert_id sans lead_id) suivent l\'effacement — 0 ligne pendante (condition R6 du vérificateur croisé)');
 $automationSecret = (string) AutomationService::get('automation_api_secret');
 
 $erase = static function (array $body = [], array $headers = []) use (&$results): array {
@@ -174,6 +269,11 @@ try {
     delete_option('lead_erase_transition_active');
     delete_option('lead_erase_api_secret');
     $wpdb->delete($leadsTable, ['id' => $victimId], ['%d']);
+    /* E55 (lot sécurité 2.10.7) : le lead dédié est effacé par la cascade
+       elle-même ; ne reste que sa ligne d'audit, retirée ici. */
+    if (isset($e55LeadId)) {
+        $wpdb->delete($auditTable, ['action' => 'lead_erased', 'object_id' => $e55LeadId], ['%s', '%d']);
+    }
 }
 
 $failed = array_values(array_filter($results, static fn(array $row): bool => $row['status'] !== 'PASS'));

@@ -80,7 +80,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 							Le champ reutilise desormais le MEME composant que le formulaire de depot
 							(data-pk-place-input + .pk-suggest) et soumet es_city, le slug du terme
 							es_location reellement trouve par l'AJAX des lieux. */
-						$pk_city_slug  = isset( $_GET['es_city'] ) ? sanitize_title( wp_unslash( $_GET['es_city'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+						/* E-5105 (F-T17-2, lot sécurité 6.20.6) : garde scalaire —
+						un paramètre tableau est traité comme non résolu (''),
+						jamais passé à sanitize_title() (TypeError PHP 8 → 500). */
+					$pk_city_slug  = isset( $_GET['es_city'] ) && is_scalar( $_GET['es_city'] ) ? sanitize_title( wp_unslash( $_GET['es_city'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 						$pk_city_term  = '' !== $pk_city_slug ? get_term_by( 'slug', $pk_city_slug, PARTIKULIER_ESTATIK_LOCATION_TAXONOMY ) : false;
 						$pk_city_label = ( $pk_city_term && ! is_wp_error( $pk_city_term ) ) ? $pk_city_term->name : '';
 						?>

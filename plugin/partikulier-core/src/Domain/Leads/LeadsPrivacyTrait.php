@@ -54,8 +54,9 @@ trait LeadsPrivacyTrait
 
 
 	/**
-	 * Effacement complet d'un lead : les huit tables du domaine, en
-	 * transaction, journalisé. Retourne false si une table refuse.
+	 * Effacement complet d'un lead : les neuf tables du domaine portant
+	 * lead_id + les livraisons d'alertes (via alert_id), en transaction,
+	 * journalisé. Retourne false si une table refuse.
 	 */
 	public static function erase_lead( int $lead_id ): bool
 	{
@@ -72,9 +73,26 @@ trait LeadsPrivacyTrait
 			'pk_whatsapp_messages',
 			'pk_buyer_preferences',
 			'pk_lead_followups',
+			/* E-5501 (F-T16-4, lot sécurité 2.10.7) : les alertes sauvegardées
+			 * portent un lead_id et doivent suivre l'effacement du lead — sans
+			 * quoi critères + preuve de consentement survivent, orphelins
+			 * définitifs (la purge de rétention part de pk_buyer_leads).
+			 * Invariant E-5502 : toute table pk_* portant lead_id doit figurer
+			 * dans cette liste (contrat lead-erase-security-contract, E55-003). */
+			'pk_saved_alerts',
 			'pk_buyer_leads',
 		];
 		$wpdb->query('START TRANSACTION');
+		/* Condition R6 du vérificateur croisé (16/09) : pk_alert_deliveries est
+		 * indexée par alert_id (sans lead_id) — purger les livraisons des
+		 * alertes de ce lead AVANT la suppression des alertes elles-mêmes,
+		 * sinon lignes pendantes. Aucune donnée personnelle n'y figure
+		 * (alert_id, property_id, status, dates), mais le zéro rémanence
+		 * doit être total. */
+		$wpdb->query($wpdb->prepare(
+			'DELETE FROM ' . self::table('pk_alert_deliveries') . ' WHERE alert_id IN (SELECT id FROM ' . self::table('pk_saved_alerts') . ' WHERE lead_id = %d)',
+			$lead_id
+		));
 		foreach ( $tables as $suffix ) {
 			$key    = 'pk_buyer_leads' === $suffix ? 'id' : 'lead_id';
 			$result = $wpdb->delete(self::table($suffix), [$key => $lead_id], ['%d']);
@@ -84,6 +102,11 @@ trait LeadsPrivacyTrait
 			}
 		}
 		$wpdb->query('COMMIT');
+		/* Invariant E-5502 (lot sécurité 2.10.7) : erase touche 10 tables au
+		 * total = les 9 tables portant lead_id (comptées ici) +
+		 * pk_alert_deliveries purgée par sous-requête alert_id ci-dessus
+		 * (validée séparément par E55-005). Le « tables = 9 » de l'audit est
+		 * donc le compte des tables lead_id, pas le nombre total de tables. */
 		self::audit('lead_erased', 'lead', $lead_id, ['tables' => count($tables)]);
 		return true;
 	}
