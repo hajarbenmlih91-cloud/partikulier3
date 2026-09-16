@@ -300,6 +300,14 @@ class Partikulier_Search_Filters {
 				continue;
 			}
 
+				/* E-5105 : un paramètre non scalaire est un filtre NON RÉSOLU
+				   (discipline S17 : « jamais tout le catalogue »), pas un filtre
+				   absent — il rejoint le chemin « terme inconnu ». */
+				if ( ! is_scalar( $_GET[ $param ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+					$unresolvable[] = $param;
+					continue;
+				}
+
 						$raw = sanitize_text_field( wp_unslash( $_GET[ $param ] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			if ( '' === $raw ) {
 				continue;
@@ -403,9 +411,14 @@ class Partikulier_Search_Filters {
 					// tandis que les liens de l’interface utilisent ?location={slug}.
 					$city_slug = sanitize_title( (string) $query->get( 'pk_city_slug' ) );
 	/* E-5105 (F-T17-2, lot sécurité 6.20.6) : garde scalaire — un tableau
-	   est traité comme non résolu, jamais passé à sanitize_title(). */
-	if ( '' === $city_slug && ! empty( $_GET['location'] ) && is_scalar( $_GET['location'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		$city_slug = sanitize_title( wp_unslash( $_GET['location'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+	   est un filtre NON RÉSOLU (S17), jamais passé à sanitize_title()
+	   ni ignoré (ce qui rendrait le catalogue entier). */
+	if ( '' === $city_slug && ! empty( $_GET['location'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( ! is_scalar( $_GET['location'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+				$unresolvable[] = 'location';
+		} else {
+				$city_slug = sanitize_title( wp_unslash( $_GET['location'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		}
 	}
 		if ( '' !== $city_slug && taxonomy_exists( PARTIKULIER_ESTATIK_LOCATION_TAXONOMY ) ) {
 				$city_term = get_term_by( 'slug', $city_slug, PARTIKULIER_ESTATIK_LOCATION_TAXONOMY );

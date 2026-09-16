@@ -147,13 +147,31 @@ jobs:
       - name: Contrat E-5105 — paramètres tableau de la recherche (lot sécurité 6.20.6)
         run: |
           set -euo pipefail
-          # Serveur front dédié (même discipline que SE-022) : la suite theme
-          # attaque l'archive properties en HTTP réel avec des paramètres
-          # tableau sur les 8 entrées des filtres de recherche.
-          php -S 127.0.0.1:8102 -t wp theme/partikulier/tests/router-ci.php > preuves-run/search-arrays-server.log 2>&1 &
+          # Serveur front sur l'ORIGINE DU SITE (home == origine attaquée, port
+          # 8099 inclus — même philosophie que front-assets, échec du run
+          # 34760865434). Un port dédié (8102 ≠ home :8099) faisait 301-redirecter
+          # toute page front par redirect_canonical (canonical.php :611-612 impose
+          # le port de home, :730-748 le compare à celui de la requête) vers un
+          # port où rien n'écoute → curl « Failed to connect to 127.0.0.1 port
+          # 8099 » (échec du run 35118723372). SE-022 (8101) y est insensible car
+          # les requêtes REST ne passent pas template_redirect/redirect_canonical ;
+          # les contrats FRONT, si.
+          php -S 127.0.0.1:8099 -t wp theme/partikulier/tests/router-ci.php > preuves-run/search-arrays-server.log 2>&1 &
           SRV=$!
-          for i in $(seq 1 60); do curl -s -o /dev/null http://127.0.0.1:8102/ && break; sleep 0.5; done
-          PK_BASE=http://127.0.0.1:8102 \
+          # Sonde de santé durcie (discipline front-assets) : exiger un vrai
+          # HTTP 200 sur / — l'ancienne boucle sortait au premier 301.
+          sain=false
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8099/ || true)
+            if [ "$code" = "200" ]; then sain=true; break; fi
+            sleep 0.5
+          done
+          if [ "$sain" != true ]; then
+            echo "FAIL  search-arrays-contract (sonde HTTP : pas de 200 sur /, code=$code)" | tee -a preuves-run/journal.txt
+            kill "$SRV" 2>/dev/null || true
+            exit 1
+          fi
+          PK_BASE=http://127.0.0.1:8099 \
           PK_WP_DIR=$PWD/wp \
           PK_COMMIT=${{ github.sha }} \
             php theme/partikulier/tests/search-arrays-contract.php > preuves-run/contrats/search-arrays-contract.json
