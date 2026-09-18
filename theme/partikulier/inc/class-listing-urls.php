@@ -45,6 +45,14 @@ class Partikulier_Listing_URLs {
 					add_filter( 'posts_clauses', array( __CLASS__, 'filter_city_clauses' ), 999, 2 );
 				add_action( 'template_redirect', array( __CLASS__, 'redirect_legacy' ), 1 );
 
+			// SE-043 : échecs explicites + cycle de vie des redirections d'anciens slugs
+			// (E-4301/E-4303). emit_listing_status est branché AVANT le cache (-1) :
+			// aucun échec ne doit partir avec un en-tête public (E-4302).
+			add_action( 'template_redirect', array( __CLASS__, 'emit_listing_status' ), -3 );
+			add_action( 'post_updated', array( __CLASS__, 'record_slug_redirect' ), 10, 3 );
+			add_action( 'wp_insert_post', array( __CLASS__, 'clear_redirect_for_taken_slug' ), 10, 2 );
+			add_action( 'before_delete_post', array( __CLASS__, 'purge_redirects_on_delete' ) );
+
 		// La geographie est figee a l'enregistrement : une URL ne doit pas
 		// changer parce qu'un terme a ete renomme trois mois plus tard.
 		add_action( 'save_post_' . PARTIKULIER_ESTATIK_POST_TYPE, array( __CLASS__, 'store_geo' ), 20, 3 );
@@ -273,6 +281,7 @@ class Partikulier_Listing_URLs {
 				$vars[] = 'pk_listing_slug';
 				$vars[] = 'pk_city_slug';
 				$vars[] = 'location';
+$vars[] = 'pk_listing_gone';
 			return $vars;
 	}
 
@@ -385,7 +394,26 @@ class Partikulier_Listing_URLs {
 			$post        = get_page_by_path( $legacy_slug, OBJECT, PARTIKULIER_ESTATIK_POST_TYPE );
 		}
 		if ( ! $post instanceof WP_Post || 'publish' !== $post->post_status ) {
-			return;
+				// SE-043 (E-4301) : échec EXPLICITE — jamais d'archive vide rendue en 200
+				// (soft 404 mesuré en R1 : page d'archive 200 + fichier cache + en-tête public).
+				if ( $post instanceof WP_Post && 'trash' === $post->post_status ) {
+					// Annonce corbeillée : l'URL a vécu et ne reviendra pas → 410.
+					$wp->query_vars['pk_listing_gone'] = (int) $post->ID;
+					unset( $wp->query_vars['pk_listing_slug'] );
+					return;
+				}
+				// Ancien slug renommé → 301 vers le permalink courant (E-4303) ;
+				// cible corbeillée → 410 ; sinon 404 RÉEL (requête simple introuvable
+				// — une requête d'archive sans résultat rendrait un 200 logé).
+				$lang    = isset( $wp->query_vars['lang'] ) ? sanitize_key( (string) $wp->query_vars['lang'] ) : $path_lang;
+				$outcome = self::redirect_old_slug( $slug, $lang, $wp );
+				if ( 'gone' === $outcome ) {
+					return;
+				}
+				$wp->query_vars['name']      = $slug;
+				$wp->query_vars['post_type'] = PARTIKULIER_ESTATIK_POST_TYPE;
+				unset( $wp->query_vars['pk_listing_slug'] );
+				return;
 		}
 
 		$lang = isset( $wp->query_vars['lang'] ) ? sanitize_key( $wp->query_vars['lang'] ) : $path_lang;
@@ -552,6 +580,133 @@ class Partikulier_Listing_URLs {
 
 		wp_safe_redirect( $target, 301 );
 		exit;
+	}
+	
+	/* ------------------------------------------------------------------ */
+	/* SE-043 : échecs explicites + redirections d'anciens slugs          */
+	/* ------------------------------------------------------------------ */
+	
+	/**
+	 * Émet le statut définitif d'une annonce retirée (E-4301).
+	 *
+	 * Branché AVANT le cache (template_redirect -3 < -1) : un 410 ne doit
+	 * jamais partir avec un en-tête public ni être capturé (E-4302).
+	 */
+	public static function emit_listing_status() {
+		if ( (int) get_query_var( 'pk_listing_gone' ) < 1 ) {
+			return;
+		}
+		status_header( 410 );
+		nocache_headers();
+		header( 'Content-Type: text/html; charset=UTF-8' );
+		printf(
+			'<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="robots" content="noindex"><title>%s</title></head><body><h1>%s</h1><p>%s</p></body></html>',
+			'Annonce retirée',
+			'Annonce retirée',
+			'Cette annonce a été retirée et ne reviendra pas.'
+		);
+		exit;
+	}
+	
+	/**
+	 * Résout un ancien slug via pk_slug_redirects (E-4303) : 301 vers le
+	 * permalink COURANT de l'annonce (l'ID est stocké, jamais le slug
+	 * suivant : aucune chaîne A→B→C), 410 si la cible est corbeillée,
+	 * 'miss' sinon (404).
+	 *
+	 * @param string $slug Slug demandé (résolution directe échouée).
+	 * @param string $lang Langue demandée par l'URL (repli '').
+	 * @param WP     $wp   Requête courante.
+	 * @return string 'gone' (410 marqué) ou 'miss' ; le 301 sort par exit().
+	 */
+	private static function redirect_old_slug( $slug, $lang, $wp ) {
+		if ( ! class_exists( '\\Partikulier\\Core\\Domain\\SlugRedirects\\SlugRedirectsService' ) ) {
+			return 'miss';
+		}
+		$target_id = (int) \Partikulier\Core\Domain\SlugRedirects\SlugRedirectsService::resolve_redirect( $slug );
+		if ( $target_id < 1 ) {
+			return 'miss';
+		}
+		$target = get_post( $target_id );
+		if ( ! $target instanceof WP_Post || PARTIKULIER_ESTATIK_POST_TYPE !== $target->post_type ) {
+			return 'miss';
+		}
+		if ( 'trash' === $target->post_status ) {
+			$wp->query_vars['pk_listing_gone'] = $target_id;
+			unset( $wp->query_vars['pk_listing_slug'] );
+			return 'gone';
+		}
+		if ( 'publish' !== $target->post_status ) {
+			return 'miss';
+		}
+		if ( $lang && function_exists( 'pll_get_post' ) ) {
+			$translated_id = (int) pll_get_post( $target_id, $lang );
+			if ( $translated_id && 'publish' === get_post_status( $translated_id ) ) {
+				$target_id = $translated_id;
+			}
+		}
+		$permalink = get_permalink( $target_id );
+		if ( ! is_string( $permalink ) || '' === $permalink ) {
+			return 'miss';
+		}
+		wp_safe_redirect( $permalink, 301 );
+		exit;
+	}
+	
+	/**
+	 * Renommage d'une annonce publiée : l'ancien slug doit mener à l'annonce
+	 * (E-4303) — enregistre la redirection slug → ID.
+	 */
+	public static function record_slug_redirect( $post_id, $post_after, $post_before ) {
+		if ( ! $post_after instanceof WP_Post || PARTIKULIER_ESTATIK_POST_TYPE !== $post_after->post_type ) {
+			return;
+		}
+		if ( ! class_exists( '\\Partikulier\\Core\\Domain\\SlugRedirects\\SlugRedirectsService' ) ) {
+			return;
+		}
+		$old_slug = (string) $post_before->post_name;
+		$new_slug = (string) $post_after->post_name;
+		if ( '' === $old_slug || $old_slug === $new_slug ) {
+			return;
+		}
+		// L'ancienne URL n'a vécu que si l'annonce était publique avant renommage.
+		if ( 'publish' !== $post_before->post_status ) {
+			return;
+		}
+		\Partikulier\Core\Domain\SlugRedirects\SlugRedirectsService::record_redirect( (int) $post_id, $old_slug );
+	}
+	
+	/**
+	 * Un slug pris par une annonce vivante ne redirige plus nulle part
+	 * (E-4303 : slug repris → 200 nouvelle fiche, 0 redirection résiduelle).
+	 */
+	public static function clear_redirect_for_taken_slug( $post_id, $post ) {
+		if ( ! $post instanceof WP_Post || PARTIKULIER_ESTATIK_POST_TYPE !== $post->post_type ) {
+			return;
+		}
+		if ( ! class_exists( '\\Partikulier\\Core\\Domain\\SlugRedirects\\SlugRedirectsService' ) ) {
+			return;
+		}
+		$slug = (string) $post->post_name;
+		if ( '' === $slug || 'publish' !== $post->post_status ) {
+			return;
+		}
+		\Partikulier\Core\Domain\SlugRedirects\SlugRedirectsService::clear_redirect( $slug );
+	}
+	
+	/**
+	 * Suppression définitive : aucune ligne orpheline ne doit survivre
+	 * (E-4303) — purge toutes les redirections de l'annonce.
+	 */
+	public static function purge_redirects_on_delete( $post_id ) {
+		$post = get_post( $post_id );
+		if ( ! $post instanceof WP_Post || PARTIKULIER_ESTATIK_POST_TYPE !== $post->post_type ) {
+			return;
+		}
+		if ( ! class_exists( '\\Partikulier\\Core\\Domain\\SlugRedirects\\SlugRedirectsService' ) ) {
+			return;
+		}
+		\Partikulier\Core\Domain\SlugRedirects\SlugRedirectsService::delete_for_property( (int) $post_id );
 	}
 }
 

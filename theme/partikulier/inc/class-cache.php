@@ -113,6 +113,15 @@ class Partikulier_Cache {
 		if ( ( self::is_root_request() && ! self::root_is_cacheable() ) || ! self::is_cacheable_request() ) {
 						return;
 		}
+			// SE-043 (E-4302) : jamais de cache des échecs. store_cache()
+			// refusait déjà d'ÉCRIRE les >= 400, mais l'en-tête public partait
+			// avant même que le statut soit connu (R1 : échecs géo rendus en 200
+			// avec Cache-Control: public + fichier en cache). Les échecs sont
+			// résolus dès parse_request ; le 410 sort avant ce hook
+			// (emit_listing_status à -3), le 404 est intercepté ici.
+		if ( is_404() || (int) get_query_var( 'pk_listing_gone' ) > 0 ) {
+						return;
+		}
 			// Les variantes localisees sont immuables par URL et restent publiques.
 			header( 'Cache-Control: public, max-age=' . self::TTL );
 			header( 'Vary: Accept-Encoding', false );
