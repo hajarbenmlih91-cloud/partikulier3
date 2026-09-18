@@ -239,6 +239,96 @@ final class TranslationVariantsService
 	}
 
 	/* ------------------------------------------------------------------ */
+	/* SE-054 — filet de sécurité variantes (zéro fantôme, ×3 cohérent)    */
+	/* ------------------------------------------------------------------ */
+
+	/**
+	 * Identifiants des variantes LIÉES d'une annonce source.
+	 *
+	 * @return array<int, int>
+	 */
+	public static function variant_ids_for( $source_property_id ): array
+	{
+			global $wpdb;
+			$rows = $wpdb->get_results(
+					$wpdb->prepare(
+							'SELECT variant_property_id FROM ' . self::variants_table() . ' WHERE source_property_id = %d AND variant_property_id IS NOT NULL AND variant_property_id > 0',
+							absint($source_property_id)
+					),
+					ARRAY_A
+			);
+			$ids = [];
+			foreach ( (array) $rows as $row ) {
+					$ids[] = (int) $row['variant_property_id'];
+			}
+			return $ids;
+	}
+
+	/**
+	 * Propage le statut de clôture d'une annonce à ses variantes liées :
+	 * une annonce vendue l'est dans les TROIS langues (_pk_status cohérent
+	 * ×3 — SE-054). La traduction manuelle éventuelle de la variante est
+	 * préservée (seuls les métas de statut changent).
+	 */
+	public static function propagate_status( $source_property_id, $status, $reason = '' )
+	{
+			$status = sanitize_key((string) $status);
+			if ( '' === $status ) {
+					return;
+			}
+			foreach ( self::variant_ids_for($source_property_id) as $variant_id ) {
+					update_post_meta($variant_id, '_pk_status', $status);
+					if ( '' !== $reason ) {
+							update_post_meta($variant_id, '_pk_closed_reason', sanitize_key((string) $reason));
+					}
+			}
+	}
+
+	/**
+	 * Filet anti-fantômes (SE-054) : la mise à la corbeille d'une annonce
+	 * source emmène ses variantes — sinon les pages EN/AR d'une annonce
+	 * retirée restent publiées (variantes fantômes mesurées au déploiement
+	 * trilingue : actives dès la première heure).
+	 */
+	public static function trash_variants_with_source( $post_id )
+	{
+			$post_id = absint($post_id);
+			if ( ! $post_id || self::POST_TYPE !== get_post_type($post_id) ) {
+					return;
+			}
+			foreach ( self::variant_ids_for($post_id) as $variant_id ) {
+					if ( 'trash' !== get_post_status($variant_id) ) {
+							wp_trash_post($variant_id);
+					}
+			}
+			self::audit('variants_trashed_with_source', 'property', $post_id, []);
+	}
+
+	/**
+	 * Variantes fantômes : variantes LIÉES encore publiées dont la source
+	 * n'est plus publique. Sonde du health check (E-5404) — orphans > 0
+	 * dès qu'un fantôme est présent.
+	 */
+	public static function count_ghost_variants(): int
+	{
+			global $wpdb;
+			$rows = $wpdb->get_results(
+					'SELECT v.variant_property_id AS variant_id, p.post_status AS source_status FROM ' . self::variants_table() . ' v
+					INNER JOIN ' . $wpdb->posts . ' p ON p.ID = v.source_property_id
+					WHERE v.variant_property_id IS NOT NULL AND v.variant_property_id > 0',
+					ARRAY_A
+			);
+			$ghosts = 0;
+			foreach ( (array) $rows as $row ) {
+					$variant_id = (int) $row['variant_id'];
+					if ( 'publish' === get_post_status($variant_id) && 'publish' !== $row['source_status'] ) {
+							$ghosts++;
+					}
+			}
+			return $ghosts;
+	}
+
+	/* ------------------------------------------------------------------ */
 	/* Locale (port fidèle)                                                */
 	/* ------------------------------------------------------------------ */
 

@@ -93,6 +93,16 @@ class Partikulier_Dashboard {
 	 * Gestion des annonces par le proprietaire (AJAX).
 	 * Actions : mark_sold, mark_rented, reactivate, delete.
 	 */
+	/**
+	 * SE-054 : propage un changement de statut aux variantes liées
+	 * (cohérence ×3 langues) — délégation au service du plugin.
+	 */
+	private static function propagate_status_to_variants( $post_id, $status, $reason = '' ) {
+			if ( class_exists( '\Partikulier\Core\Domain\TranslationVariants\TranslationVariantsService' ) ) {
+				\Partikulier\Core\Domain\TranslationVariants\TranslationVariantsService::propagate_status( $post_id, $status, $reason );
+			}
+	}
+
 	public static function handle_manage() {
 		check_ajax_referer( 'pk_manage_listing', 'nonce' );
 		if ( ! is_user_logged_in() ) {
@@ -143,6 +153,7 @@ class Partikulier_Dashboard {
 				update_post_meta( $post_id, '_pk_closed_reason', 'vendu' );
 				update_post_meta( $post_id, '_pk_closed_at', current_time( 'mysql', true ) );
 				wp_update_post( array( 'ID' => $post_id, 'post_status' => 'publish' ) );
+				self::propagate_status_to_variants( $post_id, 'vendu', 'vendu' ); // SE-054 : cohérent ×3 langues
 				$message = __( 'Annonce marquée comme vendue.', 'partikulier' );
 				break;
 			case 'mark_rented':
@@ -150,11 +161,13 @@ class Partikulier_Dashboard {
 				update_post_meta( $post_id, '_pk_closed_reason', 'loue' );
 				update_post_meta( $post_id, '_pk_closed_at', current_time( 'mysql', true ) );
 				wp_update_post( array( 'ID' => $post_id, 'post_status' => 'publish' ) );
+				self::propagate_status_to_variants( $post_id, 'loue', 'loue' ); // SE-054 : cohérent ×3 langues
 				$message = __( 'Annonce marquée comme louée.', 'partikulier' );
 				break;
 			case 'pause':
 				update_post_meta( $post_id, '_pk_status', 'pause' );
 				wp_update_post( array( 'ID' => $post_id, 'post_status' => 'draft' ) );
+				self::propagate_status_to_variants( $post_id, 'pause' ); // SE-054
 				$message = __( 'Annonce mise en pause.', 'partikulier' );
 				break;
 			case 'reactivate':
@@ -164,6 +177,7 @@ class Partikulier_Dashboard {
 					wp_update_post( array( 'ID' => $post_id, 'post_status' => 'publish' ) );
 				}
 				update_post_meta( $post_id, '_pk_status', 'actif' );
+				self::propagate_status_to_variants( $post_id, 'actif' ); // SE-054
 				delete_post_meta( $post_id, '_pk_closed_reason' );
 				delete_post_meta( $post_id, '_pk_closed_at' );
 				$message = __( 'Annonce réactivée.', 'partikulier' );
@@ -174,6 +188,7 @@ class Partikulier_Dashboard {
 				update_post_meta( $post_id, '_pk_closed_reason', 'archive' );
 				update_post_meta( $post_id, '_pk_closed_at', current_time( 'mysql', true ) );
 				wp_update_post( array( 'ID' => $post_id, 'post_status' => 'publish' ) );
+				self::propagate_status_to_variants( $post_id, 'archive', 'archive' ); // SE-054
 				$message = __( 'Annonce retirée des résultats et conservée comme archive publique.', 'partikulier' );
 				break;
 		}

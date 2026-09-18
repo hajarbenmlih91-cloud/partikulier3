@@ -299,6 +299,9 @@ $gallery_ids = array();
 							<span><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Cette annonce ne reçoit plus de contacts.', 'Cette annonce ne reçoit plus de contacts.', 'partikulier' ) ); ?></span>
 					</div>
 				<?php endif; ?>
+					<?php if ( $is_closed && class_exists( 'Partikulier_Listing_Closure' ) ) : ?>
+						<?php echo Partikulier_Listing_Closure::similar_block_html( $post ); // phpcs:ignore WordPress.Security.EscapeOutput -- rendu échappé en interne (SE-054, E-5402/E-5403) ?>
+					<?php endif; ?>
 					<?php
 					$author = get_userdata( $post->post_author );
 					if ( $author ) :

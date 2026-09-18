@@ -53,6 +53,9 @@ final class HealthCheck
 				'collisions' => RouteRegistry::collisionCount(),
 			],
 			'domains'        => DomainRegistry::health(),
+			'translation_variants' => [ // SE-054 (E-5404) : variantes fantômes (publiées sans source publique)
+				'ghosts'  => \Partikulier\Core\Domain\TranslationVariants\TranslationVariantsService::count_ghost_variants(),
+			],
 			'locale'         => determine_locale(),
 		];
 	}

@@ -225,6 +225,7 @@ $partikulier_modules = array(
 		 * compose doivent exister à l'évaluation de sa définition de classe. */
 		'/inc/class-listing-i18n-lexicon.php',
 		'/inc/class-listing-arabic-places.php',
+		'/inc/class-listing-closure.php',
 		'/inc/class-listing-i18n-places.php',
 		'/inc/class-listing-i18n-text.php',
 		'/inc/class-listing-i18n-seo.php',
