@@ -234,7 +234,111 @@ jobs:
             php theme/partikulier/tests/search-arrays-contract.php > preuves-run/contrats/search-arrays-contract.json
           echo "PASS  search-arrays-contract" | tee -a preuves-run/journal.txt
           kill "$SRV" 2>/dev/null || true
-      - name: Vérifier l'oracle 358/358 (297 + SE-026 + Schéma 2.7.0/E-4303 + SE-024 + SE-043 + SE-034 + SE-048-U + SE-035 + SE-036 + SE-037 + SE-054)
+      - name: Installer Polylang et créer fr/en/ar (SE-025, E-2501)
+        run: |
+          # Version épinglée = celle de la config de référence (E-2503,
+          # docs/INSTALLATION.md) : la montée de version de Polylang est un
+          # acte délibéré, jamais une dérive silencieuse du runner.
+          wp plugin install polylang --version=3.8.7 --activate --path=wp
+          # Phase 1 (contexte WP-CLI, recette validée E-2501) : les trois
+          # langues + les réglages de référence. Le contexte CLI est
+          # exigé : sans langues définies, Polylang n'instancie aucun
+          # contexte front (class-polylang.php::init laisse $class vide)
+          # et $GLOBALS['polylang'] n'existe pas en PHP nu — le modèle
+          # n'est joignable que par le contexte admin/CLI. Fr créée EN
+          # PREMIER : la première langue devient la langue par défaut
+          # (Model\Languages::add). Heredoc vers un fichier — discipline
+          # FIX1 (run 35358466811) : aucune apostrophe ne doit vivre dans
+          # un quoting shell.
+          cat > pll-langues.php <<'PLL_LANGUES'
+          <?php
+          if (!defined("ABSPATH")) { exit("CLI only"); }
+          $model = isset($GLOBALS["polylang"]) && $GLOBALS["polylang"] ? $GLOBALS["polylang"]->model : null;
+          if (!$model) { WP_CLI::error("Polylang n'est pas actif"); }
+          $langues = array(
+              array("name" => "Français", "slug" => "fr", "locale" => "fr_FR", "rtl" => 0, "flag" => "fr", "term_group" => 1),
+              array("name" => "English", "slug" => "en", "locale" => "en_US", "rtl" => 0, "flag" => "us", "term_group" => 0),
+              array("name" => "العربية", "slug" => "ar", "locale" => "ar", "rtl" => 1, "flag" => "ma", "term_group" => 2),
+          );
+          foreach ($langues as $l) {
+              if (!$model->get_language($l["slug"])) {
+                  $res = $model->add_language($l);
+                  if (is_wp_error($res)) { WP_CLI::error("langue ".$l["slug"]." : ".$res->get_error_message()); }
+              }
+          }
+          // Réglages via l'API sanctionnée PLL()->options->merge() — le
+          // chemin des écrans Réglages. JAMAIS update_option() direct :
+          // Options::save_all() (hook shutdown) réécrit l'option en
+          // fusionnant DB × mémoire, et écraserait la valeur au sortir du
+          // processus. merge() marque l'objet modifié : le shutdown
+          // persiste NOS valeurs.
+          $erreurs = $GLOBALS["polylang"]->options->merge(array(
+              "force_lang" => 1,    // langue en répertoire : /fr/ /en/ /ar/
+              "hide_default" => 0,  // la langue par défaut garde son préfixe
+              "browser" => 0,
+              "redirect_lang" => 0,
+              "default_lang" => "fr",
+              "taxonomies" => array("es_type", "es_status", "es_location", "es_category"),
+              "post_types" => array("post", "page", "properties"),
+          ));
+          if (is_wp_error($erreurs) && $erreurs->has_errors()) {
+              WP_CLI::error("réglages polylang : " . $erreurs->get_error_message());
+          }
+          wp_cache_flush();
+          WP_CLI::success("langues fr (défaut) / en / ar (rtl=1) créées, réglages de référence posés");
+          PLL_LANGUES
+          wp eval-file pll-langues.php --path=wp
+          # Phase 2 (processus neuf n°2) : Polylang amorce ses types traduits
+          # AU BOOT — les options de la phase 1 ne sont visibles qu'ici. On
+          # rejoue l'étape « contenus non traduits » du wizard : assignation
+          # en masse du contenu existant (les 30 annonces) à la langue par
+          # défaut, sinon /fr/annonces/ serait vide, puis flush des rewrites.
+          cat > pll-masse.php <<'PLL_MASSE'
+          <?php
+          if (!defined("ABSPATH")) { exit("CLI only"); }
+          $model = isset($GLOBALS["polylang"]) && $GLOBALS["polylang"] ? $GLOBALS["polylang"]->model : null;
+          if (!$model) { WP_CLI::error("Polylang n'est pas actif"); }
+          $fr = $model->get_language("fr");
+          if (!$fr) { WP_CLI::error("langue fr introuvable"); }
+          $model->set_language_in_mass($fr);
+          flush_rewrite_rules();
+          $sans = 0;
+          foreach (get_posts(array("post_type" => "properties", "post_status" => "any", "numberposts" => 100, "fields" => "ids")) as $pid) {
+              if (!pll_get_post_language($pid)) { $sans++; }
+          }
+          if ($sans > 0) { WP_CLI::error("$sans annonces properties restent sans langue"); }
+          WP_CLI::success("contenu existant assigné à fr, rewrites flushed");
+          PLL_MASSE
+          wp eval-file pll-masse.php --path=wp
+          wp rewrite flush --path=wp
+      - name: Contrat trilingue SE-025 HTTP réel — 9 URLs ×3 langues + RTL + hreflang (E-2502)
+        run: |
+          set -euo pipefail
+          # Serveur sur l'ORIGINE DU SITE (home == origine attaquée, port
+          # 8099 inclus — discipline front-assets/search-arrays). Après
+          # Polylang (force_lang=1, hide_default=0), la racine / REDIRIGE
+          # vers /fr/ : la sonde exige donc un 200 DIRECT sur l'accueil de
+          # la langue par défaut.
+          php -S 127.0.0.1:8099 -t wp theme/partikulier/tests/router-ci.php > preuves-run/se025-server.log 2>&1 &
+          SRV=$!
+          sain=false
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8099/fr/ || true)
+            if [ "$code" = "200" ]; then sain=true; break; fi
+            sleep 0.5
+          done
+          if [ "$sain" != true ]; then
+            echo "FAIL  se025-trilingual-routes-contract (sonde HTTP : pas de 200 sur /fr/, code=$code)" | tee -a preuves-run/journal.txt
+            kill "$SRV" 2>/dev/null || true
+            exit 1
+          fi
+          PK_BASE=http://127.0.0.1:8099 \
+          PK_WP_DIR=$PWD/wp \
+          PK_COMMIT=${{ github.sha }} \
+            php theme/partikulier/tests/se025-trilingual-routes-contract.php > preuves-run/contrats/se025-trilingual-routes-contract.json
+          echo "PASS  se025-trilingual-routes-contract" | tee -a preuves-run/journal.txt
+          kill "$SRV" 2>/dev/null || true
+      - name: Vérifier l'oracle 370/370 (297 + SE-026 + Schéma 2.7.0/E-4303 + SE-024 + SE-043 + SE-034 + SE-048-U + SE-035 + SE-036 + SE-037 + SE-054 + SE-025)
         run: |
           # Heredoc (échec du run 35358466811 — Porte 5) : l'apostrophe de
           # « d'anciens slugs » dans le message d'erreur fermait prématurément le
@@ -242,7 +346,7 @@ jobs:
           # unexpected token '(' » (exit 2) AVANT d'exécuter PHP. Programme PHP
           # inchangé à l'octet près : seul le transport change.
           php <<'ORACLE'
-          <?php $tot=0; $pas=0; foreach (glob("preuves-run/contrats/*.json") as $f) { $d=json_decode(file_get_contents($f), true); if (($d["status"] ?? "") !== "PASS") { fwrite(STDERR, basename($f).": status != PASS\n"); exit(1); } $tot += (int) $d["total"]; $pas += (int) $d["passed"]; } echo "contrats dynamiques : $pas/$tot\n"; if ($tot !== 358 || $pas !== 358) { fwrite(STDERR, "oracle inattendu (attendu 358/358 — 37 suites : 297 base lot sécurité 2.10.7 + 4 warning hmac_mode (E26-001→004, SE-026) + 9 redirections d'anciens slugs (E43-001→009, Schéma 2.7.0/E-4303) + 7 dédoublonnage i18n/DP-1 (E24-001→007, SE-024) + 9 routage géo 404/410/301 (E43T-001→009, SE-043) + 6 idempotence canal public (E34-001→006, SE-034) + 6 audit premium/DP-8 (E48-001→006, SE-048-U) + 5 catalogues EN/AR (E35-001→005, SE-035) + 5 référentiel lieux AR (E36-001→005, SE-036) + 5 SEO multilingue (E37-001→005, SE-037) + 5 expérience vendue/filet variantes (E54-001→005, SE-054))\n"); exit(1); }
+          <?php $tot=0; $pas=0; foreach (glob("preuves-run/contrats/*.json") as $f) { $d=json_decode(file_get_contents($f), true); if (($d["status"] ?? "") !== "PASS") { fwrite(STDERR, basename($f).": status != PASS\n"); exit(1); } $tot += (int) $d["total"]; $pas += (int) $d["passed"]; } echo "contrats dynamiques : $pas/$tot\n"; if ($tot !== 370 || $pas !== 370) { fwrite(STDERR, "oracle inattendu (attendu 370/370 — 38 suites : 297 base lot sécurité 2.10.7 + 4 warning hmac_mode (E26-001→004, SE-026) + 9 redirections d'anciens slugs (E43-001→009, Schéma 2.7.0/E-4303) + 7 dédoublonnage i18n/DP-1 (E24-001→007, SE-024) + 9 routage géo 404/410/301 (E43T-001→009, SE-043) + 6 idempotence canal public (E34-001→006, SE-034) + 6 audit premium/DP-8 (E48-001→006, SE-048-U) + 5 catalogues EN/AR (E35-001→005, SE-035) + 5 référentiel lieux AR (E36-001→005, SE-036) + 5 SEO multilingue (E37-001→005, SE-037) + 5 expérience vendue/filet variantes (E54-001→005, SE-054) + 12 front trilingue 9 URLs/RTL/hreflang (E25-001→012, SE-025))\n"); exit(1); }
           ORACLE
       - name: Publier les résultats
         if: always()
