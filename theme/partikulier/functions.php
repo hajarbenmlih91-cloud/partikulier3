@@ -218,11 +218,13 @@ $partikulier_modules = array(
 		'/inc/class-required-pages.php',
 		'/inc/class-morocco-places.php',
 		'/inc/class-place-requests.php',
+		'/inc/class-places-admin.php',
 		'/inc/class-listing-preview.php',
 		/* Lot C1 (découpe) : les cinq modules de rédaction multilingue sont
 		 * chargés AVANT le shell class-listing-i18n.php — les traits qu'il
 		 * compose doivent exister à l'évaluation de sa définition de classe. */
 		'/inc/class-listing-i18n-lexicon.php',
+		'/inc/class-listing-arabic-places.php',
 		'/inc/class-listing-i18n-places.php',
 		'/inc/class-listing-i18n-text.php',
 		'/inc/class-listing-i18n-seo.php',

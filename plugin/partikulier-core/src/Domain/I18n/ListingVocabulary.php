@@ -25,74 +25,37 @@ final class ListingVocabulary
 		 *
 		 * @return array
 		 */
-	private static function arabic_places() {
-			return array(
-					'casablanca'   => 'الدار البيضاء',
-					'rabat'        => 'الرباط',
-					'marrakech'    => 'مراكش',
-					'tanger'       => 'طنجة',
-					'fes'          => 'فاس',
-					'fès'          => 'فاس',
-					'agadir'       => 'أكادير',
-					'saidia'       => 'السعيدية',
-					'saïdia'       => 'السعيدية',
-					'meknes'       => 'مكناس',
-					'meknès'       => 'مكناس',
-					'oujda'        => 'وجدة',
-					'kenitra'      => 'القنيطرة',
-					'kénitra'      => 'القنيطرة',
-					'tetouan'      => 'تطوان',
-					'tétouan'      => 'تطوان',
-					'sale'         => 'سلا',
-					'salé'         => 'سلا',
-					'mohammedia'   => 'المحمدية',
-					'el jadida'    => 'الجديدة',
-					'essaouira'    => 'الصويرة',
-					'beni mellal'  => 'بني ملال',
-					'nador'        => 'الناظور',
-					'ifrane'       => 'إفران',
-					'ouarzazate'   => 'ورزازات',
-					'safi'         => 'آسفي',
-					'dakhla'       => 'الداخلة',
-					'laayoune'     => 'العيون',
-					'laâyoune'     => 'العيون',
-					'berrechid'    => 'برشيد',
-					'settat'       => 'سطات',
-					'khouribga'    => 'خريبكة',
-					'taza'         => 'تازة',
-					'larache'      => 'العرائش',
-					'al hoceima'   => 'الحسيمة',
-					'chefchaouen'  => 'شفشاون',
-					'bouznika'     => 'بوزنيقة',
-					'skhirat'      => 'الصخيرات',
-					'temara'       => 'تمارة',
-					'témara'       => 'تمارة',
-					'berkane'      => 'بركان',
-					/* 6.17.30 — S9.8 : quartiers courants du référentiel marocain.
-					 * Sans ces entrées, les quartiers référencés en français
-					 * restaient latins dans les titres/données AR des fiches
-					 * (Targa, Hivernage, Médina, Agdal…) et dans les futurs
-					 * dépôts réels. */
-					'targa'        => 'تارغة',
-					'hivernage'    => 'هيفيرناژ',
-					'medina'       => 'المدينة القديمة',
-					'médina'       => 'المدينة القديمة',
-					'gueliz'       => 'جيليز',
-					'guéliz'       => 'جيليز',
-					'palmeraie'    => 'النخيل',
-					'agdal'        => 'أكدال',
-					'souissi'      => 'السويسي',
-					'hassan'       => 'حسان',
-					'hay riad'     => 'حي الرياض',
-					'maarif'       => 'المعاريف',
-					'maârif'       => 'المعاريف',
-					'ain diab'     => 'عين دياب',
-					'gauthier'     => 'غوتييه',
-					'californie'   => 'كاليفورنيا',
-					'anfa'         => 'أنفا',
-					'oca'          => 'الأوكا',
-					'sidi maarouf' => 'سيدي معروف',
-			);
+		private static function arabic_places(): array
+	{
+			return ArabicPlacesDictionary::map(); // SE-036 : dictionnaire dédié (découpe C1A-009)
+	}
+
+		/**
+	 * SE-036 (E-3603) : overrides AR importés par l'administration
+	 * (option pk_places_ar) — parité thème (C1A-004).
+	 *
+	 * @return array<string,string> clé normalisée => arabe
+	 */
+	private static function arabic_place_overrides() {
+			static $cached = null;
+			if ( null !== $cached ) {
+					return $cached;
+			}
+			$cached = array();
+			$raw    = get_option( 'pk_places_ar', array() );
+			if ( is_array( $raw ) ) {
+					foreach ( $raw as $key => $arabic ) {
+							$key   = is_string( $key ) ? $key : '';
+							$value = is_string( $arabic ) ? trim( $arabic ) : '';
+							if ( '' === $key || '' === $value ) {
+									continue;
+							}
+							$norm            = function_exists( 'remove_accents' ) ? remove_accents( $key ) : $key;
+							$norm            = function_exists( 'mb_strtolower' ) ? mb_strtolower( $norm ) : strtolower( $norm );
+							$cached[ $norm ] = $value;
+					}
+			}
+			return $cached;
 	}
 
 		/**
@@ -108,20 +71,23 @@ final class ListingVocabulary
 				return $place;
 		}
 
-			$map    = self::arabic_places();
+			$map       = self::arabic_places();
+			$overrides = self::arabic_place_overrides(); // SE-036 (E-3603) : imports CSV — parité thème
 			$pieces = array_map( 'trim', explode( ',', $place ) );
 			$out    = array();
 
 		foreach ( $pieces as $piece ) {
 				$key   = function_exists( 'mb_strtolower' ) ? mb_strtolower( $piece ) : strtolower( $piece );
 				$key   = function_exists( 'remove_accents' ) ? remove_accents( $key ) : $key;
-				$found = '';
+				$found = isset( $overrides[ $key ] ) ? $overrides[ $key ] : '';
+				if ( '' === $found ) {
 			foreach ( $map as $needle => $arabic ) {
 					$needle_key = function_exists( 'remove_accents' ) ? remove_accents( $needle ) : $needle;
 				if ( $needle_key === $key ) {
 					$found = $arabic;
 					break;
 				}
+			}
 			}
 				$out[] = $found ? $found : $piece;
 		}

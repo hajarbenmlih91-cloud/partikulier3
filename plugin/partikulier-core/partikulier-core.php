@@ -100,6 +100,7 @@ require_once __DIR__ . '/src/Domain/SlugRedirects/SlugRedirectsService.php';
  * bootstrap mesuré par REG-2.
  */
 require_once __DIR__ . '/src/Domain/I18n/ListingLexicon.php';
+require_once __DIR__ . '/src/Domain/I18n/ArabicPlacesDictionary.php';
 require_once __DIR__ . '/src/Domain/I18n/ListingVocabulary.php';
 require_once __DIR__ . '/src/Domain/I18n/ListingTextUtils.php';
 require_once __DIR__ . '/src/Domain/I18n/ListingTextService.php';
