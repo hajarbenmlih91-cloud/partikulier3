@@ -32,7 +32,8 @@
  *    diagnostic, 2623 l., cloisonné au lot E) et
  *    estatik4/front/property/single.php (gabarit de substitution Estatik) ;
  *  - DA-010 : santé — plugin 2.10.4, thème 6.20.3 (lot F — extinction finale),
- *    schéma figé 2.6.0, 8/8 domaines, 0 collision ;
+ *    schéma 2.7.0 (zéro migration au lot D — le bump vient du micro-lot
+ *    pré-prod 2.10.8/6.20.7, E-4303, postérieur), 8/8 domaines, 0 collision ;
  *  - DA-011 : hygiène du banc — les invariants des lots A/B restent intacts
  *    (le contrat est de lecture seule : aucune écriture).
  *
@@ -232,14 +233,14 @@ $assert('DA-009', $themeOversized === $frozenBaseline,
         ? sprintf('baseline thème gelée (actualisée lot F) : %d fichiers préexistants >400 l. (extinction des 8 vestiges — buyer-qualification et n8n-security sous le seuil) — exclusions documentées : %s', count($frozenBaseline), implode(', ', $documentedExclusions))
         : 'écart à la baseline : +' . implode(', ', array_diff($themeOversized, $frozenBaseline)) . ' / -' . implode(', ', array_diff($frozenBaseline, $themeOversized)));
 
-/* DA-010 — santé : plugin 2.10.4 (lot F), thème 6.20.3, schéma figé, 8/8, 0 collision. */
+/* DA-010 — santé : plugin 2.10.4 (lot F), thème 6.20.3, schéma 2.7.0 (bump micro-lot pré-prod, postérieur), 8/8, 0 collision. */
 $themeVersion = wp_get_theme()->get('Version');
 $health = (new HealthCheck())->get();
 $pluginDomains = count(array_filter($health['domains'] ?? [], static fn($d): bool => ($d['owner'] ?? '') === 'plugin'));
 $assert('DA-010', PARTIKULIER_CORE_VERSION === '2.10.7' && $themeVersion === '6.20.6'
-    && \Partikulier\Core\Database\Schema::VERSION === '2.6.0' && ($health['status'] ?? '') === 'ok'
+    && \Partikulier\Core\Database\Schema::VERSION === '2.7.0' && ($health['status'] ?? '') === 'ok'
     && $pluginDomains === 8 && (int) ($health['routes']['collisions'] ?? -1) === 0,
-    sprintf('santé : %s, plugin %s, thème %s (lot F — extinction finale), schéma %s (zéro migration), %d/8 domaines, 0 collision',
+    sprintf('santé : %s, plugin %s, thème %s (lot F — extinction finale), schéma %s (zéro migration au lot D — bump micro-lot pré-prod, postérieur), %d/8 domaines, 0 collision',
         ($health['status'] ?? '?'), PARTIKULIER_CORE_VERSION, $themeVersion, \Partikulier\Core\Database\Schema::VERSION, $pluginDomains));
 
 /* DA-011 — hygiène du banc (contrat de lecture seule : aucune écriture). */

@@ -32,7 +32,9 @@ require_once __DIR__ . '/src/Domain/I18n/I18nDomainLoader.php';
 \Partikulier\Core\Domain\I18n\I18nDomainLoader::load_bootstrap_domain();
 \Partikulier\Core\Domain\I18n\I18nDomainLoader::register_runtime();
 
+require_once __DIR__ . '/src/Database/SchemaStatementsTrait.php';
 require_once __DIR__ . '/src/Database/Schema.php';
+require_once __DIR__ . '/src/Database/MigrationsAdoptionsTrait.php';
 require_once __DIR__ . '/src/Database/Migrator.php';
 require_once __DIR__ . '/src/Rest/RouteRegistry.php';
 require_once __DIR__ . '/src/Rest/RequestCycle.php';
@@ -74,6 +76,19 @@ require_once __DIR__ . '/src/Domain/Automation/AutomationHmacTrait.php';
 require_once __DIR__ . '/src/Domain/Automation/AutomationService.php';
 require_once __DIR__ . '/src/Domain/OwnerStats/OwnerStatsService.php';
 require_once __DIR__ . '/src/Domain/TranslationVariants/TranslationVariantsService.php';
+require_once __DIR__ . '/src/Domain/SlugRedirects/SlugRedirectsService.php';
+
+/*
+ * Domaine listings — redirections d'anciens slugs (micro-lot pré-prod
+ * 2.10.8/6.20.7, E-4303) : table NEUVE pk_slug_redirects (schéma 2.7.0,
+ * créée par le Migrator — aucune migration de données) + API de stockage
+ * slug → ID d'annonce. Classe pure chargée inconditionnellement : AUCUN
+ * hook au chargement, AUCUN cron, AUCUNE route — le lot SE-043 du thème
+ * (6.20.7) consommera record/resolve/clear/delete via sa couture
+ * class_exists pour émettre les 301 (permalink courant, jamais de chaîne
+ * A→B→C), les 410 (annonce corbeillée) et nettoyer à la suppression
+ * définitive. Les mutations sont consignées au registre d'audit.
+ */
 
 /*
  * Domaine i18n contenu (lot C1) : couche de rédaction multilingue des

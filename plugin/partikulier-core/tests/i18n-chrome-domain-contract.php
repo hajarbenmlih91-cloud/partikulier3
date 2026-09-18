@@ -21,9 +21,10 @@
  *  - chaîne figée REG-3 : la traduction .mo canonique passe prioritairement
  *    (filtre réel testé via load_textdomain du catalogue ar), les domaines
  *    étrangers ('es', 'default') sont intacts ;
- *  - hygiène : modules ≤300 lignes, versions 2.9.1/6.19.1 (lot C4), schéma figé
- *    2.6.0 (aucune migration C2), 8/8 domaines plugin, 0 collision, 20
- *    tables au manifeste.
+ *  - hygiène : modules ≤300 lignes, versions 2.9.1/6.19.1 (lot C4), schéma
+ *    2.7.0 (aucune migration C2 — le bump vient du micro-lot pré-prod
+ *    2.10.8/6.20.7, E-4303, postérieur au lot C2), 8/8 domaines plugin,
+ *    0 collision, 21 tables au manifeste (pk_slug_redirects, lot ML).
  *
  * Le comportement dépendant de la langue (en/ar servis) est prouvé par la
  * recette du lot : gel de corpus (empreinte de service identique d71b57fa…)
@@ -157,14 +158,14 @@ try {
         sprintf("filtre réel : __('Aide') → '%s' via le filtre du service unifié (catalogue ar chargé sur le domaine réel, domaine déchargé au préalable) — parité locale et service directe",
             $aideViaFilter));
 
-    // 10) Versions et santé : 2.10.4 / 6.20.3 (lot F — extinction finale : plugin 2.10.4, thème 6.20.3), schéma figé 2.6.0, 8/8, 0 collision.
+    // 10) Versions et santé : 2.10.4 / 6.20.3 (lot F — extinction finale : plugin 2.10.4, thème 6.20.3), schéma 2.7.0 (aucune migration C2 — bump micro-lot pré-prod E-4303, postérieur), 8/8, 0 collision.
     $themeVersion = wp_get_theme()->get('Version');
     $health = (new HealthCheck())->get();
     $pluginDomains = count(array_filter($health['domains'] ?? [], static fn($d) => ($d['owner'] ?? '') === 'plugin'));
     $assert('C2A-010', PARTIKULIER_CORE_VERSION === '2.10.7' && $themeVersion === '6.20.6'
-        && Schema::VERSION === '2.6.0' && $pluginDomains === 8
+        && Schema::VERSION === '2.7.0' && $pluginDomains === 8
         && (int) ($health['routes']['collisions'] ?? -1) === 0,
-        sprintf('versions : plugin %s, thème %s, schéma %s (figé — zéro migration C2), %d/8 domaines, 0 collision',
+        sprintf('versions : plugin %s, thème %s, schéma %s (zéro migration C2 — le bump 2.7.0 vient du micro-lot pré-prod, E-4303), %d/8 domaines, 0 collision',
             PARTIKULIER_CORE_VERSION, $themeVersion, Schema::VERSION, $pluginDomains));
 
     // 11) Couture statique : le shell contient les branches d'extinction et
@@ -203,12 +204,13 @@ try {
         sprintf('modules ≤ 300 lignes : 9 fichiers du périmètre C2 conformes (max %d lignes)%s',
             $maxLines, $oversize !== [] ? ' — dépassements : ' . implode(', ', $oversize) : ''));
 
-    // 13) Manifeste : 20 tables pk_ suivies, aucune côté thème (le lot C2
-    //     n'ajoute aucune table — dictionnaires et chaîne de résolution purs).
+    // 13) Manifeste : 21 tables pk_ suivies, aucune côté thème (le lot C2
+    //     n'ajoute aucune table — dictionnaires et chaîne de résolution purs ;
+    //     la 21e, pk_slug_redirects, vient du micro-lot pré-prod, lot ML).
     $manifest = Schema::domainTables();
     $themeOwned = array_filter($manifest, static fn(array $d) => ($d['owner'] ?? '') === 'theme');
-    $assert('C2A-013', count($manifest) === 20 && $themeOwned === [],
-        'manifeste : 20/20 tables pk_ suivies, 0 côté thème — la couche chrome est une bibliothèque de résolution sans stockage');
+    $assert('C2A-013', count($manifest) === 21 && $themeOwned === [],
+        'manifeste : 21/21 tables pk_ suivies, 0 côté thème — la couche chrome est une bibliothèque de résolution sans stockage (pk_slug_redirects : micro-lot ML, pas C2)');
 } catch (Throwable $error) {
     $assert('C2A-EXCEPTION', false, $error->getMessage());
 }

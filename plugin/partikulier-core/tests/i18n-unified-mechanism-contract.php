@@ -31,7 +31,8 @@
  *    thème, source vivante du chargeur ;
  *  - transfert des variantes (état final B6) : TranslationVariantsService
  *    propriétaire, garde de délégation côté thème, domaine health owner=plugin ;
- *  - santé : 2.9.1 / 6.19.1, schéma 2.6.0 (zéro migration C3/C4), 8/8
+ *  - santé : 2.9.1 / 6.19.1, schéma 2.7.0 (zéro migration C3/C4 — le bump
+ *    vient du micro-lot pré-prod 2.10.8/6.20.7, E-4303, postérieur), 8/8
  *    domaines, 0 collision ; hygiène : tous les modules Domain/I18n ≤300 lignes.
  *
  * Environnement : la matrice de rechargement appelle reload_for_slug()
@@ -213,13 +214,13 @@ try {
         sprintf('variantes : service plugin %s, garde de délégation thème %s, owner health=%s',
             $variantsService ? 'présent' : 'absent', $variantsGuard ? 'présente' : 'absente', $health['domains']['translation_variants']['owner'] ?? '?'));
 
-    // 14) Santé et versions : 2.10.4 / 6.20.3 (lot F — extinction finale : plugin 2.10.4, thème 6.20.3), schéma figé 2.6.0, 8/8, 0 collision.
+    // 14) Santé et versions : 2.10.4 / 6.20.3 (lot F — extinction finale : plugin 2.10.4, thème 6.20.3), schéma 2.7.0 (zéro migration C3/C4 — bump micro-lot pré-prod E-4303, postérieur), 8/8, 0 collision.
     $themeVersion = wp_get_theme()->get('Version');
     $pluginDomains = count(array_filter($health['domains'] ?? [], static fn($d) => ($d['owner'] ?? '') === 'plugin'));
     $assert('C3A-014', PARTIKULIER_CORE_VERSION === '2.10.7' && $themeVersion === '6.20.6'
-        && Schema::VERSION === '2.6.0' && $pluginDomains === 8
+        && Schema::VERSION === '2.7.0' && $pluginDomains === 8
         && (int) ($health['routes']['collisions'] ?? -1) === 0,
-        sprintf('santé : plugin %s, thème %s, schéma %s (zéro migration C3/C4), %d/8 domaines, 0 collision',
+        sprintf('santé : plugin %s, thème %s, schéma %s (zéro migration C3/C4 — bump micro-lot pré-prod E-4303, postérieur), %d/8 domaines, 0 collision',
             PARTIKULIER_CORE_VERSION, $themeVersion, Schema::VERSION, $pluginDomains));
 
     // 15) Hygiène : tous les modules Domain/I18n du plugin ≤300 lignes.

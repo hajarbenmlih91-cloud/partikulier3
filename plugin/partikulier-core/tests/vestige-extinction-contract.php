@@ -36,8 +36,9 @@
  *  - FE-010 : appels système — exactement 1 site exec() dans le runtime
  *    thème+plugin (la passerelle SECU-1 du lot E, scan lexical par tokens)
  *    et gardes ABSPATH 100 % dans inc/ ;
- *  - FE-011 : santé — plugin 2.10.4, thème 6.20.3, schéma figé 2.6.0,
- *    8/8 domaines plugin, 0 collision ;
+ *  - FE-011 : santé — plugin 2.10.4, thème 6.20.3, schéma 2.7.0 (zéro
+ *    migration au lot F — le bump vient du micro-lot pré-prod 2.10.8/6.20.7,
+ *    E-4303, postérieur), 8/8 domaines plugin, 0 collision ;
  *  - FE-012 : hygiène du banc + INTEG-1 — leads=10, favoris=4,
  *    événements=2, variantes=0, annonces=30, zéro annonce fantôme
  *    (contrat de lecture seule : aucune écriture).
@@ -276,14 +277,14 @@ try {
             count($execSites), count($themeRuntime) + count($pluginRuntime), count($incFiles) - count($incSansGarde), count($incFiles))
         . ($execViolations ? ' — VIOLATIONS : ' . implode(', ', array_slice($execViolations, 0, 5)) : ''));
 
-    /* FE-011 — santé : versions du lot F, schéma figé, 8/8, 0 collision. */
+    /* FE-011 — santé : versions du lot F, schéma 2.7.0 (bump micro-lot pré-prod, postérieur), 8/8, 0 collision. */
     $themeVersion = wp_get_theme()->get('Version');
     $health = (new HealthCheck())->get();
     $pluginDomains = count(array_filter($health['domains'] ?? [], static fn($d): bool => ($d['owner'] ?? '') === 'plugin'));
     $assert('FE-011', PARTIKULIER_CORE_VERSION === '2.10.7' && $themeVersion === '6.20.6'
-        && \Partikulier\Core\Database\Schema::VERSION === '2.6.0' && ($health['status'] ?? '') === 'ok'
+        && \Partikulier\Core\Database\Schema::VERSION === '2.7.0' && ($health['status'] ?? '') === 'ok'
         && $pluginDomains === 8 && (int) ($health['routes']['collisions'] ?? -1) === 0,
-        sprintf('santé : %s, plugin %s, thème %s (lot F — extinction finale), schéma %s (zéro migration), %d/8 domaines, 0 collision',
+        sprintf('santé : %s, plugin %s, thème %s (lot F — extinction finale), schéma %s (zéro migration au lot F — bump micro-lot pré-prod, postérieur), %d/8 domaines, 0 collision',
             ($health['status'] ?? '?'), PARTIKULIER_CORE_VERSION, $themeVersion, \Partikulier\Core\Database\Schema::VERSION, $pluginDomains));
 
     /* FE-012 — hygiène du banc + INTEG-1 : zéro fantôme (lecture seule). */
