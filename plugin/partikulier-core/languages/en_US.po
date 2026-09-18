@@ -4,29 +4,455 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Language: en_US\n"
 
+msgid " + salon"
+msgstr " + living room"
+
+msgid " avec terrasse"
+msgstr " with terrace"
+
+msgid " et "
+msgstr " and "
+
+msgid " sans vis-à-vis"
+msgstr " with no opposite building"
+
+msgid " à louer"
+msgstr " for rent"
+
+msgid " à vendre"
+msgstr " for sale"
+
+msgid "%1$d problème(s) bloquant(s) et %2$d avertissement(s) sur l’ensemble du site."
+msgstr "%1$d blocking issue(s) and %2$d warning(s) across the site."
+
+msgid "%1$d publiées, %2$d en attente."
+msgstr "%1$d published, %2$d pending."
+
+msgid "%1$s %2$s %3$s%4$s à %5$s."
+msgstr "%1$s %2$s %3$s%4$s in %5$s."
+
+msgid "%1$s : %2$s"
+msgstr "%1$s: %2$s"
+
+msgid "%d annonce attend la validation d’une ville ou d’un quartier. Elle reste hors ligne d’ici là."
+msgstr "%d listing is awaiting city or neighbourhood validation. It stays offline until then."
+
+msgid "%d annonce n’a pas d’action. Sans elle, pas de badge et le filtre ne la trouve pas."
+msgstr "%d listing has no action set. Without it, no badge and the filter cannot find it."
+
+msgid "%d annonce n’a pas encore ses versions arabe et anglaise."
+msgstr "%d listing does not have its Arabic and English versions yet."
+
+msgid "%d annonces attendent une validation."
+msgstr "%d listings are awaiting validation."
+
+msgid "%d annonces publiées."
+msgstr "%d listings published."
+
+msgid "%d bloquant(s)"
+msgstr "%d blocking"
+
+msgid "%d chambre"
+msgstr "%d bedroom"
+
+msgid "%d image(s) sans texte alternatif."
+msgstr "%d image(s) without alternative text."
+
+msgid "%d photo(s) rattachée(s)."
+msgstr "%d photo(s) attached."
+
+msgid "%d point(s) à améliorer."
+msgstr "%d point(s) to improve."
+
+msgid "%d problème(s) bloquant(s) détecté(s)."
+msgstr "%d blocking issue(s) detected."
+
+msgid "%d salle de bains"
+msgstr "%d bathroom"
+
+msgid "%d terme est rangé dans « Achat ou location » alors qu’il n’y a pas sa place."
+msgstr "%d term is filed under “Buy or rent” where it does not belong."
+
+msgid "%d termes parasites dans « Achat ou location » : le menu affichera des villes."
+msgstr "%d stray terms in “Buy or rent”: the menu will show cities."
+
+msgid "%d types de biens disponibles."
+msgstr "%d property types available."
+
+msgid "%d à améliorer"
+msgstr "%d to improve"
+
+msgid "%d%s étage"
+msgstr "%d%s floor"
+
+msgid "%s MAD"
+msgstr "%s MAD"
+
+msgid "%s annonce trouvée"
+msgstr "%s listing found"
+
+msgid "%s à vendre et à louer"
+msgstr "%s for sale and rent"
+
+msgid "%s, retour a l accueil"
+msgstr "%s, back to the homepage"
+
+msgid "(photo %d)"
+msgstr "(photo %d)"
+
+msgid "0 salon — pièce principale"
+msgstr "0 living rooms — main room"
+
+msgid "06 00 00 00 00"
+msgstr "06 00 00 00 00"
+
+msgid "1 chambre"
+msgstr "1 bedroom"
+
+msgid "1 salle de bains"
+msgstr "1 bathroom"
+
+msgid "1 salon"
+msgstr "1 living room"
+
+msgid "2 chambres"
+msgstr "2 bedrooms"
+
+msgid "2 salles de bains"
+msgstr "2 bathrooms"
+
+msgid "2 salons"
+msgstr "2 living rooms"
+
+msgid "3 chambres + salon ou plus"
+msgstr "3 bedrooms + living room or more"
+
+msgid "3 chambres ou plus"
+msgstr "3 bedrooms or more"
+
+msgid "3 salles de bains ou plus"
+msgstr "3 bathrooms or more"
+
+msgid "3 salons ou plus"
+msgstr "3 living rooms or more"
+
+msgid "Accueil"
+msgstr "Home"
+
+msgid "Accès non autorisé."
+msgstr "Access not allowed."
+
+msgid "Accès refusé"
+msgstr "Access denied"
+
+msgid "Accès refusé."
+msgstr "Access denied."
+
+msgid "Achat ou location"
+msgstr "Buy or rent"
+
+msgid "Action"
+msgstr "Action"
+
+msgid "Action : %s."
+msgstr "Action: %s."
+
+msgid "Activer Estatik maintenant"
+msgstr "Activate Estatik now"
+
+msgid "Affichage %1$s–%2$s de %3$s résultats"
+msgstr "Showing %1$s–%2$s of %3$s results"
+
+msgid "Affichage des annonces"
+msgstr "Listings display"
+
+msgid "Agent immobilier"
+msgstr "Real estate agent"
+
 msgid "Aide"
 msgstr "Help"
 
 msgid "Ajouter un mot personnel"
 msgstr "Add a personal note"
 
+msgid "Ajoutez uniquement des images JPG, PNG, WebP ou AVIF. Les photos iPhone au format HEIC ne sont pas prises en charge par ce serveur : activez « Très compatible » dans Réglages › Appareil photo › Formats sur votre iPhone."
+msgstr "Only upload JPG, PNG, WebP or AVIF images. HEIC iPhone photos are not supported by this server: turn on “Most Compatible” in Settings › Camera › Formats on your iPhone."
+
+msgid "Ajoutez uniquement des images JPG, PNG, WebP, AVIF ou HEIC."
+msgstr "Only upload JPG, PNG, WebP, AVIF or HEIC images."
+
+msgid "Ajoutez vos photos"
+msgstr "Add your photos"
+
+msgid "Ajouts en favoris"
+msgstr "Added to favourites"
+
+msgid "Aller au contenu"
+msgstr "Skip to content"
+
+msgid "Allez dans Partikulier › Mise à niveau, ou cliquez sur « Créer les pages manquantes » dans l’alerte d’administration."
+msgstr "Go to Partikulier › Upgrade, or click “Create missing pages” in the admin notice."
+
+msgid "Analyser"
+msgstr "Analyse"
+
+msgid "Analyser tout le site"
+msgstr "Analyse the whole site"
+
+msgid "Annonce"
+msgstr "Listing"
+
+msgid "Annonce enregistrée !"
+msgstr "Listing saved!"
+
+msgid "Annonce introuvable"
+msgstr "Listing not found"
+
+msgid "Annonce introuvable."
+msgstr "Listing not found."
+
+msgid "Annonce publiée. Identifiants générés :"
+msgstr "Listing published. Credentials generated:"
+
+msgid "Annonces"
+msgstr "Listings"
+
+msgid "Annonces actives"
+msgstr "Active listings"
+
+msgid "Annonces immobilières gratuites entre particuliers : achat et location sans commission."
+msgstr "Free property listings by owners: buy and rent with no commission."
+
+msgid "Annonces immobilières à %s"
+msgstr "Real estate listings in %s"
+
+msgid "Annonces publiées"
+msgstr "Published listings"
+
+msgid "Annonces › filtrer sur « En attente »."
+msgstr "Listings › filter by “Pending”."
+
+msgid "Annonceur"
+msgstr "Advertiser"
+
 msgid "Annuler"
 msgstr "Cancel"
+
+msgid "Apparence › Personnaliser › Validation WhatsApp › URL du webhook n8n"
+msgstr "Appearance › Customize › WhatsApp validation › n8n webhook URL"
+
+msgid "Appartement"
+msgstr "Apartment"
+
+msgid "Archive des annonces accessible."
+msgstr "Listings archive reachable."
+
+msgid "Archivé"
+msgstr "Archived"
 
 msgid "Ascenseur"
 msgstr "Lift"
 
+msgid "Attention : votre annonce ne sera mise en ligne qu’après validation de ce lieu par notre équipe. Si vous trouvez votre ville dans la liste ci-dessus, préférez-la : la publication sera immédiate."
+msgstr "Note: your listing will only go online after our team validates this location. If your city is in the list above, choose it instead: publication will be immediate."
+
+msgid "Aucun blocage, %d point(s) à améliorer."
+msgstr "No blockers, %d point(s) to improve."
+
+msgid "Aucun favori pour le moment"
+msgstr "No favourites yet"
+
+msgid "Aucun modèle assigné, mais le slug est reconnu : le thème charge quand même le bon gabarit."
+msgstr "No template assigned, but the slug is recognised: the theme still loads the right template."
+
+msgid "Aucun prix enregistré."
+msgstr "No price recorded."
+
+msgid "Aucun problème détecté sur cette page."
+msgstr "No issue detected on this page."
+
+msgid "Aucun terme mal classé. La taxonomie des actions est propre."
+msgstr "No misplaced terms. The action taxonomy is clean."
+
+msgid "Aucun type de bien : le menu déroulant sera vide."
+msgstr "No property type: the dropdown will be empty."
+
+msgid "Aucune action « À vendre » / « À louer »."
+msgstr "No “For sale” / “For rent” action."
+
+msgid "Aucune annonce en attente."
+msgstr "No pending listings."
+
+msgid "Aucune annonce publiée : l’accueil sera vide."
+msgstr "No published listings: the homepage will be empty."
+
+msgid "Aucune annonce publiée récemment."
+msgstr "No recently published listings."
+
+msgid "Aucune annonce publiée à analyser."
+msgstr "No published listings to analyse."
+
+msgid "Aucune archive déclarée pour le type de contenu des annonces."
+msgstr "No archive declared for the listings content type."
+
+msgid "Aucune demande pour le moment."
+msgstr "No requests yet."
+
+msgid "Aucune inscription obligatoire. Votre numéro sert uniquement à confirmer que l’annonce vient d’une vraie personne."
+msgstr "No sign-up required. Your number is only used to confirm the listing comes from a real person."
+
+msgid "Aucune page trouvée pour « %s »."
+msgstr "No page found for “%s”."
+
+msgid "Aucune photo : la carte affichera un visuel vide."
+msgstr "No photo: the card will show an empty visual."
+
+msgid "Aucune validation WhatsApp en attente pour cette annonce."
+msgstr "No WhatsApp validation pending for this listing."
+
+msgid "Aucune ville rattachée."
+msgstr "No city attached."
+
+msgid "Avant de commencer : sauvegardez votre base de données."
+msgstr "Before you start: back up your database."
+
+msgid "Avez-vous sauvegardé votre base de données ? Cette opération modifie vos données."
+msgstr "Have you backed up your database? This operation changes your data."
+
 msgid "Bien"
 msgstr "Property"
+
+msgid "Bien de particulier à particulier proposé %1$s à %2$s, en contact direct avec %3$s, sans commission ni intermédiaire."
+msgstr "Property offered by owner %1$s in %2$s, in direct contact with %3$s, with no commission or intermediary."
+
+msgid "Bonjour %1$s,\n\nVotre demande de publication est enregistrée mais reste en attente de validation. Ouvrez WhatsApp et envoyez le message préparé :\n%2$s\n\nVotre code de rapprochement : %3$s\n\nL’équipe Partikulier.com"
+msgstr "Hello %1$s,\n\nYour publication request is recorded but is awaiting validation. Open WhatsApp and send the prepared message:\n%2$s\n\nYour matching code: %3$s\n\nThe Partikulier.com team"
+
+msgid "Bonjour %s,"
+msgstr "Hello %s,"
+
+msgid "Bonjour Partikulier, je suis intéressé(e) par l’annonce %1$s.\nLien : %2$s"
+msgstr "Hello Partikulier, I am interested in listing %1$s.\nLink: %2$s"
+
+msgid "Bonjour, je suis intéressé par « %1$s » — %2$s"
+msgstr "Hello, I am interested in “%1$s” — %2$s"
+
+msgid "Budget max"
+msgstr "Maximum budget"
+
+msgid "Canal WhatsApp"
+msgstr "WhatsApp Channel"
 
 msgid "Caractéristiques"
 msgstr "Features"
 
+msgid "Ce site est réservé aux propriétaires"
+msgstr "This site is for owners only"
+
+msgid "Ce site est réservé aux propriétaires. Les annonces déposées par des agences ou des agents immobiliers ne sont pas acceptées."
+msgstr "This site is for owners only. Listings submitted by agencies or estate agents are not accepted."
+
+msgid "Ces favoris sont enregistrés dans votre navigateur. Ils ne suivent pas d’un appareil à l’autre et disparaissent si vous effacez vos données de navigation."
+msgstr "These favourites are stored in your browser. They do not follow you across devices and disappear if you clear your browsing data."
+
+msgid "Ces pages du thème n’existent pas encore : %s. Tant qu’elles manquent, le bouton « Déposer une annonce » ne mène nulle part."
+msgstr "These theme pages do not exist yet: %s. While they are missing, the “Post a listing” button leads nowhere."
+
+msgid "Cette annonce est introuvable."
+msgstr "This listing cannot be found."
+
+msgid "Cette page n’existe pas."
+msgstr "This page does not exist."
+
+msgid "Cette soumission a déjà été enregistrée avec un contenu différent."
+msgstr "This submission has already been recorded with different content."
+
 msgid "Chambres"
 msgstr "Bedrooms"
 
+msgid "Chaque photo doit peser au maximum 10 Mo."
+msgstr "Each photo must be at most 10 MB."
+
+msgid "Chez Hostinger : hPanel › Bases de données › phpMyAdmin › Exporter. C’est la seule marche arrière possible."
+msgstr "On Hostinger: hPanel › Databases › phpMyAdmin › Export. It is the only way back."
+
+msgid "Choisir la langue"
+msgstr "Choose language"
+
+msgid "Choisissez le nombre"
+msgstr "Choose the number"
+
+msgid "Choisissez l’exposition"
+msgstr "Choose the exposure"
+
+msgid "Choisissez un niveau d’ensoleillement valide."
+msgstr "Choose a valid sunlight level."
+
+msgid "Choisissez un nombre de chambres valide."
+msgstr "Choose a valid number of bedrooms."
+
+msgid "Choisissez un nombre de salles de bains valide."
+msgstr "Choose a valid number of bathrooms."
+
+msgid "Choisissez un nombre de salons valide."
+msgstr "Choose a valid number of living rooms."
+
+msgid "Choisissez un statut annonceur valide."
+msgstr "Choose a valid advertiser status."
+
+msgid "Choisissez un type de bien valide."
+msgstr "Choose a valid property type."
+
+msgid "Choisissez une ville ou un quartier dans la liste proposée."
+msgstr "Choose a city or neighbourhood from the list."
+
+msgid "Cliquez sur le cœur d’une annonce pour la retrouver ici. Vos favoris sont conservés dans ce navigateur, sans création de compte."
+msgstr "Click a listing’s heart to find it here. Your favourites are kept in this browser, with no account needed."
+
+msgid "Cochez les annonces à vendre › Actions groupées › Modifier › Catégorie › À vendre. Puis recommencez pour celles à louer."
+msgstr "Tick the listings for sale › Bulk actions › Edit › Category › For sale. Then repeat for the rentals."
+
+msgid "Code WhatsApp"
+msgstr "WhatsApp code"
+
+msgid "Code de validation :"
+msgstr "Validation code:"
+
+msgid "Commencez par une lettre. Si vous choisissez une ville, un quartier vous sera demandé ensuite. Vous pouvez aussi choisir directement un quartier."
+msgstr "Start with a letter. If you choose a city, a neighbourhood will be asked next. You can also pick a neighbourhood directly."
+
+msgid "Conforme"
+msgstr "Compliant"
+
+msgid "Connectez-vous pour les gérer, suivre leurs vues et vos contacts directs."
+msgstr "Sign in to manage them, follow their views and your direct contacts."
+
+msgid "Connectez-vous pour modifier votre annonce."
+msgstr "Sign in to edit your listing."
+
+msgid "Connexion"
+msgstr "Sign in"
+
+msgid "Connexion n8n"
+msgstr "n8n sign-in"
+
+msgid "Connexion propriétaire requise."
+msgstr "Owner sign-in required."
+
+msgid "Consentement WhatsApp"
+msgstr "WhatsApp Consent"
+
+msgid "Conservez ce code. L’annonce sera publiée seulement après vérification manuelle du message par l’équipe Partikulier."
+msgstr "Keep this code. The listing will only be published after the Partikulier team manually checks the message."
+
 msgid "Contact"
 msgstr "Contact"
+
+msgid "Contact direct"
+msgstr "Direct contact"
+
+msgid "Contact direct, sans commission."
+msgstr "Direct contact, no commission."
 
 msgid "Contacter le vendeur"
 msgstr "Contact seller"
@@ -34,8 +460,41 @@ msgstr "Contact seller"
 msgid "Contactez-nous"
 msgstr "Contact us"
 
+msgid "Contenu analysé : « %s »."
+msgstr "Content analysed: “%s”."
+
 msgid "Continuer"
 msgstr "Continue"
+
+msgid "Couche de sécurité n8n indisponible."
+msgstr "n8n security layer unavailable."
+
+msgid "Créer le lieu et publier"
+msgstr "Create the location and publish"
+
+msgid "Créer les pages manquantes"
+msgstr "Create the missing pages"
+
+msgid "Créer les traductions manquantes"
+msgstr "Create the missing translations"
+
+msgid "Créer les versions arabe et anglaise"
+msgstr "Create the Arabic and English versions"
+
+msgid "Créez des termes dans la taxonomie des types."
+msgstr "Create terms in the types taxonomy."
+
+msgid "Dans la corbeille"
+msgstr "In the trash"
+
+msgid "Demande de renvoi inconnue ou périmée."
+msgstr "Resend request unknown or expired."
+
+msgid "Demandé le %s"
+msgstr "Requested on %s"
+
+msgid "Dernier étage"
+msgstr "Top floor"
 
 msgid "Description"
 msgstr "Description"
@@ -43,17 +502,128 @@ msgstr "Description"
 msgid "Description du bien"
 msgstr "Property description"
 
+msgid "Description très courte : peu de matière pour Google."
+msgstr "Very short description: little material for Google."
+
+msgid "Diagnostic des pages"
+msgstr "Page diagnostics"
+
+msgid "Disponible dans %d langues."
+msgstr "Available in %d languages."
+
+msgid "Décision"
+msgstr "Decision"
+
+msgid "Découvrez %s, une annonce immobilière publiée gratuitement entre particuliers sur Partikulier."
+msgstr "Discover %s, a property listing posted for free by an owner on Partikulier."
+
+msgid "Décrivez le bien, choisissez sa localisation et validez votre numéro par WhatsApp. La publication reste gratuite et sans commission."
+msgstr "Describe the property, choose its location and validate your number via WhatsApp. Publication stays free and commission-free."
+
+msgid "Déplacer ces villes vers « Ville ou quartier »"
+msgstr "Move these cities to “City or neighbourhood”"
+
+msgid "Déposer ma première annonce"
+msgstr "Post my first listing"
+
 msgid "Déposer une annonce"
 msgstr "Post a listing"
+
+msgid "Déposez gratuitement votre annonce immobilière entre particuliers en quelques étapes simples et vérifiées."
+msgstr "Post your property listing for free, owner to buyer, in a few simple verified steps."
+
+msgid "Détail"
+msgstr "Detail"
+
+msgid "E-mail"
+msgstr "Email"
+
+msgid "Elle est générée automatiquement pour les annonces déposées depuis la v6.6."
+msgstr "It is generated automatically for listings posted since v6.6."
+
+msgid "En attente"
+msgstr "Pending"
+
+msgid "En attente de rapprochement manuel."
+msgstr "Awaiting manual matching."
+
+msgid "En attente de validation WhatsApp"
+msgstr "Awaiting WhatsApp validation"
+
+msgid "En ligne"
+msgstr "Online"
+
+msgid "En pause"
+msgstr "Paused"
+
+msgid "En-tête : X-Partikulier-Automation. Renvoie les validations des dernières 72 heures si le webhook a échoué."
+msgstr "Header: X-Partikulier-Automation. Resends the last 72 hours of validations if the webhook failed."
 
 msgid "Enregistrer"
 msgstr "Save"
 
+msgid "Ensoleillement"
+msgstr "Sunlight"
+
+msgid "Ensoleillé le matin"
+msgstr "Morning sun"
+
+msgid "Ensoleillé l’après-midi"
+msgstr "Afternoon sun"
+
+msgid "Envoi n8n"
+msgstr "n8n send"
+
 msgid "Envoyer"
 msgstr "Send"
 
+msgid "Erreur de publication"
+msgstr "Publication error"
+
+msgid "Erreur de sécurité"
+msgstr "Security error"
+
+msgid "Erreur serveur"
+msgstr "Server error"
+
+msgid "Espace propriétaire"
+msgstr "Owner space"
+
+msgid "Essayez : accueil, annonces, déposer, mes annonces, annonce."
+msgstr "Try: home, listings, post, my listings, listing."
+
+msgid "Estatik peut imposer sa propre valeur."
+msgstr "Estatik may enforce its own value."
+
+msgid "Ex. 389000"
+msgstr "e.g. 389000"
+
+msgid "Ex. 72"
+msgstr "e.g. 72"
+
+msgid "Examiner les demandes"
+msgstr "Review requests"
+
+msgid "Explorer"
+msgstr "Explore"
+
+msgid "Facebook"
+msgstr "Facebook"
+
 msgid "Favoris"
 msgstr "Favorites"
+
+msgid "Fiche annonce (la plus récente)"
+msgstr "Listing page (most recent)"
+
+msgid "Fil d'Ariane"
+msgstr "Breadcrumb trail"
+
+msgid "Filtres"
+msgstr "Filters"
+
+msgid "Finalisez la validation WhatsApp de votre annonce"
+msgstr "Complete the WhatsApp validation of your listing"
 
 msgid "France"
 msgstr "France"
@@ -61,29 +631,248 @@ msgstr "France"
 msgid "Garage ou sous-sol"
 msgstr "Garage or basement"
 
+msgid "Garanties Partikulier"
+msgstr "Partikulier guarantees"
+
+msgid "Générer un nouveau mot de passe ? L’ancien ne fonctionnera plus."
+msgstr "Generate a new password? The old one will stop working."
+
+msgid "Identifiant"
+msgstr "Username"
+
+msgid "Illimité"
+msgstr "No limit"
+
+msgid "Indiquez au moins la ville de votre bien."
+msgstr "Enter at least the city of your property."
+
+msgid "Indiquez la superficie de la terrasse."
+msgstr "Enter the terrace area."
+
+msgid "Indiquez le lieu exact de votre bien. Il sera vérifié par notre équipe avant d’être ajouté."
+msgstr "Enter the exact location of your property. It will be checked by our team before being added."
+
+msgid "Indiquez un prix valide pour publier votre annonce."
+msgstr "Enter a valid price to publish your listing."
+
+msgid "Indiquez une superficie valide."
+msgstr "Enter a valid area."
+
+msgid "Informations de contact"
+msgstr "Contact information"
+
+msgid "Instagram"
+msgstr "Instagram"
+
+msgid "Installer Estatik"
+msgstr "Install Estatik"
+
+msgid "JPG, PNG ou WebP · %s maximum par photo"
+msgstr "JPG, PNG or WebP · %s max per photo"
+
+msgid "JPG, PNG, HEIC ou WebP · %s maximum par photo"
+msgstr "JPG, PNG, HEIC or WebP · %s max per photo"
+
+msgid "Je ne trouve pas ma ville ou mon quartier"
+msgstr "I can’t find my city or neighbourhood"
+
 msgid "Je publie mon propre bien."
 msgstr "I am publishing my own property."
 
 msgid "Je publie pour un client."
 msgstr "I am publishing for a client."
 
+msgid "Je souhaite"
+msgstr "I want to"
+
+msgid "LOUER"
+msgstr "RENT"
+
+msgid "La consultation des annonces et le dépôt restent possibles sans compte."
+msgstr "Browsing and posting listings remains possible without an account."
+
+msgid "La description doit contenir au moins 50 caractères."
+msgstr "The description must be at least 50 characters long."
+
 msgid "La description principale est déjà créée à partir de vos réponses. Cet espace vous permet d’ajouter un complément si vous le souhaitez."
 msgstr "The main description is created from your answers. Add more details here if you wish."
+
+msgid "La page n’existe pas."
+msgstr "The page does not exist."
+
+msgid "Le dispositif de leads exige le plugin partikulier-core."
+msgstr "The leads system requires the partikulier-core plugin."
+
+msgid "Le dépôt d’annonce est momentanément indisponible. Merci de réessayer plus tard."
+msgstr "Posting a listing is temporarily unavailable. Please try again later."
+
+msgid "Le fichier du gabarit est absent du thème."
+msgstr "The template file is missing from the theme."
+
+msgid "Le fichier image envoyé est invalide."
+msgstr "The uploaded image file is invalid."
+
+msgid "Le format des photos envoyées est invalide."
+msgstr "The uploaded photo format is invalid."
+
+msgid "Le module de connexion n’est pas disponible pour le moment."
+msgstr "The sign-in module is currently unavailable."
+
+msgid "Le modèle de page n’est pas assigné."
+msgstr "The page template is not assigned."
+
+msgid "Le paiement est désactivé."
+msgstr "Payment is disabled."
+
+msgid "Le plugin partikulier-core est requis pour la réception d’événements."
+msgstr "The partikulier-core plugin is required to receive events."
+
+msgid "Le propriétaire de cette annonce est introuvable."
+msgstr "The owner of this listing cannot be found."
+
+msgid "Le registre des variantes exige le plugin partikulier-core."
+msgstr "The variants registry requires the partikulier-core plugin."
+
+msgid "Le référencement local est fortement pénalisé."
+msgstr "Local SEO is heavily penalised."
+
+msgid "Le theme Partikulier nécessite le plugin <strong>Estatik</strong>. %s"
+msgstr "The Partikulier theme requires the <strong>Estatik</strong> plugin. %s"
+
+msgid "Le titre doit contenir au moins 10 caractères."
+msgstr "The title must be at least 10 characters long."
+
+msgid "Le titre est créé automatiquement à partir de vos réponses. Vous pouvez le modifier avant la validation."
+msgstr "The title is built automatically from your answers. You can change it before submitting."
+
+msgid "Les alertes sauvegardées exigent le plugin partikulier-core."
+msgstr "Saved alerts require the partikulier-core plugin."
+
+msgid "Les biens que vous avez enregistrés depuis cet appareil."
+msgstr "The properties you saved on this device."
+
+msgid "Les dimensions de la photo sont invalides."
+msgstr "The photo dimensions are invalid."
+
+msgid "Les favoris exigent le plugin partikulier-core."
+msgstr "Favourites require the partikulier-core plugin."
 
 msgid "Les informations du bien"
 msgstr "Property details"
 
+msgid "Les photos de téléphone dépassent souvent cette limite. Demandez à votre hébergeur d’augmenter upload_max_filesize."
+msgstr "Phone photos often exceed this limit. Ask your host to raise upload_max_filesize."
+
+msgid "Les réglages n8n exigent le plugin partikulier-core."
+msgstr "The n8n settings require the partikulier-core plugin."
+
+msgid "Les secrets sont masqués et ne sont jamais réaffichés."
+msgstr "Secrets are masked and never shown again."
+
+msgid "Les versions arabe et anglaise ont été créées."
+msgstr "The Arabic and English versions have been created."
+
+msgid "Les villes ont été déplacées vers la bonne taxonomie."
+msgstr "The cities have been moved to the right taxonomy."
+
+msgid "Lieu : %s."
+msgstr "Location: %s."
+
+msgid "Lieu en attente de validation"
+msgstr "Location awaiting validation"
+
+msgid "Lieu proposé"
+msgstr "Proposed location"
+
+msgid "Lieux proposés"
+msgstr "Proposed locations"
+
+msgid "Lieux proposés par les annonceurs"
+msgstr "Locations proposed by advertisers"
+
+msgid "Limite temporaire"
+msgstr "Temporary limit"
+
 msgid "Louer"
 msgstr "For rent"
+
+msgid "Loué"
+msgstr "Rented"
+
+msgid "L’alt FR est obligatoire lorsque la photo hero est active. La sauvegarde n’a pas été appliquée."
+msgstr "The French alt text is mandatory when the hero photo is active. The save was not applied."
+
+msgid "L’annonce que vous cherchez a peut-être été retirée ou déplacée. Retrouvez nos dernières annonces ou déposez la vôtre."
+msgstr "The listing you are looking for may have been removed or moved. Browse our latest listings or post your own."
+
+msgid "Marquer loué"
+msgstr "Mark as rented"
+
+msgid "Marquer vendu"
+msgstr "Mark as sold"
 
 msgid "Mentions légales"
 msgstr "Legal notices"
 
+msgid "Menu pied de page"
+msgstr "Footer menu"
+
 msgid "Menu principal"
 msgstr "Main menu"
 
+msgid "Menu « Achat ou location » propre."
+msgstr "“Buy or rent” menu is clean."
+
+msgid "Mes annonces"
+msgstr "My listings"
+
+msgid "Mes favoris"
+msgstr "My favourites"
+
+msgid "Meta description : %d caractères."
+msgstr "Meta description: %d characters."
+
+msgid "Mettre en pause"
+msgstr "Pause"
+
+msgid "Mise à niveau"
+msgstr "Upgrade"
+
+msgid "Mise à niveau du site"
+msgstr "Site upgrade"
+
+msgid "Mode HMAC"
+msgstr "HMAC Mode"
+
+msgid "Modifier"
+msgstr "Edit"
+
+msgid "Modifier votre annonce"
+msgstr "Edit your listing"
+
+msgid "Modifiez ici les textes du site (titres, bandeaux, sections) sans toucher au code du thème. Pour changer le nom des onglets du menu, utilisez Apparence → Menus."
+msgstr "Edit the site texts here (titles, banners, sections) without touching the theme code. To rename the menu tabs, use Appearance → Menus."
+
+msgid "Modifiez les contenus de l’accueil sans toucher au code. Les textes sont indépendants pour le français, l’arabe et l’anglais ; si une traduction est vide, le français est utilisé comme repli."
+msgstr "Edit the homepage content without touching the code. Texts are independent for French, Arabic and English; if a translation is empty, French is used as a fallback."
+
+msgid "Modèle de page correctement assigné."
+msgstr "Page template correctly assigned."
+
 msgid "Mon espace"
 msgstr "My space"
+
+msgid "Mot de passe"
+msgstr "Password"
+
+msgid "Nom de la ville"
+msgstr "City name"
+
+msgid "Nom du quartier (facultatif)"
+msgstr "Neighbourhood name (optional)"
+
+msgid "Nom ou nom d’usage, sans prénom"
+msgstr "Surname or usual name, without first name"
 
 msgid "Nombre de chambres"
 msgstr "Number of bedrooms"
@@ -97,20 +886,131 @@ msgstr "Number of living rooms"
 msgid "Non"
 msgstr "No"
 
+msgid "Non configuré"
+msgstr "Not configured"
+
+msgid "Nouveau mot de passe"
+msgstr "New password"
+
+msgid "Nouvelle annonce"
+msgstr "New listing"
+
+msgid "Numéro WhatsApp absent : aucune annonce ne peut être publiée."
+msgstr "WhatsApp number missing: no listing can be published."
+
+msgid "Numéro WhatsApp de validation renseigné."
+msgstr "Validation WhatsApp number filled in."
+
+msgid "Opération terminée."
+msgstr "Operation completed."
+
 msgid "Oui"
 msgstr "Yes"
+
+msgid "Ouvrez la page et cliquez sur Publier."
+msgstr "Open the page and click Publish."
+
+msgid "Ouvrez la page › Attributs de page › Modèle › choisissez le bon gabarit."
+msgstr "Open the page › Page attributes › Template › pick the right template."
+
+msgid "Ouvrir WhatsApp et envoyer le message"
+msgstr "Open WhatsApp and send the message"
+
+msgid "Ouvrir la liste des annonces"
+msgstr "Open the listings list"
 
 msgid "Ouvrir le menu"
 msgstr "Open menu"
 
+msgid "PROPRIÉTAIRE"
+msgstr "OWNER"
+
+msgid "Page"
+msgstr "Page"
+
+msgid "Page d’accueil servie par le thème."
+msgstr "Homepage served by the theme."
+
+msgid "Page publiée."
+msgstr "Page published."
+
+msgid "Page trouvée : « %1$s » (%2$s)."
+msgstr "Page found: “%1$s” (%2$s)."
+
+msgid "Pagination"
+msgstr "Pagination"
+
+msgid "Parcourez les annonces immobilières publiées directement par des particuliers : achat et location sans commission."
+msgstr "Browse property listings posted directly by owners: buy and rent with no commission."
+
+msgid "Parcourir les annonces"
+msgstr "Browse the listings"
+
+msgid "Partikulier"
+msgstr "Partikulier"
+
+msgid "Partikulier met en relation directe les particuliers, sans intermédiaire ni commission. Les annonces déposées par des agences ou des agents immobiliers ne sont pas acceptées."
+msgstr "Partikulier connects owners and buyers directly, with no intermediary and no commission. Listings submitted by agencies or estate agents are not accepted."
+
+msgid "Partikulier — Personnalisation du site"
+msgstr "Partikulier — Site customization"
+
+msgid "Partikulier — Réglages n8n"
+msgstr "Partikulier — n8n Settings"
+
+msgid "Partikulier — Textes du site"
+msgstr "Partikulier — Site texts"
+
+msgid "Partikulier — lieux à valider"
+msgstr "Partikulier — locations to validate"
+
+msgid "Partikulier — page manquante"
+msgstr "Partikulier — missing page"
+
+msgid "Partikulier › Mise à niveau › étape 3."
+msgstr "Partikulier › Upgrade › step 3."
+
+msgid "Pas de badge, et le filtre ne trouvera pas cette annonce."
+msgstr "No badge, and the filter will not find this listing."
+
+msgid "Pas de meta description dédiée."
+msgstr "No dedicated meta description."
+
+msgid "Payload n8n impossible à sérialiser."
+msgstr "n8n payload cannot be serialised."
+
+msgid "Personnalisation du site"
+msgstr "Site customization"
+
+msgid "Personnalisation enregistrée."
+msgstr "Customization saved."
+
 msgid "Photos du bien"
 msgstr "Property photos"
+
+msgid "Pièce principale"
+msgstr "Main room"
+
+msgid "Plus récentes"
+msgstr "Most recent"
+
+msgid "Pour plus de sûreté : Attributs de page › Modèle."
+msgstr "For extra safety: Page attributes › Template."
 
 msgid "Prix"
 msgstr "Price"
 
+msgid "Prix croissant"
+msgstr "Price: Low to High"
+
 msgid "Prix demandé"
 msgstr "Asking price"
+
+msgid "Prix décroissant"
+msgstr "Price: High to Low"
+
+msgid "Prix sur demande"
+msgstr "Price on request"
 
 msgid "Propriétaire"
 msgstr "Owner"
@@ -118,11 +1018,26 @@ msgstr "Owner"
 msgid "Précédent"
 msgstr "Previous"
 
+msgid "Publication directe"
+msgstr "Direct publication"
+
+msgid "Publication en cours…"
+msgstr "Publishing…"
+
+msgid "Publication impossible : le numéro WhatsApp de validation n’est pas renseigné. Allez dans Apparence › Personnaliser › Validation WhatsApp et saisissez votre numéro au format international (ex : 212612345678)."
+msgstr "Cannot publish: the WhatsApp validation number is not filled in. Go to Appearance › Customize › WhatsApp validation and enter your number in international format (e.g. 212612345678)."
+
 msgid "Publier"
 msgstr "Publish"
 
+msgid "Pénalise le référencement Google Images."
+msgstr "Penalises Google Images ranking."
+
 msgid "Quartier"
 msgstr "Neighbourhood"
+
+msgid "Quelques chiffres suffisent pour créer le titre."
+msgstr "A few numbers are enough to build the title."
 
 msgid "Questions fréquentes"
 msgstr "Frequently asked questions"
@@ -130,17 +1045,107 @@ msgstr "Frequently asked questions"
 msgid "Qui publie l’annonce ?"
 msgstr "Who is publishing the listing?"
 
+msgid "Quota / jour"
+msgstr "Daily quota"
+
+msgid "RDC"
+msgstr "Ground floor"
+
+msgid "Recevoir des contacts d’acheteurs."
+msgstr "Receive buyer contacts."
+
+msgid "Recevoir des demandes de visite."
+msgstr "Receive visit requests."
+
 msgid "Recherche rapide"
 msgstr "Quick search"
 
 msgid "Rechercher"
 msgstr "Search"
 
+msgid "Rechercher un bien"
+msgstr "Search for a property"
+
+msgid "Rechercher un bien immobilier"
+msgstr "Search a property"
+
+msgid "Rechercher un bien par ville ou quartier"
+msgstr "Search a property by city or neighbourhood"
+
 msgid "Rechercher une ville"
 msgstr "Search a city"
 
+msgid "Refuser"
+msgstr "Reject"
+
+msgid "Refuser cette annonce ?"
+msgstr "Reject this listing?"
+
+msgid "Refusé"
+msgstr "Rejected"
+
+msgid "Relisez l’annonce, puis validez votre numéro par WhatsApp."
+msgstr "Proofread the listing, then validate your number via WhatsApp."
+
+msgid "Remettre en ligne"
+msgstr "Put back online"
+
+msgid "Remettre les villes dans la bonne taxonomie"
+msgstr "Move the cities back to the right taxonomy"
+
+msgid "Remplacer uniquement"
+msgstr "Replace only"
+
+msgid "Renvoyer des identifiants"
+msgstr "Resend credentials"
+
+msgid "Requête non autorisée."
+msgstr "Unauthorised request."
+
+msgid "Restaurer"
+msgstr "Restore"
+
+msgid "Retirer (garder la page SEO)"
+msgstr "Remove (keep the SEO page)"
+
+msgid "Retirer cette annonce des résultats tout en conservant sa page publique ?"
+msgstr "Remove this listing from the results while keeping its public page?"
+
 msgid "Retour"
 msgstr "Back"
+
+msgid "Retour à l’accueil"
+msgstr "Back to home"
+
+msgid "Reçue le"
+msgstr "Received on"
+
+msgid "Rien à afficher pour le moment."
+msgstr "Nothing to display at the moment."
+
+msgid "Route de rattrapage"
+msgstr "Fallback route"
+
+msgid "Réactiver"
+msgstr "Reactivate"
+
+msgid "Réassigner « À vendre » ou « À louer »"
+msgstr "Reassign “For sale” or “For rent”"
+
+msgid "Réglage WordPress : %d éléments par page."
+msgstr "WordPress setting: %d items per page."
+
+msgid "Réglages enregistrés."
+msgstr "Settings saved."
+
+msgid "Réglages n8n"
+msgstr "n8n Settings"
+
+msgid "Résultats pour « %s »"
+msgstr "Results for \"%s\""
+
+msgid "Saisissez le nom d’une page : le thème vérifie son existence, son gabarit, son référencement, ses images et ses traductions."
+msgstr "Type a page name: the theme checks its existence, template, SEO, images and translations."
 
 msgid "Salles de bains"
 msgstr "Bathrooms"
@@ -148,14 +1153,53 @@ msgstr "Bathrooms"
 msgid "Salons"
 msgstr "Living rooms"
 
+msgid "Sans commission."
+msgstr "No commission."
+
+msgid "Sans vis-à-vis"
+msgstr "No overlooking neighbours"
+
 msgid "Se connecter"
 msgstr "Sign in"
+
+msgid "Secret"
+msgstr "Secret"
+
+msgid "Secret n8n non configuré (plugin partikulier-core requis)."
+msgstr "n8n secret not configured (partikulier-core plugin required)."
+
+msgid "Si un annonceur a perdu son message WhatsApp, générez-lui un nouveau mot de passe. L’ancien cesse aussitôt de fonctionner."
+msgstr "If an advertiser has lost their WhatsApp message, generate a new password for them. The old one stops working immediately."
+
+msgid "Si vous êtes le propriétaire du bien, sélectionnez « Propriétaire » pour continuer."
+msgstr "If you own the property, select “Owner” to continue."
+
+msgid "Statut"
+msgstr "Status"
+
+msgid "Statut « %s » : la page n’est pas visible du public."
+msgstr "Status “%s”: the page is not visible to the public."
+
+msgid "Statut « %s »."
+msgstr "Status “%s”."
+
+msgid "Studio"
+msgstr "Studio"
+
+msgid "Studio / 0 chambre"
+msgstr "Studio / 0 bedrooms"
 
 msgid "Suivant"
 msgstr "Next"
 
+msgid "Suivez les vues, modifiez les informations essentielles et gardez la main sur vos contacts directs."
+msgstr "Track views, edit the key information and stay in control of your direct contacts."
+
 msgid "Superficie (m²)"
 msgstr "Area (m²)"
+
+msgid "Superficie de la terrasse"
+msgstr "Terrace area"
 
 msgid "Superficie de la terrasse (m²)"
 msgstr "Terrace area (m²)"
@@ -163,17 +1207,77 @@ msgstr "Terrace area (m²)"
 msgid "Surface"
 msgstr "Area"
 
+msgid "Surface décroissante"
+msgstr "Surface: High to Low"
+
+msgid "Taille maximale d’envoi : %s."
+msgstr "Maximum upload size: %s."
+
+msgid "Tapez une ville ou un quartier"
+msgstr "Type a city or neighbourhood"
+
+msgid "Terminé"
+msgstr "Done"
+
 msgid "Terrasse"
 msgstr "Terrace"
 
 msgid "Titre de l’annonce"
 msgstr "Listing title"
 
+msgid "Tous"
+msgstr "All"
+
 msgid "Tous droits réservés."
 msgstr "All rights reserved."
 
+msgid "Tous les biens"
+msgstr "All properties"
+
+msgid "Tout"
+msgstr "All"
+
+msgid "Tout est à jour."
+msgstr "Everything is up to date."
+
+msgid "Tout le site est au vert."
+msgstr "The whole site is green."
+
+msgid "Toute la journée"
+msgstr "All day"
+
 msgid "Toutes les annonces"
 msgstr "All listings"
+
+msgid "Toutes les annonces existent dans les trois langues."
+msgstr "Every listing exists in all three languages."
+
+msgid "Toutes les annonces immobilières gratuites à %s : appartements, maisons, terrains. Publiez votre annonce gratuitement sur Partikulier.com."
+msgstr "All free property listings in %s: apartments, houses, land. Post your listing for free on Partikulier.com."
+
+msgid "Toutes les annonces ont une action commerciale."
+msgstr "Every listing has a sales action."
+
+msgid "Toutes les villes"
+msgstr "All cities"
+
+msgid "Traductions manquantes : %s."
+msgstr "Missing translations: %s."
+
+msgid "Tri"
+msgstr "Sort"
+
+msgid "Trier les annonces"
+msgstr "Sort listings"
+
+msgid "Trois opérations doivent être effectuées dans cet ordre. Chaque étape reste verrouillée tant que la précédente n’est pas terminée : traduire des annonces sans ville produirait des pages sans valeur pour Google."
+msgstr "Three operations must be carried out in this order. Each step stays locked until the previous one is done: translating listings without a city would produce pages with no value for Google."
+
+msgid "Trop de tentatives ont été effectuées. Réessayez dans une heure."
+msgstr "Too many attempts. Try again in an hour."
+
+msgid "Très peu"
+msgstr "Very little"
 
 msgid "Type de bien"
 msgstr "Property type"
@@ -184,20 +1288,89 @@ msgstr "Property types"
 msgid "Téléphone"
 msgstr "Phone"
 
+msgid "Un annonceur n’a pas trouvé sa ville ou son quartier dans la liste. Rien n’est créé tant que vous n’avez pas validé : l’annonce concernée reste hors ligne."
+msgstr "An advertiser could not find their city or neighbourhood in the list. Nothing is created until you validate: the listing stays offline."
+
+msgid "Un choix simple pour présenter le bon interlocuteur."
+msgstr "A simple way to present the right contact."
+
 msgid "Un détail important, une précision sur le quartier ou vos conditions de visite…"
 msgstr "An important detail, a note about the neighbourhood or your viewing terms…"
+
+msgid "Un numéro de téléphone valide est requis pour demander la validation WhatsApp."
+msgstr "A valid phone number is required to request WhatsApp validation."
+
+msgid "Une dernière étape : WhatsApp"
+msgstr "One last step: WhatsApp"
+
+msgid "Une partie de la configuration est fournie par l’environnement et n’est pas éditable ici."
+msgstr "Part of the configuration comes from the environment and cannot be edited here."
+
+msgid "Une photo n’a pas pu être envoyée. Réessayez avec un fichier JPG, PNG, WebP ou AVIF."
+msgstr "A photo could not be uploaded. Retry with a JPG, PNG, WebP or AVIF file."
+
+msgid "VENDRE"
+msgstr "SELL"
+
+msgid "Validation WhatsApp Partikulier"
+msgstr "Partikulier WhatsApp validation"
+
+msgid "Validation WhatsApp enregistrée."
+msgstr "WhatsApp validation saved."
 
 msgid "Valider avec WhatsApp"
 msgstr "Confirm with WhatsApp"
 
+msgid "Valider et publier"
+msgstr "Validate and publish"
+
+msgid "Valider les annonces"
+msgstr "Validate listings"
+
+msgid "Validez d’abord le lieu"
+msgstr "Validate the location first"
+
+msgid "Validé"
+msgstr "Validated"
+
+msgid "Vendeur identifié"
+msgstr "Verified seller"
+
 msgid "Vendre"
 msgstr "For sale"
+
+msgid "Vendu"
+msgstr "Sold"
+
+msgid "Verrouillé — terminez l’étape précédente."
+msgstr "Locked — finish the previous step."
 
 msgid "Ville"
 msgstr "City"
 
+msgid "Ville ou quartier de départ"
+msgstr "Starting city or neighbourhood"
+
+msgid "Ville, code postal, quartier…"
+msgstr "City, postcode, neighbourhood…"
+
+msgid "Voir les annonces"
+msgstr "View listings"
+
+msgid "Vos annonces"
+msgstr "Your listings"
+
+msgid "Votre annonce est enregistrée et attend votre message WhatsApp."
+msgstr "Your listing is saved and awaits your WhatsApp message."
+
+msgid "Votre annonce est enregistrée, mais reste invisible tant que l’équipe n’a pas rapproché votre message WhatsApp."
+msgstr "Your listing is saved, but stays invisible until the team matches your WhatsApp message."
+
 msgid "Votre aperçu"
 msgstr "Your preview"
+
+msgid "Votre bien mérite"
+msgstr "Your property deserves"
 
 msgid "Votre e-mail"
 msgstr "Your email"
@@ -205,17 +1378,261 @@ msgstr "Your email"
 msgid "Votre nom"
 msgstr "Your name"
 
+msgid "Votre nom est requis."
+msgstr "Your name is required."
+
 msgid "Votre numéro de téléphone"
 msgstr "Your phone number"
+
+msgid "Votre session a expiré. Rechargez la page avant de réessayer."
+msgstr "Your session has expired. Reload the page before trying again."
+
+msgid "Votre sélection"
+msgstr "Your selection"
+
+msgid "Vous n’avez pas encore d’annonce. C’est gratuit et ça prend 2 minutes !"
+msgstr "You have no listing yet. It’s free and takes 2 minutes!"
+
+msgid "Vous n’êtes pas autorisé à modifier cette annonce."
+msgstr "You are not allowed to edit this listing."
+
+msgid "Vous n’êtes pas autorisé à valider cette annonce."
+msgstr "You are not allowed to validate this listing."
+
+msgid "Vous pourrez les ajouter depuis « Mes annonces » après validation."
+msgstr "You can add them from “My listings” after validation."
+
+msgid "Vous pouvez ajouter jusqu’à 15 photos."
+msgstr "You can add up to 15 photos."
+
+msgid "Vous pouvez maintenant supprimer les scripts du dossier tests/ de votre serveur : le thème fonctionne sans eux."
+msgstr "You can now delete the scripts in the tests/ folder from your server: the theme works without them."
+
+msgid "Vous êtes"
+msgstr "You are"
 
 msgid "Vue"
 msgstr "View"
 
+msgid "Vue grille"
+msgstr "Grid view"
+
+msgid "Vue liste"
+msgstr "List view"
+
+msgid "Vues totales"
+msgstr "Total views"
+
+msgid "Vérifiez dans WhatsApp que le message reçu contient le code ci-dessous avant de publier."
+msgstr "Check in WhatsApp that the received message contains the code below before publishing."
+
+msgid "Webhook n8n"
+msgstr "n8n Webhook"
+
+msgid "Webhook n8n absent ou non HTTPS."
+msgstr "n8n webhook missing or not HTTPS."
+
+msgid "Webhook sortant"
+msgstr "Outgoing webhook"
+
 msgid "WhatsApp"
 msgstr "WhatsApp"
+
+msgid "X (Twitter)"
+msgstr "X (Twitter)"
+
+msgid "YouTube"
+msgstr "YouTube"
+
+msgid "Zéro commission"
+msgstr "No commission"
+
+msgid "accueil, annonces, déposer, mes annonces, annonce…"
+msgstr "home, listings, post, my listings, listing…"
+
+msgid "annonce de %s, sans commission"
+msgstr "listing by %s, no commission"
+
+msgid "annonce supprimée"
+msgstr "listing deleted"
+
+msgid "ascenseur"
+msgstr "elevator"
+
+msgid "au %s"
+msgstr "on %s"
+
+msgid "au prix de %s MAD"
+msgstr "at the price of %s MAD"
+
+msgid "au rdc"
+msgstr "on the ground floor"
+
+msgid "au rez-de-chaussée"
+msgstr "on the ground floor"
+
+msgid "avec %s"
+msgstr "with %s"
+
+msgid "avec ascenseur"
+msgstr "with elevator"
+
+msgid "avec garage ou sous-sol"
+msgstr "with garage or basement"
+
+msgid "avec terrasse"
+msgstr "with terrace"
+
+msgid "de %d m²"
+msgstr "of %d m²"
+
+msgid "détail du logement"
+msgstr "home layout"
+
+msgid "d’une superficie de %d m²"
+msgstr "with an area of %d m²"
+
+msgid "espace intérieur"
+msgstr "interior space"
+
+msgid "facultatif"
+msgstr "optional"
+
+msgid "favoris anonymisés"
+msgstr "anonymous favourites"
+
+msgid "garage"
+msgstr "garage"
+
+msgid "inchangé (déjà transmis précédemment)"
+msgstr "unchanged (already sent before)"
+
+msgid "le propriétaire"
+msgstr "the owner"
+
+msgid "listing_id et resend_request_id sont obligatoires."
+msgstr "listing_id and resend_request_id are mandatory."
+
+msgid "loue"
+msgstr "rents"
+
+msgid "modifiable"
+msgstr "editable"
+
+msgid "oEmbed desactive."
+msgstr "oEmbed disabled."
+
+msgid "photo(s) n"
+msgstr "photo(s)"
+
+msgid "pièce de vie"
+msgstr "living space"
+
+msgid "prix affiché"
+msgstr "displayed price"
+
+msgid "propriétaire"
+msgstr "owner"
+
+msgid "réessayez ou contactez-nous."
+msgstr "retry or contact us."
+
+msgid "sans ascenseur"
+msgstr "without elevator"
+
+msgid "sans garage"
+msgstr "without garage"
+
+msgid "sans vis-à-vis"
+msgstr "with no opposite building"
+
+msgid "seconde perspective"
+msgstr "second view"
+
+msgid "situé %s"
+msgstr "located %s"
+
+msgid "studio"
+msgstr "studio"
+
+msgid "terrasse de %d m²"
+msgstr "terrace of %d m²"
+
+msgid "transmis"
+msgstr "sent"
+
+msgid "une annonce claire."
+msgstr "a clear listing."
+
+msgid "une pièce principale"
+msgstr "one main room"
+
+msgid "vend"
+msgstr "sells"
+
+msgid "vos annonces sont en ligne."
+msgstr "your listings are online."
+
+msgid "votre ville"
+msgstr "your city"
+
+msgid "vous attendent."
+msgstr "are waiting."
+
+msgid "vous@exemple.com"
+msgstr "you@example.com"
+
+msgid "vue depuis le séjour"
+msgstr "view from the living room"
+
+msgid "vue intérieure"
+msgstr "interior view"
+
+msgid "vues"
+msgstr "views"
+
+msgid "wa_id est requis."
+msgstr "wa_id is required."
+
+msgid "À la validation, l’annonce est publiée dans les trois langues, un compte est créé pour l’annonceur, et n8n reçoit son identifiant et son mot de passe pour les lui envoyer sur WhatsApp."
+msgstr "On validation, the listing is published in all three languages, an account is created for the advertiser, and n8n receives their username and password to send them on WhatsApp."
+
+msgid "À louer"
+msgstr "For rent"
 
 msgid "À propos"
 msgstr "About"
 
+msgid "À vendre"
+msgstr "For sale"
+
+msgid "Éditorialisation de la home — lot H"
+msgstr "Homepage editorial content — batch H"
+
 msgid "Étage"
 msgstr "Floor"
+
+msgid "Étape %1$d — %2$s"
+msgstr "Step %1$d — %2$s"
+
+msgid "État"
+msgstr "State"
+
+msgid "à %s"
+msgstr "in %s"
+
+msgid "à la location"
+msgstr "for rent"
+
+msgid "à la vente"
+msgstr "for sale"
+
+msgid "à louer"
+msgstr "to rent"
+
+msgid "à vendre"
+msgstr "to sell"
+
+msgid "échec ou non configuré"
+msgstr "failed or not configured"
+

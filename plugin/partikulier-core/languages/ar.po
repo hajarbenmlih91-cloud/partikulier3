@@ -4,6 +4,171 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Language: ar\n"
 
+msgid " + salon"
+msgstr " + صالون"
+
+msgid " avec terrasse"
+msgstr " مع شرفة"
+
+msgid " et "
+msgstr " و"
+
+msgid " sans vis-à-vis"
+msgstr " دون جيران مقابلين"
+
+msgid " à louer"
+msgstr " للإيجار"
+
+msgid " à vendre"
+msgstr " للبيع"
+
+msgid "%1$d problème(s) bloquant(s) et %2$d avertissement(s) sur l’ensemble du site."
+msgstr "%1$d مشكلة حرجة و%2$d تحذير على مستوى الموقع كامل."
+
+msgid "%1$d publiées, %2$d en attente."
+msgstr "%1$d منشورة، و%2$d في الانتظار."
+
+msgid "%1$s %2$s %3$s%4$s à %5$s."
+msgstr "%1$s %2$s %3$s%4$s في %5$s."
+
+msgid "%1$s : %2$s"
+msgstr "%1$s: %2$s"
+
+msgid "%d annonce attend la validation d’une ville ou d’un quartier. Elle reste hors ligne d’ici là."
+msgstr "%d إعلان في انتظار المصادقة على المدينة أو الحي. سيبقى غير منشور إلى ذلك الحين."
+
+msgid "%d annonce n’a pas d’action. Sans elle, pas de badge et le filtre ne la trouve pas."
+msgstr "%d إعلان بلا نوع معاملة. بدونه لن يظهر الشارة ولن يجده الفلتر."
+
+msgid "%d annonce n’a pas encore ses versions arabe et anglaise."
+msgstr "%d إعلان لم يحصل بعد على نسخته العربية والإنجليزية."
+
+msgid "%d annonces attendent une validation."
+msgstr "%d إعلانات في انتظار المصادقة."
+
+msgid "%d annonces publiées."
+msgstr "%d إعلانات منشورة."
+
+msgid "%d bloquant(s)"
+msgstr "%d حرج"
+
+msgid "%d chambre"
+msgstr "%d غرفة نوم"
+
+msgid "%d image(s) sans texte alternatif."
+msgstr "%d صورة/صور دون نص بديل."
+
+msgid "%d photo(s) rattachée(s)."
+msgstr "%d صورة/صور مرفقة."
+
+msgid "%d point(s) à améliorer."
+msgstr "%d نقطة/nقاط للتحسين."
+
+msgid "%d problème(s) bloquant(s) détecté(s)."
+msgstr "تم رصد %d مشكلة حرجة."
+
+msgid "%d salle de bains"
+msgstr "%d حمام"
+
+msgid "%d terme est rangé dans « Achat ou location » alors qu’il n’y a pas sa place."
+msgstr "%d مصطلح مصنف في « شراء أو إيجار » ولا مكان له هناك."
+
+msgid "%d termes parasites dans « Achat ou location » : le menu affichera des villes."
+msgstr "%d مصطلحات دخيلة في « شراء أو إيجار » : ستظهر القائمة مدناً."
+
+msgid "%d types de biens disponibles."
+msgstr "%d أنواع عقارات متاحة."
+
+msgid "%d à améliorer"
+msgstr "%d للتحسين"
+
+msgid "%d%s étage"
+msgstr "الطابق %d"
+
+msgid "%s MAD"
+msgstr "%s درهم"
+
+msgid "%s annonce trouvée"
+msgstr "تم العثور على %s إعلان"
+
+msgid "%s à vendre et à louer"
+msgstr "%s للبيع وللكراء"
+
+msgid "%s, retour a l accueil"
+msgstr "%s، العودة إلى الصفحة الرئيسية"
+
+msgid "(photo %d)"
+msgstr "(صورة %d)"
+
+msgid "0 salon — pièce principale"
+msgstr "دون غرفة جلوس — الغرفة الرئيسية"
+
+msgid "06 00 00 00 00"
+msgstr "06 00 00 00 00"
+
+msgid "1 chambre"
+msgstr "غرفة نوم واحدة"
+
+msgid "1 salle de bains"
+msgstr "حمام واحد"
+
+msgid "1 salon"
+msgstr "غرفة جلوس واحدة"
+
+msgid "2 chambres"
+msgstr "غرفتا نوم"
+
+msgid "2 salles de bains"
+msgstr "حمامان"
+
+msgid "2 salons"
+msgstr "غرفتا جلوس"
+
+msgid "3 chambres + salon ou plus"
+msgstr "3 غرف نوم + صالون أو أكثر"
+
+msgid "3 chambres ou plus"
+msgstr "3 غرف نوم أو أكثر"
+
+msgid "3 salles de bains ou plus"
+msgstr "3 حمامات أو أكثر"
+
+msgid "3 salons ou plus"
+msgstr "3 غرف جلوس أو أكثر"
+
+msgid "Accueil"
+msgstr "الرئيسية"
+
+msgid "Accès non autorisé."
+msgstr "الوصول غير مصرح به."
+
+msgid "Accès refusé"
+msgstr "تم رفض الوصول"
+
+msgid "Accès refusé."
+msgstr "تم رفض الوصول."
+
+msgid "Achat ou location"
+msgstr "شراء أو إيجار"
+
+msgid "Action"
+msgstr "العملية"
+
+msgid "Action : %s."
+msgstr "نوع المعاملة: %s."
+
+msgid "Activer Estatik maintenant"
+msgstr "تنشيط Estatik الآن"
+
+msgid "Affichage %1$s–%2$s de %3$s résultats"
+msgstr "عرض %1$s–%2$s من %3$s نتائج"
+
+msgid "Affichage des annonces"
+msgstr "عرض الإعلانات"
+
+msgid "Agent immobilier"
+msgstr "وكيل عقاري"
+
 msgid "Aide"
 msgstr "المساعدة"
 
@@ -13,8 +178,68 @@ msgstr "إضافة إلى المفضلة"
 msgid "Ajouter un mot personnel"
 msgstr "إضافة كلمة شخصية"
 
+msgid "Ajoutez uniquement des images JPG, PNG, WebP ou AVIF. Les photos iPhone au format HEIC ne sont pas prises en charge par ce serveur : activez « Très compatible » dans Réglages › Appareil photo › Formats sur votre iPhone."
+msgstr "أضف فقط صور بصيغ JPG أو PNG أو WebP أو AVIF. صور iPhone بصيغة HEIC غير مدعومة على هذا الخادم: فعّل « الأكثر توافقاً » في الإعدادات › الكاميرا › الصيغ على هاتفك."
+
+msgid "Ajoutez uniquement des images JPG, PNG, WebP, AVIF ou HEIC."
+msgstr "أضف فقط صور بصيغ JPG أو PNG أو WebP أو AVIF أو HEIC."
+
+msgid "Ajoutez vos photos"
+msgstr "أضف صورك"
+
+msgid "Ajouts en favoris"
+msgstr "إضافات إلى المفضلة"
+
+msgid "Aller au contenu"
+msgstr "انتقل إلى المحتوى"
+
+msgid "Allez dans Partikulier › Mise à niveau, ou cliquez sur « Créer les pages manquantes » dans l’alerte d’administration."
+msgstr "انتقل إلى Partikulier › الترقية، أو انقر « إنشاء الصفحات الناقصة » في تنبيه لوحة التحكم."
+
+msgid "Analyser"
+msgstr "تحليل"
+
+msgid "Analyser tout le site"
+msgstr "تحليل الموقع بأكمله"
+
 msgid "Animaux domestiques autorisés"
 msgstr "مسموح بدخول الحيوانات الأليفة"
+
+msgid "Annonce"
+msgstr "إعلان"
+
+msgid "Annonce enregistrée !"
+msgstr "تم حفظ الإعلان!"
+
+msgid "Annonce introuvable"
+msgstr "الإعلان غير موجود"
+
+msgid "Annonce introuvable."
+msgstr "الإعلان غير موجود."
+
+msgid "Annonce publiée. Identifiants générés :"
+msgstr "تم نشر الإعلان. تم إنشاء بيانات الدخول:"
+
+msgid "Annonces"
+msgstr "الإعلانات"
+
+msgid "Annonces actives"
+msgstr "الإعلانات النشطة"
+
+msgid "Annonces immobilières gratuites entre particuliers : achat et location sans commission."
+msgstr "إعلانات عقارية مجانية بين الأفراد: بيع وإيجار دون عمولة."
+
+msgid "Annonces immobilières à %s"
+msgstr "إعلانات عقارية في %s"
+
+msgid "Annonces publiées"
+msgstr "الإعلانات المنشورة"
+
+msgid "Annonces › filtrer sur « En attente »."
+msgstr "الإعلانات › رشّح على « في الانتظار »."
+
+msgid "Annonceur"
+msgstr "المعلن"
 
 msgid "Annuler"
 msgstr "إلغاء"
@@ -22,14 +247,89 @@ msgstr "إلغاء"
 msgid "Aperçu rapide"
 msgstr "معاينة سريعة"
 
+msgid "Apparence › Personnaliser › Validation WhatsApp › URL du webhook n8n"
+msgstr "المظهر › تخصيص › مصادقة واتساب › رابط webhook الخاص بـ n8n"
+
 msgid "Appartement"
 msgstr "شقة"
 
 msgid "Appartements"
 msgstr "شقق"
 
+msgid "Archive des annonces accessible."
+msgstr "أرشيف الإعلانات متاح."
+
+msgid "Archivé"
+msgstr "مؤرشف"
+
 msgid "Ascenseur"
 msgstr "مصعد"
+
+msgid "Attention : votre annonce ne sera mise en ligne qu’après validation de ce lieu par notre équipe. Si vous trouvez votre ville dans la liste ci-dessus, préférez-la : la publication sera immédiate."
+msgstr "تنبيه: لن يُنشر إعلانك إلا بعد مصادقة فريقنا على هذا المكان. إذا وجدت مدينتك في القائمة أعلاه ففضّلها: سيكون النشر فورياً."
+
+msgid "Aucun blocage, %d point(s) à améliorer."
+msgstr "لا مشاكل حرجة، %d نقطة/nنقاط للتحسين."
+
+msgid "Aucun favori pour le moment"
+msgstr "لا مفضلات حالياً"
+
+msgid "Aucun modèle assigné, mais le slug est reconnu : le thème charge quand même le bon gabarit."
+msgstr "لا قالب معيناً، لكن المعرّف معروف: يحمّل القالب الصحيح رغم ذلك."
+
+msgid "Aucun prix enregistré."
+msgstr "لا سعر مسجل."
+
+msgid "Aucun problème détecté sur cette page."
+msgstr "لم يتم رصد أي مشكلة في هذه الصفحة."
+
+msgid "Aucun terme mal classé. La taxonomie des actions est propre."
+msgstr "لا مصطلحات مصنفة خطأً. تصنيف المعاملات نظيف."
+
+msgid "Aucun type de bien : le menu déroulant sera vide."
+msgstr "لا نوع عقار: القائمة المنسدلة ستكون فارغة."
+
+msgid "Aucune action « À vendre » / « À louer »."
+msgstr "لا معاملة « للبيع » / « للإيجار »."
+
+msgid "Aucune annonce en attente."
+msgstr "لا إعلانات في الانتظار."
+
+msgid "Aucune annonce publiée : l’accueil sera vide."
+msgstr "لا إعلانات منشورة: ستكون الصفحة الرئيسية فارغة."
+
+msgid "Aucune annonce publiée récemment."
+msgstr "لا إعلانات منشورة حديثاً."
+
+msgid "Aucune annonce publiée à analyser."
+msgstr "لا إعلانات منشورة لتحليلها."
+
+msgid "Aucune archive déclarée pour le type de contenu des annonces."
+msgstr "لا أرشيف معلن لنوع محتوى الإعلانات."
+
+msgid "Aucune demande pour le moment."
+msgstr "لا طلبات حالياً."
+
+msgid "Aucune inscription obligatoire. Votre numéro sert uniquement à confirmer que l’annonce vient d’une vraie personne."
+msgstr "التسجيل غير إلزامي. يُستخدم رقمك فقط للتأكد أن الإعلان صادر عن شخص حقيقي."
+
+msgid "Aucune page trouvée pour « %s »."
+msgstr "لم يتم العثور على صفحة باسم « %s »."
+
+msgid "Aucune photo : la carte affichera un visuel vide."
+msgstr "لا صورة: ستظهر البطاقة فارغة."
+
+msgid "Aucune validation WhatsApp en attente pour cette annonce."
+msgstr "لا مصادقة واتساب في الانتظار لهذا الإعلان."
+
+msgid "Aucune ville rattachée."
+msgstr "لا مدينة مرتبطة."
+
+msgid "Avant de commencer : sauvegardez votre base de données."
+msgstr "قبل البدء: خذ نسخة احتياطية من قاعدة البيانات."
+
+msgid "Avez-vous sauvegardé votre base de données ? Cette opération modifie vos données."
+msgstr "هل أخذت نسخة احتياطية من قاعدة البيانات؟ هذه العملية تعدّل بياناتك."
 
 msgid "Baisse de prix"
 msgstr "انخفاض السعر"
@@ -40,17 +340,59 @@ msgstr "شرفة"
 msgid "Bien"
 msgstr "عقار"
 
+msgid "Bien de particulier à particulier proposé %1$s à %2$s, en contact direct avec %3$s, sans commission ni intermédiaire."
+msgstr "عقار معروض من فرد لفرد %1$s في %2$s، في تواصل مباشر مع %3$s، دون عمولة ولا وسيط."
+
+msgid "Bonjour %1$s,\n\nVotre demande de publication est enregistrée mais reste en attente de validation. Ouvrez WhatsApp et envoyez le message préparé :\n%2$s\n\nVotre code de rapprochement : %3$s\n\nL’équipe Partikulier.com"
+msgstr "مرحباً %1$s،\n\nتم تسجيل طلب النشر لكنه في انتظار المصادقة. افتح واتساب وأرسل الرسالة الجاهزة:\n%2$s\n\nرمز المطابقة الخاص بك: %3$s\n\nفريق Partikulier.com"
+
+msgid "Bonjour %s,"
+msgstr "مرحباً %s،"
+
+msgid "Bonjour Partikulier, je suis intéressé(e) par l’annonce %1$s.\nLien : %2$s"
+msgstr "مرحباً Partikulier، أنا مهتم(ة) بالإعلان %1$s.\nالرابط: %2$s"
+
+msgid "Bonjour, je suis intéressé par « %1$s » — %2$s"
+msgstr "مرحباً، أنا مهتم بـ « %1$s » — %2$s"
+
+msgid "Budget max"
+msgstr "الميزانية القصوى"
+
 msgid "Bureau"
 msgstr "مكتب"
 
 msgid "Bâtiment professionnel"
 msgstr "مبنى مهني"
 
+msgid "Canal WhatsApp"
+msgstr "قناة واتساب"
+
 msgid "Caractéristiques"
 msgstr "الخصائص"
 
+msgid "Ce site est réservé aux propriétaires"
+msgstr "هذا الموقع مخصص للمالكين"
+
+msgid "Ce site est réservé aux propriétaires. Les annonces déposées par des agences ou des agents immobiliers ne sont pas acceptées."
+msgstr "هذا الموقع مخصص للمالكين. لا تُقبل الإعلانات المقدمة من الوكالات أو السماسرة."
+
 msgid "Centre-ville"
 msgstr "وسط المدينة"
+
+msgid "Ces favoris sont enregistrés dans votre navigateur. Ils ne suivent pas d’un appareil à l’autre et disparaissent si vous effacez vos données de navigation."
+msgstr "هذه المفضلات محفوظة في متصفحك. لا تنتقل بين الأجهزة وتختفي إذا حذفت بيانات التصفح."
+
+msgid "Ces pages du thème n’existent pas encore : %s. Tant qu’elles manquent, le bouton « Déposer une annonce » ne mène nulle part."
+msgstr "صفحات القالب هذه غير موجودة بعد: %s. ما دامت ناقصة، فإن زر « نشر إعلان » لا يقود إلى أي مكان."
+
+msgid "Cette annonce est introuvable."
+msgstr "لا يمكن العثور على هذا الإعلان."
+
+msgid "Cette page n’existe pas."
+msgstr "هذه الصفحة غير موجودة."
+
+msgid "Cette soumission a déjà été enregistrée avec un contenu différent."
+msgstr "تم تسجيل هذا الطلب مسبقاً بمحتوى مختلف."
 
 msgid "Chambre"
 msgstr "غرفة نوم"
@@ -58,8 +400,44 @@ msgstr "غرفة نوم"
 msgid "Chambres"
 msgstr "غرف النوم"
 
+msgid "Chaque photo doit peser au maximum 10 Mo."
+msgstr "يجب ألا يتجاوز حجم كل صورة 10 ميغابايت."
+
 msgid "Cheminée"
 msgstr "مدفأة"
+
+msgid "Chez Hostinger : hPanel › Bases de données › phpMyAdmin › Exporter. C’est la seule marche arrière possible."
+msgstr "على Hostinger: hPanel › قواعد البيانات › phpMyAdmin › تصدير. هذا هو الحل الوحيد للرجوع."
+
+msgid "Choisir la langue"
+msgstr "اختر اللغة"
+
+msgid "Choisissez le nombre"
+msgstr "اختر العدد"
+
+msgid "Choisissez l’exposition"
+msgstr "اختر التعرض للشمس"
+
+msgid "Choisissez un niveau d’ensoleillement valide."
+msgstr "اختر مستوى تعرضاً صحيحاً للشمس."
+
+msgid "Choisissez un nombre de chambres valide."
+msgstr "اختر عدداً صحيحاً لغرف النوم."
+
+msgid "Choisissez un nombre de salles de bains valide."
+msgstr "اختر عدداً صحيحاً للحمامات."
+
+msgid "Choisissez un nombre de salons valide."
+msgstr "اختر عدداً صحيحاً للصالونات."
+
+msgid "Choisissez un statut annonceur valide."
+msgstr "اختر صفة معلن صحيحة."
+
+msgid "Choisissez un type de bien valide."
+msgstr "اختر نوع عقار صحيحاً."
+
+msgid "Choisissez une ville ou un quartier dans la liste proposée."
+msgstr "اختر مدينة أو حياً من القائمة المقترحة."
 
 msgid "Climatisation"
 msgstr "تكييف"
@@ -67,11 +445,53 @@ msgstr "تكييف"
 msgid "Climatisation centrale"
 msgstr "تكييف مركزي"
 
+msgid "Cliquez sur le cœur d’une annonce pour la retrouver ici. Vos favoris sont conservés dans ce navigateur, sans création de compte."
+msgstr "انقر على قلب الإعلان لتجده هنا. تُحفظ مفضلاتك في هذا المتصفح دون إنشاء حساب."
+
+msgid "Cochez les annonces à vendre › Actions groupées › Modifier › Catégorie › À vendre. Puis recommencez pour celles à louer."
+msgstr "حدد الإعلانات للبيع › إجراءات جماعية › تعديل › الفئة › للبيع. ثم كرر العملية لإعلانات الإيجار."
+
+msgid "Code WhatsApp"
+msgstr "رمز واتساب"
+
+msgid "Code de validation :"
+msgstr "رمز المصادقة:"
+
+msgid "Commencez par une lettre. Si vous choisissez une ville, un quartier vous sera demandé ensuite. Vous pouvez aussi choisir directement un quartier."
+msgstr "ابدأ بحرف. إذا اخترت مدينة، سيُطلب منك الحي بعدها. يمكنك أيضاً اختيار حي مباشرة."
+
+msgid "Conforme"
+msgstr "مطابق"
+
+msgid "Connectez-vous pour les gérer, suivre leurs vues et vos contacts directs."
+msgstr "سجّل الدخول لإدارتها ومتابعة مشاهداتها وجهات الاتصال المباشرة."
+
+msgid "Connectez-vous pour modifier votre annonce."
+msgstr "سجّل الدخول لتعديل إعلانك."
+
+msgid "Connexion"
+msgstr "تسجيل الدخول"
+
+msgid "Connexion n8n"
+msgstr "دخول n8n"
+
+msgid "Connexion propriétaire requise."
+msgstr "مطلوب تسجيل دخول المالك."
+
+msgid "Consentement WhatsApp"
+msgstr "موافقة واتساب"
+
+msgid "Conservez ce code. L’annonce sera publiée seulement après vérification manuelle du message par l’équipe Partikulier."
+msgstr "احتفظ بهذا الرمز. لن يُنشر الإعلان إلا بعد تحقق فريق Partikulier يدوياً من الرسالة."
+
 msgid "Contact"
 msgstr "اتصال"
 
 msgid "Contact direct"
 msgstr "اتصال مباشر"
+
+msgid "Contact direct, sans commission."
+msgstr "تواصل مباشر، دون عمولة."
 
 msgid "Contacter le vendeur"
 msgstr "تواصل مع المعلن"
@@ -79,14 +499,47 @@ msgstr "تواصل مع المعلن"
 msgid "Contactez-nous"
 msgstr "اتصل بنا"
 
+msgid "Contenu analysé : « %s »."
+msgstr "المحتوى المُحلَّل: « %s »."
+
 msgid "Continuer"
 msgstr "متابعة"
+
+msgid "Couche de sécurité n8n indisponible."
+msgstr "طبقة أمان n8n غير متاحة."
+
+msgid "Créer le lieu et publier"
+msgstr "أنشئ المكان وانشر"
+
+msgid "Créer les pages manquantes"
+msgstr "إنشاء الصفحات الناقصة"
+
+msgid "Créer les traductions manquantes"
+msgstr "إنشاء الترجمات الناقصة"
+
+msgid "Créer les versions arabe et anglaise"
+msgstr "إنشاء النسختين العربية والإنجليزية"
+
+msgid "Créez des termes dans la taxonomie des types."
+msgstr "أنشئ مصطلحات في تصنيف الأنواع."
 
 msgid "Cuisine équipée"
 msgstr "مطبخ مجهز"
 
+msgid "Dans la corbeille"
+msgstr "في سلة المحذوفات"
+
 msgid "Date de publication"
 msgstr "تاريخ النشر"
+
+msgid "Demande de renvoi inconnue ou périmée."
+msgstr "طلب إعادة الإرسال غير معروف أو منتهي."
+
+msgid "Demandé le %s"
+msgstr "طُلب في %s"
+
+msgid "Dernier étage"
+msgstr "الطابق الأخير"
 
 msgid "Description"
 msgstr "الوصف"
@@ -94,20 +547,131 @@ msgstr "الوصف"
 msgid "Description du bien"
 msgstr "وصف العقار"
 
+msgid "Description très courte : peu de matière pour Google."
+msgstr "وصف قصير جداً: مادة ضعيفة لمحركات البحث."
+
+msgid "Diagnostic des pages"
+msgstr "تشخيص الصفحات"
+
+msgid "Disponible dans %d langues."
+msgstr "متوفر بـ %d لغات."
+
 msgid "Double vitrage"
 msgstr "زجاج مزدوج"
+
+msgid "Décision"
+msgstr "القرار"
+
+msgid "Découvrez %s, une annonce immobilière publiée gratuitement entre particuliers sur Partikulier."
+msgstr "اكتشف %s، إعلاناً عقارياً منشوراً مجاناً بين الأفراد على Partikulier."
+
+msgid "Décrivez le bien, choisissez sa localisation et validez votre numéro par WhatsApp. La publication reste gratuite et sans commission."
+msgstr "صِف العقار، اختر موقعه ووثّق رقمك عبر واتساب. يبقى النشر مجانياً ودون عمولة."
+
+msgid "Déplacer ces villes vers « Ville ou quartier »"
+msgstr "انقل هذه المدن إلى « مدينة أو حي »"
+
+msgid "Déposer ma première annonce"
+msgstr "انشر أول إعلان لي"
 
 msgid "Déposer une annonce"
 msgstr "إضافة إعلان"
 
+msgid "Déposez gratuitement votre annonce immobilière entre particuliers en quelques étapes simples et vérifiées."
+msgstr "انشر إعلانك العقاري مجاناً بين الأفراد في خطوات بسيطة وموثقة."
+
+msgid "Détail"
+msgstr "تفصيل"
+
+msgid "E-mail"
+msgstr "البريد الإلكتروني"
+
+msgid "Elle est générée automatiquement pour les annonces déposées depuis la v6.6."
+msgstr "يتم توليدها تلقائياً للإعلانات المنشورة منذ الإصدار 6.6."
+
+msgid "En attente"
+msgstr "في الانتظار"
+
+msgid "En attente de rapprochement manuel."
+msgstr "في انتظار المطابقة اليدوية."
+
+msgid "En attente de validation WhatsApp"
+msgstr "في انتظار مصادقة واتساب"
+
+msgid "En ligne"
+msgstr "منشور"
+
+msgid "En pause"
+msgstr "متوقف مؤقتاً"
+
+msgid "En-tête : X-Partikulier-Automation. Renvoie les validations des dernières 72 heures si le webhook a échoué."
+msgstr "الترويسة: X-Partikulier-Automation. يعيد إرسال مصادقات آخر 72 ساعة إذا فشل الـ webhook."
+
 msgid "Enregistrer"
 msgstr "حفظ"
+
+msgid "Ensoleillement"
+msgstr "التعرض للشمس"
+
+msgid "Ensoleillé le matin"
+msgstr "مشمس صباحاً"
+
+msgid "Ensoleillé l’après-midi"
+msgstr "مشمس بعد الظهر"
+
+msgid "Envoi n8n"
+msgstr "إرسال n8n"
 
 msgid "Envoyer"
 msgstr "إرسال"
 
+msgid "Erreur de publication"
+msgstr "خطأ في النشر"
+
+msgid "Erreur de sécurité"
+msgstr "خطأ أمني"
+
+msgid "Erreur serveur"
+msgstr "خطأ في الخادم"
+
+msgid "Espace propriétaire"
+msgstr "مساحة المالك"
+
+msgid "Essayez : accueil, annonces, déposer, mes annonces, annonce."
+msgstr "جرّب: الرئيسية، الإعلانات، نشر إعلان، إعلاناتي، إعلان."
+
+msgid "Estatik peut imposer sa propre valeur."
+msgstr "قد يفرض Estatik قيمته الخاصة."
+
+msgid "Ex. 389000"
+msgstr "مثال: 389000"
+
+msgid "Ex. 72"
+msgstr "مثال: 72"
+
+msgid "Examiner les demandes"
+msgstr "مراجعة الطلبات"
+
+msgid "Explorer"
+msgstr "استكشاف"
+
+msgid "Facebook"
+msgstr "فيسبوك"
+
 msgid "Favoris"
 msgstr "المفضلة"
+
+msgid "Fiche annonce (la plus récente)"
+msgstr "صفحة إعلان (الأحدث)"
+
+msgid "Fil d'Ariane"
+msgstr "مسار التنقل"
+
+msgid "Filtres"
+msgstr "تصفية"
+
+msgid "Finalisez la validation WhatsApp de votre annonce"
+msgstr "أكمل مصادقة واتساب لإعلانك"
 
 msgid "Four"
 msgstr "فرن"
@@ -121,11 +685,56 @@ msgstr "مرآب"
 msgid "Garage ou sous-sol"
 msgstr "مرآب أو قبو"
 
+msgid "Garanties Partikulier"
+msgstr "ضمانات بارتيكيولييه"
+
+msgid "Générer un nouveau mot de passe ? L’ancien ne fonctionnera plus."
+msgstr "توليد كلمة مرور جديدة؟ القديمة ستتوقف عن العمل."
+
+msgid "Identifiant"
+msgstr "المعرّف"
+
+msgid "Illimité"
+msgstr "بدون حد"
+
+msgid "Indiquez au moins la ville de votre bien."
+msgstr "أدخل على الأقل مدينة العقار."
+
+msgid "Indiquez la superficie de la terrasse."
+msgstr "أدخل مساحة الشرفة."
+
+msgid "Indiquez le lieu exact de votre bien. Il sera vérifié par notre équipe avant d’être ajouté."
+msgstr "أدخل الموقع الدقيق لعقارك. سيتحقق منه فريقنا قبل إضافته."
+
+msgid "Indiquez un prix valide pour publier votre annonce."
+msgstr "أدخل سعراً صحيحاً لنشر إعلانك."
+
+msgid "Indiquez une superficie valide."
+msgstr "أدخل مساحة صحيحة."
+
+msgid "Informations de contact"
+msgstr "معلومات الاتصال"
+
+msgid "Instagram"
+msgstr "إنستغرام"
+
+msgid "Installer Estatik"
+msgstr "تثبيت Estatik"
+
 msgid "Internet"
 msgstr "إنترنت"
 
+msgid "JPG, PNG ou WebP · %s maximum par photo"
+msgstr "JPG أو PNG أو WebP · %s كحد أقصى للصورة"
+
+msgid "JPG, PNG, HEIC ou WebP · %s maximum par photo"
+msgstr "JPG أو PNG أو HEIC أو WebP · %s كحد أقصى للصورة"
+
 msgid "Jardin"
 msgstr "حديقة"
+
+msgid "Je ne trouve pas ma ville ou mon quartier"
+msgstr "لا أجد مدينتي أو حيّي"
 
 msgid "Je publie mon propre bien."
 msgstr "أنشر عقاري الخاص."
@@ -133,11 +742,116 @@ msgstr "أنشر عقاري الخاص."
 msgid "Je publie pour un client."
 msgstr "أنشر لصالح عميل."
 
+msgid "Je souhaite"
+msgstr "أرغب في"
+
+msgid "LOUER"
+msgstr "للإيجار"
+
+msgid "La consultation des annonces et le dépôt restent possibles sans compte."
+msgstr "يبقى تصفح الإعلانات ونشرها متاحاً دون حساب."
+
+msgid "La description doit contenir au moins 50 caractères."
+msgstr "يجب أن يحتوي الوصف على 50 حرفاً على الأقل."
+
 msgid "La description principale est déjà créée à partir de vos réponses. Cet espace vous permet d’ajouter un complément si vous le souhaitez."
 msgstr "تم إنشاء الوصف الرئيسي من إجاباتك. يمكنك إضافة تفاصيل هنا إذا رغبت."
 
+msgid "La page n’existe pas."
+msgstr "الصفحة غير موجودة."
+
+msgid "Le dispositif de leads exige le plugin partikulier-core."
+msgstr "يتطلب نظام Leads إضافة partikulier-core."
+
+msgid "Le dépôt d’annonce est momentanément indisponible. Merci de réessayer plus tard."
+msgstr "نشر الإعلانات غير متاح مؤقتاً. المرجو إعادة المحاولة لاحقاً."
+
+msgid "Le fichier du gabarit est absent du thème."
+msgstr "ملف القالب غائب عن القالب."
+
+msgid "Le fichier image envoyé est invalide."
+msgstr "ملف الصورة المرسل غير صالح."
+
+msgid "Le format des photos envoyées est invalide."
+msgstr "صيغة الصور المرسلة غير صالحة."
+
+msgid "Le module de connexion n’est pas disponible pour le moment."
+msgstr "وحدة تسجيل الدخول غير متاحة حالياً."
+
+msgid "Le modèle de page n’est pas assigné."
+msgstr "قالب الصفحة غير معيّن."
+
+msgid "Le paiement est désactivé."
+msgstr "الدفع معطّل."
+
+msgid "Le plugin partikulier-core est requis pour la réception d’événements."
+msgstr "إضافة partikulier-core مطلوبة لاستقبال الأحداث."
+
+msgid "Le propriétaire de cette annonce est introuvable."
+msgstr "لا يمكن العثور على مالك هذا الإعلان."
+
+msgid "Le registre des variantes exige le plugin partikulier-core."
+msgstr "يتطلب سجل الترجمات إضافة partikulier-core."
+
+msgid "Le référencement local est fortement pénalisé."
+msgstr "تحسين محركات البحث المحلي متأثر بشدة."
+
+msgid "Le theme Partikulier nécessite le plugin <strong>Estatik</strong>. %s"
+msgstr "يحتاج قالب Partikulier إضافة <strong>Estatik</strong>. %s"
+
+msgid "Le titre doit contenir au moins 10 caractères."
+msgstr "يجب أن يحتوي العنوان على 10 أحرف على الأقل."
+
+msgid "Le titre est créé automatiquement à partir de vos réponses. Vous pouvez le modifier avant la validation."
+msgstr "يتم توليد العنوان تلقائياً من إجاباتك. يمكنك تعديله قبل المصادقة."
+
+msgid "Les alertes sauvegardées exigent le plugin partikulier-core."
+msgstr "تتطلب التنبيهات المحفوظة إضافة partikulier-core."
+
+msgid "Les biens que vous avez enregistrés depuis cet appareil."
+msgstr "العقارات التي حفظتها من هذا الجهاز."
+
+msgid "Les dimensions de la photo sont invalides."
+msgstr "أبعاد الصورة غير صالحة."
+
+msgid "Les favoris exigent le plugin partikulier-core."
+msgstr "تتطلب المفضلات إضافة partikulier-core."
+
 msgid "Les informations du bien"
 msgstr "معلومات العقار"
+
+msgid "Les photos de téléphone dépassent souvent cette limite. Demandez à votre hébergeur d’augmenter upload_max_filesize."
+msgstr "صور الهواتف تتجاوز هذا الحد غالباً. اطلب من مستضيفك رفع قيمة upload_max_filesize."
+
+msgid "Les réglages n8n exigent le plugin partikulier-core."
+msgstr "تتطلب إعدادات n8n إضافة partikulier-core."
+
+msgid "Les secrets sont masqués et ne sont jamais réaffichés."
+msgstr "الأسرار مخفية ولا تُعرض أبداً مرة أخرى."
+
+msgid "Les versions arabe et anglaise ont été créées."
+msgstr "تم إنشاء النسختين العربية والإنجليزية."
+
+msgid "Les villes ont été déplacées vers la bonne taxonomie."
+msgstr "تم نقل المدن إلى التصنيف الصحيح."
+
+msgid "Lieu : %s."
+msgstr "الموقع: %s."
+
+msgid "Lieu en attente de validation"
+msgstr "موقع في انتظار المصادقة"
+
+msgid "Lieu proposé"
+msgstr "موقع مقترح"
+
+msgid "Lieux proposés"
+msgstr "مواقع مقترحة"
+
+msgid "Lieux proposés par les annonceurs"
+msgstr "مواقع يقترحها المعلنون"
+
+msgid "Limite temporaire"
+msgstr "حد مؤقت"
 
 msgid "Local commercial"
 msgstr "محل تجاري"
@@ -147,6 +861,15 @@ msgstr "كراء"
 
 msgid "Louer"
 msgstr "كراء"
+
+msgid "Loué"
+msgstr "مؤجّر"
+
+msgid "L’alt FR est obligatoire lorsque la photo hero est active. La sauvegarde n’a pas été appliquée."
+msgstr "النص البديل بالفرنسية إلزامي عند تفعيل الصورة الرئيسية. لم يتم تطبيق الحفظ."
+
+msgid "L’annonce que vous cherchez a peut-être été retirée ou déplacée. Retrouvez nos dernières annonces ou déposez la vôtre."
+msgstr "ربما تم حذف الإعلان الذي تبحث عنه أو نقله. تصفح أحدث إعلاناتنا أو انشر إعلانك."
 
 msgid "Machine à laver"
 msgstr "آلة غسيل"
@@ -160,11 +883,35 @@ msgstr "منازل"
 msgid "Maroc"
 msgstr "المغرب"
 
+msgid "Marquer loué"
+msgstr "وضع علامة مؤجّر"
+
+msgid "Marquer vendu"
+msgstr "وضع علامة مباع"
+
 msgid "Mentions légales"
 msgstr "الإشعارات القانونية"
 
+msgid "Menu pied de page"
+msgstr "قائمة التذييل"
+
 msgid "Menu principal"
 msgstr "القائمة الرئيسية"
+
+msgid "Menu « Achat ou location » propre."
+msgstr "قائمة « شراء أو إيجار » نظيفة."
+
+msgid "Mes annonces"
+msgstr "إعلاناتي"
+
+msgid "Mes favoris"
+msgstr "مفضلاتي"
+
+msgid "Meta description : %d caractères."
+msgstr "الوصف التعريفي: %d حرفاً."
+
+msgid "Mettre en pause"
+msgstr "إيقاف مؤقت"
 
 msgid "Meublé"
 msgstr "مفروش"
@@ -172,8 +919,44 @@ msgstr "مفروش"
 msgid "Micro-ondes"
 msgstr "ميكروويف"
 
+msgid "Mise à niveau"
+msgstr "الترقية"
+
+msgid "Mise à niveau du site"
+msgstr "ترقية الموقع"
+
+msgid "Mode HMAC"
+msgstr "وضع HMAC"
+
+msgid "Modifier"
+msgstr "تعديل"
+
+msgid "Modifier votre annonce"
+msgstr "تعديل إعلانك"
+
+msgid "Modifiez ici les textes du site (titres, bandeaux, sections) sans toucher au code du thème. Pour changer le nom des onglets du menu, utilisez Apparence → Menus."
+msgstr "عدّل نصوص الموقع هنا (العناوين واللافتات والأقسام) دون لمس كود القالب. لتغيير أسماء تبويبات القائمة، استخدم المظهر ← القوائم."
+
+msgid "Modifiez les contenus de l’accueil sans toucher au code. Les textes sont indépendants pour le français, l’arabe et l’anglais ; si une traduction est vide, le français est utilisé comme repli."
+msgstr "عدّل محتوى الصفحة الرئيسية دون لمس الكود. النصوص مستقلة للفرنسية والعربية والإنجليزية؛ وإذا كانت ترجمة فارغة، تُستخدم الفرنسية كاحتياط."
+
+msgid "Modèle de page correctement assigné."
+msgstr "قالب الصفحة معيّن بشكل صحيح."
+
 msgid "Mon espace"
 msgstr "مساحتي"
+
+msgid "Mot de passe"
+msgstr "كلمة المرور"
+
+msgid "Nom de la ville"
+msgstr "اسم المدينة"
+
+msgid "Nom du quartier (facultatif)"
+msgstr "اسم الحي (اختياري)"
+
+msgid "Nom ou nom d’usage, sans prénom"
+msgstr "الاسم العائلي أو المستخدم، دون الاسم الأول"
 
 msgid "Nombre de chambres"
 msgstr "عدد غرف النوم"
@@ -190,20 +973,113 @@ msgstr "عدد غرف الجلوس"
 msgid "Non"
 msgstr "لا"
 
+msgid "Non configuré"
+msgstr "غير مهيأ"
+
 msgid "Non meublé"
 msgstr "غير مفروش"
+
+msgid "Nouveau mot de passe"
+msgstr "كلمة مرور جديدة"
+
+msgid "Nouvelle annonce"
+msgstr "إعلان جديد"
+
+msgid "Numéro WhatsApp absent : aucune annonce ne peut être publiée."
+msgstr "رقم واتساب غائب: لا يمكن نشر أي إعلان."
+
+msgid "Numéro WhatsApp de validation renseigné."
+msgstr "تم إدخال رقم مصادقة واتساب."
 
 msgid "N’hésitez pas à nous contacter"
 msgstr "لا تتردد في الاتصال بنا"
 
+msgid "Opération terminée."
+msgstr "اكتملت العملية."
+
 msgid "Oui"
 msgstr "نعم"
+
+msgid "Ouvrez la page et cliquez sur Publier."
+msgstr "افتح الصفحة وانقر نشر."
+
+msgid "Ouvrez la page › Attributs de page › Modèle › choisissez le bon gabarit."
+msgstr "افتح الصفحة › خصائص الصفحة › القالب › اختر القالب الصحيح."
+
+msgid "Ouvrir WhatsApp et envoyer le message"
+msgstr "افتح واتساب وأرسل الرسالة"
+
+msgid "Ouvrir la liste des annonces"
+msgstr "افتح قائمة الإعلانات"
 
 msgid "Ouvrir le menu"
 msgstr "فتح القائمة"
 
+msgid "PROPRIÉTAIRE"
+msgstr "مالك"
+
+msgid "Page"
+msgstr "صفحة"
+
+msgid "Page d’accueil servie par le thème."
+msgstr "الصفحة الرئيسية مخدومة من القالب."
+
+msgid "Page publiée."
+msgstr "تم نشر الصفحة."
+
+msgid "Page trouvée : « %1$s » (%2$s)."
+msgstr "تم العثور على الصفحة: « %1$s » (%2$s)."
+
+msgid "Pagination"
+msgstr "ترقيم الصفحات"
+
+msgid "Parcourez les annonces immobilières publiées directement par des particuliers : achat et location sans commission."
+msgstr "تصفح الإعلانات العقارية المنشورة مباشرة من الأفراد: بيع وإيجار دون عمولة."
+
+msgid "Parcourir les annonces"
+msgstr "تصفح الإعلانات"
+
 msgid "Parking"
 msgstr "موقف سيارات"
+
+msgid "Partikulier"
+msgstr "Partikulier"
+
+msgid "Partikulier met en relation directe les particuliers, sans intermédiaire ni commission. Les annonces déposées par des agences ou des agents immobiliers ne sont pas acceptées."
+msgstr "يجمع Partikulier الأفراد في تواصل مباشر، دون وسيط ولا عمولة. لا تُقبل الإعلانات المقدمة من الوكالات أو السماسرة."
+
+msgid "Partikulier — Personnalisation du site"
+msgstr "Partikulier — تخصيص الموقع"
+
+msgid "Partikulier — Réglages n8n"
+msgstr "Partikulier — إعدادات n8n"
+
+msgid "Partikulier — Textes du site"
+msgstr "Partikulier — نصوص الموقع"
+
+msgid "Partikulier — lieux à valider"
+msgstr "Partikulier — مواقع للمصادقة"
+
+msgid "Partikulier — page manquante"
+msgstr "Partikulier — صفحة ناقصة"
+
+msgid "Partikulier › Mise à niveau › étape 3."
+msgstr "Partikulier › الترقية › الخطوة 3."
+
+msgid "Pas de badge, et le filtre ne trouvera pas cette annonce."
+msgstr "لا شارة، ولن يجد الفلتر هذا الإعلان."
+
+msgid "Pas de meta description dédiée."
+msgstr "لا وصف تعريفي مخصص."
+
+msgid "Payload n8n impossible à sérialiser."
+msgstr "لا يمكن تسلسل حمولة n8n."
+
+msgid "Personnalisation du site"
+msgstr "تخصيص الموقع"
+
+msgid "Personnalisation enregistrée."
+msgstr "تم حفظ التخصيص."
 
 msgid "Pertinence"
 msgstr "الأفضلية"
@@ -217,8 +1093,14 @@ msgstr "مسبح"
 msgid "Pièce principale"
 msgstr "الغرفة الرئيسية"
 
+msgid "Plus récentes"
+msgstr "الأحدث"
+
 msgid "Porte blindée"
 msgstr "باب مصفحة"
+
+msgid "Pour plus de sûreté : Attributs de page › Modèle."
+msgstr "لمزيد من الاحتياط: خصائص الصفحة › القالب."
 
 msgid "Pour plus d’informations"
 msgstr "لمزيد من المعلومات"
@@ -226,8 +1108,14 @@ msgstr "لمزيد من المعلومات"
 msgid "Prix"
 msgstr "السعر"
 
+msgid "Prix croissant"
+msgstr "الثمن: من الأقل إلى الأعلى"
+
 msgid "Prix demandé"
 msgstr "السعر المطلوب"
+
+msgid "Prix décroissant"
+msgstr "الثمن: من الأعلى إلى الأقل"
 
 msgid "Prix le plus bas"
 msgstr "الأقل سعراً"
@@ -244,11 +1132,26 @@ msgstr "مالك"
 msgid "Précédent"
 msgstr "السابق"
 
+msgid "Publication directe"
+msgstr "نشر مباشر"
+
+msgid "Publication en cours…"
+msgstr "جارٍ النشر…"
+
+msgid "Publication impossible : le numéro WhatsApp de validation n’est pas renseigné. Allez dans Apparence › Personnaliser › Validation WhatsApp et saisissez votre numéro au format international (ex : 212612345678)."
+msgstr "لا يمكن النشر: رقم مصادقة واتساب غير مُدخل. انتقل إلى المظهر › تخصيص › مصادقة واتساب وأدخل رقمك بالصيغة الدولية (مثال: 212612345678)."
+
 msgid "Publier"
 msgstr "نشر"
 
+msgid "Pénalise le référencement Google Images."
+msgstr "يضر بترتيب صور Google."
+
 msgid "Quartier"
 msgstr "الحي"
+
+msgid "Quelques chiffres suffisent pour créer le titre."
+msgstr "بضعة أرقام تكفي لتوليد العنوان."
 
 msgid "Questions fréquentes"
 msgstr "الأسئلة الشائعة"
@@ -256,23 +1159,113 @@ msgstr "الأسئلة الشائعة"
 msgid "Qui publie l’annonce ?"
 msgstr "من ينشر الإعلان؟"
 
+msgid "Quota / jour"
+msgstr "الحصة اليومية"
+
+msgid "RDC"
+msgstr "الطابق الأرضي"
+
+msgid "Recevoir des contacts d’acheteurs."
+msgstr "استقبال تواصلات المشترين."
+
+msgid "Recevoir des demandes de visite."
+msgstr "استقبال طلبات الزيارة."
+
 msgid "Recherche rapide"
 msgstr "بحث سريع"
 
 msgid "Rechercher"
 msgstr "بحث"
 
+msgid "Rechercher un bien"
+msgstr "البحث عن عقار"
+
+msgid "Rechercher un bien immobilier"
+msgstr "ابحث عن عقار"
+
+msgid "Rechercher un bien par ville ou quartier"
+msgstr "ابحث عن عقار حسب المدينة أو الحي"
+
 msgid "Rechercher une ville"
 msgstr "البحث عن مدينة"
+
+msgid "Refuser"
+msgstr "رفض"
+
+msgid "Refuser cette annonce ?"
+msgstr "رفض هذا الإعلان؟"
+
+msgid "Refusé"
+msgstr "مرفوض"
+
+msgid "Relisez l’annonce, puis validez votre numéro par WhatsApp."
+msgstr "راجع الإعلان، ثم وثّق رقمك عبر واتساب."
+
+msgid "Remettre en ligne"
+msgstr "إعادة النشر"
+
+msgid "Remettre les villes dans la bonne taxonomie"
+msgstr "إعادة المدن إلى التصنيف الصحيح"
+
+msgid "Remplacer uniquement"
+msgstr "استبدال فقط"
+
+msgid "Renvoyer des identifiants"
+msgstr "إعادة إرسال بيانات الدخول"
+
+msgid "Requête non autorisée."
+msgstr "طلب غير مصرح به."
+
+msgid "Restaurer"
+msgstr "استعادة"
+
+msgid "Retirer (garder la page SEO)"
+msgstr "سحب (مع إبقاء صفحة SEO)"
+
+msgid "Retirer cette annonce des résultats tout en conservant sa page publique ?"
+msgstr "سحب هذا الإعلان من النتائج مع الإبقاء على صفحته العمومية؟"
 
 msgid "Retour"
 msgstr "رجوع"
 
+msgid "Retour à l’accueil"
+msgstr "العودة إلى الرئيسية"
+
+msgid "Reçue le"
+msgstr "تلقّيت في"
+
+msgid "Rien à afficher pour le moment."
+msgstr "لا يوجد شيء للعرض في الوقت الحالي."
+
+msgid "Route de rattrapage"
+msgstr "مسار الاحتياط"
+
+msgid "Réactiver"
+msgstr "إعادة التفعيل"
+
+msgid "Réassigner « À vendre » ou « À louer »"
+msgstr "إعادة تعيين « للبيع » أو « للإيجار »"
+
 msgid "Réfrigérateur"
 msgstr "ثلاجة"
 
+msgid "Réglage WordPress : %d éléments par page."
+msgstr "إعداد ووردبريس: %d عنصراً في الصفحة."
+
+msgid "Réglages enregistrés."
+msgstr "تم حفظ الإعدادات."
+
+msgid "Réglages n8n"
+msgstr "إعدادات n8n"
+
 msgid "Résidence"
 msgstr "إقامة"
+
+msgid "Résultats pour « %s »"
+msgstr "نتائج البحث عن \"%s\""
+
+msgid "Saisissez le nom d’une page : le thème vérifie son existence, son gabarit, son référencement, ses images et ses traductions."
+msgstr "اكتب اسم صفحة: يتحقق القالب من وجودها وقالبها وتهيئتها لمحركات البحث وصورها وترجماتها."
 
 msgid "Salle de bains"
 msgstr "حمّام"
@@ -286,14 +1279,47 @@ msgstr "غرفة جلوس"
 msgid "Salons"
 msgstr "غرف الجلوس"
 
+msgid "Sans commission."
+msgstr "دون عمولة."
+
+msgid "Sans vis-à-vis"
+msgstr "بدون إطلالة مقابلة"
+
 msgid "Se connecter"
 msgstr "تسجيل الدخول"
+
+msgid "Secret"
+msgstr "السر"
+
+msgid "Secret n8n non configuré (plugin partikulier-core requis)."
+msgstr "سر n8n غير مهيأ (مطلوبة إضافة partikulier-core)."
+
+msgid "Si un annonceur a perdu son message WhatsApp, générez-lui un nouveau mot de passe. L’ancien cesse aussitôt de fonctionner."
+msgstr "إذا فقد معلن رسالته على واتساب، ولّد له كلمة مرور جديدة. القديمة تتوقف عن العمل فوراً."
+
+msgid "Si vous êtes le propriétaire du bien, sélectionnez « Propriétaire » pour continuer."
+msgstr "إذا كنت مالك العقار، اختر « مالك » للمتابعة."
+
+msgid "Statut"
+msgstr "الحالة"
+
+msgid "Statut « %s » : la page n’est pas visible du public."
+msgstr "الحالة « %s »: الصفحة غير ظاهرة للعموم."
+
+msgid "Statut « %s »."
+msgstr "الحالة « %s »."
 
 msgid "Studio"
 msgstr "استوديو"
 
+msgid "Studio / 0 chambre"
+msgstr "استوديو / دون غرفة نوم"
+
 msgid "Suivant"
 msgstr "التالي"
+
+msgid "Suivez les vues, modifiez les informations essentielles et gardez la main sur vos contacts directs."
+msgstr "تابع المشاهدات، عدّل المعلومات الأساسية وحافظ على تحكمك في تواصلاتك المباشرة."
 
 msgid "Superficie"
 msgstr "المساحة"
@@ -301,14 +1327,29 @@ msgstr "المساحة"
 msgid "Superficie (m²)"
 msgstr "المساحة (م²)"
 
+msgid "Superficie de la terrasse"
+msgstr "مساحة الشرفة"
+
 msgid "Superficie de la terrasse (m²)"
 msgstr "مساحة التراس (م²)"
 
 msgid "Surface"
 msgstr "المساحة"
 
+msgid "Surface décroissante"
+msgstr "المساحة: من الأعلى إلى الأقل"
+
 msgid "Sécurité"
 msgstr "حراسة"
+
+msgid "Taille maximale d’envoi : %s."
+msgstr "الحجم الأقصى للإرسال: %s."
+
+msgid "Tapez une ville ou un quartier"
+msgstr "اكتب مدينة أو حياً"
+
+msgid "Terminé"
+msgstr "منتهٍ"
 
 msgid "Terrain"
 msgstr "أرض"
@@ -319,14 +1360,62 @@ msgstr "تراس"
 msgid "Titre de l’annonce"
 msgstr "عنوان الإعلان"
 
+msgid "Tous"
+msgstr "الكل"
+
 msgid "Tous droits réservés."
 msgstr "جميع الحقوق محفوظة."
+
+msgid "Tous les biens"
+msgstr "جميع العقارات"
+
+msgid "Tout"
+msgstr "الكل"
+
+msgid "Tout est à jour."
+msgstr "كل شيء محدّث."
+
+msgid "Tout le site est au vert."
+msgstr "الموقع كله في الأخضر."
+
+msgid "Toute la journée"
+msgstr "طوال اليوم"
 
 msgid "Toutes les annonces"
 msgstr "كل الإعلانات"
 
+msgid "Toutes les annonces existent dans les trois langues."
+msgstr "جميع الإعلانات موجودة باللغات الثلاث."
+
+msgid "Toutes les annonces immobilières gratuites à %s : appartements, maisons, terrains. Publiez votre annonce gratuitement sur Partikulier.com."
+msgstr "جميع الإعلانات العقارية المجانية في %s: شقق ومنازل وأراضٍ. انشر إعلانك مجاناً على Partikulier.com."
+
+msgid "Toutes les annonces ont une action commerciale."
+msgstr "لكل الإعلانات نوع معاملة تجارية."
+
+msgid "Toutes les villes"
+msgstr "كل المدن"
+
+msgid "Traductions manquantes : %s."
+msgstr "ترجمات ناقصة: %s."
+
+msgid "Tri"
+msgstr "الترتيب"
+
+msgid "Trier les annonces"
+msgstr "ترتيب الإعلانات"
+
 msgid "Trier par"
 msgstr "فرز حسب"
+
+msgid "Trois opérations doivent être effectuées dans cet ordre. Chaque étape reste verrouillée tant que la précédente n’est pas terminée : traduire des annonces sans ville produirait des pages sans valeur pour Google."
+msgstr "ثلاث عمليات يجب إنجازها بهذا الترتيب. تبقى كل خطوة مقفلة إلى حين إتمام سابقتها: ترجمة إعلانات بلا مدينة تنتج صفحات بلا قيمة لمحركات البحث."
+
+msgid "Trop de tentatives ont été effectuées. Réessayez dans une heure."
+msgstr "تمت محاولات كثيرة. أعد المحاولة بعد ساعة."
+
+msgid "Très peu"
+msgstr "قليل جداً"
 
 msgid "Type de bien"
 msgstr "نوع العقار"
@@ -340,14 +1429,62 @@ msgstr "الهاتف"
 msgid "Télévision"
 msgstr "تلفزيون"
 
+msgid "Un annonceur n’a pas trouvé sa ville ou son quartier dans la liste. Rien n’est créé tant que vous n’avez pas validé : l’annonce concernée reste hors ligne."
+msgstr "لم يجد معلن مدينته أو حيّه في القائمة. لا يتم إنشاء أي شيء إلى أن تصادق عليه: يبقى الإعلان المعني غير منشور."
+
+msgid "Un choix simple pour présenter le bon interlocuteur."
+msgstr "اختيار بسيط لعرض جهة الاتصال الصحيحة."
+
 msgid "Un détail important, une précision sur le quartier ou vos conditions de visite…"
 msgstr "تفصيل مهم أو توضيح عن الحي أو شروط الزيارة…"
+
+msgid "Un numéro de téléphone valide est requis pour demander la validation WhatsApp."
+msgstr "مطلوب رقم هاتف صحيح لطلب مصادقة واتساب."
+
+msgid "Une dernière étape : WhatsApp"
+msgstr "خطوة أخيرة: واتساب"
+
+msgid "Une partie de la configuration est fournie par l’environnement et n’est pas éditable ici."
+msgstr "جزء من الإعدادات مصدره بيئة التشغيل ولا يمكن تعديله هنا."
+
+msgid "Une photo n’a pas pu être envoyée. Réessayez avec un fichier JPG, PNG, WebP ou AVIF."
+msgstr "تعذر إرسال إحدى الصور. أعد المحاولة بملف JPG أو PNG أو WebP أو AVIF."
+
+msgid "VENDRE"
+msgstr "للبيع"
+
+msgid "Validation WhatsApp Partikulier"
+msgstr "مصادقة واتساب Partikulier"
+
+msgid "Validation WhatsApp enregistrée."
+msgstr "تم حفظ مصادقة واتساب."
 
 msgid "Valider avec WhatsApp"
 msgstr "التأكيد عبر واتساب"
 
+msgid "Valider et publier"
+msgstr "مصادقة ونشر"
+
+msgid "Valider les annonces"
+msgstr "مصادقة الإعلانات"
+
+msgid "Validez d’abord le lieu"
+msgstr "صادق على الموقع أولاً"
+
+msgid "Validé"
+msgstr "مصادق عليه"
+
+msgid "Vendeur identifié"
+msgstr "بائع موثوق"
+
 msgid "Vendre"
 msgstr "بيع"
+
+msgid "Vendu"
+msgstr "مباع"
+
+msgid "Verrouillé — terminez l’étape précédente."
+msgstr "مقفل — أكمل الخطوة السابقة."
 
 msgid "Villa"
 msgstr "فيلا"
@@ -358,11 +1495,32 @@ msgstr "فيلات"
 msgid "Ville"
 msgstr "المدينة"
 
+msgid "Ville ou quartier de départ"
+msgstr "مدينة أو حي الانطلاق"
+
+msgid "Ville, code postal, quartier…"
+msgstr "المدينة، الرمز البريدي، الحي…"
+
 msgid "Voir l'annonce"
 msgstr "أنظر الإعلان"
 
+msgid "Voir les annonces"
+msgstr "شاهد الإعلانات"
+
+msgid "Vos annonces"
+msgstr "إعلاناتك"
+
+msgid "Votre annonce est enregistrée et attend votre message WhatsApp."
+msgstr "تم حفظ إعلانك وهو في انتظار رسالتك على واتساب."
+
+msgid "Votre annonce est enregistrée, mais reste invisible tant que l’équipe n’a pas rapproché votre message WhatsApp."
+msgstr "تم حفظ إعلانك، لكنه يبقى غير مرئي إلى أن يطابق الفريق رسالتك على واتساب."
+
 msgid "Votre aperçu"
 msgstr "معاينتك"
+
+msgid "Votre bien mérite"
+msgstr "عقارك يستحق"
 
 msgid "Votre e-mail"
 msgstr "بريدك الإلكتروني"
@@ -370,20 +1528,230 @@ msgstr "بريدك الإلكتروني"
 msgid "Votre nom"
 msgstr "اسمك"
 
+msgid "Votre nom est requis."
+msgstr "اسمك مطلوب."
+
 msgid "Votre numéro de téléphone"
 msgstr "رقم هاتفك"
+
+msgid "Votre session a expiré. Rechargez la page avant de réessayer."
+msgstr "انتهت صلاحية جلستك. أعد تحميل الصفحة قبل المحاولة مجدداً."
+
+msgid "Votre sélection"
+msgstr "اختيارك"
+
+msgid "Vous n’avez pas encore d’annonce. C’est gratuit et ça prend 2 minutes !"
+msgstr "ليس لديك إعلان بعد. الأمر مجاني ولا يستغرق سوى دقيقتين!"
+
+msgid "Vous n’êtes pas autorisé à modifier cette annonce."
+msgstr "لا يسمح لك بتعديل هذا الإعلان."
+
+msgid "Vous n’êtes pas autorisé à valider cette annonce."
+msgstr "لا يسمح لك بمصادقة هذا الإعلان."
+
+msgid "Vous pourrez les ajouter depuis « Mes annonces » après validation."
+msgstr "يمكنك إضافتها من « إعلاناتي » بعد المصادقة."
+
+msgid "Vous pouvez ajouter jusqu’à 15 photos."
+msgstr "يمكنك إضافة ما يصل إلى 15 صورة."
+
+msgid "Vous pouvez maintenant supprimer les scripts du dossier tests/ de votre serveur : le thème fonctionne sans eux."
+msgstr "يمكنك الآن حذف السكريبتات من مجلد tests/ على خادمك: القالب يعمل بدونها."
+
+msgid "Vous êtes"
+msgstr "أنت"
 
 msgid "Vue"
 msgstr "الإطلالة"
 
+msgid "Vue grille"
+msgstr "عرض الشبكة"
+
+msgid "Vue liste"
+msgstr "عرض القائمة"
+
 msgid "Vue sur les montagnes"
 msgstr "مطلة على الجبال"
+
+msgid "Vues totales"
+msgstr "إجمالي المشاهدات"
+
+msgid "Vérifiez dans WhatsApp que le message reçu contient le code ci-dessous avant de publier."
+msgstr "تحقق في واتساب من أن الرسالة المستلمة تتضمن الرمز أدناه قبل النشر."
+
+msgid "Webhook n8n"
+msgstr "n8n Webhook"
+
+msgid "Webhook n8n absent ou non HTTPS."
+msgstr "webhook لـ n8n غائب أو ليس HTTPS."
+
+msgid "Webhook sortant"
+msgstr "webhook صادر"
 
 msgid "WhatsApp"
 msgstr "واتساب"
 
+msgid "X (Twitter)"
+msgstr "إكس (تويتر)"
+
+msgid "YouTube"
+msgstr "يوتيوب"
+
+msgid "Zéro commission"
+msgstr "بدون عمولة"
+
+msgid "accueil, annonces, déposer, mes annonces, annonce…"
+msgstr "الرئيسية، الإعلانات، نشر إعلان، إعلاناتي، إعلان…"
+
+msgid "annonce de %s, sans commission"
+msgstr "إعلان من %s، دون عمولة"
+
+msgid "annonce supprimée"
+msgstr "تم حذف الإعلان"
+
+msgid "ascenseur"
+msgstr "مصعد"
+
+msgid "au %s"
+msgstr "في %s"
+
+msgid "au prix de %s MAD"
+msgstr "بسعر %s درهم"
+
+msgid "au rdc"
+msgstr "في الطابق الأرضي"
+
+msgid "au rez-de-chaussée"
+msgstr "في الطابق الأرضي"
+
+msgid "avec %s"
+msgstr "مع %s"
+
+msgid "avec ascenseur"
+msgstr "مع مصعد"
+
+msgid "avec garage ou sous-sol"
+msgstr "مع مرآب أو قبو"
+
+msgid "avec terrasse"
+msgstr "مع شرفة"
+
+msgid "de %d m²"
+msgstr "بمساحة %d م²"
+
+msgid "détail du logement"
+msgstr "تفاصيل المسكن"
+
+msgid "d’une superficie de %d m²"
+msgstr "بمساحة قدرها %d م²"
+
+msgid "espace intérieur"
+msgstr "المساحة الداخلية"
+
+msgid "facultatif"
+msgstr "اختياري"
+
+msgid "favoris anonymisés"
+msgstr "مفضلات مجهولة الهوية"
+
+msgid "garage"
+msgstr "مرآب"
+
+msgid "inchangé (déjà transmis précédemment)"
+msgstr "دون تغيير (أُرسل مسبقاً)"
+
+msgid "le propriétaire"
+msgstr "المالك"
+
+msgid "listing_id et resend_request_id sont obligatoires."
+msgstr "listing_id و resend_request_id إلزاميان."
+
+msgid "loue"
+msgstr "يؤجّر"
+
+msgid "modifiable"
+msgstr "قابل للتعديل"
+
+msgid "oEmbed desactive."
+msgstr "تم تعطيل oEmbed."
+
+msgid "photo(s) n"
+msgstr "صورة/صور لم"
+
+msgid "pièce de vie"
+msgstr "غرفة معيشة"
+
+msgid "prix affiché"
+msgstr "السعر المعروض"
+
+msgid "propriétaire"
+msgstr "مالك"
+
+msgid "réessayez ou contactez-nous."
+msgstr "أعد المحاولة أو تواصل معنا."
+
+msgid "sans ascenseur"
+msgstr "دون مصعد"
+
+msgid "sans garage"
+msgstr "دون مرآب"
+
+msgid "sans vis-à-vis"
+msgstr "دون جيران مقابلين"
+
+msgid "seconde perspective"
+msgstr "منظور ثانٍ"
+
+msgid "situé %s"
+msgstr "يقع %s"
+
+msgid "studio"
+msgstr "استوديو"
+
+msgid "terrasse de %d m²"
+msgstr "شرفة بمساحة %d م²"
+
+msgid "transmis"
+msgstr "أُرسل"
+
+msgid "une annonce claire."
+msgstr "إعلان واضح."
+
+msgid "une pièce principale"
+msgstr "غرفة رئيسية واحدة"
+
+msgid "vend"
+msgstr "يبيع"
+
+msgid "vos annonces sont en ligne."
+msgstr "إعلاناتك متاحة على الإنترنت."
+
+msgid "votre ville"
+msgstr "مدينتك"
+
+msgid "vous attendent."
+msgstr "في انتظارك."
+
+msgid "vous@exemple.com"
+msgstr "you@example.com"
+
+msgid "vue depuis le séjour"
+msgstr "إطلالة من غرفة الجلوس"
+
+msgid "vue intérieure"
+msgstr "منظر داخلي"
+
+msgid "vues"
+msgstr "مشاهدات"
+
+msgid "wa_id est requis."
+msgstr "wa_id مطلوب."
+
+msgid "À la validation, l’annonce est publiée dans les trois langues, un compte est créé pour l’annonceur, et n8n reçoit son identifiant et son mot de passe pour les lui envoyer sur WhatsApp."
+msgstr "عند المصادقة، يُنشر الإعلان باللغات الثلاث، ويُنشأ حساب للمعلن، ويستقبل n8n معرّفه وكلمة مروره لإرسالها إليه عبر واتساب."
+
 msgid "À louer"
-msgstr "للكراء"
+msgstr "للإيجار"
 
 msgid "À partir de"
 msgstr "ابتداءً من"
@@ -394,5 +1762,33 @@ msgstr "من نحن"
 msgid "À vendre"
 msgstr "للبيع"
 
+msgid "Éditorialisation de la home — lot H"
+msgstr "تحرير الصفحة الرئيسية — الدفعة H"
+
 msgid "Étage"
 msgstr "الطابق"
+
+msgid "Étape %1$d — %2$s"
+msgstr "الخطوة %1$d — %2$s"
+
+msgid "État"
+msgstr "الحالة"
+
+msgid "à %s"
+msgstr "في %s"
+
+msgid "à la location"
+msgstr "للإيجار"
+
+msgid "à la vente"
+msgstr "للبيع"
+
+msgid "à louer"
+msgstr "للإيجار"
+
+msgid "à vendre"
+msgstr "للبيع"
+
+msgid "échec ou non configuré"
+msgstr "فاشل أو غير مهيأ"
+
