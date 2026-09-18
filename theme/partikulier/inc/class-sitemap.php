@@ -91,7 +91,16 @@ class Partikulier_Sitemap {
 	private static function generate() {
 		$urls   = array();
 		$home   = home_url( '/' );
-		$urls[] = array( 'loc' => $home, 'lastmod' => mysql2date( 'Y-m-d', get_lastpostmodified( 'gmt' ) ), 'priority' => '1.0', 'changefreq' => 'hourly' );
+			/* SE-037 (E-3701) : l'accueil existe dans les trois langues —
+                 * sans Polylang, l'unique entrée FR porte ses alias fr/x-default. */
+			$home_alternates = array( 'fr' => $home, 'x-default' => $home );
+			foreach ( array( 'fr', 'en', 'ar' ) as $locale ) {
+					$locale_url = function_exists( 'pll_home_url' ) ? pll_home_url( $locale ) : '';
+					if ( $locale_url && $locale_url !== $home ) {
+							$home_alternates[ $locale ] = $locale_url;
+					}
+			}
+			$urls[] = array( 'loc' => $home, 'lastmod' => mysql2date( 'Y-m-d', get_lastpostmodified( 'gmt' ) ), 'priority' => '1.0', 'changefreq' => 'hourly', 'alternates' => $home_alternates );
 
 		// --- Pages publiques ---
 		$pages          = get_posts( array(
@@ -148,8 +157,10 @@ class Partikulier_Sitemap {
 		);
 		if ( $rows ) {
 			foreach ( $rows as $row ) {
+				$loc = get_permalink( (int) $row->ID );
 				$urls[] = array(
-					'loc'        => get_permalink( (int) $row->ID ),
+					'loc'        => $loc,
+					'alternates' => self::language_alternates( (int) $row->ID, $loc ), // SE-037 (E-3701)
 					'lastmod'    => mysql2date( 'Y-m-d', $row->post_modified_gmt ),
 					'priority'   => '0.9',
 					'changefreq' => 'weekly',
@@ -178,9 +189,16 @@ class Partikulier_Sitemap {
 			}
 		}
 
-		$out = '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
+		$out = '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">' . "\n"; // SE-037 (E-3701) : alternates hreflang
 		foreach ( $urls as $u ) {
 			$out .= "\t<url>\n";
+			/* SE-037 (E-3701) : cluster d'alternates hreflang — une page
+                         * multilingue se déclare à Google comme UN groupe d'URLs
+                         * équivalentes (xhtml:link), pas comme des URLs isolées. */
+                        $alternates = isset( $u['alternates'] ) && is_array( $u['alternates'] ) ? $u['alternates'] : array();
+                        foreach ( $alternates as $lang => $alt_url ) {
+                                $out .= "\t\t<xhtml:link rel=\"alternate\" hreflang=\"" . esc_xml( (string) $lang ) . "\" href=\"" . esc_xml( (string) $alt_url ) . "\"/>" . "\n";
+                        }
 			$out .= "\t\t<loc>" . esc_xml( $u['loc'] ) . "</loc>\n";
 			$out .= "\t\t<lastmod>" . esc_xml( $u['lastmod'] ) . "</lastmod>\n";
 			$out .= "\t\t<changefreq>" . esc_xml( $u['changefreq'] ) . "</changefreq>\n";
@@ -192,7 +210,35 @@ class Partikulier_Sitemap {
 		return $out;
 	}
 
-	public static function purge() {
+        /**
+         * SE-037 (E-3701) : cluster d'alternates d'une annonce — une URL par
+         * langue disponible (Polylang), x-default pointant la langue par
+         * défaut. Sans Polylang : l'URL elle-même + x-default (le sitemap
+         * reste complet et valide, E-3703).
+         *
+         * @param int    $post_id Annonce.
+         * @param string $loc     URL de la langue courante (fallback).
+         * @return array<string,string> hreflang => URL
+         */
+        public static function language_alternates( $post_id, $loc = '' ) {
+                $loc     = $loc ? $loc : get_permalink( $post_id );
+                $default = function_exists( 'pll_default_language' ) ? pll_default_language() : 'fr';
+                $out     = array( $default => $loc, 'x-default' => $loc );
+                if ( function_exists( 'pll_get_post_translations' ) ) {
+                        foreach ( (array) pll_get_post_translations( $post_id ) as $lang => $translated_id ) {
+                                $translated = get_post( $translated_id );
+                                if ( $translated instanceof WP_Post && 'publish' === $translated->post_status ) {
+                                        $link = get_permalink( $translated );
+                                        if ( $link ) {
+                                                $out[ (string) $lang ] = $link;
+                                        }
+                                }
+                        }
+                }
+                return $out;
+        }
+
+        public static function purge() {
 		delete_transient( self::CACHE_KEY );
 		Partikulier_Cache::purge_all();
 	}
