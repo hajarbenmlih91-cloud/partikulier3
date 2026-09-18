@@ -73,6 +73,8 @@ $types = get_terms( array(
 								<input type="hidden" name="pk_edit_id" value="<?php echo esc_attr( (string) $editing_post->ID ); ?>">
 						<?php endif; ?>
 								<?php wp_nonce_field( 'pk_submit_listing', 'nonce' ); ?>
+						<?php // SE-034 : clé d'idempotence — unique à chaque affichage du formulaire. ?>
+						<input type="hidden" name="pk_idempotency_key" value="<?php echo esc_attr( Partikulier_Form::idempotency_field_value() ); ?>">
 
 								<nav class="pk-stepper" aria-label="<?php echo esc_attr( Partikulier_Localization::translate_polylang_string( 'Étapes de publication', 'Étapes de publication', 'partikulier' ) ); ?>">
 										<ol class="pk-stepper-list">

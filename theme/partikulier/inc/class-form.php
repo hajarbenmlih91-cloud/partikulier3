@@ -34,7 +34,28 @@ class Partikulier_Form {
 			}
 				wp_die( esc_html__( 'Votre session a expiré. Rechargez la page avant de réessayer.', 'partikulier' ), esc_html__( 'Erreur de sécurité', 'partikulier' ), array( 'response' => 403 ) );
 		}
-		if ( ! Partikulier_Security::allow_listing_submission() ) {
+						// SE-034 (E-3401→E-3403) : idempotence du canal public. La clé
+				// voyage en champ caché (rendu à chaque affichage) ; un rejeu de la
+				// MÊME charge avec la MÊME clé rend la réponse stockée (replayed:
+				// true) sans créer de doublon ni consommer le quota — un double-clic
+				// ou un retour arrière ne publie plus deux annonces.
+				$idem_conflict = false;
+				$idem_stored   = self::idempotency_replay( $_POST, $idem_conflict ); // phpcs:ignore WordPress.Security.NonceVerification -- nonce vérifié en tête de handler
+				if ( null !== $idem_stored ) {
+						if ( wp_doing_ajax() ) {
+								wp_send_json_success( array_merge( $idem_stored, array( 'replayed' => true ) ) );
+						}
+						wp_safe_redirect( (string) ( $idem_stored['url'] ?? '' ) );
+						exit;
+				}
+				if ( $idem_conflict ) {
+						$message = __( 'Cette soumission a déjà été enregistrée avec un contenu différent.', 'partikulier' );
+						if ( wp_doing_ajax() ) {
+								wp_send_json_error( array( 'message' => $message ), 400 );
+						}
+						wp_die( esc_html( $message ), esc_html__( 'Erreur de publication', 'partikulier' ), array( 'response' => 400 ) );
+				}
+				if ( ! Partikulier_Security::allow_listing_submission() ) {
 				$message = __( 'Trop de tentatives ont été effectuées. Réessayez dans une heure.', 'partikulier' );
 			if ( wp_doing_ajax() ) {
 					wp_send_json_error( array( 'message' => $message ), 429 );
@@ -53,7 +74,19 @@ class Partikulier_Form {
 			if ( is_wp_error( $result ) ) {
 					wp_die( esc_html( $result->get_error_message() ), esc_html__( 'Erreur de publication', 'partikulier' ), array( 'response' => 400 ) );
 			}
-				wp_safe_redirect( get_permalink( $result ) );
+									// SE-034 : la réponse complète est stockée aussi pour le canal
+					// POST sans JS — un rejeu (AJAX ou POST) retrouvera la même réponse.
+					$verification = Partikulier_WhatsApp_Verification::pending_payload( $result );
+					$photo_errors = get_post_meta( $result, '_pk_photo_errors', true );
+					self::idempotency_store( $_POST, array(
+							'message'           => __( 'Votre annonce est enregistrée et attend votre message WhatsApp.', 'partikulier' ),
+							'status'            => 'pending_whatsapp',
+							'url'               => get_permalink( $result ),
+							'whatsapp_url'      => $verification['url'],
+							'verification_code' => $verification['code'],
+							'photo_errors'      => is_array( $photo_errors ) ? $photo_errors : array(),
+					) ); // phpcs:ignore WordPress.Security.NonceVerification -- nonce vérifié en tête de handler
+					wp_safe_redirect( get_permalink( $result ) );
 				exit;
 		}
 
@@ -61,17 +94,19 @@ class Partikulier_Form {
 		if ( is_wp_error( $result ) ) {
 				wp_send_json_error( array( 'message' => $result->get_error_message() ), 400 );
 		}
-			$verification = Partikulier_WhatsApp_Verification::pending_payload( $result );
-			$photo_errors = get_post_meta( $result, '_pk_photo_errors', true );
+							$verification = Partikulier_WhatsApp_Verification::pending_payload( $result );
+				$photo_errors = get_post_meta( $result, '_pk_photo_errors', true );
 
-			wp_send_json_success( array(
-					'message'           => __( 'Votre annonce est enregistrée et attend votre message WhatsApp.', 'partikulier' ),
-					'status'            => 'pending_whatsapp',
-					'url'               => get_permalink( $result ),
-					'whatsapp_url'      => $verification['url'],
-					'verification_code' => $verification['code'],
-					'photo_errors'      => is_array( $photo_errors ) ? $photo_errors : array(),
-			) );
+				$payload = array(
+						'message'           => __( 'Votre annonce est enregistrée et attend votre message WhatsApp.', 'partikulier' ),
+						'status'            => 'pending_whatsapp',
+						'url'               => get_permalink( $result ),
+						'whatsapp_url'      => $verification['url'],
+						'verification_code' => $verification['code'],
+						'photo_errors'      => is_array( $photo_errors ) ? $photo_errors : array(),
+				);
+				self::idempotency_store( $_POST, $payload ); // phpcs:ignore WordPress.Security.NonceVerification -- nonce vérifié en tête de handler
+				wp_send_json_success( array_merge( $payload, array( 'replayed' => false ) ) );
 	}
 
 		/**
@@ -659,6 +694,98 @@ class Partikulier_Form {
 							$verification['code']
 					);
 			wp_mail( $email, $subject, $message );
+	}
+	
+	/* ------------------------------------------------------------------ */
+	/* SE-034 : idempotence du canal public (E-3401→E-3403)                */
+	/* ------------------------------------------------------------------ */
+	
+	/**
+	 * Valeur du champ caché — 32 hex, unique à chaque affichage du formulaire.
+	 */
+	public static function idempotency_field_value() {
+			return bin2hex( random_bytes( 16 ) );
+	}
+
+	/**
+	 * Recherche un rejeu : même clé + même charge → réponse stockée.
+	 * Une clé déjà utilisée avec une charge DIFFÉRENTE marque le conflit
+	 * (refus 400 : jamais deux annonces pour une clé réutilisée).
+	 *
+	 * @param array $data     $_POST
+	 * @param bool  $conflict Par référence : true si clé réutilisée avec une charge différente.
+	 * @return array|null Réponse stockée (rejeu), null sinon.
+	 */
+	private static function idempotency_replay( $data, &$conflict ) {
+			$key  = self::idempotency_key_from( $data );
+			$hash = '' === $key ? '' : self::payload_signature( $data );
+			if ( '' === $key || '' === $hash ) {
+					return null;
+			}
+			global $wpdb;
+			$row = $wpdb->get_row( $wpdb->prepare(
+					'SELECT event_hash, response_json, expires_at FROM ' . $wpdb->prefix . 'pk_idempotency WHERE event_id = %s',
+					'pkform:' . $key
+			), ARRAY_A );
+			if ( ! is_array( $row ) ) {
+					return null;
+			}
+			if ( strtotime( (string) $row['expires_at'] ) < time() ) {
+						// Clé expirée : elle ne rejoue plus, sa place est libérée (E-3403).
+					$wpdb->delete( $wpdb->prefix . 'pk_idempotency', array( 'event_id' => 'pkform:' . $key ), array( '%s' ) );
+					return null;
+			}
+			if ( (string) $row['event_hash'] !== $hash ) {
+					$conflict = true;
+					return null;
+			}
+			$stored = json_decode( (string) $row['response_json'], true );
+			return is_array( $stored ) ? $stored : null;
+	}
+
+	/**
+	 * Stocke la réponse pour rejeu (24 h — table pk_idempotency du domaine
+	 * listings, event_id préfixé « pkform: » pour l'espace de noms du canal).
+	 */
+	private static function idempotency_store( $data, array $payload ) {
+			$key  = self::idempotency_key_from( $data );
+			$hash = '' === $key ? '' : self::payload_signature( $data );
+			if ( '' === $key || '' === $hash ) {
+					return; // formulaire sans clé (page périmée) : soumission normale, pas de rejeu
+			}
+			global $wpdb;
+			$table = $wpdb->prefix . 'pk_idempotency';
+			$wpdb->delete( $table, array( 'event_id' => 'pkform:' . $key ), array( '%s' ) );
+			$wpdb->insert( $table, array(
+					'event_id'      => 'pkform:' . $key,
+					'event_hash'    => $hash,
+					'response_json' => wp_json_encode( $payload ),
+					'created_at'    => gmdate( 'Y-m-d H:i:s' ),
+					'expires_at'    => gmdate( 'Y-m-d H:i:s', time() + DAY_IN_SECONDS ),
+			), array( '%s', '%s', '%s', '%s', '%s' ) );
+	}
+
+	/** Clé d'idempotence du formulaire (32 hex), '' si absente ou invalide. */
+	private static function idempotency_key_from( $data ) {
+			$raw = isset( $data['pk_idempotency_key'] ) ? sanitize_text_field( wp_unslash( $data['pk_idempotency_key'] ) ) : '';
+			return preg_match( '/^[a-f0-9]{32}$/', $raw ) ? $raw : '';
+	}
+
+	/**
+	 * Empreinte canonique de la charge : champs pk_* (hors clé et champs
+	 * techniques), triés — deux charges identiques ont la même empreinte.
+	 */
+	private static function payload_signature( $data ) {
+			$canonical = array();
+			foreach ( $data as $name => $value ) {
+					$name = (string) $name;
+					if ( 0 !== strpos( $name, 'pk_' ) || 'pk_idempotency_key' === $name || 'pk_form_action' === $name ) {
+						continue;
+					}
+					$canonical[ $name ] = is_array( $value ) ? implode( '|', array_map( 'strval', $value ) ) : (string) $value;
+			}
+			ksort( $canonical, SORT_STRING );
+			return hash( 'sha256', wp_json_encode( $canonical ) );
 	}
 }
 

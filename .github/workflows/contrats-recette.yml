@@ -172,6 +172,30 @@ jobs:
             php plugin/partikulier-core/tests/se043-geo-routing-battery.php > preuves-run/contrats/se043-geo-routing-battery.json
           echo "PASS  se043-geo-routing-battery" | tee -a preuves-run/journal.txt
           kill "$SRV" 2>/dev/null || true
+      - name: Contrat SE-034 HTTP réel — idempotence du canal public de dépôt
+        run: |
+          set -euo pipefail
+          # Batterie E-3403 : double soumission au canal public (admin-ajax
+          # pk_submit_listing) — le rejeu ne doit créer aucun doublon.
+          php -S 127.0.0.1:8099 -t wp theme/partikulier/tests/router-ci.php > preuves-run/se034-server.log 2>&1 &
+          SRV=$!
+          sain=false
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8099/ || true)
+            if [ "$code" = "200" ]; then sain=true; break; fi
+            sleep 0.5
+          done
+          if [ "$sain" != true ]; then
+            echo "FAIL  se034-form-idempotency-contract (sonde HTTP : pas de 200 sur /, code=$code)" | tee -a preuves-run/journal.txt
+            kill "$SRV" 2>/dev/null || true
+            exit 1
+          fi
+          PK_BASE=http://127.0.0.1:8099 \
+          PK_WP_DIR=$PWD/wp \
+          PK_COMMIT=${{ github.sha }} \
+            php plugin/partikulier-core/tests/se034-form-idempotency-contract.php > preuves-run/contrats/se034-form-idempotency-contract.json
+          echo "PASS  se034-form-idempotency-contract" | tee -a preuves-run/journal.txt
+          kill "$SRV" 2>/dev/null || true
       - name: Contrat E-5105 — paramètres tableau de la recherche (lot sécurité 6.20.6)
         run: |
           set -euo pipefail
@@ -205,9 +229,9 @@ jobs:
             php theme/partikulier/tests/search-arrays-contract.php > preuves-run/contrats/search-arrays-contract.json
           echo "PASS  search-arrays-contract" | tee -a preuves-run/journal.txt
           kill "$SRV" 2>/dev/null || true
-      - name: Vérifier l'oracle 326/326 (297 + SE-026 + Schéma 2.7.0/E-4303 + SE-024 + SE-043)
+      - name: Vérifier l'oracle 332/332 (297 + SE-026 + Schéma 2.7.0/E-4303 + SE-024 + SE-043 + SE-034)
         run: |
-          php -r '$tot=0; $pas=0; foreach (glob("preuves-run/contrats/*.json") as $f) { $d=json_decode(file_get_contents($f), true); if (($d["status"] ?? "") !== "PASS") { fwrite(STDERR, basename($f).": status != PASS\n"); exit(1); } $tot += (int) $d["total"]; $pas += (int) $d["passed"]; } echo "contrats dynamiques : $pas/$tot\n"; if ($tot !== 326 || $pas !== 326) { fwrite(STDERR, "oracle inattendu (attendu 326/326 — 31 suites : 297 base lot sécurité 2.10.7 + 4 warning hmac_mode (E26-001→004, SE-026) + 9 redirections d'anciens slugs (E43-001→009, Schéma 2.7.0/E-4303) + 7 dédoublonnage i18n/DP-1 (E24-001→007, SE-024) + 9 routage géo 404/410/301 (E43T-001→009, SE-043))\n"); exit(1); }'
+          php -r '$tot=0; $pas=0; foreach (glob("preuves-run/contrats/*.json") as $f) { $d=json_decode(file_get_contents($f), true); if (($d["status"] ?? "") !== "PASS") { fwrite(STDERR, basename($f).": status != PASS\n"); exit(1); } $tot += (int) $d["total"]; $pas += (int) $d["passed"]; } echo "contrats dynamiques : $pas/$tot\n"; if ($tot !== 332 || $pas !== 332) { fwrite(STDERR, "oracle inattendu (attendu 332/332 — 32 suites : 297 base lot sécurité 2.10.7 + 4 warning hmac_mode (E26-001→004, SE-026) + 9 redirections d'anciens slugs (E43-001→009, Schéma 2.7.0/E-4303) + 7 dédoublonnage i18n/DP-1 (E24-001→007, SE-024) + 9 routage géo 404/410/301 (E43T-001→009, SE-043) + 6 idempotence canal public (E34-001→006, SE-034))\n"); exit(1); }'
       - name: Publier les résultats
         if: always()
         uses: actions/upload-artifact@v4
