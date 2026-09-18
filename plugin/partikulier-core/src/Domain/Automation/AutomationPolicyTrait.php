@@ -183,7 +183,8 @@ trait AutomationPolicyTrait
 			$url = '';
 		}
 		$current['n8n_webhook_url'] = $url;
-		$current['hmac_mode']       = in_array($posted['hmac_mode'] ?? 'off', ['off', 'log', 'enforce'], true) ? $posted['hmac_mode'] : 'off';
+		$mode                     = (string) ( $posted['hmac_mode'] ?? 'off' );
+		$current['hmac_mode']     = in_array( $mode, ['off', 'log', 'enforce'], true) ? $mode : 'off';
 		$current['quota_per_day']   = max(1, min(10, absint($posted['quota_per_day'] ?? 2) ?: 2));
 		$current['consent_text']    = sanitize_textarea_field( (string) ( $posted['consent_text'] ?? '' ));
 		$current['channel_url']     = esc_url_raw( (string) ( $posted['channel_url'] ?? '' ));
