@@ -105,7 +105,11 @@ final class PremiumService
 		update_post_meta($property_id, self::META_STARTS_AT, $starts_at);
 		update_post_meta($property_id, self::META_ENDS_AT, $ends_at);
 
-		self::audit('premium_granted', 'premium_grant', $historyId, [
+		// SE-048-U (E-4802) : l'audit porte l'ANNONCE comme objet (object_id =
+		// property_id) — l'ID de ligne du journal passe en metadata : le
+		// registre d'audit se lit par bien, pas par ligne interne.
+		self::audit('premium_granted', 'premium_grant', $property_id, [
+			'history_id'  => $historyId,
 			'property_id' => $property_id,
 			'owner_id'    => $owner_id,
 			'granted_by'  => $granted_by,

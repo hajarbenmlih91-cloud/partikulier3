@@ -64,15 +64,24 @@ try {
     $grantId = Partikulier_Premium::grant($propertyId, $adminId, 'Contrat B1 : sélection éditoriale', $starts, $ends);
     $row = is_wp_error($grantId) ? null : $wpdb->get_row($wpdb->prepare("SELECT * FROM {$prefix}pk_premium_history WHERE id = %d", (int) $grantId));
     $metaStatus = (string) get_post_meta($propertyId, PremiumService::META_STATUS, true);
+    // SE-048-U (E-4802) : l'audit porte l'annonce comme objet — object_id
+    // = property_id, l'ID de ligne vit dans metadata_json (history_id).
     $auditRows = (int) $wpdb->get_var($wpdb->prepare(
         "SELECT COUNT(*) FROM {$prefix}pk_audit_log WHERE action = %s AND object_type = %s AND object_id = %d",
         'premium_granted',
         'premium_grant',
-        (int) $grantId
+        (int) $propertyId
     ));
+    $auditMeta = $wpdb->get_var($wpdb->prepare(
+        "SELECT metadata_json FROM {$prefix}pk_audit_log WHERE action = %s AND object_type = %s AND object_id = %d LIMIT 1",
+        'premium_granted',
+        'premium_grant',
+        (int) $propertyId
+    ));
+    $auditHasHistory = $auditMeta && (int) json_decode((string) $auditMeta, true)['history_id'] === (int) $grantId;
     $assert('PREM-002', !is_wp_error($grantId) && (int) $grantId > 0 && $row !== null && $row->status === 'active'
         && (string) $row->selection_reason === 'Contrat B1 : sélection éditoriale'
-        && $metaStatus === 'active' && $auditRows === 1,
+        && $metaStatus === 'active' && $auditRows === 1 && $auditHasHistory,
         'grant via la couture du thème → service plugin (audit premium_granted = preuve d\'exécution plugin), ligne + méta actives');
 
     // 3) Lecture : journal récent et comptages cohérents.

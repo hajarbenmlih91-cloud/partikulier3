@@ -39,8 +39,12 @@ class Partikulier_Premium {
 	}
 
 	public static function register_menu() {
-			add_submenu_page(
-					'edit.php?post_type=' . PARTIKULIER_ESTATIK_POST_TYPE,
+			// SE-048-U (E-4803) : parent réel = menu top-level « partikulier » du
+				// thème (le CDC offre « menu Estatik ou top-level » ; le menu du
+				// thème est un parent premier, sans dépendance au plugin Estatik
+				// — et l'URL canonique devient admin.php?page=pk-premium).
+				add_submenu_page(
+						'partikulier',
 					__( 'Annonces premium', 'partikulier' ),
 					__( 'Annonces premium', 'partikulier' ),
 					'manage_options',
@@ -105,7 +109,7 @@ class Partikulier_Premium {
 	}
 
 	private static function redirect_after_update( $result, $status ) {
-			$redirect = admin_url( 'edit.php?post_type=' . PARTIKULIER_ESTATIK_POST_TYPE . '&page=pk-premium' );
+			$redirect = admin_url( 'admin.php?page=pk-premium' ); // SE-048-U : URL canonique du nouveau parent
 		if ( is_wp_error( $result ) ) {
 				$redirect = add_query_arg( 'pk_premium_error', rawurlencode( $result->get_error_message() ), $redirect );
 		} else {
@@ -179,7 +183,9 @@ class Partikulier_Premium {
 						<h1><?php esc_html_e( 'Annonces premium', 'partikulier' ); ?></h1>
 					<?php if ( isset( $_GET['pk_premium_updated'] ) ) : ?><div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Le journal premium a été mis à jour.', 'partikulier' ); ?></p></div><?php endif; ?>
 					<?php if ( isset( $_GET['pk_premium_error'] ) ) : ?><div class="notice notice-error"><p><?php echo esc_html( sanitize_text_field( wp_unslash( $_GET['pk_premium_error'] ) ) ); ?></p></div><?php endif; ?>
-						<div class="notice notice-warning inline"><p><?php esc_html_e( 'La visibilité publique est désactivée. L’attribution reste interne tant que les règles de durée, de plafonnement et d’activation ne sont pas validées.', 'partikulier' ); ?></p></div>
+						<?php // SE-048-U (E-4803, DP-8 maintien) : bandeau d'état honnête — règlement hors ligne, aucune promesse de paiement en ligne. ?>
+								<div class="notice notice-info inline"><p><?php esc_html_e( 'Octroi manuel : l’administration attribue le statut premium après réception du règlement par virement bancaire ou transfert d’argent. Le paiement en ligne n’est pas activé — aucune passerelle n’est branchée, aucun règlement ne passe par le site.', 'partikulier' ); ?></p></div>
+								<div class="notice notice-warning inline"><p><?php esc_html_e( 'La visibilité publique (badge sur la fiche et tri des résultats) n’est pas encore activée : elle sera livrée à l’étape suivante. L’attribution est d’ores et déjà tracée, prête et réversible.', 'partikulier' ); ?></p></div>
 						<p><?php esc_html_e( 'Une attribution impose un motif et une date de début comme de fin. Elle est tracée et peut être retirée immédiatement.', 'partikulier' ); ?></p>
 						<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 							<?php wp_nonce_field( 'pk_grant_premium' ); ?>
