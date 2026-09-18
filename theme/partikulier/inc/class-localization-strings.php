@@ -41,7 +41,6 @@ trait Partikulier_Localization_Strings {
 	public static function public_chrome_strings() {
 			$strings = array(
 					'property'                         => 'Bien',
-					'features'                         => 'Caractéristiques',
 					'description'                      => 'Description',
 					'contact_seller'                   => 'Contacter le vendeur',
 					'free_private_listing'             => 'Annonce gratuite publiée par un particulier. Aucun frais d’agence.',
@@ -110,9 +109,6 @@ trait Partikulier_Localization_Strings {
 					'display'                          => 'Affichage',
 					'results'                          => 'résultats',
 					'latest'                           => 'Plus récentes',
-					'price_asc'                        => 'Prix croissant',
-					'price_desc'                       => 'Prix décroissant',
-					'surface_desc'                     => 'Surface décroissante',
 					'filters'                          => 'Filtres',
 					'budget_max'                       => 'Budget maximum',
 					'apply'                            => 'APPLIQUER',

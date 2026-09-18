@@ -7,6 +7,10 @@ cd "$ROOT"
 if command -v php >/dev/null 2>&1; then
   find plugin theme -name '*.php' -print0 | xargs -0 -n1 php -l >/dev/null
   echo 'PHP lint: PASS'
+  # SE-024 (E-2402) : gate DuplicateArrayKey — zéro clé dupliquée dans le
+  # littéral de tableau du code runtime (src/ + bootstrap plugin + thème).
+  php scripts/check-duplicate-keys.php
+  echo 'Duplicate array key lint: PASS'
 else
   echo 'PHP lint: SKIP (php executable not available)'
 fi
