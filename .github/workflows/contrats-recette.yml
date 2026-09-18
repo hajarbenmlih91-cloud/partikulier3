@@ -236,7 +236,14 @@ jobs:
           kill "$SRV" 2>/dev/null || true
       - name: Vérifier l'oracle 358/358 (297 + SE-026 + Schéma 2.7.0/E-4303 + SE-024 + SE-043 + SE-034 + SE-048-U + SE-035 + SE-036 + SE-037 + SE-054)
         run: |
-          php -r '$tot=0; $pas=0; foreach (glob("preuves-run/contrats/*.json") as $f) { $d=json_decode(file_get_contents($f), true); if (($d["status"] ?? "") !== "PASS") { fwrite(STDERR, basename($f).": status != PASS\n"); exit(1); } $tot += (int) $d["total"]; $pas += (int) $d["passed"]; } echo "contrats dynamiques : $pas/$tot\n"; if ($tot !== 358 || $pas !== 358) { fwrite(STDERR, "oracle inattendu (attendu 358/358 — 37 suites : 297 base lot sécurité 2.10.7 + 4 warning hmac_mode (E26-001→004, SE-026) + 9 redirections d'anciens slugs (E43-001→009, Schéma 2.7.0/E-4303) + 7 dédoublonnage i18n/DP-1 (E24-001→007, SE-024) + 9 routage géo 404/410/301 (E43T-001→009, SE-043) + 6 idempotence canal public (E34-001→006, SE-034) + 6 audit premium/DP-8 (E48-001→006, SE-048-U) + 5 catalogues EN/AR (E35-001→005, SE-035) + 5 référentiel lieux AR (E36-001→005, SE-036) + 5 SEO multilingue (E37-001→005, SE-037) + 5 expérience vendue/filet variantes (E54-001→005, SE-054))\n"); exit(1); }'
+          # Heredoc (échec du run 35358466811 — Porte 5) : l'apostrophe de
+          # « d'anciens slugs » dans le message d'erreur fermait prématurément le
+          # quoting shell du « php -r '…' » — bash mourrait en « syntax error near
+          # unexpected token '(' » (exit 2) AVANT d'exécuter PHP. Programme PHP
+          # inchangé à l'octet près : seul le transport change.
+          php <<'ORACLE'
+          <?php $tot=0; $pas=0; foreach (glob("preuves-run/contrats/*.json") as $f) { $d=json_decode(file_get_contents($f), true); if (($d["status"] ?? "") !== "PASS") { fwrite(STDERR, basename($f).": status != PASS\n"); exit(1); } $tot += (int) $d["total"]; $pas += (int) $d["passed"]; } echo "contrats dynamiques : $pas/$tot\n"; if ($tot !== 358 || $pas !== 358) { fwrite(STDERR, "oracle inattendu (attendu 358/358 — 37 suites : 297 base lot sécurité 2.10.7 + 4 warning hmac_mode (E26-001→004, SE-026) + 9 redirections d'anciens slugs (E43-001→009, Schéma 2.7.0/E-4303) + 7 dédoublonnage i18n/DP-1 (E24-001→007, SE-024) + 9 routage géo 404/410/301 (E43T-001→009, SE-043) + 6 idempotence canal public (E34-001→006, SE-034) + 6 audit premium/DP-8 (E48-001→006, SE-048-U) + 5 catalogues EN/AR (E35-001→005, SE-035) + 5 référentiel lieux AR (E36-001→005, SE-036) + 5 SEO multilingue (E37-001→005, SE-037) + 5 expérience vendue/filet variantes (E54-001→005, SE-054))\n"); exit(1); }
+          ORACLE
       - name: Publier les résultats
         if: always()
         uses: actions/upload-artifact@v4
