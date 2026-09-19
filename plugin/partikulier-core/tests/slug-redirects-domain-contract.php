@@ -6,8 +6,8 @@
  * La table pk_slug_redirects (schéma 2.7.0) est NEUVE : aucune reprise du
  * thème, aucune migration de données. Ce contrat verrouille :
  *  - E43-001 : versions — schéma 2.7.0 partout (constante, option installée,
- *    health check), plugin 2.10.7 / thème 6.20.6 (le bump de fin de train
- *    n'a pas encore eu lieu) ;
+ *    health check), plugin 2.10.8 / thème 6.20.7 (bump de fin de train
+ *    appliqué) ;
  *  - E43-002 : table présente avec la structure attendue (UNIQUE KEY slug,
  *    KEY property_id — colonnes slug/property_id/created_at/updated_at) ;
  *  - E43-003 : manifeste 21 tables pk_, pk_slug_redirects owner=plugin
@@ -74,9 +74,9 @@ try {
     $assert('E43-001', Schema::VERSION === '2.7.0'
         && (new Migrator())->currentVersion() === '2.7.0'
         && ($health['schema_version'] ?? '') === '2.7.0'
-        && PARTIKULIER_CORE_VERSION === '2.10.7'
-        && wp_get_theme()->get('Version') === '6.20.6',
-        sprintf('versions : schéma %s (constante), %s installée, %s au health, plugin %s, thème %s (bump de fin de train non encore appliqué)',
+        && PARTIKULIER_CORE_VERSION === '2.10.8'
+        && wp_get_theme()->get('Version') === '6.20.7',
+        sprintf('versions : schéma %s (constante), %s installée, %s au health, plugin %s, thème %s (bump de fin de train appliqué)',
             Schema::VERSION, (new Migrator())->currentVersion(), $health['schema_version'] ?? '?',
             PARTIKULIER_CORE_VERSION, wp_get_theme()->get('Version')));
 
