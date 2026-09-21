@@ -19,6 +19,7 @@ class Partikulier_Security {
 		add_action( 'template_redirect', array( __CLASS__, 'block_public_author_enumeration' ), 0 );
 		add_action( 'send_headers', array( __CLASS__, 'send_public_headers' ) );
 		add_filter( 'xmlrpc_enabled', '__return_false' );
+		add_filter( 'xmlrpc_methods', '__return_empty_array' ); // E-4101 : vide aussi les méthodes SANS authentification (pingback, demo) que xmlrpc_enabled ne couvre pas.
 	}
 
 	/**

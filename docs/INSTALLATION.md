@@ -76,6 +76,18 @@ Ne jamais committer de secrets. Les secrets d’automatisation doivent être inj
 
 **Périmètre applicatif concerné à l’identique :** `RateLimiter.php`, `LeadsEraseGuardTrait.php`, `class-security.php`.
 
+### Playbook production (E-4102)
+
+**Épinglage des exécutables.** En production, définir la constante PHP `PARTIKULIER_EXEC_REQUIRE_PIN` dans `wp-config.php` (une variable d’environnement seule ne suffit pas sans code explicite qui la transforme en constante) et fournir la liste épinglée via le filtre `partikulier_exec_whitelist` (`theme/partikulier/inc/class-exec-whitelist.php:93`). Chaque entrée conserve le schéma réel `candidates` (chemins absolus) et `sha256` (empreinte attendue de 64 caractères hexadécimaux), à relire dans la classe avant tout collage ; tout écart (binaire remplacé, absent) est refusé et journalisé. Le principe : un chemin exécutable autorisé n’atteste pas le contenu du binaire — l’épingle permet de refuser un binaire modifié. Après chaque maintenance d’un binaire listé, mettre à jour son empreinte de façon contrôlée et documentée. Ne pas confondre épinglage (ce dispositif), validation d’images (AVIF, voir plus bas) et configuration HTTP (nginx/LiteSpeed, voir plus bas).
+
+**Consigne nginx/LiteSpeed « polyglotte ».** Scoper PHP-FPM hors `/wp-content/uploads/` : un fichier `.php` déguisé en image ne doit jamais être interprété. S’assurer que `X-Content-Type-Options: nosniff` est bien actif au niveau serveur — le thème l’envoie déjà côté PHP (`inc/class-security.php::send_public_headers()`), la consigne serveur couvre les fichiers statiques servis directement.
+
+**Cache des assets.** `expires 1y + immutable` sur les assets fingerprintés, en réservant cette règle aux URL dont l’invalidation par contenu est effectivement vérifiée : un fichier modifié doit obtenir une URL distincte, que le cache/CDN distingue réellement (à vérifier sur l’hébergement, pas à déduire de la seule mention E-3102). gzip/brotli actif sur les réponses texte, à mesurer sur l’hébergement. Ne pas appliquer un an/immutable aux pages HTML, aux réponses REST, au diagnostic ni aux espaces privés.
+
+**Livraison AVIF.** Après déploiement : vérifier le MIME `image/avif` réellement servi par l’hébergeur, PUIS définir `PARTIKULIER_ENABLE_AVIF_DELIVERY` (la conversion existe, la livraison est gardée par cette constante, éteinte par défaut — `inc/class-avif.php:347`). Si le serveur sert un mauvais MIME, laisser la constante éteinte et le consigner. Vérifier aussi le décodage réel dans les navigateurs et le repli : MIME, décodage et autorisation d’exécution sont des contrôles différents.
+
+**Statut.** Ces consignes relèvent de l’exploitation Hostinger ; elles seront vérifiées dans la recette d’exploitation Hostinger, distincte du contrôle d’identité IP DP-4 qui reste ouvert. Aucune mesure d’exploitation citée ici n’est déjà exécutée.
+
 ## Catalogues i18n
 
 Le plugin `partikulier-core` est la source canonique du domaine gettext `partikulier`. Le thème conserve une copie synchronisée pour garantir un repli traduit lorsque le plugin est désactivé. Le packaging et la CI refusent toute divergence entre les cinq fichiers partagés (`partikulier.pot`, `ar.po`, `ar.mo`, `en_US.po`, `en_US.mo`).

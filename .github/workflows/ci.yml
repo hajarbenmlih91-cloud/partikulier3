@@ -42,7 +42,7 @@ jobs:
             echo "  propre : 0 entrée interdite"
           done
           # La capture d'écran du thème (E-1701) doit voyager dans l'artefact.
-          unzip -Z1 dist/partikulier-theme-*.zip | grep -qx 'partikulier/screenshot.png' \
+          unzip -Z1 dist/partikulier-theme-*.zip | grep -x 'partikulier/screenshot.png' > /dev/null \
             || { echo "screenshot.png absent du zip thème (E-1701)"; exit 1; }
           echo "screenshot.png présent dans le zip thème"
       - name: Upload packages

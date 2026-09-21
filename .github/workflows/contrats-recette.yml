@@ -338,15 +338,145 @@ jobs:
             php theme/partikulier/tests/se025-trilingual-routes-contract.php > preuves-run/contrats/se025-trilingual-routes-contract.json
           echo "PASS  se025-trilingual-routes-contract" | tee -a preuves-run/journal.txt
           kill "$SRV" 2>/dev/null || true
-      - name: Vérifier l'oracle 370/370 (297 + SE-026 + Schéma 2.7.0/E-4303 + SE-024 + SE-043 + SE-034 + SE-048-U + SE-035 + SE-036 + SE-037 + SE-054 + SE-025)
+      - name: Contrat SE-041 HTTP réel — XML-RPC (E-4101, lot B Phase 1)
         run: |
-          # Heredoc (échec du run 35358466811 — Porte 5) : l'apostrophe de
-          # « d'anciens slugs » dans le message d'erreur fermait prématurément le
-          # quoting shell du « php -r '…' » — bash mourrait en « syntax error near
-          # unexpected token '(' » (exit 2) AVANT d'exécuter PHP. Programme PHP
-          # inchangé à l'octet près : seul le transport change.
+          set -euo pipefail
+          # Après SE-025 (contexte trilingue rétabli), avant l'oracle — même
+          # discipline serveur que SE-025 : origine du site, port 8099 inclus.
+          # Le filtre xmlrpc_methods vide la table applicative ; IXR ajoute
+          # ensuite exactement trois méthodes system.*. Statut ET corps XML
+          # contrôlés séparément (démo négative : code original = 5 FAIL / 6).
+          php -S 127.0.0.1:8099 -t wp theme/partikulier/tests/router-ci.php > preuves-run/se041-server.log 2>&1 &
+          SRV=$!
+          sain=false
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8099/fr/ || true)
+            if [ "$code" = "200" ]; then sain=true; break; fi
+            sleep 0.5
+          done
+          if [ "$sain" != true ]; then
+            echo "FAIL  se041-xmlrpc-contract (sonde HTTP : pas de 200 sur /fr/, code=$code)" | tee -a preuves-run/journal.txt
+            kill "$SRV" 2>/dev/null || true
+            exit 1
+          fi
+          PK_BASE=http://127.0.0.1:8099 \
+          PK_WP_DIR=$PWD/wp \
+          PK_COMMIT=${{ github.sha }} \
+            php theme/partikulier/tests/se041-xmlrpc-contract.php > preuves-run/contrats/se041-xmlrpc-contract.json
+          echo "PASS  se041-xmlrpc-contract" | tee -a preuves-run/journal.txt
+          kill "$SRV" 2>/dev/null || true
+      - name: Vérifier l'oracle 376/376 (durci — schéma, cohérence, unicité, totaux épinglés, results exigé hors suites historiques ; reprise F3 + tests v3 §9.2)
+        run: |
+          # Validateur durci (reprise du 20/09/2026 F3, durci le 21/09/2026
+          # §9.2) : l'ancien validateur additionnait total/passed DECLARES et
+          # acceptait un unique faux rapport auto-contradictoire. Le contrôle,
+          # pour CHAQUE suite : JSON valide ; status === "PASS" ; total/passed/
+          # failed entiers ; passed + failed === total ; failed === 0 ; total
+          # === LE total épingle de la suite (table ci-dessous, somme = 376) ;
+          # la cle results est EXIGEE pour toute suite hors liste blanche
+          # (v3 §9.2 : sa suppression de SE-041/SE-027 restait acceptee en
+          # v2) ; SI results est fourni : total === count(results), passed ===
+          # nb de PASS REELS, aucun FAIL cache sous status PASS, unicite des
+          # test_id. Les 9 suites historiques sans results — core, services,
+          # load, rest-lite, routes-collision, sync, payments, premium, leads —
+          # sont les seules autorisees a s'en passer (search-arrays EMET
+          # results). Cardinalite et ensemble EXACT des 39 suites
+          # attendues ; aucun fichier en trop ou manquant ; total global 376/376.
           php <<'ORACLE'
-          <?php $tot=0; $pas=0; foreach (glob("preuves-run/contrats/*.json") as $f) { $d=json_decode(file_get_contents($f), true); if (($d["status"] ?? "") !== "PASS") { fwrite(STDERR, basename($f).": status != PASS\n"); exit(1); } $tot += (int) $d["total"]; $pas += (int) $d["passed"]; } echo "contrats dynamiques : $pas/$tot\n"; if ($tot !== 370 || $pas !== 370) { fwrite(STDERR, "oracle inattendu (attendu 370/370 — 38 suites : 297 base lot sécurité 2.10.7 + 4 warning hmac_mode (E26-001→004, SE-026) + 9 redirections d'anciens slugs (E43-001→009, Schéma 2.7.0/E-4303) + 7 dédoublonnage i18n/DP-1 (E24-001→007, SE-024) + 9 routage géo 404/410/301 (E43T-001→009, SE-043) + 6 idempotence canal public (E34-001→006, SE-034) + 6 audit premium/DP-8 (E48-001→006, SE-048-U) + 5 catalogues EN/AR (E35-001→005, SE-035) + 5 référentiel lieux AR (E36-001→005, SE-036) + 5 SEO multilingue (E37-001→005, SE-037) + 5 expérience vendue/filet variantes (E54-001→005, SE-054) + 12 front trilingue 9 URLs/RTL/hreflang (E25-001→012, SE-025))\n"); exit(1); }
+          <?php
+          $attendues = array(
+                    "alerts-domain-contract.json" => 15,
+          "artifact-hygiene-contract.json" => 3,
+          "automation-domain-contract.json" => 23,
+          "avif-security-contract.json" => 15,
+          "core-contract.json" => 8,
+          "front-assets.json" => 7,
+          "i18n-chrome-domain-contract.json" => 13,
+          "i18n-content-domain-contract.json" => 15,
+          "i18n-unified-mechanism-contract.json" => 15,
+          "lead-erase-security-contract.json" => 13,
+          "leads-contract.json" => 7,
+          "leads-domain-contract.json" => 16,
+          "load-contract.json" => 7,
+          "module-perimeter-contract.json" => 11,
+          "options-sanitizer-contract.json" => 8,
+          "owner-stats-domain-contract.json" => 16,
+          "payments-contract.json" => 10,
+          "premium-contract.json" => 8,
+          "rest-lite-scope.json" => 10,
+          "routes-collision.json" => 6,
+          "se022-http-battery.json" => 4,
+          "se022-idempotence-contract.json" => 9,
+          "se024-i18n-dedup-contract.json" => 7,
+          "se025-trilingual-routes-contract.json" => 12,
+          "se026-hmac-mode-contract.json" => 4,
+          "se034-form-idempotency-contract.json" => 6,
+          "se035-catalogs-contract.json" => 5,
+          "se036-places-referential-contract.json" => 5,
+          "se037-seo-multilingual-contract.json" => 5,
+          "se041-xmlrpc-contract.json" => 6,
+          "se043-geo-routing-battery.json" => 9,
+          "se048-premium-honesty-contract.json" => 6,
+          "se054-closure-contract.json" => 5,
+          "search-arrays-contract.json" => 9,
+          "services-contract.json" => 7,
+          "slug-redirects-domain-contract.json" => 9,
+          "sync-contract.json" => 14,
+          "translation-variants-domain-contract.json" => 16,
+          "vestige-extinction-contract.json" => 12,
+          );
+          $sansResultsAutorisees = array(
+          "core-contract.json", "services-contract.json", "load-contract.json", "rest-lite-scope.json", "routes-collision.json", "sync-contract.json", "payments-contract.json", "premium-contract.json", "leads-contract.json",
+          );
+          $fichiers = glob("preuves-run/contrats/*.json");
+          $bases = array_map("basename", $fichiers);
+          if (count($bases) !== count($attendues)) {
+          fwrite(STDERR, "cardinalite inattendue : attendu " . count($attendues) . " suites, obtenu " . count($bases) . "\n");
+          exit(1);
+          }
+          $tot = 0; $pas = 0;
+          foreach ($fichiers as $f) {
+          $nom = basename($f);
+          if (!isset($attendues[$nom])) {
+          fwrite(STDERR, $nom . " : suite hors ensemble attendu\n");
+          exit(1);
+          }
+          $d = json_decode((string) file_get_contents($f), true);
+          if (!is_array($d)) { fwrite(STDERR, $nom . " : JSON invalide\n"); exit(1); }
+          foreach (array("status", "total", "passed", "failed") as $cle) {
+          if (!array_key_exists($cle, $d)) { fwrite(STDERR, $nom . " : cle manquante " . $cle . "\n"); exit(1); }
+          }
+          if (!in_array($d["status"], array("PASS", "FAIL"), true)) { fwrite(STDERR, $nom . " : status invalide\n"); exit(1); }
+          if (!is_int($d["total"]) || !is_int($d["passed"]) || !is_int($d["failed"]) || $d["total"] < 0 || $d["passed"] < 0 || $d["failed"] < 0) {
+          fwrite(STDERR, $nom . " : compteurs invalides\n"); exit(1);
+          }
+          if ($d["status"] !== "PASS" || $d["failed"] !== 0) { fwrite(STDERR, $nom . " : status != PASS ou failed != 0\n"); exit(1); }
+          if ($d["passed"] + $d["failed"] !== $d["total"] || $d["passed"] !== $d["total"]) {
+          fwrite(STDERR, $nom . " : compteurs incoherents (total=" . $d["total"] . ", passed=" . $d["passed"] . ", failed=" . $d["failed"] . ")\n"); exit(1);
+          }
+          if ($d["total"] !== $attendues[$nom]) {
+          fwrite(STDERR, $nom . " : total " . $d["total"] . " != total epingle " . $attendues[$nom] . "\n"); exit(1);
+          }
+          if (!in_array($nom, $sansResultsAutorisees, true) && !array_key_exists("results", $d)) {
+          fwrite(STDERR, $nom . " : cle results ABSENTE (reservee aux " . count($sansResultsAutorisees) . " suites historiques — v3 §9.2)\n"); exit(1);
+          }
+          if (array_key_exists("results", $d)) {
+          if (!is_array($d["results"])) { fwrite(STDERR, $nom . " : results non tableau\n"); exit(1); }
+          if (count($d["results"]) !== $d["total"]) { fwrite(STDERR, $nom . " : count(results) != total\n"); exit(1); }
+          $ids = array();
+          foreach ($d["results"] as $r) {
+          if (!is_array($r) || !isset($r["test_id"], $r["status"]) || !is_string($r["test_id"]) || $r["test_id"] === "" || !in_array($r["status"], array("PASS", "FAIL"), true)) {
+          fwrite(STDERR, $nom . " : resultat malforme\n"); exit(1);
+          }
+          if ($r["status"] !== "PASS") { fwrite(STDERR, $nom . " : assertion " . $r["test_id"] . " != PASS sous statut global PASS\n"); exit(1); }
+          $ids[] = $r["test_id"];
+          }
+          if (count($ids) !== count(array_unique($ids))) { fwrite(STDERR, $nom . " : test_id dupliques\n"); exit(1); }
+          }
+          $tot += $d["total"]; $pas += $d["passed"];
+          }
+          if ($tot !== 376 || $pas !== 376) { fwrite(STDERR, "oracle inattendu (attendu 376/376 — 39 suites : 370 reference + 6 SE-041 lot B Phase 1)\n"); exit(1); }
+          echo "contrats dynamiques : $pas/$tot (" . count($bases) . " suites, schema, coherence, unicitte, totaux epingles, ensemble exact et results exig hors historiques verifies)\n";
           ORACLE
       - name: Publier les résultats
         if: always()
