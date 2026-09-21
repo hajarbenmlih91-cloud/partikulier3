@@ -70,6 +70,9 @@
 // phpcs:ignoreFile WordPress.Security.ValidatedSanitizedInput,WordPress.Security.EscapeOutput -- outil de diagnostic gated, sortie texte (SE-020, tri documente)
 
 if ( ! defined( 'ABSPATH' ) ) {
+        if ( 'cli' !== PHP_SAPI ) {
+                http_response_code( 404 ); // E-3201 : accès HTTP direct = 404, pas un 200 vide.
+        }
         exit;
 }
 

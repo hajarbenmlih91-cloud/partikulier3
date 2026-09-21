@@ -62,6 +62,20 @@ qui font le contrat trilingue (9 URLs, RTL, hreflang).
 
 Ne jamais committer de secrets. Les secrets d’automatisation doivent être injectés via les réglages protégés de WordPress ou `PARTIKULIER_AUTOMATION_API_SECRET` selon l’environnement. En production, utiliser le mode de sécurité signé/enforced décrit dans `docs/whatsapp-n8n-setup.md` et ne pas réutiliser de secret de staging.
 
+### Limiteurs derrière le CDN (DP-4 — statut ouvert)
+
+**Constat.** Les trois limiteurs du projet identifient le visiteur par `REMOTE_ADDR` : le limiteur REST (`plugin/partikulier-core/src/RateLimiter.php:19` pour l’identité du quota, `RateLimiter.php:64-69` pour la lecture de l’IP), la garde d’effacement des leads (`plugin/partikulier-core/src/Domain/Leads/LeadsEraseGuardTrait.php:223`) et le limiteur de dépôt du thème (`theme/partikulier/inc/class-security.php:84` — IP hachée en clef de transient). Toute l’identité « par visiteur » repose sur cette valeur.
+
+**Risque CDN.** Le retour du support identifie le CDN Hostinger (nom `*.cdn.hstgr.net`) ; une observation DNS indépendante allant dans ce sens a été rapportée, sans pour autant mesurer l’IP reçue par PHP. Si `REMOTE_ADDR` est l’IP du proxy et non celle du visiteur, tous les visiteurs anonymes partagent une même identité de quota : la protection « quota par visiteur » est dégradée (la protection anti-charge globale, elle, reste).
+
+**Statut DP-4 : OUVERT.** La valeur de `REMOTE_ADDR` derrière ce CDN n’est pas confirmée. Aucune décision n’est prise tant que la vérification côté hébergeur n’est pas faite (message de suivi : `MESSAGE-HOSTINGER-DP4-SUIVI.md`, transmis par le commanditaire uniquement).
+
+**Règle d’ingénierie (interdiction).** Ne jamais lire `X-Forwarded-For` / `X-Real-IP` ni installer un résolveur d’IP de confiance sans chaîne de confiance vérifiée : un en-tête arbitraire laissé au contrôle du client permettrait à n’importe quel visiteur de choisir son identité de quota (usurpation).
+
+**Critère de décision.** IP réelle restaurée et non usurpable → conserver `REMOTE_ADDR` et le documenter. IP de proxy commune → correction côté hébergeur en priorité, sinon résolveur commun avec chaîne de confiance documentée. Identité usurpable ou chaîne inconnue → ne pas valider la protection « quota par visiteur ».
+
+**Périmètre applicatif concerné à l’identique :** `RateLimiter.php`, `LeadsEraseGuardTrait.php`, `class-security.php`.
+
 ## Catalogues i18n
 
 Le plugin `partikulier-core` est la source canonique du domaine gettext `partikulier`. Le thème conserve une copie synchronisée pour garantir un repli traduit lorsque le plugin est désactivé. Le packaging et la CI refusent toute divergence entre les cinq fichiers partagés (`partikulier.pot`, `ar.po`, `ar.mo`, `en_US.po`, `en_US.mo`).
