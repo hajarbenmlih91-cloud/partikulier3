@@ -30,7 +30,7 @@ class Partikulier_Listing_URLs {
 	/**
 	 * Version des regles : incrementer force une regeneration unique.
 	 */
-	const RULES_VERSION = '4';
+	const RULES_VERSION = '5';
 
 	const META_CITY     = '_pk_url_city';
 	const META_DISTRICT = '_pk_url_district';
@@ -447,29 +447,40 @@ $vars[] = 'pk_listing_gone';
 		add_rewrite_rule( '^property/page/([0-9]+)/?$', 'index.php?post_type=' . $cpt . '&paged=$matches[1]', 'top' );
 		add_rewrite_rule( '^property/?$', 'index.php?post_type=' . $cpt, 'top' );
 
-		// Les archives et taxonomies doivent aussi être explicites : selon la
-		// version d’Estatik/Polylang, leurs règles natives ne sont pas toujours
-		// préfixées ou persistées dans une installation froide.
-		add_rewrite_rule( '^(fr|en|ar)/annonces/page/([0-9]+)/?$', 'index.php?post_type=' . $cpt . '&paged=$matches[2]&lang=$matches[1]', 'top' );
-		add_rewrite_rule( '^(fr|en|ar)/annonces/?$', 'index.php?post_type=' . $cpt . '&lang=$matches[1]', 'top' );
+		// Dans la configuration Polylang de référence, les cinq règles
+		// déjà préfixées recevraient un second groupe de langue (SE-027).
+		// Conserver leurs déclarations explicites seulement sans Polylang.
+		// Les règles sans préfixe restent déclarées ci-dessous.
+		$prefix_langue = ! defined( 'POLYLANG_VERSION' );
+
+		if ( $prefix_langue ) {
+			// Les archives et taxonomies doivent aussi être explicites : selon la
+			// version d’Estatik, leurs règles natives ne sont pas toujours
+			// préfixées ou persistées dans une installation froide.
+			add_rewrite_rule( '^(fr|en|ar)/annonces/page/([0-9]+)/?$', 'index.php?post_type=' . $cpt . '&paged=$matches[2]&lang=$matches[1]', 'top' );
+			add_rewrite_rule( '^(fr|en|ar)/annonces/?$', 'index.php?post_type=' . $cpt . '&lang=$matches[1]', 'top' );
+			add_rewrite_rule( '^(fr|en|ar)/location/([^/]+)/?$', 'index.php?post_type=' . $cpt . '&pk_city_slug=$matches[2]&lang=$matches[1]', 'top' );
+
+			// Polylang ajoute le slug de langue devant les fiches non par defaut.
+			// Ces regles doivent preceder les regles sans prefixe : sans elles,
+			// /en/annonce/... et /ar/annonce/... tombent en 404 avant resolution.
+			add_rewrite_rule(
+				'^(fr|en|ar)/' . $base . '/[^/]+/[^/]+/([^/]+)/?$',
+				'index.php?post_type=' . $cpt . '&pk_listing_slug=$matches[2]&lang=$matches[1]',
+				'top'
+			);
+			add_rewrite_rule(
+				'^(fr|en|ar)/' . $base . '/[^/]+/([^/]+)/?$',
+				'index.php?post_type=' . $cpt . '&pk_listing_slug=$matches[2]&lang=$matches[1]',
+				'top'
+			);
+		}
+
+		// Règles sans préfixe : toujours déclarées. Avec Polylang, c'est lui qui
+		// les décline dans la configuration validée ; sans Polylang, repli sans langue.
 		add_rewrite_rule( '^annonces/page/([0-9]+)/?$', 'index.php?post_type=' . $cpt . '&paged=$matches[1]', 'top' );
 		add_rewrite_rule( '^annonces/?$', 'index.php?post_type=' . $cpt, 'top' );
-		add_rewrite_rule( '^(fr|en|ar)/location/([^/]+)/?$', 'index.php?post_type=' . $cpt . '&pk_city_slug=$matches[2]&lang=$matches[1]', 'top' );
 			add_rewrite_rule( '^location/([^/]+)/?$', 'index.php?post_type=' . $cpt . '&pk_city_slug=$matches[1]', 'top' );
-
-		// Polylang ajoute le slug de langue devant les fiches non par defaut.
-		// Ces regles doivent preceder les regles sans prefixe : sans elles,
-		// /en/annonce/... et /ar/annonce/... tombent en 404 avant resolution.
-		add_rewrite_rule(
-			'^(fr|en|ar)/' . $base . '/[^/]+/[^/]+/([^/]+)/?$',
-			'index.php?post_type=' . $cpt . '&pk_listing_slug=$matches[2]&lang=$matches[1]',
-			'top'
-		);
-		add_rewrite_rule(
-			'^(fr|en|ar)/' . $base . '/[^/]+/([^/]+)/?$',
-			'index.php?post_type=' . $cpt . '&pk_listing_slug=$matches[2]&lang=$matches[1]',
-			'top'
-		);
 
 		// Ville + quartier + annonce.
 		add_rewrite_rule(

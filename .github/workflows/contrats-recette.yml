@@ -365,14 +365,42 @@ jobs:
             php theme/partikulier/tests/se041-xmlrpc-contract.php > preuves-run/contrats/se041-xmlrpc-contract.json
           echo "PASS  se041-xmlrpc-contract" | tee -a preuves-run/journal.txt
           kill "$SRV" 2>/dev/null || true
-      - name: Vérifier l'oracle 376/376 (durci — schéma, cohérence, unicité, totaux épinglés, results exigé hors suites historiques ; reprise F3 + tests v3 §9.2)
+      - name: Contrat SE-027 HTTP réel — double-préfixation rewrite (E-2701→E-2703, lot C Phase 1)
+        run: |
+          set -euo pipefail
+          # Après SE-041 (contexte trilingue), avant l'oracle. Le contrat pilote
+          # lui-même ses processus distincts (branche sans Polylang via PK_WP_CLI,
+          # restauration trilingue en finally) et lance le contrat enfant SE-025
+          # (12 assertions jamais recomptées dans l'oracle). Serveur sur
+          # l'origine du site, discipline SE-025/SE-041.
+          php -S 127.0.0.1:8099 -t wp theme/partikulier/tests/router-ci.php > preuves-run/se027-server.log 2>&1 &
+          SRV=$!
+          sain=false
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8099/fr/ || true)
+            if [ "$code" = "200" ]; then sain=true; break; fi
+            sleep 0.5
+          done
+          if [ "$sain" != true ]; then
+            echo "FAIL  se027-rewrite-prefix-contract (sonde HTTP : pas de 200 sur /fr/, code=$code)" | tee -a preuves-run/journal.txt
+            kill "$SRV" 2>/dev/null || true
+            exit 1
+          fi
+          PK_BASE=http://127.0.0.1:8099 \
+          PK_WP_DIR=$PWD/wp \
+          PK_COMMIT=${{ github.sha }} \
+          PK_WP_CLI=wp \
+            php theme/partikulier/tests/se027-rewrite-prefix-contract.php > preuves-run/contrats/se027-rewrite-prefix-contract.json
+          echo "PASS  se027-rewrite-prefix-contract" | tee -a preuves-run/journal.txt
+          kill "$SRV" 2>/dev/null || true
+      - name: Vérifier l'oracle 382/382 (durci — schéma, cohérence, unicité, totaux épinglés, results exigé hors suites historiques ; reprise F3 + tests v3 §9.2)
         run: |
           # Validateur durci (reprise du 20/09/2026 F3, durci le 21/09/2026
           # §9.2) : l'ancien validateur additionnait total/passed DECLARES et
           # acceptait un unique faux rapport auto-contradictoire. Le contrôle,
           # pour CHAQUE suite : JSON valide ; status === "PASS" ; total/passed/
           # failed entiers ; passed + failed === total ; failed === 0 ; total
-          # === LE total épingle de la suite (table ci-dessous, somme = 376) ;
+          # === LE total épingle de la suite (table ci-dessous, somme = 382) ;
           # la cle results est EXIGEE pour toute suite hors liste blanche
           # (v3 §9.2 : sa suppression de SE-041/SE-027 restait acceptee en
           # v2) ; SI results est fourni : total === count(results), passed ===
@@ -380,8 +408,8 @@ jobs:
           # test_id. Les 9 suites historiques sans results — core, services,
           # load, rest-lite, routes-collision, sync, payments, premium, leads —
           # sont les seules autorisees a s'en passer (search-arrays EMET
-          # results). Cardinalite et ensemble EXACT des 39 suites
-          # attendues ; aucun fichier en trop ou manquant ; total global 376/376.
+          # results). Cardinalite et ensemble EXACT des 40 suites
+          # attendues ; aucun fichier en trop ou manquant ; total global 382/382.
           php <<'ORACLE'
           <?php
           $attendues = array(
@@ -410,6 +438,7 @@ jobs:
           "se024-i18n-dedup-contract.json" => 7,
           "se025-trilingual-routes-contract.json" => 12,
           "se026-hmac-mode-contract.json" => 4,
+          "se027-rewrite-prefix-contract.json" => 6,
           "se034-form-idempotency-contract.json" => 6,
           "se035-catalogs-contract.json" => 5,
           "se036-places-referential-contract.json" => 5,
@@ -475,7 +504,7 @@ jobs:
           }
           $tot += $d["total"]; $pas += $d["passed"];
           }
-          if ($tot !== 376 || $pas !== 376) { fwrite(STDERR, "oracle inattendu (attendu 376/376 — 39 suites : 370 reference + 6 SE-041 lot B Phase 1)\n"); exit(1); }
+          if ($tot !== 382 || $pas !== 382) { fwrite(STDERR, "oracle inattendu (attendu 382/382 — 40 suites : 370 reference + 6 SE-041 lot B + 6 SE-027 lot C Phase 1)\n"); exit(1); }
           echo "contrats dynamiques : $pas/$tot (" . count($bases) . " suites, schema, coherence, unicitte, totaux epingles, ensemble exact et results exig hors historiques verifies)\n";
           ORACLE
       - name: Publier les résultats
