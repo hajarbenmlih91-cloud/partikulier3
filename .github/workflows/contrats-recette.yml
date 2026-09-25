@@ -398,7 +398,11 @@ jobs:
           set -euo pipefail
           # APCu requis par T30/T31/init — actif aussi pour le processus CLI
           # des suites (le serveur HTTP du job l'hérite de l'extension).
-          echo 'apc.enable_cli=1' > "$(php -r 'echo PHP_CONFIG_FILE_SCAN_DIR;')/99-dp9-apcu.ini"
+          # Le dossier de configuration de PHP appartient a root sur les runners GitHub :
+          # une redirection simple echoue (« Permission denied »). `sudo tee` est la voie
+          # standard (les runners heberges ont sudo sans mot de passe). Le fichier reste
+          # dans le dossier scanne par PHP : le serveur HTTP du job en herite aussi.
+          echo 'apc.enable_cli=1' | sudo tee "$(php -r 'echo PHP_CONFIG_FILE_SCAN_DIR;')/99-dp9-apcu.ini" >/dev/null
           php -r 'if (!function_exists("apcu_enabled") || !apcu_enabled()) { fwrite(STDERR, "APCu inactif\n"); exit(1); }'
           # dp9-availability-contract s'exécute AVANT l'installation du harnais
           # d'injection : la constante PK_DP9_TEST_INJECTION ne doit PAS être
