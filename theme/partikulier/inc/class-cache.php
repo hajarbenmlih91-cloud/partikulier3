@@ -20,6 +20,15 @@ class Partikulier_Cache {
 		const TTL      = 43200; // 12 h par defaut
 		const DIR_NAME = 'partikulier-cache';
 
+		/** Version de ce module : changer cette valeur declenche UNE purge complete au
+		 *  premier passage HTTP qui suit la mise a jour (entrees ecrites par la version
+		 *  precedente). Voir maybe_purge_after_update(). */
+		const CACHE_VERSION = '2026-09-25-1';
+
+		/** Une seule demande de purge hote par requete PHP : plusieurs hooks de purge
+		 *  peuvent se declencher dans la meme requete (save_post, edited_term, ...). */
+	private static $purge_host_envoyee = false;
+
 		/**
 		 * Hook lance tres tot : on intercepte avant meme le bootstrap complet.
 		 */
@@ -45,6 +54,19 @@ class Partikulier_Cache {
 			add_action( 'add_option_' . $option, array( __CLASS__, 'purge_all' ) );
 			add_action( 'update_option_' . $option, array( __CLASS__, 'purge_all' ) );
 		}
+
+		// Demande de purge adressee par le site a lui-meme (voir ask_host_purge).
+		// La reponse de cette adresse est cacheable : c'est la seule voie mesuree
+		// comme fiable depuis une transition (reponse JSON, non cacheable).
+		add_action( 'init', array( __CLASS__, 'maybe_handle_purge_request' ), 1 );
+
+		// Correctif A, partie 2 : les pages privees (depot, espace personnel, favoris,
+		// connexion) ne doivent jamais entrer dans le cache de pages de l'hebergeur.
+		add_action( 'init', array( __CLASS__, 'exclude_private_pages_from_host_cache' ), 2 );
+
+		// Purge unique apres mise a jour (voir maybe_purge_after_update).
+		add_action( 'init', array( __CLASS__, 'maybe_purge_after_update' ), 3 );
+		add_action( 'pk_purge_host_later', array( __CLASS__, 'run_deferred_purge' ) );
 	}
 
 		/**
@@ -105,6 +127,53 @@ class Partikulier_Cache {
 					exit;
 		}
 	}
+
+		/**
+		 * Correctif A, partie 2 — pages privees hors du cache de pages de l'hebergeur.
+		 *
+		 * Mesure du 25/09 sur serveur LiteSpeed reel : si la copie publique d'une page
+		 * privee (par exemple « mes annonces » vue par un visiteur) entre dans le cache
+		 * du serveur, elle est ensuite servie a un proprietaire connecte dont le cookie
+		 * de variation du cache est absent ou expire : sa page s'affiche vide alors que
+		 * la base de donnees est correcte. Aucune donnee privee ne fuit (c'est la version
+		 * publique qui est servie), mais la fonction est cassee jusqu'au rechargement.
+		 *
+		 * L'appel ci-dessous demande au serveur de NE PAS conserver ces pages : elles ne
+		 * sont donc jamais servies depuis le cache, pour personne. Sans plugin LiteSpeed,
+		 * do_action() ne fait rien : aucun effet de bord.
+		 */
+		/**
+		 * Purge unique apres mise a jour du module de cache.
+		 *
+		 * Une entree ecrite par la version precedente survit a la correction du code :
+		 * mesure du 25/09, la page privee deja presente dans le cache du serveur
+		 * continuait d'etre servie apres la correction. La purge ci-dessous a lieu une
+		 * seule fois (la version est enregistree avant l'appel), et jamais depuis
+		 * WP-CLI ni depuis le cron : la purge a besoin d'une requete HTTP reelle.
+		 */
+		public static function maybe_purge_after_update() {
+			if ( ( defined( 'WP_CLI' ) && WP_CLI ) || ( defined( 'DOING_CRON' ) && DOING_CRON ) ) {
+				return;
+			}
+			if ( self::CACHE_VERSION === (string) get_option( 'pk_cache_version', '' ) ) {
+				return;
+			}
+			update_option( 'pk_cache_version', self::CACHE_VERSION, false );
+			self::purge_all();
+		}
+
+		public static function exclude_private_pages_from_host_cache() {
+			$path = isset( $_SERVER['REQUEST_URI'] ) ? wp_parse_url( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ), PHP_URL_PATH ) : '';
+			$path = trim( (string) $path, '/' );
+			if ( ! preg_match( '#(?:^|/)(?:deposer(?:-une-annonce|-annonce|-en|-ar)?|mes-annonces(?:-en|-ar)?|favoris(?:-en|-ar)?|connexion(?:-en|-ar)?)(?:/|$)#', $path ) ) {
+				return;
+			}
+			do_action( 'litespeed_control_set_nocache', 'page privee Partikulier' );
+			if ( ! headers_sent() ) {
+				header( 'X-LiteSpeed-Cache-Control: no-cache' );
+				header( 'Cache-Control: private, no-store, max-age=0' );
+			}
+		}
 
 		/**
 		 * Demarre la capture de sortie pour generer le fichier cache.
@@ -248,43 +317,166 @@ class Partikulier_Cache {
 		 */
 	public static function purge_host_cache() {
 			$fait = array();
+		// Voie 1 : API du plugin LiteSpeed chargee dans ce processus (v7 : classe).
+		if ( class_exists( 'LiteSpeed\Purge' ) && method_exists( 'LiteSpeed\Purge', 'purge_all' ) ) {
+			LiteSpeed\Purge::purge_all( 'partikulier' );
+			$fait[] = 'LiteSpeed\Purge::purge_all()';
+		}
 		if ( function_exists( 'litespeed_purge_all' ) ) {
-				litespeed_purge_all();
-				$fait[] = 'litespeed_purge_all()';
+			litespeed_purge_all();
+			$fait[] = 'litespeed_purge_all()';
 		}
 		if ( function_exists( 'litespeed_purge' ) ) {
-				litespeed_purge( '/' );
-				$fait[] = 'litespeed_purge("/")';
+			litespeed_purge( '/' );
+			$fait[] = 'litespeed_purge("/")';
 		}
 		if ( has_action( 'litespeed_purge_all' ) ) {
-				do_action( 'litespeed_purge_all' );
-				$fait[] = 'action litespeed_purge_all';
+			do_action( 'litespeed_purge_all' );
+			$fait[] = 'action litespeed_purge_all';
 		}
+		// Voie 2 : en-tete direct. N'aboutit que si la reponse courante est cacheable.
 		if ( ! headers_sent() ) {
-				header( 'X-LiteSpeed-Purge: *' );
-				$fait[] = 'en-tete X-LiteSpeed-Purge';
+			header( 'X-LiteSpeed-Purge: *' );
+			$fait[] = 'en-tete X-LiteSpeed-Purge';
+		}
+		// Voie 3 (fiable) : le site demande la purge a lui-meme, sur une reponse cacheable.
+		// Mesure du 25/09 : sans elle, le visiteur garde l'ancienne page du cache serveur
+		// (jusqu'a 7 jours) et les voies 1 et 2 ne le corrigent pas de facon sure.
+		$fiable = self::ask_host_purge();
+		if ( '' !== $fiable ) {
+			$fait[] = $fiable;
 		}
 		if ( ! $fait ) {
-				return "aucun cache hebergeur detecte (ni API ni en-tete) : la purge du theme suffit";
+			return "aucun cache hebergeur detecte (ni API ni en-tete) : la purge du theme suffit";
 		}
-			return implode( ' + ', array_unique( $fait ) );
+		return implode( ' + ', array_unique( $fait ) );
+	}
+
+	/**
+	 * Le site demande la purge a lui-meme par une requete non bloquante vers une
+	 * adresse cacheable (voir maybe_handle_purge_request). Un site sans cache de
+	 * pages serveur ne paie rien : la demande n'est envoyee que si le serveur
+	 * s'annonce LiteSpeed (ou si le plugin LiteSpeed est charge).
+	 *
+	 * @return string Ce qui a ete fait.
+	 */
+	public static function ask_host_purge() {
+		if ( self::$purge_host_envoyee ) {
+			return 'demande de purge deja envoyee dans cette requete';
+		}
+		if ( ( defined( 'WP_CLI' ) && WP_CLI ) || ( defined( 'DOING_CRON' ) && DOING_CRON ) ) {
+			return 'demande de purge ignoree (contexte CLI/cron)';
+		}
+		// Serveur de developpement mono-processus de PHP (`php -S`), utilise par la CI
+		// et par les rejeux hors hebergeur : la requete interne ne peut PAS aboutir, le
+		// processus qui devrait y repondre etant celui qui l emet. On ne l emet donc
+		// pas ici (mesure du 25/09 : requete figee ~2 s, suite de contrats interrompue).
+		if ( 'cli-server' === php_sapi_name() ) {
+			return 'demande de purge ignoree (serveur de developpement mono-processus)';
+		}
+		if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+			return 'demande de purge ignoree (sauvegarde automatique)';
+		}
+		$serveur   = isset( $_SERVER['SERVER_SOFTWARE'] ) ? (string) $_SERVER['SERVER_SOFTWARE'] : '';
+		$litespeed = ( false !== stripos( $serveur, 'litespeed' ) )
+			|| class_exists( 'LiteSpeed\Purge' )
+			|| function_exists( 'litespeed_purge_all' )
+			|| has_action( 'litespeed_purge_all' );
+		if ( ! $litespeed || ! function_exists( 'wp_remote_get' ) ) {
+			return '';
+		}
+		self::$purge_host_envoyee = true;
+		$jeton = wp_generate_password( 20, false, false );
+		set_transient( 'pk_purge_' . $jeton, 1, 2 * MINUTE_IN_SECONDS );
+		$url = add_query_arg(
+			array(
+				'pk_purge' => $jeton,
+				'n'        => wp_rand( 1000, 999999 ),
+			),
+			home_url( '/' )
+		);
+		/* Variante RETENUE, mesuree le 25/09 : appel BLOQUANT, court, avec verification de
+		   la reponse. La variante non bloquante ('blocking' => false, timeout 0.05) a ete
+		   mesuree INOPERANTE : le processus rend la main avant que l'appel soit parti, la
+		   page de purge n'est jamais servie et le visiteur garde l'ancienne page. Cout
+		   mesure avec la variante retenue : environ 200 ms ajoutees a l'action du
+		   proprietaire (mediane 885 ms contre 677 ms sans purge). */
+		$r = wp_remote_get( $url, array( 'timeout' => 2 ) );
+		if ( ! is_wp_error( $r ) && 200 === (int) wp_remote_retrieve_response_code( $r ) ) {
+			return 'demande de purge confirmee par le serveur';
+		}
+		// Filet : la demande n'a pas abouti, on la rejoue une fois via WP-Cron.
+		wp_schedule_single_event( time() + 5, 'pk_purge_host_later', array( $url ) );
+		return 'demande de purge differee (reponse non confirmee)';
+	}
+
+	/**
+	 * Filet WP-Cron : rejoue une demande de purge qui n'a pas pu partir.
+	 *
+	 * @param string $url Adresse de purge a rejouer.
+	 */
+	public static function run_deferred_purge( $url ) {
+		self::$purge_host_envoyee = false;
+		if ( is_string( $url ) && '' !== $url && function_exists( 'wp_remote_get' ) ) {
+			wp_remote_get( $url, array( 'timeout' => 5 ) );
+		}
+	}
+
+	/**
+	 * Repond a la demande de purge du site. Jeton a usage unique, valable 2 minutes :
+	 * personne d'autre ne peut declencher une purge. La reponse est cacheable
+	 * (Cache-Control: public, max-age=1) : condition mesuree pour que le cache de
+	 * pages du serveur honore l'en-tete de purge qu'elle porte.
+	 */
+	public static function maybe_handle_purge_request() {
+		if ( ! isset( $_GET['pk_purge'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- jeton verifie juste apres
+			return;
+		}
+		$jeton = sanitize_text_field( wp_unslash( $_GET['pk_purge'] ) );
+		if ( '' === $jeton || ! get_transient( 'pk_purge_' . $jeton ) ) {
+			status_header( 403 );
+			header( 'Content-Type: text/plain; charset=utf-8' );
+			header( 'X-Robots-Tag: noindex, nofollow' );
+			echo 'jeton de purge inconnu ou expire';
+			exit;
+		}
+		delete_transient( 'pk_purge_' . $jeton );
+		if ( class_exists( 'LiteSpeed\Purge' ) && method_exists( 'LiteSpeed\Purge', 'purge_all' ) ) {
+			LiteSpeed\Purge::purge_all( 'partikulier_ping' );
+		}
+		header( 'X-LiteSpeed-Purge: *' );
+		header( 'Cache-Control: public, max-age=1' );
+		header( 'Content-Type: text/plain; charset=utf-8' );
+		header( 'X-Robots-Tag: noindex, nofollow' );
+		echo 'purge demandee';
+		exit;
 	}
 
 	public static function purge_all() {
-			$upload = wp_get_upload_dir();
-			$dir    = trailingslashit( $upload['basedir'] ) . self::DIR_NAME;
-		if ( ! is_dir( $dir ) ) {
-			/* On previent l'hebergeur AVANT de vider nos fichiers : si le script
-			s'arrete entre les deux, le visiteur ne reste pas sur une page perimee. */
-			self::purge_host_cache();
-				return;
-		}
-			$files = glob( $dir . '/*.html' );
+		/* Correctif A, partie 4 (Arena, 25/09) — LA cause racine de la page perimee.
+		 *
+		 * Le corps d'origine ne prevenait l'hebergeur que si le dossier de cache du
+		 * theme N'EXISTAIT PAS :
+		 *     if ( ! is_dir( $dir ) ) { self::purge_host_cache(); return; }
+		 * Dans le cas normal — dossier present — il supprimait nos fichiers et
+		 * n'appelait JAMAIS la purge de l'hebergeur. Mesure du 25/09 : apres une
+		 * desactivation, la fiche publique restait « InStock » et l'accueil listait
+		 * encore l'annonce, alors que nos propres fichiers, eux, etaient bien
+		 * supprimes : c'est le cache de pages du serveur qui repondait.
+		 *
+		 * Nouvelle forme : purge de l'hebergeur EN PREMIER (tant que sa copie
+		 * existe, nos fichiers ne sont meme pas consultes), puis nos fichiers.
+		 * Aucune sortie anticipee : les deux purges ont toujours lieu.
+		 */
+		self::purge_host_cache();
+		$upload = wp_get_upload_dir();
+		$dir    = trailingslashit( $upload['basedir'] ) . self::DIR_NAME;
+		$files  = glob( $dir . '/*.html' );
 		if ( $files ) {
 			foreach ( $files as $f ) {
 				wp_delete_file( $f );
-									wp_delete_file( $f . '.gz' );
-									wp_delete_file( $f . '.br' );
+				wp_delete_file( $f . '.gz' );
+				wp_delete_file( $f . '.br' );
 			}
 		}
 	}

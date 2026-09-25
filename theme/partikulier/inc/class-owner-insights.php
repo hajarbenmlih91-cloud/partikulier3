@@ -119,7 +119,9 @@ class Partikulier_Owner_Insights {
 			$result = Partikulier_Dashboard::manage_listing(
 					absint( $request['id'] ),
 					sanitize_key( (string) $request->get_param( 'action' ) ),
-					get_current_user_id()
+                                        get_current_user_id(),
+                                        sanitize_text_field( (string) $request->get_param( 'reason' ) ),
+                                        sanitize_textarea_field( (string) $request->get_param( 'note' ) )
 			);
 		if ( is_wp_error( $result ) ) {
 				return $result;

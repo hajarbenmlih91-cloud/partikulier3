@@ -195,9 +195,11 @@ foreach ($orderPairs as [$traitFile, $classFile]) {
 $assert('DA-008', $orderErrors === [],
     $orderErrors === [] ? 'bootstrap : les 12 require_once de traits précèdent leurs 4 classes shells' : 'ordre incorrect : ' . implode(' ; ', $orderErrors));
 
-/* DA-009 — baseline thème gelée, actualisée au lot F : exactement les 13 fichiers préexistants (extinction des 8 vestiges : buyer-qualification et n8n-security sous le seuil). */
+/* DA-009 — baseline thème gelée, actualisée au lot F puis au lot DP-9 (SE-044 :
+moteur de transitions class-listing-transitions.php — périmètre v1.1 §4.3) : exactement les 14 fichiers (extinction des 8 vestiges : buyer-qualification et n8n-security sous le seuil). */
 $themeRoot = (string) get_template_directory();
 $frozenBaseline = [
+    'inc/class-listing-transitions.php',
     'inc/class-listing-approval.php',
     'inc/class-form.php',
     'inc/class-page-doctor.php',

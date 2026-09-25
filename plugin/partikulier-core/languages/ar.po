@@ -1792,3 +1792,81 @@ msgstr "للبيع"
 msgid "échec ou non configuré"
 msgstr "فاشل أو غير مهيأ"
 
+
+msgid "Désactiver mon annonce"
+msgstr "تعطيل إعلاني"
+
+msgid "Motif de la désactivation"
+msgstr "سبب التعطيل"
+
+msgid "Je ne souhaite plus vendre ni louer ce bien"
+msgstr "لم أعد أرغب في بيع أو إيجار هذا العقار"
+
+msgid "Autre (visible par l’équipe uniquement)"
+msgstr "آخر (يظهر للفريق فقط)"
+
+msgid "Précisez (texte privé, jamais publié)"
+msgstr "يرجى التحديد (خاص، لا يُنشر أبداً)"
+
+msgid "Indisponible"
+msgstr "غير متوفر"
+
+msgid "Réactiver mon annonce"
+msgstr "إعادة تفعيل إعلاني"
+
+msgid "Confirmer la désactivation"
+msgstr "تأكيد التعطيل"
+
+msgid "Votre annonce est désactivée. Sa page reste en ligne, mais elle n’apparaît plus dans les résultats."
+msgstr "تم تعطيل إعلانك. تبقى صفحته متاحة، لكنه لن يظهر في نتائج البحث."
+
+msgid "Votre annonce est de nouveau visible dans les résultats."
+msgstr "إعلانك ظاهر في نتائج البحث من جديد."
+
+msgid "Cette annonce est en cours de traitement par l’équipe et ne peut pas être modifiée pour le moment."
+msgstr "هذا الإعلان قيد المعالجة من طرف الفريق ولا يمكن تعديله حالياً."
+
+msgid "Seule une annonce publiée peut être réactivée par son propriétaire. Pour une annonce non publiée, contactez l’équipe."
+msgstr "يمكن للمالك إعادة تنشيط الإعلانات المنشورة فقط. بالنسبة للإعلان غير المنشور، يرجى الاتصال بالفريق."
+
+msgid "Les liens de traduction de cette annonce sont incohérents. Aucune modification n’a été faite. Contactez l’équipe."
+msgstr "روابط ترجمة هذا الإعلان غير متسقة. لم يتم إجراء أي تغيير. يرجى الاتصال بالفريق."
+
+msgid "Une traduction de cette annonce est refusée ou en attente de validation. L’ensemble ne peut pas être réactivé tant que l’équipe n’a pas traité la situation."
+msgstr "إحدى ترجمات هذا الإعلان مرفوضة أو في انتظار التحقق. لا يمكن إعادة تنشيط الإعلان حتى تعالج الفريق الوضع."
+
+msgid "L’action a échoué en cours d’exécution. L’état de l’annonce peut être partiellement mise à jour. Renvoyez la même action ou contactez l’équipe."
+msgstr "فشل الإجراء أثناء التنفيذ. قد يكون الإعلان محدَّثًا جزئيًا. أعد إرسال الإجراء نفسه أو اتصل بالفريق."
+
+msgid "Cette action a été retirée. Utilisez « Désactiver mon annonce » avec un motif, puis « Réactiver »."
+msgstr "تم إلغاء هذا الإجراء. استخدم «تعطيل إعلاني» مع سبب، ثم «إعادة التفعيل»."
+
+msgid "Cette annonce a été retirée par l’équipe et ne peut pas être modifiée par son propriétaire."
+msgstr "تم سحب هذا الإعلان من طرف الفريق ولا يمكن للمالك تعديله."
+
+msgid "Le statut de cette annonce est inconnu. L’équipe doit l’arbitrer avant toute modification."
+msgstr "حالة هذا الإعلان غير معروفة. يجب على الفريق مراجعتها قبل أي تعديل."
+
+msgid "Motif de désactivation obligatoire : vendu, loué, changement d’avis ou autre."
+msgstr "سبب التعطيل إلزامي: مباع أو مؤجّر أو تغيير الرأي أو آخر."
+
+msgid "Merci de préciser le motif (texte privé)."
+msgstr "يرجى تحديد السبب (نص خاص)."
+
+msgid "Merci de choisir un motif."
+msgstr "يرجى اختيار سبب."
+
+msgid "Dans la corbeille — restauration par l’équipe uniquement"
+msgstr "في سلة المحذوفات — الاستعادة من طرف الفريق فقط"
+
+msgid "Le parcours de gestion d’annonce est indisponible."
+msgstr "مسار إدارة الإعلانات غير متاح."
+
+msgid "Refusée"
+msgstr "مرفوض"
+
+msgid "Connectez-vous pour gérer vos annonces."
+msgstr "سجّل الدخول لإدارة إعلاناتك."
+
+msgid "Cette annonce a été refusée par l’équipe. Elle ne peut pas être modifiée par son propriétaire."
+msgstr "تم رفض هذا الإعلان من طرف الفريق. لا يمكن للمالك تعديله."

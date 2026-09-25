@@ -92,6 +92,7 @@ $variant = wp_insert_post([
     'post_title' => 'SE054 ' . $run . ' translation manuelle EN', 'post_author' => 1,
 ]);
 $linkResult = TranslationVariantsService::link_variant($sold, $variant, 'en', 'fr');
+$indispo = 0;
 
 try {
     // 1) Filigrane ×3 langues (E-5401) — catalogues + gabarit porteur.
@@ -168,10 +169,46 @@ try {
         $ghostsBefore === 0 && $ghostsInjected > 0 && $ghostsReported === $ghostsInjected,
         sprintf('sonde santé : avant %d, fantôme injecté %d, health check rapporte %d (attendu = injecté > 0)',
             $ghostsBefore, $ghostsInjected, $ghostsReported));
+    // 6) SE-044 / DP-9 (v1.1 §11 — extension +2) : « Indisponible » (avis/autre)
+    //    rejoint les statuts de clôture — libellé ×3 langues, contact coupé.
+    $indispo = $mk('indisponible-avis');
+    update_post_meta($indispo, '_pk_status', 'indisponible');
+    update_post_meta($indispo, '_pk_closed_reason', 'avis');
+    $labelsIndispo = $moAr->translate('Indisponible') === 'غير متوفر' && $moEn->translate('Indisponible') === 'Unavailable';
+    $assert('E54-006',
+        Partikulier_Listing_Closure::closure_status($indispo) === 'indisponible'
+        && $labelsIndispo
+        && Partikulier_Listing_Closure::closure_label($indispo) !== ''
+        && strpos($tpl, '! $is_closed') !== false,
+        sprintf('clôture « indisponible » : statut %s, libellé « %s », catalogues EN/AR %s, contact coupé par la garde is_closed du gabarit %s',
+            Partikulier_Listing_Closure::closure_status($indispo),
+            Partikulier_Listing_Closure::closure_label($indispo),
+            $labelsIndispo ? '✓' : 'ABSENTS',
+            strpos($tpl, '! $is_closed') !== false ? '✓' : 'ABSENTE'));
+
+    // 7) SE-044 / DP-9 (v1.1 §11 — extension +2) : exclusion — l'annonce
+    //    désactivée (indisponible) est absente du catalogue public et des
+    //    similaires ; l'active concurrente y reste.
+    $catalogue = new WP_Query([
+        'post_type' => 'properties', 'post_status' => 'publish', 'posts_per_page' => 100,
+        'fields' => 'ids', 'no_found_rows' => true,
+        'meta_query' => Partikulier_Dashboard::active_listing_meta_query(), // prédicat central du thème (pre_get_posts)
+    ]);
+    $catIds = array_map('intval', $catalogue->posts);
+    $similarIds2 = array_map('intval', wp_list_pluck(Partikulier_Listing_Closure::similar_listings($sold, 3), 'ID'));
+    $assert('E54-007',
+        !in_array($indispo, $catIds, true) && !in_array($closedCompetitor, $catIds, true)
+        && in_array($competitorA, $catIds, true)
+        && !in_array($indispo, $similarIds2, true),
+        sprintf('exclusion : indisponible %s au catalogue, fermée %s au catalogue, active %s, indisponible %s des similaires',
+            in_array($indispo, $catIds, true) ? 'PRÉSENTE' : 'absente',
+            in_array($closedCompetitor, $catIds, true) ? 'PRÉSENTE' : 'absente',
+            in_array($competitorA, $catIds, true) ? 'présente' : 'ABSENTE',
+            in_array($indispo, $similarIds2, true) ? 'PRÉSENTE' : 'absente'));
 } catch (Throwable $error) {
     $assert('E54-EXCEPTION', false, $error->getMessage());
 } finally {
-    foreach ([$sold, $competitorA, $competitorB, $competitorC, $closedCompetitor, $variant] as $fixId) {
+    foreach ([$sold, $competitorA, $competitorB, $competitorC, $closedCompetitor, $variant, $indispo] as $fixId) {
         if ($fixId > 0) { wp_delete_post($fixId, true); }
     }
     global $wpdb;

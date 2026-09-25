@@ -34,7 +34,7 @@ jobs:
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
-          extensions: mbstring, mysqli, sqlite3, curl
+          extensions: mbstring, mysqli, sqlite3, curl, apcu
       - name: Installer WP-CLI
         run: |
           curl -fsSL https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar -o /usr/local/bin/wp
@@ -393,7 +393,67 @@ jobs:
             php theme/partikulier/tests/se027-rewrite-prefix-contract.php > preuves-run/contrats/se027-rewrite-prefix-contract.json
           echo "PASS  se027-rewrite-prefix-contract" | tee -a preuves-run/journal.txt
           kill "$SRV" 2>/dev/null || true
-      - name: Vérifier l'oracle 382/382 (durci — schéma, cohérence, unicité, totaux épinglés, results exigé hors suites historiques ; reprise F3 + tests v3 §9.2)
+      - name: "Contrats DP-9 (SE-044) - dp9-availability-contract in-process (harnais ABSENT, preuve d'inertie)"
+        run: |
+          set -euo pipefail
+          # APCu requis par T30/T31/init — actif aussi pour le processus CLI
+          # des suites (le serveur HTTP du job l'hérite de l'extension).
+          # Le dossier de configuration de PHP appartient a root sur les runners GitHub :
+          # une redirection simple echoue (« Permission denied »). `sudo tee` est la voie
+          # standard (les runners heberges ont sudo sans mot de passe). Le fichier reste
+          # dans le dossier scanne par PHP : le serveur HTTP du job en herite aussi.
+          echo 'apc.enable_cli=1' | sudo tee "$(php -r 'echo PHP_CONFIG_FILE_SCAN_DIR;')/99-dp9-apcu.ini" >/dev/null
+          php -r 'if (!function_exists("apcu_enabled") || !apcu_enabled()) { fwrite(STDERR, "APCu inactif\n"); exit(1); }'
+          # dp9-availability-contract s'exécute AVANT l'installation du harnais
+          # d'injection : la constante PK_DP9_TEST_INJECTION ne doit PAS être
+          # définie (assertion DP9-AV-020 : la couture est inerte hors test).
+          rm -f wp/wp-content/mu-plugins/dp9-injection-harness.php
+          PK_WP_DIR=$PWD/wp \
+          PK_COMMIT=${{ github.sha }} \
+          PK_REPO_DIR=$PWD \
+            php plugin/partikulier-core/tests/dp9-availability-contract.php \
+              > preuves-run/contrats/dp9-availability-contract.json
+          echo "PASS  dp9-availability-contract" | tee -a preuves-run/journal.txt
+          # Harnais d'injection (TEST SEULEMENT — vit dans tests/fixtures du
+          # dépôt, jamais livré ; retiré après les suites dp9).
+          # WordPress (archive officielle) ne fournit pas wp-content/mu-plugins : le dossier
+          # doit exister AVANT la copie. Sans cela, en CI : « cp: cannot create regular
+          # file 'wp/wp-content/mu-plugins/': Not a directory » (run 36159640440).
+          [ -d wp/wp-content/mu-plugins ] || { rm -f wp/wp-content/mu-plugins; mkdir -p wp/wp-content/mu-plugins; }
+          cp theme/partikulier/tests/fixtures/dp9-injection-harness.php wp/wp-content/mu-plugins/
+      - name: "Contrats DP-9 (SE-044) - batteries HTTP (owner-journey, variant-resolution, partial-failure)"
+        run: |
+          set -euo pipefail
+          php -S 127.0.0.1:8099 -t wp theme/partikulier/tests/router-ci.php > preuves-run/dp9-server.log 2>&1 &
+          SRV=$!
+          sain=false
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8099/fr/ || true)
+            if [ "$code" = "200" ]; then sain=true; break; fi
+            sleep 0.5
+          done
+          if [ "$sain" != true ]; then
+            echo "FAIL  dp9-batteries (sonde HTTP : pas de 200 sur /fr/, code=$code)" | tee -a preuves-run/journal.txt
+            kill "$SRV" 2>/dev/null || true
+            rm -f wp/wp-content/mu-plugins/dp9-injection-harness.php
+            exit 1
+          fi
+          for c in dp9-owner-journey-contract dp9-variant-resolution-contract dp9-partial-failure-contract; do
+            if PK_BASE=http://127.0.0.1:8099 \
+               PK_WP_DIR=$PWD/wp \
+               PK_COMMIT=${{ github.sha }} \
+               php theme/partikulier/tests/$c.php > preuves-run/contrats/$c.json; then
+              echo "PASS  $c" | tee -a preuves-run/journal.txt
+            else
+              echo "FAIL  $c" | tee -a preuves-run/journal.txt
+              kill "$SRV" 2>/dev/null || true
+              rm -f wp/wp-content/mu-plugins/dp9-injection-harness.php
+              exit 1
+            fi
+          done
+          kill "$SRV" 2>/dev/null || true
+          rm -f wp/wp-content/mu-plugins/dp9-injection-harness.php
+      - name: Vérifier l'oracle 454/454 (durci, 44 suites — schéma, cohérence, unicité, totaux épinglés, results exigé hors suites historiques ; reprise F3 + tests v3 §9.2)
         run: |
           # Validateur durci (reprise du 20/09/2026 F3, durci le 21/09/2026
           # §9.2) : l'ancien validateur additionnait total/passed DECLARES et
@@ -418,6 +478,10 @@ jobs:
           "automation-domain-contract.json" => 23,
           "avif-security-contract.json" => 15,
           "core-contract.json" => 8,
+          "dp9-availability-contract.json" => 20,
+          "dp9-owner-journey-contract.json" => 25,
+          "dp9-partial-failure-contract.json" => 12,
+          "dp9-variant-resolution-contract.json" => 10,
           "front-assets.json" => 7,
           "i18n-chrome-domain-contract.json" => 13,
           "i18n-content-domain-contract.json" => 15,
@@ -431,7 +495,7 @@ jobs:
           "owner-stats-domain-contract.json" => 16,
           "payments-contract.json" => 10,
           "premium-contract.json" => 8,
-          "rest-lite-scope.json" => 10,
+          "rest-lite-scope.json" => 11,
           "routes-collision.json" => 6,
           "se022-http-battery.json" => 4,
           "se022-idempotence-contract.json" => 9,
@@ -446,11 +510,11 @@ jobs:
           "se041-xmlrpc-contract.json" => 6,
           "se043-geo-routing-battery.json" => 9,
           "se048-premium-honesty-contract.json" => 6,
-          "se054-closure-contract.json" => 5,
+          "se054-closure-contract.json" => 7,
           "search-arrays-contract.json" => 9,
           "services-contract.json" => 7,
           "slug-redirects-domain-contract.json" => 9,
-          "sync-contract.json" => 14,
+          "sync-contract.json" => 16,
           "translation-variants-domain-contract.json" => 16,
           "vestige-extinction-contract.json" => 12,
           );
@@ -504,7 +568,7 @@ jobs:
           }
           $tot += $d["total"]; $pas += $d["passed"];
           }
-          if ($tot !== 382 || $pas !== 382) { fwrite(STDERR, "oracle inattendu (attendu 382/382 — 40 suites : 370 reference + 6 SE-041 lot B + 6 SE-027 lot C Phase 1)\n"); exit(1); }
+          if ($tot !== 454 || $pas !== 454) { fwrite(STDERR, "oracle inattendu (attendu 454/454 — 44 suites : 382 reference + 5 extensions SE-044/DP-9 + 67 dp9)\n"); exit(1); }
           echo "contrats dynamiques : $pas/$tot (" . count($bases) . " suites, schema, coherence, unicitte, totaux epingles, ensemble exact et results exig hors historiques verifies)\n";
           ORACLE
       - name: Publier les résultats

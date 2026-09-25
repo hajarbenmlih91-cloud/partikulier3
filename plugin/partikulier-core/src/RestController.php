@@ -202,7 +202,22 @@ final class RestController
 	public function listing( WP_REST_Request $request ): WP_REST_Response|WP_Error
 	{
 		$result = $this->repository()->find( (int) $request['id']);
-		return is_wp_error($result) ? $result : new WP_REST_Response(['data' => $result], 200);
+		if ( is_wp_error($result) ) {
+			return $result;
+		}
+
+		/*
+		 * SE-044 / DP-9 (Q3, v1.1 §13.4) : champ « available » — booléen calculé
+		 * en lecture seule par le prédicat central du dépôt. Il ne remplace ni
+		 * les autorisations ni le filtrage de collection, et ne crée aucune
+		 * interprétation « absente de la liste donc supprimée » : la fiche reste
+		 * servie (DP-9), seule la disponibilité est distinguée.
+		 */
+		$external_id = (string) ($result['external_id'] ?? '');
+		$post_id = str_starts_with($external_id, 'estatik:') ? (int) substr($external_id, strlen('estatik:')) : 0;
+		$result['available'] = $post_id > 0 && \Partikulier\Core\ListingRepository::is_available($post_id);
+
+		return new WP_REST_Response(['data' => $result], 200);
 	}
 
 	public function createListing( WP_REST_Request $request ): WP_REST_Response|WP_Error

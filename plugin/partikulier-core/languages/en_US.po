@@ -1636,3 +1636,81 @@ msgstr "to sell"
 msgid "échec ou non configuré"
 msgstr "failed or not configured"
 
+
+msgid "Désactiver mon annonce"
+msgstr "Deactivate my listing"
+
+msgid "Motif de la désactivation"
+msgstr "Reason for deactivation"
+
+msgid "Je ne souhaite plus vendre ni louer ce bien"
+msgstr "I no longer wish to sell or rent this property"
+
+msgid "Autre (visible par l’équipe uniquement)"
+msgstr "Other (visible to the team only)"
+
+msgid "Précisez (texte privé, jamais publié)"
+msgstr "Please specify (private, never published)"
+
+msgid "Indisponible"
+msgstr "Unavailable"
+
+msgid "Réactiver mon annonce"
+msgstr "Reactivate my listing"
+
+msgid "Confirmer la désactivation"
+msgstr "Confirm deactivation"
+
+msgid "Votre annonce est désactivée. Sa page reste en ligne, mais elle n’apparaît plus dans les résultats."
+msgstr "Your listing is deactivated. Its page remains online, but it no longer appears in results."
+
+msgid "Votre annonce est de nouveau visible dans les résultats."
+msgstr "Your listing is visible in results again."
+
+msgid "Cette annonce est en cours de traitement par l’équipe et ne peut pas être modifiée pour le moment."
+msgstr "This listing is being handled by the team and cannot be modified at the moment."
+
+msgid "Seule une annonce publiée peut être réactivée par son propriétaire. Pour une annonce non publiée, contactez l’équipe."
+msgstr "Only a published listing can be reactivated by its owner. For an unpublished listing, contact the team."
+
+msgid "Les liens de traduction de cette annonce sont incohérents. Aucune modification n’a été faite. Contactez l’équipe."
+msgstr "This listing's translation links are inconsistent. Nothing was changed. Please contact the team."
+
+msgid "Une traduction de cette annonce est refusée ou en attente de validation. L’ensemble ne peut pas être réactivé tant que l’équipe n’a pas traité la situation."
+msgstr "A translation of this listing is refused or pending validation. The listing cannot be reactivated until the team resolves it."
+
+msgid "L’action a échoué en cours d’exécution. L’état de l’annonce peut être partiellement mise à jour. Renvoyez la même action ou contactez l’équipe."
+msgstr "The action failed partway through. The listing may be partially updated. Send the same action again or contact the team."
+
+msgid "Cette action a été retirée. Utilisez « Désactiver mon annonce » avec un motif, puis « Réactiver »."
+msgstr "This action has been retired. Use “Deactivate my listing” with a reason, then “Reactivate”."
+
+msgid "Cette annonce a été retirée par l’équipe et ne peut pas être modifiée par son propriétaire."
+msgstr "This listing was withdrawn by the team and cannot be modified by its owner."
+
+msgid "Le statut de cette annonce est inconnu. L’équipe doit l’arbitrer avant toute modification."
+msgstr "This listing's status is unknown. The team must review it before any change."
+
+msgid "Motif de désactivation obligatoire : vendu, loué, changement d’avis ou autre."
+msgstr "A deactivation reason is required: sold, rented, change of mind, or other."
+
+msgid "Merci de préciser le motif (texte privé)."
+msgstr "Please specify the reason (private text)."
+
+msgid "Merci de choisir un motif."
+msgstr "Please choose a reason."
+
+msgid "Dans la corbeille — restauration par l’équipe uniquement"
+msgstr "In the trash — restoration by the team only"
+
+msgid "Le parcours de gestion d’annonce est indisponible."
+msgstr "The listing management flow is unavailable."
+
+msgid "Refusée"
+msgstr "Refused"
+
+msgid "Connectez-vous pour gérer vos annonces."
+msgstr "Log in to manage your listings."
+
+msgid "Cette annonce a été refusée par l’équipe. Elle ne peut pas être modifiée par son propriétaire."
+msgstr "This listing was refused by the team. It cannot be modified by its owner."

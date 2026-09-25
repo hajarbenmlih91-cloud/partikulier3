@@ -440,8 +440,27 @@
 	}
 
 		/* ---------- Tableau de bord proprietaire (mes annonces) ---------- */
+	/* SE-044 / DP-9 : parcours unique « Désactiver (motif) » / « Réactiver ». */
 		var manageButtons = document.querySelectorAll(".pk-manage-btn");
 	if (manageButtons.length && window.pkConfig && pkConfig.manageNonce) {
+			/* SE-044 / DP-9 (revue E4, constat 1) : le champ « Précisez » suit le motif
+			 * choisi — révélé pour « autre » uniquement, masqué sinon. Le texte saisi est
+			 * conservé (non destructif) mais jamais transmis pour un autre motif.
+			 * Un seul écouteur « change » par formulaire, posé au chargement. */
+			function syncReasonNote(box) {
+				var wrap = box ? box.querySelector('[data-for-reason="autre"]') : null;
+				if (! wrap) return;
+				var checked = box.querySelector('input[type="radio"]:checked');
+				var other = !! (checked && "autre" === checked.value);
+				wrap.hidden = ! other;
+				var field = wrap.querySelector(".pk-reason-note");
+				if (field) field.setAttribute("aria-required", other ? "true" : "false");
+			}
+			document.querySelectorAll(".pk-deactivate-reason").forEach(function (box) {
+				box.addEventListener("change", function (e) {
+					if (e.target && "radio" === (e.target.type || "")) syncReasonNote(box);
+				});
+			});
 			manageButtons.forEach(function (btn) {
 					btn.addEventListener("click", function () {
 							var action   = btn.getAttribute("data-action");
@@ -449,22 +468,56 @@
 							var item     = btn.closest(".pk-listing-item");
 							var feedback = item ? item.querySelector(".pk-listing-feedback") : null;
 
-							var confirmMsg = btn.getAttribute("data-confirm");
-						if (confirmMsg && ! window.confirm(confirmMsg)) {
+								/* Désactiver : ouvrir le formulaire de motif (aucun envoi ici). */
+								if ("deactivate" === action) {
+											var form = item ? item.querySelector('.pk-deactivate-reason[data-post-id="' + postId + '"]') : null;
+											if (form) {
+													form.hidden = false;
+													syncReasonNote(form);
+													btn.disabled = true;
+													var cancel = form.querySelector(".pk-reason-cancel");
+													if (cancel) cancel.addEventListener("click", function () {
+															form.hidden = true;
+															btn.disabled = false;
+													});
+											}
 								return;
 						}
-						if (btn.classList.contains("pk-btn-text")) {
-								btn.disabled    = true;
-								btn.textContent = "…";
-						} else {
-								btn.disabled = true;
+
+								/* Confirmation : motif obligatoire + note si « autre ». */
+								var reason = "";
+								var note = "";
+								if ("deactivate_confirm" === action) {
+											var box = item ? item.querySelector('.pk-deactivate-reason[data-post-id="' + postId + '"]') : null;
+											if (! box) return;
+											var checked = box.querySelector('input[type="radio"]:checked');
+											if (! checked) {
+													if (feedback && pkConfig.i18n && pkConfig.i18n.reasonRequired) feedback.textContent = "\u2718 " + pkConfig.i18n.reasonRequired;
+													return;
+											}
+											reason = checked.value;
+											if ("autre" === reason) {
+													var noteField = box.querySelector(".pk-reason-note");
+													note = noteField ? noteField.value.trim() : "";
+													if (! note) {
+															if (feedback && pkConfig.i18n && pkConfig.i18n.noteRequired) feedback.textContent = "\u2718 " + pkConfig.i18n.noteRequired;
+															return;
 						}
+												}
+											action = "deactivate";
+								}
+
+								/* Neutralisation du double clic pendant la requête. */
+								var allBtns = item ? item.querySelectorAll(".pk-manage-btn") : [];
+								allBtns.forEach(function (b) { b.disabled = true; });
 
 							var fd = new FormData();
 							fd.append("action", "pk_manage_listing");
 							fd.append("nonce", pkConfig.manageNonce);
 							fd.append("manage_action", action);
 							fd.append("post_id", postId);
+								if (reason) fd.append("reason", reason);
+								if (note) fd.append("note", note);
 
 							fetch(pkConfig.ajaxUrl, { method: "POST", body: fd, credentials: "same-origin" })
 									.then(function (res) {
@@ -473,21 +526,14 @@
 													return data;
 											});
 									})
-									.then(function () {
-										if ("delete" === action && item) {
-												item.classList.add("pk-listing-trashed");
-												if (feedback) feedback.textContent = "✔ Annonce supprimée.";
+											.then(function (data) {
+													/* Message du serveur (libellés stockés avec leurs clés — jamais de message trompeur). */
+													if (feedback) feedback.textContent = "\u2714 " + ((data && data.data && data.data.message) || "");
 												window.setTimeout(function () { window.location.reload(); }, 1200);
-										} else if ("reactivate" === action) {
-												window.location.reload();
-										} else {
-												if (feedback) feedback.textContent = "✔ " + (action === "mark_sold" ? "Annonce marquée vendue." : "Annonce marquée louée.");
-												window.setTimeout(function () { window.location.reload(); }, 1200);
-										}
 									})
 									.catch(function (err) {
-											btn.disabled                       = false;
-											if (feedback) feedback.textContent = "✘ " + err.message;
+													allBtns.forEach(function (b) { b.disabled = false; });
+													if (feedback) feedback.textContent = "\u2718 " + err.message;
 									});
 					});
 			});

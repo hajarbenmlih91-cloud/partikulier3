@@ -162,6 +162,30 @@ try {
         'quatre événements identiques → exactement une écriture dédupliquée');
     wp_delete_post($batchId, true);
     $sync->flush();
+
+    // 13) SE-044 / DP-9 (v1.1 §6.2.3 + §11 — extension +2) : reprojection sur
+    //     _pk_status — une fermeture propriétaire reprojette la ligne ET la
+    //     retire de la collection servie (garde EXISTS du repository).
+    $dp9Id = wp_insert_post(['post_type' => 'properties', 'post_status' => 'publish', 'post_title' => 'SYNC-DP9-FERMETURE', 'post_content' => 'x'], true);
+    $sync->flush(); // vidage de la création
+    $dp9External = 'estatik:' . $dp9Id;
+    update_post_meta($dp9Id, '_pk_status', 'vendu'); // modification surveillée (ajout/modification/suppression)
+    $reportFermeture = $sync->flush();
+    $rowFermeture = $repo->rowForExternalId($dp9External);
+    $servieAvant = in_array((int) ($rowFermeture['id'] ?? 0), array_map(static fn($r) => (int) $r['id'], $repo->search('fr', 'newest', 1, 100)), true);
+    $assert('SYNC-014', ($reportFermeture['upserts'] ?? 0) >= 1 && is_array($rowFermeture) && $rowFermeture['status'] === 'published' && !$servieAvant,
+        'fermeture _pk_status=vendu → reprojection (upsert) et retrait de la collection servie (prédicat v1.1 §5.1)');
+
+    // 14) SE-044 / DP-9 : deleted_post_meta — la SUPPRESSION de _pk_status
+    //     (retour à « absente ») reprojette et la ligne est de nouveau servie.
+    delete_post_meta($dp9Id, '_pk_status');
+    $reportReouverture = $sync->flush();
+    $rowReouverture = $repo->rowForExternalId($dp9External);
+    $servieApres = in_array((int) ($rowReouverture['id'] ?? 0), array_map(static fn($r) => (int) $r['id'], $repo->search('fr', 'newest', 1, 100)), true);
+    $assert('SYNC-015', ($reportReouverture['upserts'] ?? 0) >= 1 && is_array($rowReouverture) && $rowReouverture['status'] === 'published' && $servieApres,
+        'suppression de _pk_status (deleted_post_meta) → reprojection et retour à la collection servie');
+    wp_delete_post($dp9Id, true);
+    $sync->flush();
 } finally {
     if ($fixtureId) {
         wp_delete_post($fixtureId, true);

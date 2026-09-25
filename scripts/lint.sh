@@ -11,6 +11,12 @@ if command -v php >/dev/null 2>&1; then
   # littéral de tableau du code runtime (src/ + bootstrap plugin + thème).
   php scripts/check-duplicate-keys.php
   echo 'Duplicate array key lint: PASS'
+  # SE-044 / DP-9 (revue CP3 §2.1) : gate LiteralUnicodeEscape — zéro séquence
+  # \uXXXX littérale dans les chaînes du code livré (thème + plugin, hors tests) :
+  # PHP ne l'interprète pas, elle s'afficherait telle quelle et serait
+  # intraduisible (msgid jamais résolu par __(), rupture T36 « UI ×3 langues »).
+  php scripts/check-literal-unicode-escapes.php
+  echo 'Literal unicode escape lint: PASS'
 else
   echo 'PHP lint: SKIP (php executable not available)'
 fi

@@ -80,6 +80,41 @@ foreach ($cases as $id => $case) {
 
 $_SERVER = $originalServer;
 $_GET = $originalGet;
+
+// SE-044 / DP-9 (v1.1 §11 — extension +1) : la collection publique des
+// DISPONIBLES — sur le périmètre léger lui-même (GET anonyme de la collection,
+// plugins optionnels retirés du bootstrap), le prédicat de disponibilité
+// central (v1.1 §5.1) exclut les annonces fermées et sert les ouvertes.
+$rlOuvert = wp_insert_post(['post_type' => 'properties', 'post_status' => 'publish', 'post_title' => 'REST-LITE-DP9 ouvert', 'post_content' => 'x'], true);
+$rlFerme = wp_insert_post(['post_type' => 'properties', 'post_status' => 'publish', 'post_title' => 'REST-LITE-DP9 fermé', 'post_content' => 'x'], true);
+update_post_meta($rlFerme, '_pk_status', 'vendu');
+update_post_meta($rlOuvert, '_pk_status', 'actif');
+if (class_exists('\Partikulier\Core\Integration\ListingSynchronizer')) {
+    (new \Partikulier\Core\Integration\ListingSynchronizer())->flush();
+}
+wp_set_current_user(0);
+$rlReq = new WP_REST_Request('GET', '/partikulier/v1/listings');
+$rlReq->set_query_params(['locale' => 'fr', 'per_page' => 100]);
+$rlResp = rest_do_request($rlReq);
+$rlIds = [];
+if (200 === $rlResp->get_status()) {
+    foreach ((array) ($rlResp->get_data()['data'] ?? []) as $rlRow) {
+        $rlExt = (string) ($rlRow['external_id'] ?? '');
+        if (0 === strpos($rlExt, 'estatik:')) { $rlIds[(int) substr($rlExt, 8)] = true; }
+    }
+}
+$results[] = [
+    'test_id' => 'REST-LITE-SCOPE-AVAILABLE-COLLECTION-FILTERED',
+    'status' => (200 === $rlResp->get_status() && isset($rlIds[$rlOuvert]) && !isset($rlIds[$rlFerme])) ? 'PASS' : 'FAIL',
+    'detail' => sprintf('collection GET anonyme (périmètre léger) : ouverte servie %s, fermée servie %s, http %d',
+        isset($rlIds[$rlOuvert]) ? 'oui' : 'NON', isset($rlIds[$rlFerme]) ? 'OUI (défaut!)' : 'non', $rlResp->get_status()),
+];
+wp_delete_post($rlOuvert, true);
+wp_delete_post($rlFerme, true);
+if (class_exists('\Partikulier\Core\Integration\ListingSynchronizer')) {
+    (new \Partikulier\Core\Integration\ListingSynchronizer())->flush();
+}
+
 $failed = array_values(array_filter($results, static fn(array $row): bool => $row['status'] !== 'PASS'));
 $payload = [
     'test_id' => 'REST-LITE-SCOPE-CONTRACT-001',
