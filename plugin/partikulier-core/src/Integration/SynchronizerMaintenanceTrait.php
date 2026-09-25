@@ -117,12 +117,45 @@ trait SynchronizerMaintenanceTrait
 	private function invalidateSearchCache(): void
 	{
 		if ( function_exists('apcu_enabled') && apcu_enabled() && function_exists('apcu_inc') ) {
+                        // SE-044 / DP-9 (v1.1 §6.2.1 + R1 §4-R1 (h)) : la version est
+                        // d'abord initialisée (get-or-create atomique), pour que tout
+                        // apcu_inc ultérieur change effectivement la clé logique —
+                        // couvre le démarrage à froid (le premier flush est efficace).
+                        if ( function_exists('apcu_add') && ! apcu_exists('pk_listing_search_version') ) {
+                                apcu_add('pk_listing_search_version', 1, 0);
+                        }
 			$next = apcu_inc('pk_listing_search_version');
 			if ( ! is_int($next) ) {
 				apcu_store('pk_listing_search_version', 2, 0);
 			}
 		}
 	}
+
+        /**
+         * Invalidation SYNCHRONE de la version de cache de recherche (SE-044 /
+         * DP-9, v1.1 §6.2.2 + R1 §4-R1 (c)) — appelée par l'action propriétaire
+         * immédiatement après ses écritures, sans attendre le shutdown.
+         *
+         * Retour : la nouvelle version si l'invalidation est exécutée et
+         * confirmée (cache actif), null si le cache est inactif (chemin
+         * équivalent : toute lecture va à la base), false si l'invalidation
+         * a échoué (à signaler — jamais un faux succès).
+         */
+        public static function invalidate_listing_search_cache_now(): int|bool|null
+        {
+                if ( ! ( function_exists('apcu_enabled') && apcu_enabled() && function_exists('apcu_inc') ) ) {
+                        return null; // cache inactif — chemin équivalent, rien à invalider.
+                }
+                if ( function_exists('apcu_add') && ! apcu_exists('pk_listing_search_version') ) {
+                        apcu_add('pk_listing_search_version', 1, 0);
+                }
+                $next = apcu_inc('pk_listing_search_version');
+                if ( is_int($next) ) {
+                        return $next; // exécutée et confirmée.
+                }
+                $stored = apcu_store('pk_listing_search_version', 2, 0);
+                return $stored ? 2 : false; // échec confirmé seulement si même le repli échoue.
+        }
 
 
 	private function recordStats( array $report ): void

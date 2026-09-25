@@ -150,13 +150,24 @@ class Partikulier_JSONLD {
 					$item['additionalProperty'] = $additional;
 			}
 
-			$closure_status = (string) self::get_meta( $post, '_pk_closure_status' );
+                        /*
+                         * SE-044 / DP-9 (v1.1 §8) : mapping Schema.org par état —
+                         * vendu/loue/loué → SoldOut (transaction conclue) ;
+                         * indisponible (avis/autre) et archive → OutOfStock
+                         * (correction du InStock historique : une annonce retirée
+                         * des résultats n'est pas disponible à l'achat).
+                         */
 			$owner_status   = (string) self::get_meta( $post, '_pk_status' );
-			$is_closed      = in_array( $closure_status ?: $owner_status, array( 'vendu', 'loue', 'loué' ), true );
+                        $availability   = 'https://schema.org/InStock';
+                        if ( in_array( $owner_status, array( 'vendu', 'loue', 'loué' ), true ) ) {
+                                $availability = 'https://schema.org/SoldOut';
+                        } elseif ( in_array( $owner_status, array( 'indisponible', 'archive' ), true ) ) {
+                                $availability = 'https://schema.org/OutOfStock';
+                        }
 			$offer          = array(
 					'@type'         => 'Offer',
 					'url'           => $url,
-					'availability'  => $is_closed ? 'https://schema.org/SoldOut' : 'https://schema.org/InStock',
+                                        'availability'  => $availability,
 					'priceCurrency' => 'MAD',
 			);
 			if ( $price ) {

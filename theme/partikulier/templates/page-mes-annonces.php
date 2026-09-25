@@ -30,6 +30,7 @@ $my_listings  = get_posts( array(
 		'posts_per_page' => -1,
 		'orderby'        => 'date',
 		'order'          => 'DESC',
+		'lang'           => '', // T36 : le tableau de bord propriétaire liste ses annonces TOUTES langues — jamais filtré par la langue de l'interface.
 ) );
 
 $total_views  = 0;
@@ -50,6 +51,8 @@ $status_labels = array(
 		'loue'                        => __( 'Loué', 'partikulier' ),
 				'archive'             => __( 'Archivé', 'partikulier' ),
 				'pause'               => __( 'En pause', 'partikulier' ),
+				'indisponible'        => __( 'Indisponible', 'partikulier' ),
+				'refuse'              => __( 'Refusée', 'partikulier' ),
 				'en_attente_whatsapp' => __( 'En attente de validation WhatsApp', 'partikulier' ),
 );
 ?>
@@ -129,7 +132,7 @@ $status_labels = array(
 														$views = (int) get_post_meta( $listing->ID, '_pk_views', true );
 														$saves = class_exists( 'Partikulier_Owner_Insights' ) ? Partikulier_Owner_Insights::favorite_count( $listing->ID ) : 0;
 												$trashed       = 'trash' === $listing->post_status;
-												$closed        = in_array( $status, array( 'vendu', 'loue', 'archive' ), true );
+												$closed        = in_array( $status, array( 'vendu', 'loue', 'archive', 'indisponible' ), true );
 											?>
 										<li class="pk-listing-item<?php echo $trashed ? ' pk-listing-trashed' : ''; ?>">
 												<div class="pk-listing-media">
@@ -137,7 +140,7 @@ $status_labels = array(
 																$thumb = get_the_post_thumbnail( $listing->ID, 'pk-card', array( 'loading' => 'lazy', 'decoding' => 'async' ) );
                                                                 echo $thumb ? $thumb : '<span class="pk-card-placeholder" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.6V21h14V9.6"/><path d="M9.5 21v-6h5v6"/></svg></span>'; // phpcs:ignore
 														if ( $closed ) {
-																$watermark = 'vendu' === $status ? __( 'Vendu', 'partikulier' ) : ( 'loue' === $status ? __( 'Loué', 'partikulier' ) : __( 'Archivé', 'partikulier' ) );
+																$watermark = 'vendu' === $status ? __( 'Vendu', 'partikulier' ) : ( 'loue' === $status ? __( 'Loué', 'partikulier' ) : ( 'indisponible' === $status ? __( 'Indisponible', 'partikulier' ) : __( 'Archivé', 'partikulier' ) ) );
 																echo '<span class="pk-listing-watermark" aria-hidden="true">' . esc_html( $watermark ) . '</span>';
 														}
 														?>
@@ -168,24 +171,39 @@ $status_labels = array(
 														<?php endif; ?>
 												</div>
 												<div class="pk-listing-actions">
-																<?php if ( $trashed ) : ?>
-																		<button type="button" class="pk-btn pk-btn-outline pk-btn-sm pk-manage-btn" data-post-id="<?php echo (int) $listing->ID; ?>" data-action="reactivate"><?php esc_html_e( 'Restaurer', 'partikulier' ); ?></button>
-																		<span class="pk-listing-trashed-note"><?php esc_html_e( 'Dans la corbeille', 'partikulier' ); ?></span>
-																<?php elseif ( 'actif' === $status && 'publish' === $listing->post_status ) : ?>
-																		<button type="button" class="pk-btn pk-btn-dark pk-btn-sm pk-manage-btn" data-post-id="<?php echo (int) $listing->ID; ?>" data-action="mark_sold"><?php esc_html_e( 'Marquer vendu', 'partikulier' ); ?></button>
-																		<button type="button" class="pk-btn pk-btn-outline pk-btn-sm pk-manage-btn" data-post-id="<?php echo (int) $listing->ID; ?>" data-action="mark_rented"><?php esc_html_e( 'Marquer loué', 'partikulier' ); ?></button>
-																		<button type="button" class="pk-btn pk-btn-outline pk-btn-sm pk-manage-btn" data-post-id="<?php echo (int) $listing->ID; ?>" data-action="pause"><?php esc_html_e( 'Mettre en pause', 'partikulier' ); ?></button>
-																		<a class="pk-btn pk-btn-outline pk-btn-sm" href="<?php echo esc_url( add_query_arg( array( 'edit' => $listing->ID ), pk_page_url( 'deposer', '/deposer/' ) ) ); ?>"><?php esc_html_e( 'Modifier', 'partikulier' ); ?></a>
-																		<button type="button" class="pk-btn-text pk-manage-btn" data-post-id="<?php echo (int) $listing->ID; ?>" data-action="archive" data-confirm="<?php esc_attr_e( 'Retirer cette annonce des résultats tout en conservant sa page publique ?', 'partikulier' ); ?>"><?php esc_html_e( 'Retirer (garder la page SEO)', 'partikulier' ); ?></button>
-																<?php elseif ( class_exists( 'Partikulier_WhatsApp_Verification' ) && Partikulier_WhatsApp_Verification::STATUS_PENDING === $status ) : ?>
-																		<a class="pk-btn pk-btn-outline pk-btn-sm" href="<?php echo esc_url( add_query_arg( array( 'edit' => $listing->ID ), pk_page_url( 'deposer', '/deposer/' ) ) ); ?>"><?php esc_html_e( 'Modifier', 'partikulier' ); ?></a>
-																		<button type="button" class="pk-btn-text pk-manage-btn" data-post-id="<?php echo (int) $listing->ID; ?>" data-action="archive" data-confirm="<?php esc_attr_e( 'Retirer cette annonce des résultats tout en conservant sa page publique ?', 'partikulier' ); ?>"><?php esc_html_e( 'Retirer (garder la page SEO)', 'partikulier' ); ?></button>
-																<?php elseif ( $closed ) : ?>
-																		<button type="button" class="pk-btn pk-btn-primary pk-btn-sm pk-manage-btn" data-post-id="<?php echo (int) $listing->ID; ?>" data-action="reactivate"><?php esc_html_e( 'Remettre en ligne', 'partikulier' ); ?></button>
-																<?php else : ?>
-																		<button type="button" class="pk-btn pk-btn-primary pk-btn-sm pk-manage-btn" data-post-id="<?php echo (int) $listing->ID; ?>" data-action="reactivate"><?php esc_html_e( 'Réactiver', 'partikulier' ); ?></button>
-																		<button type="button" class="pk-btn-text pk-manage-btn" data-post-id="<?php echo (int) $listing->ID; ?>" data-action="archive" data-confirm="<?php esc_attr_e( 'Retirer cette annonce des résultats tout en conservant sa page publique ?', 'partikulier' ); ?>"><?php esc_html_e( 'Retirer (garder la page SEO)', 'partikulier' ); ?></button>
-																<?php endif; ?>
+															<?php
+															/*
+															 * SE-044 / DP-9 — parcours unique (v1.1 §4.1) :
+															 * « Désactiver mon annonce » (motif obligatoire) puis « Réactiver ».
+															 * Corbeille et états restreints : aucune action propriétaire (matrice §3.1).
+															 */
+															if ( $trashed ) : ?>
+																<span class="pk-listing-trashed-note"><?php esc_html_e( 'Dans la corbeille — restauration par l’équipe uniquement', 'partikulier' ); ?></span>
+															<?php elseif ( 'publish' === $listing->post_status && 'actif' === $status ) : ?>
+																<a class="pk-btn pk-btn-outline pk-btn-sm" href="<?php echo esc_url( add_query_arg( array( 'edit' => (int) $listing->ID ), pk_page_url( 'deposer', '/deposer/' ) ) ); ?>"><?php esc_html_e( 'Modifier', 'partikulier' ); ?></a>
+																<button type="button" class="pk-btn pk-btn-dark pk-btn-sm pk-manage-btn" data-post-id="<?php echo (int) $listing->ID; ?>" data-action="deactivate"><?php esc_html_e( 'Désactiver mon annonce', 'partikulier' ); ?></button>
+																<div class="pk-deactivate-reason" hidden data-post-id="<?php echo (int) $listing->ID; ?>">
+																	<p class="pk-deactivate-title"><?php esc_html_e( 'Motif de la désactivation', 'partikulier' ); ?></p>
+																	<label class="pk-reason-option"><input type="radio" name="pk_reason_<?php echo (int) $listing->ID; ?>" value="vendu" required> <?php esc_html_e( 'Vendu', 'partikulier' ); ?></label>
+																	<label class="pk-reason-option"><input type="radio" name="pk_reason_<?php echo (int) $listing->ID; ?>" value="loue"> <?php esc_html_e( 'Loué', 'partikulier' ); ?></label>
+																	<label class="pk-reason-option"><input type="radio" name="pk_reason_<?php echo (int) $listing->ID; ?>" value="avis"> <?php esc_html_e( 'Je ne souhaite plus vendre ni louer ce bien', 'partikulier' ); ?></label>
+																	<label class="pk-reason-option"><input type="radio" name="pk_reason_<?php echo (int) $listing->ID; ?>" value="autre"> <?php esc_html_e( 'Autre (visible par l’équipe uniquement)', 'partikulier' ); ?></label>
+																	<label class="pk-reason-note-label" hidden data-for-reason="autre"><?php esc_html_e( 'Précisez (texte privé, jamais publié)', 'partikulier' ); ?><textarea class="pk-reason-note" rows="3" maxlength="500"></textarea></label>
+																	<div class="pk-reason-actions">
+																		<button type="button" class="pk-btn pk-btn-primary pk-btn-sm pk-manage-btn" data-post-id="<?php echo (int) $listing->ID; ?>" data-action="deactivate_confirm"><?php esc_html_e( 'Confirmer la désactivation', 'partikulier' ); ?></button>
+																		<button type="button" class="pk-btn-text pk-reason-cancel"><?php esc_html_e( 'Annuler', 'partikulier' ); ?></button>
+																	</div>
+																	<p class="pk-reason-hint"><?php esc_html_e( 'Votre annonce est désactivée. Sa page reste en ligne, mais elle n’apparaît plus dans les résultats.', 'partikulier' ); ?></p>
+																</div>
+															<?php elseif ( $closed && 'publish' === $listing->post_status ) : ?>
+																<button type="button" class="pk-btn pk-btn-primary pk-btn-sm pk-manage-btn" data-post-id="<?php echo (int) $listing->ID; ?>" data-action="reactivate"><?php esc_html_e( 'Réactiver mon annonce', 'partikulier' ); ?></button>
+															<?php /* R1 § 3.2-1 : l'ancienne branche « draft × pause → Réactiver » est retirée
+															 * avec l'exception correspondante de la matrice : aucune republication
+															 * propriétaire depuis un état non publié (le bouton conduisait à un
+															 * refus 403 systématique depuis le retrait de l'exception). */ ?>
+															<?php else : ?>
+																<span class="pk-listing-trashed-note"><?php esc_html_e( 'Cette annonce est en cours de traitement par l’équipe et ne peut pas être modifiée pour le moment.', 'partikulier' ); ?></span>
+															<?php endif; ?>
 												</div>
 												<p class="pk-listing-feedback" aria-live="polite"></p>
 										</li>

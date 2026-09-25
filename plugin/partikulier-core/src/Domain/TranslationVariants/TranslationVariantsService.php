@@ -39,6 +39,7 @@ namespace Partikulier\Core\Domain\TranslationVariants;
 
 final class TranslationVariantsService
 {
+        use VariantTransitionsTrait;
 	/** Version du DDL héritée du thème (pk_localization_db_version). */
 	public const DB_VERSION = '1.0.0';
 

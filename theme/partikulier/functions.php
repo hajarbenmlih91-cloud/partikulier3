@@ -187,6 +187,7 @@ $partikulier_modules = array(
 		'/inc/class-search-filters.php',
 		'/inc/class-form.php',
 		'/inc/class-dashboard.php',
+                '/inc/class-listing-transitions.php',
 		'/inc/class-owner-insights.php',
 		'/inc/class-estatik.php',
 		'/inc/class-n8n-security.php',

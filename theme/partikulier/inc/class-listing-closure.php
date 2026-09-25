@@ -39,10 +39,13 @@ class Partikulier_Listing_Closure {
 
 		/**
 		 * Statut de clôture d'une annonce ('' si active).
+                 * SE-044 / DP-9 : « indisponible » (changement d'avis / autre) rejoint
+                 * les statuts de fermeture — la fiche reste publique, le contact est
+                 * coupé, la mention publique est « Indisponible » (v1.1 §4.1/§13.3).
 		 */
 	public static function closure_status( $post_id ) {
 			$status = (string) get_post_meta( (int) $post_id, '_pk_status', true );
-			$map    = array( 'vendu' => 'vendu', 'loue' => 'loue', 'loué' => 'loue', 'archive' => 'archive' );
+                        $map    = array( 'vendu' => 'vendu', 'loue' => 'loue', 'loué' => 'loue', 'archive' => 'archive', 'indisponible' => 'indisponible' );
 			return isset( $map[ $status ] ) ? $map[ $status ] : '';
 	}
 
@@ -58,6 +61,9 @@ class Partikulier_Listing_Closure {
 			if ( 'loue' === $status ) {
 					return __( 'Loué', 'partikulier' );
 			}
+                        if ( 'indisponible' === $status ) {
+                                        return __( 'Indisponible', 'partikulier' );
+                        }
 			return __( 'Annonce archivée', 'partikulier' );
 	}
 
@@ -77,7 +83,7 @@ class Partikulier_Listing_Closure {
 			}
 			$limit = max( 1, min( 6, (int) $limit ) );
 
-			$closed = array( 'vendu', 'loue', 'loué', 'archive', 'pause' );
+                        $closed = array( 'vendu', 'loue', 'loué', 'archive', 'pause', 'indisponible' );
 			$base   = array(
 					'post_type'      => PARTIKULIER_ESTATIK_POST_TYPE,
 					'post_status'    => 'publish',

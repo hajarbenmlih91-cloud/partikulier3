@@ -84,12 +84,14 @@ $location = Partikulier_Geo::location_string( $post->ID );
 	$type    = ( ! is_wp_error( $types ) && $types ) ? $types[0]->name : __( 'Bien', 'partikulier' );
 	$action  = ( ! is_wp_error( $actions ) && $actions ) ? $actions[0]->name : '';
 
-// Statut proprietaire : vendu / loue / archive / actif.
+// Statut proprietaire : vendu / loue / archive / indisponible / actif.
+        // SE-044 / DP-9 : « indisponible » (changement d'avis / autre) ferme la fiche
+        // au même titre que vendu/loué — contact coupé, mention « Indisponible ».
 	$pk_status  = get_post_meta( $post->ID, '_pk_status', true );
 	$pk_status  = ( '' === $pk_status || 'actif' === $pk_status ) ? '' : $pk_status;
-	$closed_statuses = array( 'vendu', 'loue', 'archive' );
+        $closed_statuses = array( 'vendu', 'loue', 'archive', 'indisponible' );
 	$is_closed = in_array( $pk_status, $closed_statuses, true );
-	$closed_label = 'vendu' === $pk_status ? __( 'Vendu', 'partikulier' ) : ( 'loue' === $pk_status ? __( 'Loué', 'partikulier' ) : __( 'Annonce archivée', 'partikulier' ) );
+        $closed_label = 'vendu' === $pk_status ? __( 'Vendu', 'partikulier' ) : ( 'loue' === $pk_status ? __( 'Loué', 'partikulier' ) : ( 'indisponible' === $pk_status ? __( 'Indisponible', 'partikulier' ) : __( 'Annonce archivée', 'partikulier' ) ) );
 $pk_views   = (int) get_post_meta( $post->ID, '_pk_views', true );
 	$owner_name = get_post_meta( $post->ID, '_pk_owner_name', true );
 	$owner_phone = get_post_meta( $post->ID, '_pk_owner_phone', true );

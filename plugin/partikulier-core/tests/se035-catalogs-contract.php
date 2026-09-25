@@ -10,10 +10,10 @@
  * pages EN/AR rendaient majoritairement en français.
  *
  * Ce contrat verrouille :
- *  - E35-001 (E-3501, AR) : ar.mo = 596 entrées au format canonique
+ *  - E35-001 (E-3501, AR) : ar.mo = 622 entrées au format canonique (comptes étendus DP-9)
  *    (rev 0, hash vide en fin — forme C1A-011), lisible pomo, AUCUNE
  *    traduction vide, échantillon front représentatif traduit ;
- *  - E35-002 (E-3501, EN) : en_US.mo = 544 entrées, mêmes exigences ;
+ *  - E35-002 (E-3501, EN) : en_US.mo = 570 entrées, mêmes exigences (comptes étendus DP-9) ;
  *  - E35-003 (E-3502) : GÉNÉRATION — scripts/build-catalogs.php (compilateur
  *    .po → .mo autonome, déterministe) reproduit byte à byte les .mo
  *    livrés depuis leurs sources .po (--check) ;
@@ -91,7 +91,7 @@ $sample = [
 ];
 
 try {
-    // 1) AR — 596 entrées, format canonique, lisible pomo, aucune vide.
+    // 1) AR — 622 entrées (étendues DP-9), format canonique, lisible pomo, aucune vide.
     $hdrAr = $moHeader($langDir . '/ar.mo');
     $pomoAr = new MO();
     $readableAr = $pomoAr->import_from_file($langDir . '/ar.mo');
@@ -104,13 +104,13 @@ try {
     }
     $sampleArBad = array_keys(array_filter($sampleArOk, static fn($ok): bool => !$ok));
     $assert('E35-001',
-        (int) $hdrAr['total'] === 596 && (int) $hdrAr['hash_len'] === 0 && (int) $hdrAr['hash_addr'] === 28 + 16 * 596
-        && $readableAr && count($pomoAr->entries) === 596 && $emptyAr === [] && $sampleArBad === [],
+        (int) $hdrAr['total'] === 622 && (int) $hdrAr['hash_len'] === 0 && (int) $hdrAr['hash_addr'] === 28 + 16 * 622
+        && $readableAr && count($pomoAr->entries) === 622 && $emptyAr === [] && $sampleArBad === [],
         sprintf('ar.mo : %d entrées (format canonique hash_addr=%d), pomo %s, traductions vides %d, échantillon front non traduit %d',
             (int) $hdrAr['total'], (int) $hdrAr['hash_addr'], $readableAr ? 'OK' : 'ÉCHEC', count($emptyAr), count($sampleArBad))
             . ($sampleArBad !== [] ? ' — manquantes : ' . implode(' ; ', array_slice($sampleArBad, 0, 3)) : ''));
 
-    // 2) EN — 544 entrées, mêmes exigences.
+    // 2) EN — 570 entrées (étendues DP-9), mêmes exigences.
     $hdrEn = $moHeader($langDir . '/en_US.mo');
     $pomoEn = new MO();
     $readableEn = $pomoEn->import_from_file($langDir . '/en_US.mo');
@@ -123,8 +123,8 @@ try {
     }
     $sampleEnBad = array_keys(array_filter($sampleEnOk, static fn($ok): bool => !$ok));
     $assert('E35-002',
-        (int) $hdrEn['total'] === 544 && (int) $hdrEn['hash_len'] === 0 && (int) $hdrEn['hash_addr'] === 28 + 16 * 544
-        && $readableEn && count($pomoEn->entries) === 544 && $emptyEn === [] && $sampleEnBad === [],
+        (int) $hdrEn['total'] === 570 && (int) $hdrEn['hash_len'] === 0 && (int) $hdrEn['hash_addr'] === 28 + 16 * 570
+        && $readableEn && count($pomoEn->entries) === 570 && $emptyEn === [] && $sampleEnBad === [],
         sprintf('en_US.mo : %d entrées (format canonique hash_addr=%d), pomo %s, traductions vides %d, échantillon front non traduit %d',
             (int) $hdrEn['total'], (int) $hdrEn['hash_addr'], $readableEn ? 'OK' : 'ÉCHEC', count($emptyEn), count($sampleEnBad))
             . ($sampleEnBad !== [] ? ' — manquantes : ' . implode(' ; ', array_slice($sampleEnBad, 0, 3)) : ''));
@@ -150,12 +150,21 @@ try {
     $publishingEn = $loadedEn ? __('Publication en cours…', 'partikulier') : '';
     $whatsappEn = $loadedEn ? __('Ouvrir WhatsApp et envoyer le message', 'partikulier') : '';
     $publishingAr = $pomoAr->translate('Publication en cours…');
+    /* CP5 (revue navigateurs, D2) : le contrat i18n s'étend aux deux messages de
+     * validation du parcours de désactivation (msgids portés par les catalogues
+     * depuis SE-035, désormais servis dans pkConfig.i18n). */
+    $reasonEn = $loadedEn ? __('Merci de choisir un motif.', 'partikulier') : '';
+    $noteEn = $loadedEn ? __('Merci de préciser le motif (texte privé).', 'partikulier') : '';
+    $reasonAr = $pomoAr->translate('Merci de choisir un motif.');
+    $noteAr = $pomoAr->translate('Merci de préciser le motif (texte privé).');
     unload_textdomain('partikulier', true);
     $assert('E35-004',
         $loadedEn && $publishingEn === 'Publishing…' && $whatsappEn === 'Open WhatsApp and send the message'
-        && $publishingAr === 'جارٍ النشر…',
-        sprintf('pkConfig i18n : domaine en_US chargé → « %s » / « %s » ; ar.mo → « %s »',
-            $publishingEn, $whatsappEn, $publishingAr));
+        && $publishingAr === 'جارٍ النشر…'
+        && $reasonEn === 'Please choose a reason.' && $noteEn === 'Please specify the reason (private text).'
+        && $reasonAr === 'يرجى اختيار سبب.' && $noteAr === 'يرجى تحديد السبب (نص خاص).',
+        sprintf('pkConfig i18n : domaine en_US chargé → « %s » / « %s » ; ar.mo → « %s » ; validation désactivation en → « %s » / « %s », ar → « %s » / « %s »',
+            $publishingEn, $whatsappEn, $publishingAr, $reasonEn, $noteEn, $reasonAr, $noteAr));
 
     // 5) Échantillon front × 20 — déjà calculé, assertion dédiée pour le
     //    détail lisible (les deux langues ensemble).

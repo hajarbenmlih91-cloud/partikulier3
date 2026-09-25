@@ -20,6 +20,28 @@ use WP_Error;
 
 final class ListingRepository
 {
+        /**
+         * Prédicat central de disponibilité (SE-044 / DP-9, v1.1 §5.1-§5.2) :
+         * disponible ⟺ post_status = publish ET _pk_status absente, vide ('') ou
+         * 'actif'. Toute autre valeur (vendu, loue, loué, archive, pause,
+         * indisponible, refuse, en_attente_whatsapp, inconnue) = indisponible.
+         * Définition centrale unique — réutilisée par toutes les surfaces
+         * (fragment SQL ci-dessous, meta_query du thème, similaires, champ
+         * `available` de la fiche REST).
+         */
+        public const AVAILABLE_STATUSES = ['', 'actif'];
+
+        /** Disponibilité d'un post par son identifiant (prédicat central). */
+        public static function is_available( int $post_id ): bool
+        {
+                $post = get_post($post_id);
+                if ( ! $post instanceof \WP_Post || $post->post_type !== ListingSynchronizer::POST_TYPE ) {
+                        return false;
+                }
+                return 'publish' === $post->post_status
+                        && in_array((string) get_post_meta($post_id, '_pk_status', true), self::AVAILABLE_STATUSES, true);
+        }
+
 	public function find( int $id ): array|WP_Error
 	{
 		global $wpdb;
@@ -86,15 +108,18 @@ final class ListingRepository
 			}
 		}
 
-		// Garde INTEG-1 : la ligne n'est servie que si son post source est
-		// publié. Formulation portable (fonctions hors jointure, CONCAT dans
-		// la sous-requête corrélée — validée sur MySQL et sur le traducteur
-		// SQLite du banc de développement).
+                // Garde INTEG-1 + SE-044/DP-9 (v1.1 §5.2) : la ligne n'est servie que
+                // si son post source est publié ET disponible au sens du prédicat
+                // central (méta _pk_status absente, vide ou actif). Formulation
+                // portable (fonctions hors jointure, CONCAT dans la sous-requête
+                // corrélée — validée sur MySQL et sur le traducteur SQLite du banc).
 		$sql  = 'SELECT l.id, l.owner_user_id, l.external_id, l.status, l.locale, l.title, l.description, l.price, l.area, l.created_at, l.updated_at'
 			. ' FROM ' . $wpdb->prefix . 'pk_listings l'
 			. " WHERE l.status = 'published' AND l.locale = %s"
 			. " AND (l.external_id NOT LIKE 'estatik:%'"
-			. ' OR EXISTS (SELECT 1 FROM ' . $wpdb->posts . " p WHERE p.post_type = 'properties' AND p.post_status = 'publish' AND CONCAT('estatik:', p.ID) = l.external_id))"
+                        . ' OR EXISTS (SELECT 1 FROM ' . $wpdb->posts . " p WHERE p.post_type = 'properties' AND p.post_status = 'publish'"
+                        . " AND CONCAT('estatik:', p.ID) = l.external_id"
+                        . " AND NOT EXISTS (SELECT 1 FROM " . $wpdb->postmeta . " pm WHERE pm.post_id = p.ID AND pm.meta_key = '_pk_status' AND pm.meta_value NOT IN ('', 'actif'))))"
 			. ' ORDER BY ' . $orderBy . ' LIMIT %d OFFSET %d';
 		$rows = $wpdb->get_results($wpdb->prepare($sql, sanitize_key($locale), $perPage, $offset), ARRAY_A) ?: [];
 		if ( self::apcuAvailable() ) {
@@ -105,9 +130,32 @@ final class ListingRepository
 
 	private function searchCacheKey( string $locale, string $order, int $page, int $perPage ): string
 	{
-		$version = self::apcuAvailable() ? (int) ( apcu_fetch('pk_listing_search_version') ?: 1 ) : 1;
+                $version = self::apcuAvailable() ? self::currentSearchCacheVersion() : 1;
 		return 'pk_listing_search_' . $version . '_' . md5(sanitize_key($locale) . '|' . $order . '|' . $page . '|' . $perPage);
 	}
+
+        /** Version courante — sémantique get-or-create (R1 §4-R1 (h)) : la clé est créée à une valeur de départ si absente. */
+        public static function currentSearchCacheVersion(): int
+        {
+                if ( ! self::apcuAvailable() ) {
+                        return 1;
+                }
+                self::ensureSearchCacheVersion();
+                $version = apcu_fetch('pk_listing_search_version');
+                return is_int($version) && $version > 0 ? $version : 1;
+        }
+
+        /** Initialisation atomique get-or-create (R1 §4-R1 (h)) : apcu_add n'écrit que si absent — une initialisation concurrente n'écrase jamais une génération plus récente. */
+        public static function ensureSearchCacheVersion(): bool
+        {
+                if ( ! self::apcuAvailable() || ! function_exists('apcu_add') ) {
+                        return false;
+                }
+                if ( apcu_exists('pk_listing_search_version') ) {
+                        return true;
+                }
+                return apcu_add('pk_listing_search_version', 1, 0); // génération de départ — incrémentée ensuite par l'invalidation.
+        }
 
 	private static function apcuAvailable(): bool
 	{

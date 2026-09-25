@@ -271,9 +271,11 @@ try {
     //     du thème retirée, en-têtes canoniques.
     // SE-035 (E-3501) : catalogues complétés pour la surface front
     // (131 → 596 AR, 72 → 544 EN — traductions de la reprise v2).
+    // SE-044 / DP-9 : libellés §13.3 + R1 §7 ajoutés aux catalogues —
+    // compteurs étendus en conséquence (ar 596 → 622, en 544 → 570).
     $moSpec = [
-        'ar' => ['file' => 'ar.mo', 'count' => 596],
-        'en' => ['file' => 'en_US.mo', 'count' => 544],
+        'ar' => ['file' => 'ar.mo', 'count' => 622],
+        'en' => ['file' => 'en_US.mo', 'count' => 570],
     ];
     $catOk = true; $catNotes = [];
     foreach ($moSpec as $lang => $spec) {
@@ -292,8 +294,8 @@ try {
     $copiesTheme = [$themeDir . '/languages/ar.mo', $themeDir . '/languages/en_US.mo', $themeDir . '/languages/partikulier.pot'];
     $copiesRetirees = !file_exists($copiesTheme[0]) && !file_exists($copiesTheme[1]) && !file_exists($copiesTheme[2]);
     $assert('C1A-011', $catOk && $legacyAbsent && $copiesRetirees,
-        sprintf('catalogues : ar.mo (596 entrées, hash_addr=%d) et en_US.mo (544 entrées, hash_addr=%d) canoniques dans le kit plugin — doublons partikulier-*.mo absents, copie de parité du thème retirée (lot C4 ; comptes étendus SE-035)',
-            28 + 16 * 596, 28 + 16 * 544) . ($catNotes !== [] ? ' — ' . implode('; ', $catNotes) : ''));
+        sprintf('catalogues : ar.mo (622 entrées, hash_addr=%d) et en_US.mo (570 entrées, hash_addr=%d) canoniques dans le kit plugin — doublons partikulier-*.mo absents, copie de parité du thème retirée (lot C4 ; comptes étendus SE-035)',
+            28 + 16 * 622, 28 + 16 * 570) . ($catNotes !== [] ? ' — ' . implode('; ', $catNotes) : ''));
 
     // 12) Double lecteur : le pomo HISTORIQUE (rejetait hash_addr=0) relit
     //     les deux catalogues recompilés.
@@ -301,8 +303,8 @@ try {
     $pomoAr = new MO(); $okAr = $pomoAr->import_from_file($pluginDir . '/languages/ar.mo');
     $pomoEn = new MO(); $okEn = $pomoEn->import_from_file($pluginDir . '/languages/en_US.mo');
     // SE-035 : comptes étendus (596/544).
-    $assert('C1A-012', $okAr && $okEn && count($pomoAr->entries) === 596 && count($pomoEn->entries) === 544,
-        sprintf('lecteur pomo historique : ar.mo %d entrées, en_US.mo %d entrées (comptes SE-035) (lisible par pomo ET WP_Translation_File — hash_addr=0 était rejeté par pomo)',
+    $assert('C1A-012', $okAr && $okEn && count($pomoAr->entries) === 622 && count($pomoEn->entries) === 570,
+        sprintf('lecteur pomo historique : ar.mo %d entrées, en_US.mo %d entrées (comptes SE-035 puis DP-9) (lisible par pomo ET WP_Translation_File — hash_addr=0 était rejeté par pomo)',
             $okAr ? count($pomoAr->entries) : 0, $okEn ? count($pomoEn->entries) : 0));
 
     // 13) Chargeur runtime (état C4) : le domaine résout réellement les
