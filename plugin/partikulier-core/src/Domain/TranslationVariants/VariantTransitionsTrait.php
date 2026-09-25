@@ -23,8 +23,6 @@ namespace Partikulier\Core\Domain\TranslationVariants;
 
 trait VariantTransitionsTrait
 {
-	/** Marqueurs administratifs jamais écrasés par une propagation (R1 §2.3-R1). */
-	public const ADMIN_MARKER_STATUSES = ['refuse', 'en_attente_whatsapp'];
 
 	/**
 	 * Résolution canonique (R1 §2.2) : l'identifiant reçu est-il une variante ?
