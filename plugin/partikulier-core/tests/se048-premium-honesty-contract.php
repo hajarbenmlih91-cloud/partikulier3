@@ -25,10 +25,8 @@
  *    porte PLUS la description du règlement hors ligne (virement/transfert),
  *    qui n'est pas le modèle du lancement : c'est exactement le remplacement
  *    exigé par le CDC §8.3-2 (E-4806). L'état de la visibilité publique est
- *    affiché conformément au DRAPEAU réel (actif / pas encore activé) ;
- *  - E48-007 (E-4806) : le bandeau et le badge existent dans les TROIS langues
- *    du site (fr/en/ar), rendus dans la langue courante — preuve par rendu
- *    réel de l'écran dans chacune des trois langues ;
+ *    affiché conformément au DRAPEAU réel (actif / pas encore activé), et le
+ *    bandeau ainsi que le badge sont prouvés dans les TROIS langues (fr/en/ar) ;
  *  - E48-005 (E-4803) : les redirections internes (octroi/retrait) visent
  *    l'URL canonique admin.php?page=pk-premium — plus l'ancien parent ;
  *  - E48-006 : aucune promesse de paiement en ligne (absence de
@@ -143,11 +141,6 @@ try {
     $legacyGone = stripos($html, 'virement bancaire') === false
         && stripos($html, 'transfert d’argent') === false
         && stripos($html, 'paiement en ligne n’est pas activé') === false;
-    $assert('E48-004', $honestOffer && $honestVisibility && $legacyGone,
-        sprintf('bandeau E-4806 : octroi gratuit %s, état de visibilité %s, ancien texte de règlement hors ligne %s',
-            $honestOffer ? '✓' : 'ABSENT', $honestVisibility ? '✓' : 'ABSENT',
-            $legacyGone ? 'retiré ✓' : 'ENCORE PRÉSENT'));
-
     // 4 bis) E-4806 : les TROIS langues (rendu réel dans chacune).
     $labels = [
         'fr' => ['Premium offert par Partikulier', 'Visibilité publique'],
@@ -163,10 +156,13 @@ try {
         }
         $langues[$lang] = $ok;
     }
-    $assert('E48-007', !in_array(false, $langues, true),
-        sprintf('bandeau trilingue : fr %s, en %s, ar %s (badge de même registre : %s)',
-            $langues['fr'] ? '✓' : 'ABSENT', $langues['en'] ? '✓' : 'ABSENT',
-            $langues['ar'] ? '✓' : 'ABSENT', Partikulier_Premium::badge_label()));
+    $trilingueOk = !in_array(false, $langues, true);
+
+    $assert('E48-004', $honestOffer && $honestVisibility && $legacyGone && $trilingueOk,
+        sprintf('bandeau E-4806 : octroi gratuit %s, état de visibilité %s, ancien texte de règlement hors ligne %s, trilingue fr/en/ar %s (badge : %s)',
+            $honestOffer ? '✓' : 'ABSENT', $honestVisibility ? '✓' : 'ABSENT',
+            $legacyGone ? 'retiré ✓' : 'ENCORE PRÉSENT',
+            $trilingueOk ? '✓' : 'ABSENT', Partikulier_Premium::badge_label()));
 
 
     // 5) E-4803 : redirections internes vers l'URL canonique.
