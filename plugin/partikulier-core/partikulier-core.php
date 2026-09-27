@@ -75,6 +75,7 @@ require_once __DIR__ . '/src/Domain/Automation/AutomationPolicyTrait.php';
 require_once __DIR__ . '/src/Domain/Automation/AutomationHmacTrait.php';
 require_once __DIR__ . '/src/Domain/Automation/AutomationService.php';
 require_once __DIR__ . '/src/Domain/OwnerStats/OwnerStatsService.php';
+require_once __DIR__ . '/src/Domain/TranslationVariants/VariantTransitionsTrait.php';
 require_once __DIR__ . '/src/Domain/TranslationVariants/TranslationVariantsService.php';
 require_once __DIR__ . '/src/Domain/SlugRedirects/SlugRedirectsService.php';
 
@@ -250,7 +251,6 @@ function partikulier_core_load_rest_classes(): void
 	require_once __DIR__ . '/src/ListingPolicy.php';
 	require_once __DIR__ . '/src/ListingService.php';
 	require_once __DIR__ . '/src/SearchService.php';
-	require_once __DIR__ . '/src/ListingsLiteService.php';
 	require_once __DIR__ . '/src/TranslationService.php';
 	require_once __DIR__ . '/src/RateLimiter.php';
 	require_once __DIR__ . '/src/RestController.php';
@@ -280,6 +280,14 @@ add_action('plugins_loaded', static function (): void {
 	// événement properties.
 	$GLOBALS['partikulier_core_sync'] = new ListingSynchronizer();
 	$GLOBALS['partikulier_core_sync']->register();
+
+	// SE-044 / DP-9 (v1.1 §6.2.1) : initialisation explicite de la version de
+	// cache de recherche au bootstrap (si absente) — pour que tout apcu_inc
+	// ultérieur change effectivement la clé logique (premier flush efficace
+	// même à froid). Sémantique get-or-create atomique (R1 §4-R1 (h)).
+	if ( class_exists( '\Partikulier\Core\ListingRepository' ) ) {
+		\Partikulier\Core\ListingRepository::ensureSearchCacheVersion();
+	}
 
 	if ( partikulier_core_should_load_jobs() ) {
 		require_once __DIR__ . '/src/Services.php';
@@ -312,9 +320,6 @@ add_action('rest_api_init', static function (): void {
 
 register_activation_hook(__FILE__, static function (): void {
 	( new Migrator() )->migrate();
-	if ( false === get_option( 'pk_premium_public_enabled' ) ) {
-		update_option( 'pk_premium_public_enabled', '1' );
-	}
 });
 
 register_deactivation_hook(__FILE__, static function (): void {
