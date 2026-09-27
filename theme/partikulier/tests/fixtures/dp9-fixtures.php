@@ -180,7 +180,7 @@ function dp9_seed_fixtures(): array {
         /* ---------- Projection + invalidation ---------- */
 
         ( new \Partikulier\Core\Integration\ListingSynchronizer() )->flush();
-        \Partikulier\Core\Integration\ListingSynchronizer::invalidate_listing_search_cache_now();
+        if ( class_exists( '\Partikulier\Core\Integration\ListingSynchronizer' ) && method_exists( '\Partikulier\Core\Integration\ListingSynchronizer', 'invalidate_listing_search_cache_now' ) ) { \Partikulier\Core\Integration\ListingSynchronizer::invalidate_listing_search_cache_now(); }
         if ( function_exists( 'wp_cache_flush' ) ) {
                 wp_cache_flush();
         }

@@ -1,53 +1,50 @@
 # Thème Partikulier
 
-Thème WordPress de portail immobilier pour **partikulier.com** : annonces de biens
-immobilières gratuites déposées par les particuliers. Zéro jQuery, cache de page intégré,
-conversion AVIF automatique des images, JSON-LD complet (RealEstateListing, Place, Offer),
-sitemap XML virtuel, permaliens géographiques (ville, quartier, région, département).
-Conçu pour **Estatik**, compatibilité optionnelle **Polylang** (FR/AR/EN).
+Thème WordPress de portail immobilier pour **Partikulier.ma** : annonces immobilières entre particuliers au Maroc.
+Zéro jQuery sur le parcours public (exception documentée DP-6 option a sur les parcours propriétaires : galerie, filtres, sélection, upload), cache de page intégré (LiteSpeed / Nginx), conversion AVIF automatique des images, métadonnées Schema.org JSON-LD complètes (*RealEstateListing*, *Place*, *Offer*, *GeoCoordinates*), sitemap XML virtuel, permaliens géographiques canoniques (ville, quartier, région) et optimisation PageSpeed mobile cible 95-100/100.
+Conçu pour **Estatik 4.3.x**, avec intégration complète **Polylang** trilingue (FR / AR / EN) et support RTL natif.
 
-**Version : 6.17.35** · Licence GPL v3 ou ultérieure · Requiert WordPress 6.2+ et PHP 8.0+.
+**Version : 6.20.7 (Release Finale)** · Licence GPL v3 ou ultérieure · Requiert WordPress 6.2+ et PHP 8.1 à 8.4+.
 
-## CI GitHub
+---
 
-![CI](https://github.com/OWNER/REPO/actions/workflows/ci.yml/badge.svg)
-_(remplacer `OWNER/REPO` par votre dépôt)_
+## 1. Fonctionnalités Majeures & Invariants Homologués
 
-À chaque push / pull request, [`.github/workflows/ci.yml`](.github/workflows/ci.yml) exécute :
+- **100% WhatsApp Strict (Arbitrage SIM-07 Option B)** : Suppression définitive du formulaire email web sur les fiches singulières ; contact propriétaire direct et exclusif via clic WhatsApp sécurisé pour capter des numéros qualifiés.
+- **Constructeur de Champs Personnalisés (SE-042c)** : Plafonnement strict à **8 caractéristiques maximum** par type de bien afin de préserver l'harmonie visuelle ; contrôle strict côté serveur et adaptation responsive mobile et tablette identique à la maquette.
+- **Statut Premium Public Actif à 0 MAD (SE-048-R)** : Offre de lancement gratuite pour maximiser l'adoption, bandeau d'information public en 3 langues et purge automatique du cache à l'expiration.
+- **Cycle de Vie & Conservation SEO des Annonces Clôturées (SE-054)** : Les annonces vendues, louées ou désactivées restent en ligne en code HTTP 200 (URL pérenne pour Google SEO) avec filigrane dédié (*Vendu*, *Loué*, *Indisponible*), coordonnées masquées et 3 annonces similaires actives avec bouton WhatsApp.
+- **Référentiel Toponymique Marocain Bilingue (SE-036 / DP-5)** : Normalisation orthographique `strip_alif_lam` (`صويرة` $\leftrightarrow$ `الصويرة`, `saouira` $\leftrightarrow$ `essaouira`), options de quartiers hybrides dans l'admin, autocomplétion Hero dès la 1ère lettre et contraste élevé garanti.
+- **Architecture Multilingue Trilingue & RTL (SE-025 / SE-027)** : Prise en charge intégrale du français, anglais et arabe littéraire avec inversion RTL native (`dir="rtl"` et `lang="ar"`), cluster hreflang 4 entrées (`fr`, `en`, `ar`, `x-default`), et règles de réécriture v5 sans double-préfixation (`/fr/annonces/`).
+- **Performance Front-Assets « Zéro jQuery » Public (DP-6 / SE-018)** : Élimination absolue de tout script jQuery ou composant lourd Estatik sur l'ensemble des pages publiques (`/`, `/annonces/`, `/location/casablanca/`, `/faq/`, `/contact/`, `/connexion/`).
+- **Sécurité d'Exécution Système (Lot E / SE-002)** : Zéro appel `exec()` direct hors de la passerelle unique `class-exec-whitelist.php` (vérifié par analyse lexicale sur 141 fichiers runtime).
 
-- **lint PHP** en matrice **8.0 → 8.3** (`php -l` sur tous les fichiers),
-- **lint JS / shell / JSON** (`node --check`, `bash -n`, parsing JSON),
-- **cohérence & structure** : version identique dans `style.css`, `functions.php`,
-  `package.json`, `readme.txt` ; en-tête de thème complet ; aucun artefact committé,
-- **packaging reproductible** : `partikulier-theme-<version>.zip` reconstruit, vérifié
-  (racine `partikulier/`, 0 entrée interdite) et téléversé en artefact de run.
+---
 
-La QA fonctionnelle « live » contre un staging est dans
-[`.github/workflows/qa-live.yml`](.github/workflows/qa-live.yml) : déclenchement **manuel**
-(onglet Actions), exige le secret `PK_BASE` (URL publique du staging). La QA visuelle
-(comparaison pixel) se rejoue en local : elle dépend de références par environnement.
+## 2. Intégration CI & Tests Navigateurs Réels (WebKit / Chromium / Firefox)
 
-## Kit QA embarqué (`tests/`)
-
-Jamais chargé par WordPress. Voir [`tests/README.md`](tests/README.md) pour le protocole complet.
+Pour la recette multi-navigateurs E2E Playwright et la conformité Safari / iOS, le runner CI doit installer les dépendances WebKit :
 
 ```bash
-npm run setup                        # Node 18+ : Playwright + Chromium
-npm run test:baseline                # capture les références (1 fois, par environnement)
-npm test                             # 12 vues : 6 pages × desktop/mobile, comparaison pixel
-node tests/rapide.mjs                # 4 vues rapides (PK_BASE=http://127.0.0.1:8091 par défaut)
-PK_BASE=https://votre-staging npm test   # contre un vrai site
+# Installation des navigateurs pour les tests E2E multi-moteurs (Chromium, Firefox, WebKit/Safari) :
+npx playwright install --with-deps webkit
+npx playwright install chromium firefox
 ```
 
-## Arborescence
+### Exécution des Suites de Tests Front-End
+```bash
+# Contrat de performance et conformité front-assets (zéro jQuery) :
+PK_BASE=http://127.0.0.1:8080 node tests/front-assets.mjs
 
-| Dossier | Rôle |
-|---|---|
-| `inc/`, `templates/`, `estatik4/` | Runtime : fonctions, gabarits, surcouche Estatik |
-| `assets/` | CSS, JS (sans dépendance), polices |
-| `tests/` | Kit QA embarqué (visuel, parcours, sécurité, charge, staging) |
-| `docs/` | Guides (reprise, leads, WhatsApp/n8n) |
-| `.github/workflows/` | CI GitHub (lint, cohérence, packaging, QA live manuelle) |
+# Tests de régression visuelle et responsive (12 vues) :
+npm test
+```
 
-Historique des versions : [`readme.txt`](readme.txt) (changelog complet depuis 1.2.0).
-Guide d'utilisation : [`guide-utilisation.md`](guide-utilisation.md).
+---
+
+## 3. Installation & Déploiement
+
+1. Téléverser l'archive `THEME-PARTIKULIER-6.20.7-FINAL.zip` dans **Apparence $\rightarrow$ Thèmes $\rightarrow$ Ajouter $\rightarrow$ Téléverser**.
+2. Activer le thème.
+3. Se rendre dans **Réglages $\rightarrow$ Permaliens** et cliquer sur **Enregistrer les modifications** pour régénérer la table de réécriture Polylang v5.
+4. Purger le cache LiteSpeed / Nginx.

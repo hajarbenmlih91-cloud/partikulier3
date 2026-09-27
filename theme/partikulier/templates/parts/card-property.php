@@ -151,6 +151,19 @@ if ( $price ) {
 				<?php if ( $action ) : ?>
 						<span class="pk-card-badge pk-badge-<?php echo esc_attr( sanitize_title( $action ) ); ?>"><?php echo esc_html( class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_taxonomy_label( $action ) : $action ); ?></span>
 				<?php endif; ?>
+				<?php
+				// SE-048-R (E-4804, 9e fonction) : badge premium des cartes. Un seul prédicat
+				// décide (drapeau ∧ droit actif ∧ annonce disponible) ; drapeau éteint =
+				// AUCUNE balise, pas même un conteneur vide.
+				$pk_premium_badge = ( class_exists( 'Partikulier_Premium' ) && Partikulier_Premium::is_publicly_visible( (int) $property->ID ) )
+					? Partikulier_Premium::badge_label()
+					: '';
+				if ( '' !== $pk_premium_badge ) :
+					?>
+					<span class="pk-card-badge pk-card-badge-premium"><?php echo esc_html( $pk_premium_badge ); ?></span>
+					<?php
+				endif;
+				?>
 		</a>
 
 		<div class="pk-card-actions">

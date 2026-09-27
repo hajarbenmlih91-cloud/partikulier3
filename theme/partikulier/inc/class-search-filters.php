@@ -38,6 +38,60 @@ class Partikulier_Search_Filters {
 	}
 
 		/**
+		 * SE-048-R (E-4804, 10e fonction) — le tri « premium-first » s'applique-t-il ?
+		 *
+		 * Cinq conditions, toutes nécessaires : contexte public, requête principale,
+		 * requête d'annonces, drapeau d'exploitation allumé, et AUCUN tri explicite
+		 * demandé par le visiteur (le choix du visiteur reste prioritaire — le tri
+		 * premium ne réécrit jamais un tri demandé). Les listes publiques excluent
+		 * déjà les annonces non disponibles (prédicat dp-9, pre_get_posts) : le tri
+		 * ne peut donc porter que sur des biens disponibles (invariant E-4807 2).
+		 *
+		 * @param WP_Query $query Requête courante.
+		 * @return bool
+		 */
+	private static function premium_first_applies( $query ) {
+		if ( is_admin() || ! $query instanceof WP_Query || ! $query->is_main_query() || ! self::is_property_query( $query ) ) {
+			return false;
+		}
+		if ( ! class_exists( 'Partikulier_Premium' ) || ! Partikulier_Premium::is_public_enabled() ) {
+			return false;
+		}
+		$requested_order = isset( $_GET['pk_order'] ) ? sanitize_key( wp_unslash( $_GET['pk_order'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- lecture d'affichage, aucune écriture
+		if ( in_array( $requested_order, array( 'price-asc', 'price-desc', 'surface-desc' ), true ) ) {
+			return false;
+		}
+		return true;
+	}
+
+		/**
+		 * Expression SQL « premium en tête » : 0 pour une attribution active ET
+		 * non échue, 1 sinon. Écrite en SOUS-REQUÊTE (et non en jointure) pour ne
+		 * jamais changer la cardinalité du résultat — une jointure sur postmeta
+		 * dupliquerait une annonce portant plusieurs lignes de méta. Le test
+		 * d'échéance est fait en SQL (UTC_TIMESTAMP) afin qu'une attribution
+		 * échue ne passe pas en tête sur la requête même qui déclenche son
+		 * expiration paresseuse.
+		 *
+		 * @return string
+		 */
+	private static function premium_first_expression() {
+		global $wpdb;
+		$postmeta = $wpdb->postmeta;
+		$posts    = $wpdb->posts;
+		return 'CASE WHEN EXISTS ('
+			. 'SELECT 1 FROM ' . $postmeta . ' pk_pm_status'
+			. ' WHERE pk_pm_status.post_id = ' . $posts . '.ID'
+			. " AND pk_pm_status.meta_key = '_pk_premium_status' AND pk_pm_status.meta_value = 'active'"
+			. ' AND EXISTS ('
+			. 'SELECT 1 FROM ' . $postmeta . ' pk_pm_end'
+			. ' WHERE pk_pm_end.post_id = pk_pm_status.post_id'
+			. " AND pk_pm_end.meta_key = '_pk_premium_ends_at' AND pk_pm_end.meta_value > UTC_TIMESTAMP()"
+			. ' )'
+			. ') THEN 0 ELSE 1 END ASC, ';
+	}
+
+		/**
 		 * Ajoute un départage SQL déterministe après les réécritures Estatik/Polylang.
 		 *
 		 * @param string   $orderby Clause ORDER BY courante.
@@ -57,7 +111,8 @@ class Partikulier_Search_Filters {
 			$posts = $wpdb->posts;
 			// Estatik peut remplacer ORDER BY plus tôt dans la chaîne de hooks.
 			// Sans tri explicite, date puis ID fournissent un ordre déterministe.
-			return $posts . '.post_date DESC, ' . $posts . '.ID DESC';
+			$premium = self::premium_first_applies( $query ) ? self::premium_first_expression() : '';
+			return $premium . $posts . '.post_date DESC, ' . $posts . '.ID DESC';
 	}
 
 		/**

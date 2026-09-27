@@ -136,16 +136,16 @@ $types = get_terms( array(
 										</div>
 								</div>
 
-								<div class="pk-field">
+								<div data-pk-field="pk_type" class="pk-field">
 										<label class="pk-label" for="pk-type"><?php esc_html_e( 'Type de bien', 'partikulier' ); ?> <span class="pk-req">*</span></label>
 										<select id="pk-type" name="pk_type" required>
 												<?php foreach ( (array) $types as $term ) : ?>
-														<option value="<?php echo esc_attr( $term->term_id ); ?>"><?php echo esc_html( $term->name ); ?></option>
+														<option value="<?php echo esc_attr( $term->term_id ); ?>" data-pk-slug="<?php echo esc_attr( $term->slug ); ?>"><?php echo esc_html( $term->name ); ?></option>
 												<?php endforeach; ?>
 										</select>
 								</div>
 
-								<div class="pk-field pk-autocomplete" id="pk-city-wrap">
+								<div data-pk-field="pk_city" class="pk-field pk-autocomplete" id="pk-city-wrap">
 										<label class="pk-label" for="pk-city"><?php esc_html_e( 'Ville ou quartier de départ', 'partikulier' ); ?> <span class="pk-req">*</span></label>
 										<div class="pk-input-icon">
 												<span class="pk-input-pin" aria-hidden="true">
@@ -157,7 +157,7 @@ $types = get_terms( array(
 										<small class="pk-field-hint"><?php esc_html_e( 'Commencez par une lettre. Si vous choisissez une ville, un quartier vous sera demandé ensuite. Vous pouvez aussi choisir directement un quartier.', 'partikulier' ); ?></small>
 								</div>
 
-								<div class="pk-field pk-autocomplete" id="pk-district-wrap" hidden>
+								<div data-pk-field="pk_district" class="pk-field pk-autocomplete" id="pk-district-wrap" hidden>
 										<label class="pk-label" for="pk-district"><?php esc_html_e( 'Quartier', 'partikulier' ); ?> <span class="pk-req">*</span></label>
 												<input type="text" id="pk-district" autocomplete="off" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="pk-district-list" placeholder="<?php echo esc_attr( Partikulier_Localization::translate_polylang_string( 'Choisissez un quartier', 'Choisissez un quartier', 'partikulier' ) ); ?>">
 										<ul class="pk-suggest" id="pk-district-list" role="listbox" hidden></ul>
@@ -202,7 +202,7 @@ $types = get_terms( array(
 								<p class="pk-card-note"><?php esc_html_e( 'Quelques chiffres suffisent pour créer le titre.', 'partikulier' ); ?></p>
 
 								<div class="pk-grid-2">
-										<div class="pk-field">
+										<div data-pk-field="pk_surface" class="pk-field">
 												<label class="pk-label" for="pk-surface"><?php esc_html_e( 'Superficie (m²)', 'partikulier' ); ?> <span class="pk-req">*</span></label>
 												<div class="pk-input-icon">
 														<span class="pk-input-pin" aria-hidden="true">
@@ -211,7 +211,7 @@ $types = get_terms( array(
 														<input type="number" id="pk-surface" name="pk_surface" min="1" max="100000" inputmode="numeric" required placeholder="<?php esc_attr_e( 'Ex. 72', 'partikulier' ); ?>">
 												</div>
 										</div>
-										<div class="pk-field">
+										<div data-pk-field="pk_bedrooms" class="pk-field">
 												<label class="pk-label" for="pk-bedrooms"><?php esc_html_e( 'Nombre de chambres', 'partikulier' ); ?> <span class="pk-req">*</span></label>
 												<div class="pk-input-icon">
 														<span class="pk-input-pin" aria-hidden="true">
@@ -228,13 +228,13 @@ $types = get_terms( array(
 										</div>
 								</div>
 
-								<div class="pk-field">
+								<div data-pk-field="pk_price" class="pk-field">
 										<label class="pk-label" for="pk-price"><?php esc_html_e( 'Prix demandé', 'partikulier' ); ?> <span class="pk-req">*</span></label>
 										<input type="text" id="pk-price" name="pk_price" inputmode="numeric" required placeholder="<?php esc_attr_e( 'Ex. 389000', 'partikulier' ); ?>">
 								</div>
 
 								<div class="pk-grid-2">
-										<div class="pk-field">
+										<div data-pk-field="pk_living_rooms" class="pk-field">
 												<label class="pk-label" for="pk-living-rooms"><?php esc_html_e( 'Nombre de salons', 'partikulier' ); ?> <span class="pk-req">*</span></label>
 												<select id="pk-living-rooms" name="pk_living_rooms" required>
 														<option value=""><?php esc_html_e( 'Choisissez le nombre', 'partikulier' ); ?></option>
@@ -244,7 +244,7 @@ $types = get_terms( array(
 																<option value="3+"><?php esc_html_e( '3 salons ou plus', 'partikulier' ); ?></option>
 												</select>
 										</div>
-										<div class="pk-field">
+										<div data-pk-field="pk_bathrooms" class="pk-field">
 												<label class="pk-label" for="pk-bathrooms"><?php esc_html_e( 'Nombre de salles de bains', 'partikulier' ); ?> <span class="pk-req">*</span></label>
 												<div class="pk-input-icon">
 														<span class="pk-input-pin" aria-hidden="true">
@@ -261,7 +261,7 @@ $types = get_terms( array(
 								</div>
 
 								<div class="pk-grid-2">
-										<div class="pk-field">
+										<div data-pk-field="pk_floor" class="pk-field">
 												<label class="pk-label" for="pk-floor"><?php esc_html_e( 'Étage', 'partikulier' ); ?></label>
 												<select id="pk-floor" name="pk_floor">
 														<option value="RDC"><?php esc_html_e( 'RDC', 'partikulier' ); ?></option>
@@ -271,7 +271,7 @@ $types = get_terms( array(
 														<option value="Dernier étage"><?php esc_html_e( 'Dernier étage', 'partikulier' ); ?></option>
 												</select>
 										</div>
-										<div class="pk-field">
+										<div data-pk-field="pk_garage" class="pk-field">
 												<label class="pk-label"><?php esc_html_e( 'Garage ou sous-sol', 'partikulier' ); ?></label>
 												<div class="pk-toggle" data-toggle="pk_garage">
 														<button type="button" class="pk-toggle-btn" data-value="Oui"><?php esc_html_e( 'Oui', 'partikulier' ); ?></button>
@@ -282,7 +282,7 @@ $types = get_terms( array(
 								</div>
 
 								<div class="pk-grid-2">
-										<div class="pk-field">
+										<div data-pk-field="pk_elevator" class="pk-field">
 												<label class="pk-label"><?php esc_html_e( 'Ascenseur', 'partikulier' ); ?></label>
 												<div class="pk-toggle" data-toggle="pk_elevator">
 														<button type="button" class="pk-toggle-btn" data-value="Oui"><?php esc_html_e( 'Oui', 'partikulier' ); ?></button>
@@ -290,7 +290,7 @@ $types = get_terms( array(
 												</div>
 												<input type="hidden" name="pk_elevator" value="Non">
 										</div>
-										<div class="pk-field">
+										<div data-pk-field="pk_vis_a_vis" class="pk-field">
 												<label class="pk-label"><?php esc_html_e( 'Sans vis-à-vis', 'partikulier' ); ?></label>
 												<div class="pk-toggle" data-toggle="pk_vis_a_vis">
 														<button type="button" class="pk-toggle-btn" data-value="Oui"><?php esc_html_e( 'Oui', 'partikulier' ); ?></button>
@@ -300,7 +300,7 @@ $types = get_terms( array(
 										</div>
 								</div>
 
-								<div class="pk-field">
+								<div data-pk-field="pk_sunshine" class="pk-field">
 										<label class="pk-label" for="pk-sunshine"><?php esc_html_e( 'Ensoleillement', 'partikulier' ); ?> <span class="pk-req">*</span></label>
 										<select id="pk-sunshine" name="pk_sunshine" required>
 												<option value=""><?php esc_html_e( 'Choisissez l’exposition', 'partikulier' ); ?></option>
@@ -311,7 +311,7 @@ $types = get_terms( array(
 										</select>
 								</div>
 
-								<div class="pk-field">
+								<div data-pk-field="pk_terrace" class="pk-field">
 										<label class="pk-label"><?php esc_html_e( 'Terrasse', 'partikulier' ); ?> <span class="pk-req">*</span></label>
 										<div class="pk-toggle pk-toggle-half" data-toggle="pk_terrace">
 												<button type="button" class="pk-toggle-btn" data-value="Oui"><?php esc_html_e( 'Oui', 'partikulier' ); ?></button>
@@ -320,10 +320,50 @@ $types = get_terms( array(
 										<input type="hidden" name="pk_terrace" value="Non">
 								</div>
 
-								<div class="pk-field" id="pk-terrace-surface-field" hidden>
+								<div data-pk-field="pk_terrace_surface" class="pk-field" id="pk-terrace-surface-field" hidden>
 										<label class="pk-label" for="pk-terrace-surface"><?php esc_html_e( 'Superficie de la terrasse (m²)', 'partikulier' ); ?></label>
 										<input type="number" id="pk-terrace-surface" name="pk_terrace_surface" min="1" inputmode="numeric">
 								</div>
+									<div data-pk-field="pk_charges" class="pk-field" hidden>
+										<label class="pk-label" for="pk-charges"><?php esc_html_e( 'Charges (MAD / mois)', 'partikulier' ); ?></label>
+										<input type="number" id="pk-charges" name="pk_charges" min="0" max="100000" inputmode="numeric" placeholder="<?php esc_attr_e( 'Ex. 700', 'partikulier' ); ?>">
+									</div>
+
+									<div data-pk-field="pk_availability" class="pk-field" hidden>
+										<label class="pk-label" for="pk-availability"><?php esc_html_e( 'Disponibilité', 'partikulier' ); ?></label>
+										<input type="text" id="pk-availability" name="pk_availability" placeholder="<?php esc_attr_e( 'Ex. Immédiate, sous 3 mois…', 'partikulier' ); ?>">
+									</div>
+
+									<div data-pk-field="pk_year_built" class="pk-field" hidden>
+										<label class="pk-label" for="pk-year-built"><?php esc_html_e( 'Année de construction', 'partikulier' ); ?></label>
+										<input type="number" id="pk-year-built" name="pk_year_built" min="1900" max="2100" inputmode="numeric" placeholder="<?php esc_attr_e( 'Ex. 2016', 'partikulier' ); ?>">
+									</div>
+
+									<div data-pk-field="pk_energy_class" class="pk-field" hidden>
+										<label class="pk-label" for="pk-energy-class"><?php esc_html_e( 'Classe énergie', 'partikulier' ); ?></label>
+										<select id="pk-energy-class" name="pk_energy_class"><option value=""><?php esc_html_e( 'Choisissez', 'partikulier' ); ?></option><?php foreach ( array( 'A', 'B', 'C', 'D', 'E', 'F', 'G' ) as $pk_classe ) : ?><option value="<?php echo esc_attr( $pk_classe ); ?>"><?php echo esc_html( $pk_classe ); ?></option><?php endforeach; ?></select>
+									</div>
+
+									<div data-pk-field="pk_ges_class" class="pk-field" hidden>
+										<label class="pk-label" for="pk-ges-class"><?php esc_html_e( 'GES', 'partikulier' ); ?></label>
+										<select id="pk-ges-class" name="pk_ges_class"><option value=""><?php esc_html_e( 'Choisissez', 'partikulier' ); ?></option><?php foreach ( array( 'A', 'B', 'C', 'D', 'E', 'F', 'G' ) as $pk_classe ) : ?><option value="<?php echo esc_attr( $pk_classe ); ?>"><?php echo esc_html( $pk_classe ); ?></option><?php endforeach; ?></select>
+									</div>
+
+									<div data-pk-field="pk_lot_size" class="pk-field" hidden>
+										<label class="pk-label" for="pk-lot-size"><?php esc_html_e( 'Terrain (m²)', 'partikulier' ); ?></label>
+										<input type="number" id="pk-lot-size" name="pk_lot_size" min="1" max="1000000" inputmode="numeric" placeholder="<?php esc_attr_e( 'Ex. 300', 'partikulier' ); ?>">
+									</div>
+
+									<div data-pk-field="pk_half_baths" class="pk-field" hidden>
+										<label class="pk-label" for="pk-half-baths"><?php esc_html_e( 'Demi-salles de bains', 'partikulier' ); ?></label>
+										<input type="number" id="pk-half-baths" name="pk_half_baths" min="0" max="10" inputmode="numeric">
+									</div>
+
+									<div data-pk-field="pk_total_rooms" class="pk-field" hidden>
+										<label class="pk-label" for="pk-total-rooms"><?php esc_html_e( 'Nombre de pièces', 'partikulier' ); ?></label>
+										<input type="number" id="pk-total-rooms" name="pk_total_rooms" min="0" max="50" inputmode="numeric">
+									</div>
+
 
 								<div class="pk-field">
 										<label class="pk-label"><?php esc_html_e( 'Photos du bien', 'partikulier' ); ?></label>
@@ -344,7 +384,88 @@ $types = get_terms( array(
 										<button type="button" class="pk-btn pk-btn-primary" data-goto="3"><?php esc_html_e( 'Continuer', 'partikulier' ); ?> <span aria-hidden="true">&rarr;</span></button>
 								</div>
 								<p class="pk-step-legal"><?php esc_html_e( 'Aucune inscription obligatoire. Votre numéro sert uniquement à confirmer que l’annonce vient d’une vraie personne.', 'partikulier' ); ?></p>
-						</section>
+
+								<?php
+								// Lot SE-042c : les réglages de l'écran « Formulaire de dépôt » s'appliquent ici.
+								// Le HTML est rendu en entier ; l'affichage, l'astérisque et l'ordre suivent la configuration.
+								// Un champ masqué reste refusé par le serveur, même renvoyé à la main.
+								$pk_df_config = array( 'cap' => Partikulier_Deposit_Form::cap(), 'types' => array(), 'ordre' => array() );
+								$pk_df_champs = Partikulier_Deposit_Form::fields();
+								foreach ( Partikulier_Deposit_Form::types() as $pk_slug => $pk_libelle ) {
+									foreach ( array_keys( $pk_df_champs ) as $pk_champ ) {
+										$pk_etat = Partikulier_Deposit_Form::state( $pk_champ, $pk_slug );
+										$pk_df_config['types'][ $pk_slug ][ $pk_champ ] = ( Partikulier_Deposit_Form::INHERITED === $pk_etat ) ? $pk_df_champs[ $pk_champ ]['actuel'] : $pk_etat;
+										$pk_df_config['ordre'][ $pk_champ ]          = Partikulier_Deposit_Form::order( $pk_champ, $pk_slug );
+									}
+								}
+								?>
+								<script type="application/json" id="pk-deposit-config"><?php echo wp_json_encode( $pk_df_config ); ?></script>
+								<script>
+								( function () {
+									var noeud = document.getElementById( 'pk-deposit-config' );
+									var form  = document.getElementById( 'pk-submit-form' );
+									if ( ! noeud || ! form ) { return; }
+									var reglages = JSON.parse( noeud.textContent );
+
+									function etat( champ, slug ) {
+										if ( reglages.types[ slug ] && reglages.types[ slug ][ champ ] ) { return reglages.types[ slug ][ champ ]; }
+										return 'herite';
+									}
+
+									function appliquer() {
+										var select = document.getElementById( 'pk-type' );
+										if ( ! select ) { return; }
+										var option = select.options[ select.selectedIndex ];
+										var slug   = option ? option.getAttribute( 'data-pk-slug' ) : '';
+										if ( ! slug ) { return; }
+										var blocs = form.querySelectorAll( '[data-pk-field]' );
+										var parent = blocs.length ? blocs[0].parentNode : null;
+										blocs.forEach( function ( bloc ) {
+											var champ = bloc.getAttribute( 'data-pk-field' );
+											var e     = etat( champ, slug );
+											if ( 'herite' === e ) { return; }
+											var cache = ( e === 'masque' );
+											bloc.hidden = cache;
+											bloc.setAttribute( 'data-pk-state', e );
+											bloc.querySelectorAll( 'input, select, textarea' ).forEach( function ( c ) {
+												// Les champs d'autocomplétion (ville, quartier) et les bascules gardent leur
+												// valeur dans un champ invisible : y poser required bloquerait l'étape 1,
+												// que le parcours d'origine valide déjà par lui-même.
+												var natif = ( 'hidden' !== c.type ) && ! c.closest( '.pk-autocomplete' );
+												if ( cache ) { c.removeAttribute( 'required' ); }
+												else if ( e === 'requis' && natif ) { c.setAttribute( 'required', 'required' ); }
+												else { c.removeAttribute( 'required' ); }
+											} );
+											var lab = bloc.querySelector( '.pk-label' );
+											if ( lab ) {
+												var star = lab.querySelector( '.pk-req' );
+												if ( e === 'requis' && ! star ) {
+													star = document.createElement( 'span' );
+													star.className = 'pk-req';
+													star.textContent = '*';
+													lab.appendChild( document.createTextNode( ' ' ) );
+													lab.appendChild( star );
+												} else if ( e !== 'requis' && star ) { star.remove(); }
+											}
+										} );
+										if ( parent ) {
+											var liste = [];
+											parent.querySelectorAll( '[data-pk-field]' ).forEach( function ( b, i ) {
+												var o = parseInt( reglages.ordre[ b.getAttribute( 'data-pk-field' ) ] || ( 100 + i ), 10 );
+												liste.push( { bloc: b, ordre: o } );
+											} );
+											liste.sort( function ( a, b ) { return a.ordre - b.ordre; } );
+											liste.forEach( function ( item ) { parent.appendChild( item.bloc ); } );
+										}
+									}
+
+									document.addEventListener( 'change', function ( e ) {
+										if ( e.target && e.target.id === 'pk-type' ) { appliquer(); }
+									} );
+									appliquer();
+								}() );
+								</script>
+</section>
 
 						<!-- ============ ETAPE 3 ============ -->
 						<section class="pk-card pk-step" data-step="3" hidden>

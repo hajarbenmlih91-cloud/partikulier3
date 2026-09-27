@@ -10,7 +10,8 @@ require $wpDir.'/wp-load.php'; require_once __DIR__.'/dp9-http.php'; require_onc
 $g=static function(string $u):array{$c=curl_init($u);$h=[];curl_setopt_array($c,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_HEADERFUNCTION=>static function($c,$l)use(&$h):int{$p=strpos($l,':');if($p)$h[strtolower(trim(substr($l,0,$p)))]=trim(substr($l,$p+1));return strlen($l);},CURLOPT_TIMEOUT=>60]);$b=curl_exec($c);curl_close($c);return[(string)$b,$h];};
 $carte=dp9_seed_fixtures(); $A3=(int)$carte['fixtures']['A3_actif']; $S=dp9_session((int)$carte['owner']);
 $slug=(string)get_post_field('post_name',$A3); $mes=[];
-$lire=static function(string $e) use($g,$base,$slug,&$mes,$A3){ $g($base.'/fr/'); list($b,$h)=$g($base.'/fr/');
+$home_path = parse_url(home_url('/'), PHP_URL_PATH) ?: '/';
+$lire=static function(string $e) use($g,$base,$home_path,$slug,&$mes,$A3){ $g($base . $home_path); list($b,$h)=$g($base . $home_path);
 	$mes[]=['etape'=>$e,'base'=>dp9_state($A3)[$A3]['pk']??'?','annonce_visible_accueil'=>substr_count($b,$slug),'cache'=>$h['x-litespeed-cache']??'-']; };
 $lire('0 départ (actif, accueil chaud)');
 dp9_ajax($base,$S,$A3,'deactivate','vendu'); $lire('1 après désactivation par le propriétaire');

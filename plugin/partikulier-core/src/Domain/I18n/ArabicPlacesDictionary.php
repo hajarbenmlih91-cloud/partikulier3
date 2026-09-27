@@ -75,7 +75,7 @@ final class ArabicPlacesDictionary
 			* (Targa, Hivernage, Médina, Agdal…) et dans les futurs
 			* dépôts réels. */
 			'targa'        => 'تارغة',
-			'hivernage'    => 'هيفيرناژ',
+			'hivernage'    => 'الحي الشتوي (Hivernage)',
 			'medina'       => 'المدينة القديمة',
 			'médina'       => 'المدينة القديمة',
 			'gueliz'       => 'جيليز',
@@ -104,7 +104,7 @@ final class ArabicPlacesDictionary
 			'anza' => 'أنزة', 'atlas' => 'أطلس', 'aviation' => 'الأفياسيون',
 			'bassatine' => 'البساتين', 'beauséjour' => 'بو سيجور', 'belvédère' => 'بلفيدار',
 			'bettana' => 'بطانة', 'biada' => 'البياضة', 'bir rami' => 'بير رامي',
-			'borj' => 'البرج', 'boubana' => 'بوبانا', 'bourgogne' => 'بورگون',
+			'borj' => 'البرج', 'boubana' => 'بوبانا', 'bourgogne' => 'بورغون (Bourgogne)',
 			'bouznika bay' => 'بوزنيقة باي', 'branes' => 'برانش', 'cabo negro' => 'كابو نيغرو',
 			'calabonita' => 'كالابونيتا', 'cap spartel' => 'رأس سبارطيل', 'centre-ville' => 'وسط المدينة',
 			'charaf' => 'الشرف', 'cil' => 'السيل', 'cité portugaise' => 'المدينة البرتغالية',

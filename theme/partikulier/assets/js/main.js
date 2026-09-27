@@ -719,8 +719,9 @@
 /* ---------- Autocompletion publique des villes et quartiers ---------- */
 (function () {
 		"use strict";
-		if (typeof pkConfig === "undefined" || ! pkConfig.ajaxUrl || ! pkConfig.placesNonce) return;
-		var inputs = Array.prototype.slice.call(document.querySelectorAll("[data-pk-place-input='true']"));
+		var ajaxUrl = (typeof pkConfig !== "undefined" && pkConfig.ajaxUrl) ? pkConfig.ajaxUrl : "/wp-admin/admin-ajax.php";
+		var nonce   = (typeof pkConfig !== "undefined" && pkConfig.placesNonce) ? pkConfig.placesNonce : "";
+		var inputs  = Array.prototype.slice.call(document.querySelectorAll("[data-pk-place-input='true']"));
 		if ( ! inputs.length) return;
 
 	function debounce(fn, wait) {
@@ -733,8 +734,9 @@
 	}
 
 	function fetchPlaces(query) {
-			var language = pkConfig.language || document.documentElement.lang || "fr";
-			var url      = pkConfig.ajaxUrl + "?action=pk_places_search&nonce=" + encodeURIComponent(pkConfig.placesNonce) +
+			var language = (typeof pkConfig !== "undefined" && pkConfig.language) ? pkConfig.language : (document.documentElement.lang || "fr");
+			var url      = ajaxUrl + "?action=pk_places_search" +
+					(nonce ? "&nonce=" + encodeURIComponent(nonce) : "") +
 					"&scope=city&q=" + encodeURIComponent(query) + "&lang=" + encodeURIComponent(language);
 			return fetch(url, { credentials: "same-origin" })
 					.then(function (response) { return response.json(); })

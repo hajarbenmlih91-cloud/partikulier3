@@ -19,9 +19,14 @@
  *    « partikulier » du THÈME (parent réel, sans dépendance Estatik) ;
  *  - E48-003 (E-4803) : l'URL canonique du sous-menu est
  *    admin.php?page=pk-premium (l'entrée du menu la porte) ;
- *  - E48-004 (E-4803) : l'écran rendu porte le bandeau d'état honnête
- *    (octroi manuel après virement/transfert d'argent, paiement en ligne
- *    non activé, visibilité publique explicitement non encore activée) ;
+ *  - E48-004 (E-4803 → E-4806) : l'écran rendu porte le bandeau d'état HONNÊTE
+ *    du modèle de lancement — « Premium offert par Partikulier », octroi gratuit
+ *    par l'administration, aucun paiement demandé au propriétaire — et il ne
+ *    porte PLUS la description du règlement hors ligne (virement/transfert),
+ *    qui n'est pas le modèle du lancement : c'est exactement le remplacement
+ *    exigé par le CDC §8.3-2 (E-4806). L'état de la visibilité publique est
+ *    affiché conformément au DRAPEAU réel (actif / pas encore activé), et le
+ *    bandeau ainsi que le badge sont prouvés dans les TROIS langues (fr/en/ar) ;
  *  - E48-005 (E-4803) : les redirections internes (octroi/retrait) visent
  *    l'URL canonique admin.php?page=pk-premium — plus l'ancien parent ;
  *  - E48-006 : aucune promesse de paiement en ligne (absence de
@@ -108,17 +113,57 @@ try {
         sprintf('URL canonique : menu_page_url(pk-premium) = « %s » (attendu « %s » — servie, pas 403 : le hook est enregistré pour un parent top-level)',
             $menuUrl ?: '—', $canonical));
 
-    // 4) E-4803 : bandeau d'état honnête (écran rendu).
-    ob_start();
-    Partikulier_Premium::render_admin_page();
-    $html = (string) ob_get_clean();
-    $honestPayment = strpos($html, 'virement bancaire ou transfert d’argent') !== false
-        && strpos($html, 'paiement en ligne n’est pas activé') !== false;
-    $honestVisibility = strpos($html, 'visibilité publique') !== false
-        && strpos($html, 'n’est pas encore activée') !== false;
-    $assert('E48-004', $honestPayment && $honestVisibility,
-        sprintf('bandeau honnête : règlement hors ligne %s, paiement en ligne non activé %s, visibilité non encore activée %s',
-            $honestPayment ? '✓' : 'ABSENT', $honestPayment ? '✓' : 'ABSENT', $honestVisibility ? '✓' : 'ABSENT'));
+    // 4) E-4806 (ex-E-4803) : bandeau d'état honnête du MODÈLE DE LANCEMENT.
+    //
+    //    JUSTIFICATION DE LA RÉÉCRITURE D'ASSERTION (exigée par l'ordre
+    //    d'exécution, interdiction n° 6 : toute assertion modifiée est justifiée
+    //    ligne par ligne). L'assertion précédente exigeait la présence des
+    //    chaînes « virement bancaire ou transfert d'argent » et « paiement en
+    //    ligne n'est pas activé » : elle verrouillait donc le texte que le CDC
+    //    §8.3-2 demande explicitement de REMPLACER (le règlement hors ligne
+    //    n'est pas le modèle du lancement). L'assertion est réécrite, pas
+    //    supprimée : mêmes objets (mode d'octroi, absence de paiement en ligne,
+    //    état réel de la visibilité), libellés du nouveau modèle, et une
+    //    assertion supplémentaire vérifie que l'ancien texte a bien disparu.
+    $run_lang = static function (string $lang) {
+        add_filter('partikulier_premium_ui_language', static fn(): string => $lang);
+        ob_start();
+        Partikulier_Premium::render_admin_page();
+        $out = (string) ob_get_clean();
+        remove_all_filters('partikulier_premium_ui_language');
+        return $out;
+    };
+    $html = $run_lang('fr');
+    $honestOffer = strpos($html, 'Premium offert par Partikulier') !== false
+        && strpos($html, 'sans aucun paiement demandé au propriétaire') !== false;
+    $honestVisibility = strpos($html, 'Visibilité publique') !== false
+        && strpos($html, 'réglage d’exploitation') !== false;
+    $legacyGone = stripos($html, 'virement bancaire') === false
+        && stripos($html, 'transfert d’argent') === false
+        && stripos($html, 'paiement en ligne n’est pas activé') === false;
+    // 4 bis) E-4806 : les TROIS langues (rendu réel dans chacune).
+    $labels = [
+        'fr' => ['Premium offert par Partikulier', 'Visibilité publique'],
+        'en' => ['Premium offered by Partikulier', 'Public visibility'],
+        'ar' => ['بريميوم مقدَّم من بارتيكيولييه', 'الظهور العلني'],
+    ];
+    $langues = [];
+    foreach ($labels as $lang => $attends) {
+        $rendu = $run_lang($lang);
+        $ok = true;
+        foreach ($attends as $attendu) {
+            $ok = $ok && strpos($rendu, $attendu) !== false;
+        }
+        $langues[$lang] = $ok;
+    }
+    $trilingueOk = !in_array(false, $langues, true);
+
+    $assert('E48-004', $honestOffer && $honestVisibility && $legacyGone && $trilingueOk,
+        sprintf('bandeau E-4806 : octroi gratuit %s, état de visibilité %s, ancien texte de règlement hors ligne %s, trilingue fr/en/ar %s (badge : %s)',
+            $honestOffer ? '✓' : 'ABSENT', $honestVisibility ? '✓' : 'ABSENT',
+            $legacyGone ? 'retiré ✓' : 'ENCORE PRÉSENT',
+            $trilingueOk ? '✓' : 'ABSENT', Partikulier_Premium::badge_label()));
+
 
     // 5) E-4803 : redirections internes vers l'URL canonique.
     $source = (string) file_get_contents($repoDir . '/theme/partikulier/inc/class-premium.php');
@@ -129,7 +174,9 @@ try {
             $redirectCanonical ? '✓' : 'ABSENT', $redirectLegacy ? 'ENCORE PRÉSENT' : 'retiré ✓'));
 
     // 6) Aucune promesse de paiement en ligne.
-    $forbidden = ['carte bancaire', 'paiement immédiat', 'réglez en ligne', 'paiement sécurisé en ligne'];
+    //    E-4806 : la liste est INCHANGÉE et s'applique au nouveau bandeau.
+    $forbidden = ['carte bancaire', 'paiement immédiat', 'réglez en ligne', 'paiement sécurisé en ligne', 'abonnement', 'payé'];
+    $html = $run_lang('fr');
     $found = array_values(array_filter($forbidden, static fn($p): bool => stripos($html, $p) !== false));
     $assert('E48-006', $found === [],
         $found === [] ? 'aucune promesse de paiement en ligne sur l’écran (DP-8 : octroi manuel après règlement hors ligne)'

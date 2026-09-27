@@ -120,6 +120,9 @@ if ( ! $img_id ) {
 			<?php if ( $action ) : ?>
 				<span class="pk-card-badge pk-badge-<?php echo esc_attr( sanitize_title( $action ) ); ?>"><?php echo esc_html( class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_taxonomy_label( $action ) : $action ); ?></span>
 			<?php endif; ?>
+			<?php if ( class_exists( 'Partikulier_Premium' ) && Partikulier_Premium::is_publicly_visible( (int) $post->ID ) ) : ?>
+				<span class="pk-card-badge pk-card-badge-premium"><?php echo esc_html( Partikulier_Premium::badge_label() ); ?></span>
+			<?php endif; ?>
 	</a>
 
 		<div class="pk-card-body">

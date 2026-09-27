@@ -68,7 +68,7 @@ $selected_city_label = ( $selected_city_term && ! is_wp_error( $selected_city_te
 									en terme es_location (class-search-filters) ou retombe sur la recherche
 									plein texte. Avec JavaScript, le champ est desactive a la soumission des
 									que l'autocompletion a fixe es_city : s ne part jamais en double. */ ?>
-								<input type="search" name="s" id="pk-s-city-input" class="pk-place-input" value="<?php echo esc_attr( $selected_city_label ); ?>" placeholder="<?php echo esc_attr__( 'Toutes les villes', 'partikulier' ); ?>" autocomplete="off" data-pk-place-input="true" aria-controls="pk-s-city-suggestions" aria-autocomplete="list">
+								<input type="search" name="s" id="pk-s-city-input" class="pk-place-input" value="<?php echo esc_attr( $selected_city_label ); ?>" placeholder="<?php echo esc_attr__( 'Toutes les villes', 'partikulier' ); ?>" autocomplete="off" data-pk-place-input="true" data-pk-place-value="pk-s-city-value" aria-controls="pk-s-city-suggestions" aria-autocomplete="list">
 								<input type="hidden" name="es_city" id="pk-s-city-value" value="<?php echo esc_attr( $selected_city_slug ); ?>">
 								<ul id="pk-s-city-suggestions" class="pk-suggest pk-place-suggestions" role="listbox" hidden></ul>
 						</div>

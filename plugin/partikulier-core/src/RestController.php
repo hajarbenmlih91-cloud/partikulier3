@@ -58,6 +58,7 @@ final class RestController
 		return $this->leads ??= new LeadService();
 	}
 
+
 	private function favorites(): FavoriteService
 	{
 		return $this->favorites ??= new FavoriteService();
@@ -205,17 +206,22 @@ final class RestController
 		if ( is_wp_error($result) ) {
 			return $result;
 		}
+		$external_id = (string) ( $result['external_id'] ?? '' );
+		$post_id = str_starts_with($external_id, 'estatik:') ? (int) substr($external_id, strlen('estatik:')) : (int) $request['id'];
+		$result['available'] = $post_id > 0 && \Partikulier\Core\ListingRepository::is_available($post_id);
 
 		/*
-		 * SE-044 / DP-9 (Q3, v1.1 §13.4) : champ « available » — booléen calculé
-		 * en lecture seule par le prédicat central du dépôt. Il ne remplace ni
-		 * les autorisations ni le filtrage de collection, et ne crée aucune
-		 * interprétation « absente de la liste donc supprimée » : la fiche reste
-		 * servie (DP-9), seule la disponibilité est distinguée.
+		 * SE-048-R (E-4804, 12e fonction) : champ « premium » — booléen lite,
+		 * même facture que « available » ci-dessus. Il n'existe QUE si le
+		 * drapeau d'exploitation est allumé (E-4807 : drapeau éteint = aucune
+		 * trace publique, pas même un champ à false) et il applique le prédicat
+		 * unique du domaine (drapeau ∧ droit actif ∧ annonce disponible) : une
+		 * annonce désactivée ne peut donc jamais s'annoncer premium via l'API.
 		 */
-		$external_id = (string) ($result['external_id'] ?? '');
-		$post_id = str_starts_with($external_id, 'estatik:') ? (int) substr($external_id, strlen('estatik:')) : 0;
-		$result['available'] = $post_id > 0 && \Partikulier\Core\ListingRepository::is_available($post_id);
+		if ( \Partikulier\Core\Domain\Premium\PremiumService::is_public_enabled() ) {
+			$result['premium'] = $post_id > 0
+				&& \Partikulier\Core\Domain\Premium\PremiumService::is_publicly_visible($post_id);
+		}
 
 		return new WP_REST_Response(['data' => $result], 200);
 	}
