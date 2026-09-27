@@ -205,9 +205,20 @@ class Partikulier_Listing_Transitions {
 
         /** Classe du service variantes du plugin (couture class_exists), ou null. */
         private static function variants_service() {
-                return class_exists( '\Partikulier\Core\Domain\TranslationVariants\TranslationVariantsService' )
-                        ? '\Partikulier\Core\Domain\TranslationVariants\TranslationVariantsService'
-                        : null;
+                $classe = '\Partikulier\Core\Domain\TranslationVariants\TranslationVariantsService';
+                if ( ! class_exists( $classe ) ) {
+                        return null;
+                }
+                /* Couture de CAPACITE, pas seulement d'existence : les transitions n'utilisent
+                   que ces trois methodes. Un plugin anterieur (2.10.8) expose la classe sans
+                   elles ; sans ce controle, l'appel dynamique leve un fatal (500) au lieu de
+                   suivre le chemin « pas de service variantes » deja ecrit par le theme. */
+                foreach ( array( 'source_for_variant', 'restrained_variants_for', 'propagate_transition' ) as $methode ) {
+                        if ( ! method_exists( $classe, $methode ) ) {
+                                return null;
+                        }
+                }
+                return $classe;
         }
 
         /**

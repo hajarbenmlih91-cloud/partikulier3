@@ -47,6 +47,12 @@ class Partikulier_Cache {
 					// Purge aussi après une mise à jour du site dans l’admin.
 					add_action( 'wp_trash_post', array( __CLASS__, 'purge_all' ) );
 
+			// SE-048-R (E-4809) : TOUTE transition premium — octroi, retrait,
+			// expiration (même paresseuse) — purge les caches de listes. L'action
+			// est émise par le domaine propriétaire (PremiumService) : le thème
+			// n'a aucune logique premium dans son cache, il écoute.
+			add_action( 'pk_premium_state_changed', array( __CLASS__, 'purge_all' ) );
+
 					// Les options peuvent être créées via add_option() : le hook
 					// update_option_* ne se déclenche alors pas. Les deux familles sont
 					// donc obligatoires pour éviter de servir une ancienne home en cache.
@@ -81,6 +87,17 @@ class Partikulier_Cache {
 
 					$cache_file = self::cache_path();
 					$gz_file    = $cache_file . '.gz';
+
+		// SE-048-R (E-4809) : borne de l'expiration paresseuse. Une copie en cache
+		// ne peut pas servir une liste triant « premium-first » un premium échu :
+		// dès que l'échéance la plus proche est atteinte, les attributions échues
+		// sont balayées (sweep borné, plugin), la purge est faite, et CETTE
+		// requête rend la page au lieu de servir la copie. La fenêtre résiduelle
+		// est donc nulle, pas le TTL de 12 h. Coût hors premium : une option
+		// autoloadée vide (l'option n'est créée qu'à la première attribution).
+		if ( self::premium_expiry_reached() ) {
+			return;
+		}
 
 		if ( file_exists( $cache_file ) && ( time() - filemtime( $cache_file ) ) < self::TTL ) {
 					/* Auto-guerison du cote du SERVEUR, pas seulement de l'ecriture : une entree
@@ -452,6 +469,35 @@ class Partikulier_Cache {
 		exit;
 	}
 
+	/**
+	 * Une échéance premium est-elle atteinte ? (SE-048-R, E-4809)
+	 *
+	 * Publique À DESSEIN : c'est la couture que le contrat
+	 * se048-premium-cache-contract éprouve. Aucun autre appelant ne doit s'en
+	 * servir — le seul point d'appel est maybe_serve_cached(), AVANT la lecture
+	 * du fichier (l'ordre est prouvé par le contrat).
+	 *
+	 * @return bool Vrai si la copie en cache ne doit PAS être servie.
+	 */
+	public static function premium_expiry_reached() {
+		$next = (string) get_option( 'pk_premium_next_end', '' );
+		if ( '' === $next ) {
+			return false;
+		}
+		$deadline = strtotime( $next . ' UTC' );
+		if ( ! $deadline || $deadline > time() ) {
+			return false;
+		}
+		// Balayage ciblé puis purge : après le balayage, l'option est recalculée
+		// sur la prochaine échéance réelle (ou vidée) — pas de purge à répétition.
+		if ( class_exists( '\\Partikulier\\Core\\Domain\\Premium\\PremiumService' ) ) {
+			\Partikulier\Core\Domain\Premium\PremiumService::sweep_expired();
+			\Partikulier\Core\Domain\Premium\PremiumService::refresh_next_end(); // E-4809 : une échéance périmée sans ligne à balayer ferait purger à chaque requête (mesuré : CAC-005)
+		}
+		self::purge_all();
+		return true;
+	}
+
 	public static function purge_all() {
 		/* Correctif A, partie 4 (Arena, 25/09) — LA cause racine de la page perimee.
 		 *
@@ -477,6 +523,15 @@ class Partikulier_Cache {
 				wp_delete_file( $f );
 				wp_delete_file( $f . '.gz' );
 				wp_delete_file( $f . '.br' );
+			}
+		}
+		if ( is_dir( '/tmp/nginx_cache' ) ) {
+			$nginx_files = glob( '/tmp/nginx_cache/*/*/*' ) ?: array();
+			$nginx_files = array_merge( $nginx_files, glob( '/tmp/nginx_cache/*/*' ) ?: array() );
+			foreach ( $nginx_files as $nf ) {
+				if ( is_file( $nf ) ) {
+					@unlink( $nf );
+				}
 			}
 		}
 	}

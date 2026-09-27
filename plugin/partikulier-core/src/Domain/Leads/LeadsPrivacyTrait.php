@@ -167,33 +167,74 @@ trait LeadsPrivacyTrait
 	}
 
 
-	private static function encrypt_phone( string $phone ): string
+	/**
+	 * Chiffrement du numéro de téléphone en AES-256-GCM (SE-028, E-2801).
+	 * Format d'enveloppe versionné : "gcm:v1:" suivi de base64(IV[12] . TAG[16] . CIPHERTEXT).
+	 */
+	public static function encrypt_phone( string $phone ): string
 	{
 		if ( ! function_exists('openssl_encrypt') ) {
 			return '';
 		}
+		$phone = trim($phone);
+		if ( '' === $phone ) {
+			return '';
+		}
 		$key        = hash('sha256', wp_salt('secure_auth'), true);
-		$iv         = random_bytes(16);
-		$ciphertext = openssl_encrypt($phone, 'AES-256-CBC', $key, OPENSSL_RAW_DATA, $iv);
-		return base64_encode($iv . $ciphertext);
+		$iv         = random_bytes(12); // Recommandation NIST SP 800-38D pour GCM
+		$tag        = '';
+		$ciphertext = openssl_encrypt($phone, 'aes-256-gcm', $key, OPENSSL_RAW_DATA, $iv, $tag, '', 16);
+		if ( false === $ciphertext || 16 !== strlen($tag) ) {
+			return '';
+		}
+		return 'gcm:v1:' . base64_encode($iv . $tag . $ciphertext);
 	}
 
 
 	/**
-	 * Déchiffrement réservé au back-office administrateur. Cette fonction ne doit
-	 * jamais être utilisée dans une réponse REST, une page publique ou un log.
+	 * Déchiffrement réservé au back-office administrateur (SE-028, E-2802 & E-2804).
+	 * Prend en charge le format authentifié GCM v1 et assure le repli strict sur le format legacy CBC.
+	 * Tout payload GCM altéré est immédiatement rejeté sans fallback vers CBC.
 	 */
 	public static function decrypt_phone_for_admin( string $encrypted_phone ): string
 	{
 		if ( ! current_user_can('manage_options') || ! function_exists('openssl_decrypt') ) {
 			return '';
 		}
+		$encrypted_phone = trim($encrypted_phone);
+		if ( '' === $encrypted_phone ) {
+			return '';
+		}
+		$key = hash('sha256', wp_salt('secure_auth'), true);
+
+		// Format versionné AES-256-GCM (E-2801, E-2802, E-2804)
+		if ( 0 === strpos($encrypted_phone, 'gcm:v1:') ) {
+			$raw_payload = substr($encrypted_phone, 7);
+			$binary      = base64_decode($raw_payload, true);
+			// Doit contenir au moins 12 octets IV + 16 octets TAG + 1 octet ciphertext
+			if ( false === $binary || strlen($binary) < 29 ) {
+				return '';
+			}
+			$iv         = substr($binary, 0, 12);
+			$tag        = substr($binary, 12, 16);
+			$ciphertext = substr($binary, 28);
+
+			$decrypted = openssl_decrypt($ciphertext, 'aes-256-gcm', $key, OPENSSL_RAW_DATA, $iv, $tag);
+			// Pas de repli silencieux : si GCM échoue (altération, faux tag), rejet immédiat
+			if ( false === $decrypted ) {
+				return '';
+			}
+			return (string) $decrypted;
+		}
+
+		// Repli de lecture rétrocompatible CBC Legacy (E-2802)
 		$payload = base64_decode($encrypted_phone, true);
 		if ( false === $payload || strlen($payload) <= 16 ) {
 			return '';
 		}
-		$key       = hash('sha256', wp_salt('secure_auth'), true);
-		$decrypted = openssl_decrypt(substr($payload, 16), 'AES-256-CBC', $key, OPENSSL_RAW_DATA, substr($payload, 0, 16));
+		$iv         = substr($payload, 0, 16);
+		$ciphertext = substr($payload, 16);
+		$decrypted  = openssl_decrypt($ciphertext, 'AES-256-CBC', $key, OPENSSL_RAW_DATA, $iv);
 		if ( false === $decrypted ) {
 			return '';
 		}

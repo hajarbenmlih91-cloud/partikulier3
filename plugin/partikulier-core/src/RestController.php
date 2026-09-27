@@ -20,6 +20,7 @@ final class RestController
 	private ?FavoriteService $favorites    = null;
 	private ?RateLimiter $rateLimiter      = null;
 	private ?HealthCheck $health           = null;
+	private ?ListingsLiteService $liteService = null;
 
 	public function __construct()
 	{
@@ -58,6 +59,11 @@ final class RestController
 		return $this->leads ??= new LeadService();
 	}
 
+	private function liteService(): ListingsLiteService
+	{
+		return $this->liteService ??= new ListingsLiteService();
+	}
+
 	private function favorites(): FavoriteService
 	{
 		return $this->favorites ??= new FavoriteService();
@@ -85,6 +91,13 @@ final class RestController
 			'callback'            => [$this, 'listings'],
 			'permission_callback' => [$this, 'guardPublic'],
 			'args'                => $this->listArgs(),
+		], 'plugin');
+
+		RouteRegistry::declare('/listings-lite', [
+			'methods'             => 'GET',
+			'callback'            => [$this, 'listingsLite'],
+			'permission_callback' => [$this, 'guardPublic'],
+			'args'                => $this->listLiteArgs(),
 		], 'plugin');
 
 		RouteRegistry::declare('/listings/(?P<id>[0-9]+)', [
@@ -199,23 +212,47 @@ final class RestController
 		return new WP_REST_Response(['data' => $this->search()->search($request->get_params()), 'page' => (int) $request['page']], 200);
 	}
 
+	public function listingsLite( WP_REST_Request $request ): WP_REST_Response
+	{
+		return $this->liteService()->handle($request);
+	}
+
+	private function listLiteArgs(): array
+	{
+		return [
+			'city'       => ['required' => false, 'type' => 'string'],
+			'type'       => ['required' => false, 'type' => 'string'],
+			'offer_type' => ['required' => false, 'type' => 'string'],
+			'price_min'  => ['required' => false, 'type' => 'number', 'minimum' => 0],
+			'price_max'  => ['required' => false, 'type' => 'number', 'minimum' => 0],
+			'page'       => ['required' => false, 'default' => 1, 'type' => 'integer', 'minimum' => 1],
+			'per_page'   => ['required' => false, 'default' => 12, 'type' => 'integer', 'minimum' => 1, 'maximum' => 50],
+			'locale'     => ['required' => false, 'default' => 'fr', 'type' => 'string'],
+		];
+	}
+
 	public function listing( WP_REST_Request $request ): WP_REST_Response|WP_Error
 	{
 		$result = $this->repository()->find( (int) $request['id']);
 		if ( is_wp_error($result) ) {
 			return $result;
 		}
+		$external_id = (string) ( $result['external_id'] ?? '' );
+		$post_id = str_starts_with($external_id, 'estatik:') ? (int) substr($external_id, strlen('estatik:')) : (int) $request['id'];
+		$result['available'] = $post_id > 0 && \Partikulier\Core\ListingRepository::is_available($post_id);
 
 		/*
-		 * SE-044 / DP-9 (Q3, v1.1 §13.4) : champ « available » — booléen calculé
-		 * en lecture seule par le prédicat central du dépôt. Il ne remplace ni
-		 * les autorisations ni le filtrage de collection, et ne crée aucune
-		 * interprétation « absente de la liste donc supprimée » : la fiche reste
-		 * servie (DP-9), seule la disponibilité est distinguée.
+		 * SE-048-R (E-4804, 12e fonction) : champ « premium » — booléen lite,
+		 * même facture que « available » ci-dessus. Il n'existe QUE si le
+		 * drapeau d'exploitation est allumé (E-4807 : drapeau éteint = aucune
+		 * trace publique, pas même un champ à false) et il applique le prédicat
+		 * unique du domaine (drapeau ∧ droit actif ∧ annonce disponible) : une
+		 * annonce désactivée ne peut donc jamais s'annoncer premium via l'API.
 		 */
-		$external_id = (string) ($result['external_id'] ?? '');
-		$post_id = str_starts_with($external_id, 'estatik:') ? (int) substr($external_id, strlen('estatik:')) : 0;
-		$result['available'] = $post_id > 0 && \Partikulier\Core\ListingRepository::is_available($post_id);
+		if ( \Partikulier\Core\Domain\Premium\PremiumService::is_public_enabled() ) {
+			$result['premium'] = $post_id > 0
+				&& \Partikulier\Core\Domain\Premium\PremiumService::is_publicly_visible($post_id);
+		}
 
 		return new WP_REST_Response(['data' => $result], 200);
 	}

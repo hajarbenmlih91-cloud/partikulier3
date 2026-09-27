@@ -55,6 +55,16 @@ while ( have_posts() ) :
 						<span class="pk-single-role"><?php echo esc_html( $pk_role_label ); ?></span>
 					</p>
 					<h1 class="pk-single-title"><?php the_title(); ?></h1>
+						<?php
+						// SE-048-R (E-4804, 8e fonction) : badge premium de la FICHE. Le prédicat
+						// unique inclut la disponibilité : une fiche d'annonce désactivée ne porte
+						// jamais de badge, même premium actif (invariant E-4807 3).
+						if ( class_exists( 'Partikulier_Premium' ) && Partikulier_Premium::is_publicly_visible( (int) get_the_ID() ) ) :
+							?>
+							<p class="pk-single-badge-premium"><span class="pk-badge-premium"><?php echo esc_html( Partikulier_Premium::badge_label() ); ?></span></p>
+							<?php
+						endif;
+						?>
 					<p class="pk-single-location">
 						<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>
 						<?php echo esc_html( Partikulier_Geo::location_string( get_the_ID() ) ); ?>
@@ -154,27 +164,53 @@ while ( have_posts() ) :
 								$bath  = class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_polylang_string( $label, $label, 'partikulier' ) : esc_html__( $label, 'partikulier' );
 							}
 								$terrace_label = 'Oui' === $terrace ? Partikulier_Localization::translate_polylang_string( 'Oui', 'Oui', 'partikulier' ) . ( $terrace_surface ? ' · ' . $terrace_surface . ' ' . Partikulier_Localization::translate_polylang_string( 'm²', 'm²', 'partikulier' ) : '' ) : Partikulier_Localization::translate_polylang_string( 'Non', 'Non', 'partikulier' );
-							$garage            = get_post_meta( get_the_ID(), 'es_garages', true );
-							$floor             = get_post_meta( get_the_ID(), 'es_floor', true );
-							$year              = get_post_meta( get_the_ID(), 'es_year_built', true );
-							$energy            = get_post_meta( get_the_ID(), 'es_energy_class', true );
+							$garage            = get_post_meta( get_the_ID(), 'es_garages', true ) ?: get_post_meta( get_the_ID(), 'es_property_garages', true );
+							if ( '' === (string) $garage && taxonomy_exists( 'es_parking' ) ) {
+								$pk_parking_terms = get_the_terms( get_the_ID(), 'es_parking' );
+								if ( $pk_parking_terms && ! is_wp_error( $pk_parking_terms ) ) {
+									$garage = count( $pk_parking_terms );
+								}
+							}
+							// Clés réelles du plugin Estatik (préfixe « es_property_ »), avec repli sur les anciennes clés : faute de quoi ces champs restent vides.
+							$floor             = get_post_meta( get_the_ID(), 'es_property_floor_level', true ) ?: get_post_meta( get_the_ID(), 'es_floor', true );
+							$year              = get_post_meta( get_the_ID(), 'es_property_year_built', true ) ?: get_post_meta( get_the_ID(), 'es_year_built', true );
+							$renovated         = get_post_meta( get_the_ID(), 'es_property_year_remodeled', true );
+							$energy            = get_post_meta( get_the_ID(), 'es_property_epc_class', true ) ?: get_post_meta( get_the_ID(), 'es_energy_class', true );
+							$ges               = get_post_meta( get_the_ID(), 'es_property_ges_class', true );
+							$rooms             = get_post_meta( get_the_ID(), 'es_property_total_rooms', true );
+							$half_baths        = get_post_meta( get_the_ID(), 'es_property_half_baths', true );
+							$lot_size          = get_post_meta( get_the_ID(), 'es_property_lot_size', true );
+							$charges           = get_post_meta( get_the_ID(), '_pk_charges', true );
+							$availability      = get_post_meta( get_the_ID(), '_pk_availability', true );
+							if ( $half_baths ) {
+								$half_baths = ( 1 === (int) $half_baths ) ? Partikulier_Localization::translate_polylang_string( '1 demi-salle de bains', '1 demi-salle de bains', 'partikulier' ) : sprintf( Partikulier_Localization::translate_polylang_string( '%d demi-salles de bains', '%d demi-salles de bains', 'partikulier' ), (int) $half_baths );
+							}
 							$fields            = array(
-							'es_size'                      => array( $surface, Partikulier_Localization::translate_polylang_string( 'Surface', 'Surface', 'partikulier' ), Partikulier_Localization::translate_polylang_string( 'm²', 'm²', 'partikulier' ) ),
-										'es_bedrooms'      => array( $bedrooms, Partikulier_Localization::translate_polylang_string( 'Chambres', 'Chambres', 'partikulier' ), '' ),
-										'_pk_living_rooms' => array( $living_rooms, Partikulier_Localization::translate_polylang_string( 'Salons', 'Salons', 'partikulier' ), '' ),
-										'es_bathrooms'     => array( $bath, Partikulier_Localization::translate_polylang_string( 'Salles de bains', 'Salles de bains', 'partikulier' ), '' ),
-										'_pk_terrace'      => array( $terrace_label, Partikulier_Localization::translate_polylang_string( 'Terrasse', 'Terrasse', 'partikulier' ), '' ),
-									'es_garages'           => array( $garage, Partikulier_Localization::translate_polylang_string( 'Parkings', 'Parkings', 'partikulier' ), '' ),
-									'es_floor'             => array( $floor, Partikulier_Localization::translate_polylang_string( 'Étage', 'Étage', 'partikulier' ), '' ),
-									'es_year_built'        => array( $year, Partikulier_Localization::translate_polylang_string( 'Année de construction', 'Année de construction', 'partikulier' ), '' ),
-									'es_energy_class'      => array( $energy, Partikulier_Localization::translate_polylang_string( 'Classe énergie', 'Classe énergie', 'partikulier' ), '' ),
+								// Même ordre que la maquette : surface, étage, énergie, GES, charges, disponibilité, puis le détail des pièces.
+								'es_size'                    => array( $surface, Partikulier_Localization::translate_polylang_string( 'Surface', 'Surface', 'partikulier' ), Partikulier_Localization::translate_polylang_string( 'm²', 'm²', 'partikulier' ), '' ),
+								'es_property_floor_level'    => array( $floor, Partikulier_Localization::translate_polylang_string( 'Étage', 'Étage', 'partikulier' ), '', '' ),
+								'es_property_epc_class'      => array( $energy, Partikulier_Localization::translate_polylang_string( 'Classe énergie', 'Classe énergie', 'partikulier' ), '', 'pk-feature--lettre' ),
+								'es_property_ges_class'      => array( $ges, Partikulier_Localization::translate_polylang_string( 'GES', 'GES', 'partikulier' ), '', 'pk-feature--lettre' ),
+								'_pk_charges'                => array( $charges, Partikulier_Localization::translate_polylang_string( 'Charges', 'Charges', 'partikulier' ), Partikulier_Localization::translate_polylang_string( 'MAD / mois', 'MAD / mois', 'partikulier' ), '' ),
+								'_pk_availability'           => array( $availability, Partikulier_Localization::translate_polylang_string( 'Disponibilité', 'Disponibilité', 'partikulier' ), '', '' ),
+								'es_bedrooms'                => array( $bedrooms, Partikulier_Localization::translate_polylang_string( 'Chambres', 'Chambres', 'partikulier' ), '', '' ),
+								'_pk_living_rooms'           => array( $living_rooms, Partikulier_Localization::translate_polylang_string( 'Salons', 'Salons', 'partikulier' ), '', '' ),
+								'es_bathrooms'               => array( $bath, Partikulier_Localization::translate_polylang_string( 'Salles de bains', 'Salles de bains', 'partikulier' ), '', '' ),
+								'es_property_half_baths'     => array( $half_baths, Partikulier_Localization::translate_polylang_string( 'Demi-salles de bains', 'Demi-salles de bains', 'partikulier' ), '', '' ),
+								'_pk_terrace'                => array( $terrace_label, Partikulier_Localization::translate_polylang_string( 'Terrasse', 'Terrasse', 'partikulier' ), '', '' ),
+								'es_property_total_rooms'    => array( $rooms, Partikulier_Localization::translate_polylang_string( 'Pièces', 'Pièces', 'partikulier' ), '', '' ),
+								'es_property_lot_size'       => array( $lot_size, Partikulier_Localization::translate_polylang_string( 'Terrain', 'Terrain', 'partikulier' ), Partikulier_Localization::translate_polylang_string( 'm²', 'm²', 'partikulier' ), '' ),
+								'es_property_year_built'     => array( $year, Partikulier_Localization::translate_polylang_string( 'Année de construction', 'Année de construction', 'partikulier' ), '', '', 'brut' ),
+								'es_property_year_remodeled' => array( $renovated, Partikulier_Localization::translate_polylang_string( 'Rénovation', 'Rénovation', 'partikulier' ), '', '', 'brut' ),
+								'es_garages'                 => array( $garage, Partikulier_Localization::translate_polylang_string( 'Parkings', 'Parkings', 'partikulier' ), '', '' ),
 							);
 							foreach ( $fields as $key => $f ) {
 								if ( '' !== $f[0] && null !== $f[0] ) {
 									printf(
-										'<div class="pk-feature"><dt>%s</dt><dd>%s %s</dd></div>',
+									'<div class="pk-feature %s"><dt>%s</dt><dd>%s %s</dd></div>',
+										esc_attr( isset( $f[3] ) ? (string) $f[3] : '' ),
 										esc_html( $f[1] ),
-											esc_html( is_numeric( $f[0] ) ? number_format_i18n( (string) $f[0] ) : (string) $f[0] ),
+											esc_html( ( isset( $f[4] ) && 'brut' === $f[4] ) ? (string) $f[0] : ( is_numeric( $f[0] ) ? number_format_i18n( (string) $f[0] ) : (string) $f[0] ) ),
 										esc_html( $f[2] )
 									);
 								}
@@ -247,7 +283,9 @@ while ( have_posts() ) :
 		$pk_city_name = ( $pk_term_obj && ! is_wp_error( $pk_term_obj ) ) ? $pk_term_obj->name : '';
 	}
 	$pk_related = array();
-	if ( $pk_city_terms && ! is_wp_error( $pk_city_terms ) ) {
+	if ( class_exists( 'Partikulier_Listing_Closure' ) ) {
+		$pk_related = Partikulier_Listing_Closure::similar_listings( get_the_ID(), 3 );
+	} elseif ( $pk_city_terms && ! is_wp_error( $pk_city_terms ) ) {
 		$pk_related = get_posts( array(
 			'post_type'      => PARTIKULIER_ESTATIK_POST_TYPE,
 			'post_status'    => 'publish',
@@ -268,15 +306,12 @@ while ( have_posts() ) :
 			<div class="pk-container">
 				<div class="pk-editorial-heading pk-editorial-heading--row">
 					<div>
-<p class="pk-editorial-kicker"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Dans la même ville', 'Dans la même ville', 'partikulier' ) ); ?></p>
-							<h2><?php
-								/* translators: %s: nom de la ville */
-								printf( esc_html( Partikulier_Localization::translate_polylang_string( 'Voir aussi à %s', 'Voir aussi à %s', 'partikulier' ) ), esc_html( $pk_city_name ) );
-							?></h2>
+						<p class="pk-editorial-kicker"><?php echo esc_html( $pk_city_name ? Partikulier_Localization::translate_polylang_string( 'Dans la même ville', 'Dans la même ville', 'partikulier' ) : Partikulier_Localization::translate_polylang_string( 'Annonces similaires', 'Annonces similaires', 'partikulier' ) ); ?></p>
+						<h2><?php echo esc_html( $pk_city_name ? sprintf( Partikulier_Localization::translate_polylang_string( 'Voir aussi à %s', 'Voir aussi à %s', 'partikulier' ), $pk_city_name ) : Partikulier_Localization::translate_polylang_string( 'D’autres biens qui pourraient vous intéresser', 'D’autres biens qui pourraient vous intéresser', 'partikulier' ) ); ?></h2>
 					</div>
-<a class="pk-editorial-link" href="<?php echo esc_url( Partikulier_Geo::city_link( get_the_ID() ) ?: pk_properties_archive_url() ); ?>">
-							<?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Tout voir', 'Tout voir', 'partikulier' ) ); ?> <span aria-hidden="true">→</span>
-						</a>
+					<a class="pk-editorial-link" href="<?php echo esc_url( Partikulier_Geo::city_link( get_the_ID() ) ?: pk_properties_archive_url() ); ?>">
+						<?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Tout voir', 'Tout voir', 'partikulier' ) ); ?> <span aria-hidden="true">&rarr;</span>
+					</a>
 				</div>
 				<div class="pk-editorial-cards">
 					<?php foreach ( $pk_related as $property ) { require PARTIKULIER_DIR . '/templates/parts/card-property.php'; } wp_reset_postdata(); ?>

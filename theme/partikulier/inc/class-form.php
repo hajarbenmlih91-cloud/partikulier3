@@ -110,6 +110,99 @@ class Partikulier_Form {
 	}
 
 		/**
+	 * Garde serveur du lot SE-042c : fait respecter les réglages de l'écran
+	 * « Formulaire de dépôt » (un champ masqué est refusé, un champ obligatoire est exigé).
+	 *
+	 * Le navigateur masque les champs ; cette vérification-ci est la seule qui compte,
+	 * car un envoi direct (curl, script) ne passe pas par l'affichage.
+	 *
+	 * @param array $data $_POST nettoyé.
+	 * @return true|WP_Error
+	 */
+	public static function verify_deposit_fields( $data ) {
+		if ( ! class_exists( 'Partikulier_Deposit_Form' ) ) {
+			return true;
+		}
+
+		$configure = Partikulier_Deposit_Form::is_configured();
+		$type_id   = isset( $data['pk_type'] ) ? absint( $data['pk_type'] ) : 0;
+		$slug      = '';
+		if ( $type_id && taxonomy_exists( 'es_type' ) ) {
+			$terme = get_term( $type_id, 'es_type' );
+			if ( $terme && ! is_wp_error( $terme ) ) {
+				$slug = $terme->slug;
+			}
+		}
+		if ( '' === $slug && isset( $data['pk_type_slug'] ) ) {
+			$slug = sanitize_title( wp_unslash( $data['pk_type_slug'] ) );
+		}
+
+		// Sans type de bien reconnu, les réglages ne veulent rien dire. On refuse seulement
+		// si un réglage existe : sinon le formulaire d'origine tranche, exactement comme avant.
+		$connus = Partikulier_Deposit_Form::types();
+		if ( ! isset( $connus[ $slug ] ) ) {
+			if ( ! $configure ) {
+				return true;
+			}
+			return new WP_Error(
+				'type',
+				__( 'Choisissez un type de bien valide.', 'partikulier' ),
+				array( 'field' => 'pk_type' )
+			);
+		}
+
+		foreach ( Partikulier_Deposit_Form::fields() as $champ => $info ) {
+			$etat = Partikulier_Deposit_Form::state( $champ, $slug );
+
+			if ( Partikulier_Deposit_Form::INHERITED === $etat ) {
+				if ( Partikulier_Deposit_Form::HIDDEN === $info['actuel'] ) {
+					// Champ absent du formulaire d'aujourd'hui (les 8 ajouts) : tant que personne
+					// ne l'a ouvert pour ce type, une valeur envoyée à la main est refusée.
+					$etat = Partikulier_Deposit_Form::HIDDEN;
+				} else {
+					continue; // Champ actuel non réglé : la validation d'origine s'applique.
+				}
+			}
+
+			$valeur = isset( $data[ $champ ] ) ? $data[ $champ ] : '';
+			$valeur = is_array( $valeur ) ? $valeur : trim( (string) $valeur );
+			$rempli = is_array( $valeur ) ? ! empty( $valeur ) : '' !== $valeur;
+
+			if ( Partikulier_Deposit_Form::HIDDEN === $etat ) {
+				if ( $rempli ) {
+					return new WP_Error(
+						'field_not_allowed',
+						sprintf(
+							/* translators: %s: nom du champ */
+							__( 'Le champ « %s » n’est pas demandé pour ce type de bien.', 'partikulier' ),
+							$info['label']
+						),
+						array( 'field' => $champ )
+					);
+				}
+				continue;
+			}
+
+			// « 0 » reste une valeur légitime (studio, pas de terrasse) : seuls les vrais vides
+			// comptent, et les champs conditionnels de l'original gardent leur règle propre.
+			if ( Partikulier_Deposit_Form::REQUIRED === $etat && ! $rempli
+				&& ! in_array( $champ, array( 'pk_terrace', 'pk_terrace_surface' ), true ) ) {
+				return new WP_Error(
+					'field_required',
+					sprintf(
+						/* translators: %s: nom du champ */
+						__( 'Le champ « %s » est obligatoire pour ce type de bien.', 'partikulier' ),
+						$info['label']
+					),
+					array( 'field' => $champ )
+				);
+			}
+		}
+
+		return true;
+	}
+
+	/**
 		 * Validation + creation de l'annonce.
 		 *
 		 * @param array      $data   $_POST
@@ -133,9 +226,24 @@ class Partikulier_Form {
 					$terrace_surface = 'Oui' === $terrace && isset( $data['pk_terrace_surface'] ) ? absint( $data['pk_terrace_surface'] ) : 0;
 					$vis_a_vis       = isset( $data['pk_vis_a_vis'] ) && 'Oui' === $data['pk_vis_a_vis'] ? 'Oui' : 'Non';
 					$sunshine        = isset( $data['pk_sunshine'] ) ? sanitize_text_field( wp_unslash( $data['pk_sunshine'] ) ) : '';
+						// Champs ajoutés par le lot SE-042c (réglables depuis l'écran « Formulaire de dépôt »).
+						$charges       = isset( $data['pk_charges'] ) ? absint( $data['pk_charges'] ) : 0;
+						$availability  = isset( $data['pk_availability'] ) ? sanitize_text_field( wp_unslash( $data['pk_availability'] ) ) : '';
+						$year_built    = isset( $data['pk_year_built'] ) ? absint( $data['pk_year_built'] ) : 0;
+						$energy_class  = isset( $data['pk_energy_class'] ) ? strtoupper( sanitize_text_field( wp_unslash( $data['pk_energy_class'] ) ) ) : '';
+						$ges_class     = isset( $data['pk_ges_class'] ) ? strtoupper( sanitize_text_field( wp_unslash( $data['pk_ges_class'] ) ) ) : '';
+						$lot_size      = isset( $data['pk_lot_size'] ) ? absint( $data['pk_lot_size'] ) : 0;
+						$half_baths    = isset( $data['pk_half_baths'] ) ? absint( $data['pk_half_baths'] ) : 0;
+						$total_rooms   = isset( $data['pk_total_rooms'] ) ? absint( $data['pk_total_rooms'] ) : 0;
 					$type            = isset( $data['pk_type'] ) ? absint( $data['pk_type'] ) : 0;
 			$action                  = isset( $data['pk_listing_action'] ) ? sanitize_text_field( wp_unslash( $data['pk_listing_action'] ) ) : '';
 			$city                    = isset( $data['pk_city'] ) ? absint( $data['pk_city'] ) : 0;
+
+			// Lot SE-042c : les réglages « Formulaire de dépôt » s'appliquent ici, côté serveur.
+			$pk_verif = self::verify_deposit_fields( $data );
+			if ( is_wp_error( $pk_verif ) ) {
+				return $pk_verif;
+			}
 
 			// Parcours en 3 etapes : la localisation arrive en clair (ville + quartier),
 			// et la transaction sous forme de mode « vendre » / « louer ».
@@ -202,12 +310,12 @@ class Partikulier_Form {
 		if ( ! $surface || $surface > 100000 ) {
 				return new WP_Error( 'surface', __( 'Indiquez une superficie valide.', 'partikulier' ) );
 		}
-		if ( ! $type || ! term_exists( $type, PARTIKULIER_ESTATIK_TYPE_TAXONOMY ) ) {
+		if ( ! $type || ! Partikulier_Morocco_Places::term_exists_any_language( $type, PARTIKULIER_ESTATIK_TYPE_TAXONOMY ) ) {
 				return new WP_Error( 'type', __( 'Choisissez un type de bien valide.', 'partikulier' ) );
 		}
 					// Deux cas valides : un lieu existant choisi dans la liste, OU une
 					// proposition de nouveau lieu qui passera par la moderation.
-		if ( ! $has_proposal && ( ! $city || ! term_exists( $city, PARTIKULIER_ESTATIK_LOCATION_TAXONOMY ) ) ) {
+		if ( ! $has_proposal && ( ! $city || ! Partikulier_Morocco_Places::term_exists_any_language( $city, PARTIKULIER_ESTATIK_LOCATION_TAXONOMY ) ) ) {
 				return new WP_Error( 'city', __( 'Choisissez une ville ou un quartier dans la liste proposée.', 'partikulier' ) );
 		}
 		if ( $has_proposal && '' === $proposed_city && ! $city ) {
@@ -366,6 +474,15 @@ class Partikulier_Form {
 							update_post_meta( $post_id, '_pk_vis_a_vis', $vis_a_vis );
 		if ( $sunshine ) {
 			update_post_meta( $post_id, '_pk_sunshine', $sunshine );
+			// Lot SE-042c : mêmes clés que celles lues par la fiche d'annonce.
+			if ( $charges ) { update_post_meta( $post_id, '_pk_charges', $charges ); }
+			if ( '' !== $availability ) { update_post_meta( $post_id, '_pk_availability', $availability ); }
+			if ( $year_built ) { update_post_meta( $post_id, 'es_property_year_built', $year_built ); }
+			if ( '' !== $energy_class ) { update_post_meta( $post_id, 'es_property_epc_class', $energy_class ); }
+			if ( '' !== $ges_class ) { update_post_meta( $post_id, 'es_property_ges_class', $ges_class ); }
+			if ( $lot_size ) { update_post_meta( $post_id, 'es_property_lot_size', $lot_size ); }
+			if ( $half_baths ) { update_post_meta( $post_id, 'es_property_half_baths', $half_baths ); }
+			if ( $total_rooms ) { update_post_meta( $post_id, 'es_property_total_rooms', $total_rooms ); }
 		}
 		if ( '' !== $floor ) {
 			update_post_meta( $post_id, '_pk_floor', $floor );
@@ -374,18 +491,20 @@ class Partikulier_Form {
 							update_post_meta( $post_id, '_pk_elevator', $elevator );
 
 							// --- Taxonomies ---
-		if ( $type ) {
+		Partikulier_Morocco_Places::with_all_languages( static function () use ( $post_id, $type, $action, $city ) {
+			if ( $type ) {
 				wp_set_object_terms( $post_id, (int) $type, PARTIKULIER_ESTATIK_TYPE_TAXONOMY );
-		}
-		if ( $action ) {
-				$term = get_term_by( 'slug', $action, PARTIKULIER_ESTATIK_STATUS_TAXONOMY );
-			if ( $term ) {
-							wp_set_object_terms( $post_id, (int) $term->term_id, PARTIKULIER_ESTATIK_STATUS_TAXONOMY );
 			}
-		}
-		if ( $city ) {
+			if ( $action ) {
+				$term = get_term_by( 'slug', $action, PARTIKULIER_ESTATIK_STATUS_TAXONOMY );
+				if ( $term ) {
+					wp_set_object_terms( $post_id, (int) $term->term_id, PARTIKULIER_ESTATIK_STATUS_TAXONOMY );
+				}
+			}
+			if ( $city ) {
 				wp_set_object_terms( $post_id, (int) $city, PARTIKULIER_ESTATIK_LOCATION_TAXONOMY );
-		}
+			}
+		} );
 
 									// La langue source est celle du formulaire courant, jamais une valeur FR forcée.
 							$requested_lang = isset( $data['pk_language'] ) ? sanitize_key( wp_unslash( $data['pk_language'] ) ) : '';
@@ -595,6 +714,7 @@ class Partikulier_Form {
 			$terms = get_terms( array(
 					'taxonomy'   => $taxonomy,
 					'hide_empty' => false,
+					'lang'       => 'all',
 			) );
 
 		if ( ! is_wp_error( $terms ) ) {
@@ -695,11 +815,11 @@ class Partikulier_Form {
 					);
 			wp_mail( $email, $subject, $message );
 	}
-	
+
 	/* ------------------------------------------------------------------ */
 	/* SE-034 : idempotence du canal public (E-3401→E-3403)                */
 	/* ------------------------------------------------------------------ */
-	
+
 	/**
 	 * Valeur du champ caché — 32 hex, unique à chaque affichage du formulaire.
 	 */

@@ -139,7 +139,8 @@ class Partikulier_Listing_Approval {
 					<tbody>
 					<?php foreach ( $pending as $post ) :
 						$name    = get_post_meta( $post->ID, '_pk_owner_name', true );
-						$phone   = get_post_meta( $post->ID, '_pk_owner_phone', true );
+						$raw_ph  = get_post_meta( $post->ID, '_pk_owner_phone', true );
+						$phone   = class_exists( 'Partikulier_Crypto' ) ? Partikulier_Crypto::read_phone( $raw_ph ) : $raw_ph;
 						$code    = get_post_meta( $post->ID, '_pk_whatsapp_verification_code', true );
 						$blocked = class_exists( 'Partikulier_Place_Requests' ) && Partikulier_Place_Requests::is_blocked( $post->ID );
 						?>
@@ -193,7 +194,7 @@ class Partikulier_Listing_Approval {
 							<td><a href="<?php echo esc_url( get_permalink( $post ) ); ?>"><?php echo esc_html( $post->post_title ); ?></a></td>
 							<td>
 								<?php echo esc_html( get_post_meta( $post->ID, '_pk_owner_name', true ) ); ?><br>
-								<span style="color:#646970;font-size:12px"><?php echo esc_html( get_post_meta( $post->ID, '_pk_owner_phone', true ) ); ?></span>
+								<span style="color:#646970;font-size:12px"><?php echo esc_html( class_exists( 'Partikulier_Crypto' ) ? Partikulier_Crypto::read_phone( get_post_meta( $post->ID, '_pk_owner_phone', true ) ) : get_post_meta( $post->ID, '_pk_owner_phone', true ) ); ?></span>
 							</td>
 							<td>
 								<a class="button" href="<?php echo esc_url( wp_nonce_url( admin_url( 'admin-post.php?action=' . self::ACTION_RESEND . '&listing=' . $post->ID ), self::ACTION_RESEND . '_' . $post->ID ) ); ?>"
@@ -402,11 +403,13 @@ class Partikulier_Listing_Approval {
 	public static function prepare_credentials( $post_id, $force = false ) {
 		$user = get_user_by( 'id', get_post_field( 'post_author', $post_id ) );
 
+		$resolved_phone = class_exists( 'Partikulier_Crypto' ) ? Partikulier_Crypto::read_phone( get_post_meta( $post_id, '_pk_owner_phone', true ) ) : (string) get_post_meta( $post_id, '_pk_owner_phone', true );
+
 		if ( ! $user ) {
 			return array(
 				'login'    => '',
 				'email'    => '',
-				'phone'    => (string) get_post_meta( $post_id, '_pk_owner_phone', true ),
+				'phone'    => $resolved_phone,
 				'password' => '',
 			);
 		}
@@ -422,7 +425,7 @@ class Partikulier_Listing_Approval {
 				'login'        => $user->user_login,
 				'email'        => $user->user_email,
 				'display_name' => $user->display_name,
-				'phone'        => (string) get_post_meta( $post_id, '_pk_owner_phone', true ),
+				'phone'        => $resolved_phone,
 				'password'     => '',
 				'reused'       => true,
 				'login_url'    => pk_login_page_url(),
@@ -442,7 +445,7 @@ class Partikulier_Listing_Approval {
 			'login'        => $user->user_login,
 			'email'        => $user->user_email,
 			'display_name' => $user->display_name,
-			'phone'        => (string) get_post_meta( $post_id, '_pk_owner_phone', true ),
+			'phone'        => $resolved_phone,
 			'password'     => $password,
 			'reused'       => false,
 			'login_url'    => pk_login_page_url(),
@@ -663,7 +666,7 @@ class Partikulier_Listing_Approval {
 				'title'        => $post->post_title,
 				'url'          => get_permalink( $post ),
 				'approved_at'  => get_post_meta( $post->ID, '_pk_approved_at', true ),
-				'owner_phone'  => get_post_meta( $post->ID, '_pk_owner_phone', true ),
+				'owner_phone'  => class_exists( 'Partikulier_Crypto' ) ? Partikulier_Crypto::read_phone( get_post_meta( $post->ID, '_pk_owner_phone', true ) ) : get_post_meta( $post->ID, '_pk_owner_phone', true ),
 				'owner_name'   => get_post_meta( $post->ID, '_pk_owner_name', true ),
 				'webhook_sent' => (bool) get_post_meta( $post->ID, '_pk_n8n_sent', true ),
 			);

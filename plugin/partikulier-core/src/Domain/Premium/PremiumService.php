@@ -26,6 +26,22 @@ final class PremiumService
 	public const META_STATUS           = '_pk_premium_status';
 	public const META_STARTS_AT        = '_pk_premium_starts_at';
 	public const META_ENDS_AT          = '_pk_premium_ends_at';
+	/**
+	 * SE-048-R (E-4809) : transition d'état premium rendue publique. Le thème
+	 * s'y accroche pour purger ses caches de listes ; aucun autre couplage
+	 * n'est introduit (le plugin ne connaît ni le thème ni son cache).
+	 */
+	public const ACTION_STATE_CHANGED = 'pk_premium_state_changed';
+
+	/**
+	 * SE-048-R (E-4809) : plus prochaine échéance premium active (UTC MySQL,
+	 * chaîne vide si aucune). Le cache de pages la lit AVANT de servir une
+	 * copie : une page de liste mise en cache ne peut donc pas trier
+	 * « premium-first » un premium échu au-delà de cette échéance — la
+	 * fenêtre de l'expiration paresseuse est bornée à zéro, pas au TTL.
+	 */
+	public const OPTION_NEXT_END = 'pk_premium_next_end';
+
 	public const STATUS_ACTIVE         = 'active';
 	public const STATUS_EXPIRED        = 'expired';
 	public const STATUS_REVOKED        = 'revoked';
@@ -43,6 +59,109 @@ final class PremiumService
 	public static function is_public_enabled(): bool
 	{
 		return '1' === (string) get_option(self::OPTION_PUBLIC_ENABLED, '0');
+	}
+
+	/**
+	 * SE-048-R (E-4804, E-4807) : LE prédicat unique de visibilité premium
+	 * publique. Trois conditions, dans cet ordre — le drapeau d'exploitation,
+	 * le droit premium du bien, SA DISPONIBILITÉ :
+	 *   1. drapeau `pk_premium_public_enabled` = '1' (action d'exploitation) ;
+	 *   2. attribution active et non échue (expiration paresseuse comprise) ;
+	 *   3. annonce PUBLIÉE et de statut métier disponible (prédicat central
+	 *      dp-9, `ListingRepository::is_available`) — une annonce désactivée
+	 *      ne peut donc jamais porter un badge ni passer en tête de liste,
+	 *      même avec un premium actif (invariants E-4807 1, 2 et 3).
+	 */
+	public static function is_publicly_visible( int $property_id ): bool
+	{
+		$property_id = absint($property_id);
+		if ( ! $property_id || ! self::is_public_enabled() ) {
+			return false;
+		}
+		if ( ! self::is_active($property_id) ) {
+			return false;
+		}
+		return self::is_available($property_id);
+	}
+
+	/**
+	 * Disponibilité au sens du prédicat central dp-9. Délègue au dépôt du
+	 * plugin quand il est chargé ; le repli reproduit strictement le même
+	 * verdict (publié + statut métier disponible) pour un chargement partiel.
+	 */
+	public static function is_available( int $property_id ): bool
+	{
+		$property_id = absint($property_id);
+		if ( ! $property_id ) {
+			return false;
+		}
+		if ( class_exists('\\Partikulier\\Core\\ListingRepository') ) {
+			return (bool) \Partikulier\Core\ListingRepository::is_available($property_id);
+		}
+		$post = get_post($property_id);
+		if ( ! $post instanceof \WP_Post || self::POST_TYPE !== $post->post_type ) {
+			return false;
+		}
+		return 'publish' === $post->post_status
+			&& in_array((string) get_post_meta($property_id, '_pk_status', true), ['', 'actif'], true);
+	}
+
+	/**
+	 * Membres du groupe de traduction de l'annonce (E-4808). Sans Polylang,
+	 * le groupe se réduit à l'annonce elle-même : aucune dépendance nouvelle.
+	 *
+	 * @return array<int,int>
+	 */
+	public static function group_members( int $property_id ): array
+	{
+		$property_id = absint($property_id);
+		if ( ! $property_id ) {
+			return [];
+		}
+		$ids = [$property_id];
+		if ( \function_exists('pll_get_post_translations') ) {
+			foreach ( (array) \pll_get_post_translations($property_id) as $translation_id ) {
+				$ids[] = absint($translation_id);
+			}
+		}
+		/**
+		 * Couture de testabilité (et de déploiement) : un site sans Polylang peut
+		 * déclarer un groupe autrement (multi-site, CPT liés à la main). Le filtre
+		 * n'ajoute QUE des membres — il ne peut pas en retirer.
+		 */
+		$ids = (array) apply_filters('partikulier_premium_group_members', $ids, $property_id);
+		return array_values(array_unique(array_filter(array_map('absint', $ids))));
+	}
+
+	/**
+	 * E-4808 : le droit premium porte sur l'ANNONCE (son groupe de traduction),
+	 * pas sur un post isolé. L'état est donc PROJETÉ sur les membres du groupe —
+	 * une seule vérité, et le tri SQL comme le badge n'ont aucune jointure de
+	 * traduction à faire. La projection est idempotente et ne change jamais le
+	 * verdict rendu par is_publicly_visible : la disponibilité, elle, reste
+	 * propre à chaque post (invariants E-4807).
+	 */
+	private static function project_state( int $property_id, array $meta ): void
+	{
+		foreach ( self::group_members($property_id) as $member_id ) {
+			foreach ( $meta as $key => $value ) {
+				update_post_meta($member_id, $key, $value);
+			}
+		}
+	}
+
+	/**
+	 * Recalcule la prochaine échéance premium active (E-4809). Appelé à chaque
+	 * transition ET à la volée après une purge : la valeur est une simple
+	 * option autoloadée, lue par le cache de pages avant chaque HIT.
+	 */
+	public static function refresh_next_end(): string
+	{
+		global $wpdb;
+		$next = $wpdb->get_var('SELECT MIN(ends_at) FROM ' . self::table_name() . " WHERE status = 'active'");
+		$next = is_string($next) ? trim($next) : '';
+		update_option(self::OPTION_NEXT_END, $next, true);
+		return $next;
 	}
 
 	/**
@@ -101,9 +220,13 @@ final class PremiumService
 		// contrat PREM-002 — le thème 6.17.x lisait juste après son insert).
 		$historyId = (int) $wpdb->insert_id;
 
-		update_post_meta($property_id, self::META_STATUS, self::STATUS_ACTIVE);
-		update_post_meta($property_id, self::META_STARTS_AT, $starts_at);
-		update_post_meta($property_id, self::META_ENDS_AT, $ends_at);
+		// E-4808 : l'état est projeté sur le groupe de traduction (fr/en/ar) —
+		// l'annonce a UN droit premium, quel que soit le post interrogé.
+		self::project_state($property_id, [
+			self::META_STATUS    => self::STATUS_ACTIVE,
+			self::META_STARTS_AT => $starts_at,
+			self::META_ENDS_AT   => $ends_at,
+		]);
 
 		// SE-048-U (E-4802) : l'audit porte l'ANNONCE comme objet (object_id =
 		// property_id) — l'ID de ligne du journal passe en metadata : le
@@ -115,6 +238,12 @@ final class PremiumService
 			'granted_by'  => $granted_by,
 			'ends_at'     => $ends_at,
 		]);
+
+		// SE-048-R (E-4809) : transition annoncée (le thème purge ses caches de
+		// listes) puis recalcul de la prochaine échéance — une copie en cache ne
+		// peut pas survivre à l'échéance premium.
+		do_action(self::ACTION_STATE_CHANGED, $property_id, 'granted');
+		self::refresh_next_end();
 
 		return $historyId;
 	}
@@ -137,10 +266,40 @@ final class PremiumService
 		return true;
 	}
 
+	/**
+	 * SE-048-R (E-4809) : balayage des échéances ATTEINTES. L'expiration reste
+	 * paresseuse (aucun cron) ; cette méthode borne le seul cas que la lecture
+	 * paresseuse ne couvre pas — une page de liste servie depuis un cache, dont
+	 * aucun code ne relit l'annonce. Le balayage est borné (LIMIT) et ne traite
+	 * que des lignes dont l'échéance est déjà passée.
+	 *
+	 * @return int Nombre d'attributions effectivement closes.
+	 */
+	public static function sweep_expired( int $limit = 50 ): int
+	{
+		global $wpdb;
+		$limit = max(1, min(200, $limit));
+		$ids   = $wpdb->get_col($wpdb->prepare(
+			'SELECT property_id FROM ' . self::table_name() . ' WHERE status = %s AND ends_at <= %s LIMIT %d',
+			self::STATUS_ACTIVE,
+			current_time('mysql', true),
+			$limit
+		));
+		$closed = 0;
+		foreach ((array) $ids as $id) {
+			self::expire(absint($id));
+			$closed++;
+		}
+		return $closed;
+	}
+
 	public static function expire( int $property_id ): void
 	{
 		self::close_current($property_id, self::STATUS_EXPIRED, 0, __('Expiration automatique.', 'partikulier-core'));
 		self::audit('premium_expired', 'premium_grant', $property_id, ['lazy' => true]);
+		// E-4809 : l'expiration — même paresseuse — purge les listes en cache.
+		do_action(self::ACTION_STATE_CHANGED, $property_id, 'expired');
+		self::refresh_next_end();
 	}
 
 	/**
@@ -157,6 +316,8 @@ final class PremiumService
 		}
 		self::close_current($property_id, self::STATUS_REVOKED, $revoked_by, $reason);
 		self::audit('premium_revoked', 'premium_grant', $property_id, ['revoked_by' => $revoked_by, 'reason' => sanitize_text_field($reason)]);
+		do_action(self::ACTION_STATE_CHANGED, $property_id, 'revoked');
+		self::refresh_next_end();
 		return true;
 	}
 
@@ -206,7 +367,8 @@ final class PremiumService
 				self::STATUS_ACTIVE
 			)
 		);
-		update_post_meta($property_id, self::META_STATUS, $status);
+		// E-4808 : le retrait/l'expiration vaut aussi pour les variantes i18n.
+		self::project_state($property_id, [self::META_STATUS => $status]);
 	}
 
 	private static function normalize_datetime( string $value ): string

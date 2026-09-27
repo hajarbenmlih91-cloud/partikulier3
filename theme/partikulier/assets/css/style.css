@@ -283,10 +283,11 @@ html[dir="rtl"] .pk-header-actions .pk-header-cta { direction: rtl; unicode-bidi
 		min-width: 0;
 }
 
-.pk-search-bar input { flex: 1; border: 0; outline: none; padding: 0 1rem; font-size: .9rem; background: #fff; height: 100%; min-width: 0; }
+.pk-search-bar input { flex: 1; border: 0; outline: none; padding: 0 1rem; font-size: .9rem; background: #fff; height: 100%; min-width: 0; color: var(--pk-ink) !important; }
 .pk-search-bar .pk-place-autocomplete-wrap { position: relative; flex: 1; min-width: 0; }
-.pk-search-bar .pk-place-input { width: 100%; flex: 1; border: 0; outline: none; padding: 0 1rem; font-size: .9rem; background: #fff; height: 100%; min-width: 0; }
-.pk-search-bar .pk-suggest { position: absolute; inset-inline: 0; top: calc(100% + .35rem); width: min(26rem, 92vw); max-width: none; z-index: 1400; }
+.pk-search-bar .pk-place-input { width: 100%; flex: 1; border: 0; outline: none; padding: 0 1rem; font-size: .9rem; background: #fff; height: 100%; min-width: 0; color: var(--pk-ink) !important; }
+.pk-search-bar input::placeholder, .pk-search-bar .pk-place-input::placeholder { color: var(--pk-muted); }
+.pk-search-bar .pk-suggest { position: absolute; inset-inline: 0; top: calc(100% + .35rem); width: min(26rem, 92vw); max-width: none; z-index: 1400; background: #fff !important; color: var(--pk-ink) !important; }
 
 .pk-header-actions { display: flex; align-items: center; gap: 1.2rem; justify-self: end; }
 .pk-header-icon { position: relative; display: grid; place-items: center; color: var(--pk-ink); }
@@ -452,6 +453,10 @@ html[dir="rtl"] .pk-header-actions .pk-header-cta { direction: rtl; unicode-bidi
 .pk-feature { border: 1px solid var(--pk-line); border-radius: var(--pk-radius); padding: .7rem .9rem; background: var(--pk-card-bg); }
 .pk-feature dt { font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; color: var(--pk-muted); margin: 0 0 .2rem; font-weight: 700; }
 .pk-feature dd { margin: 0; font-weight: 800; color: var(--pk-ink); font-size: .98rem; }
+
+/* Fiche d'une annonce : pastilles « Classe énergie » et « GES », et grille resserrée sur téléphone. */
+.pk-feature--lettre dd { font-size: 1.05rem; letter-spacing: .04em; }
+@media (max-width: 640px) { .pk-features { grid-template-columns: repeat(auto-fill, minmax(122px, 1fr)); gap: .6rem; } }
 .pk-lead { font-size: 1rem; color: var(--pk-ink); font-weight: 500; }
 
 /* Carte contact (sidebar droite) */
@@ -894,18 +899,32 @@ html[dir="rtl"] .pk-card-price {
 		text-transform: uppercase;
 		color: var(--pk-muted);
 }
-.pk-search select {
-		font-size: 12px;
+.pk-search select,
+.pk-search .pk-place-input,
+.pk-search input[type="search"],
+.pk-search input[type="text"],
+.pk-search input {
+		font-size: 13px;
 		border: 0;
 		background: transparent;
 		font-weight: 600;
-		color: var(--pk-ink);
+		color: var(--pk-ink) !important;
 		padding: .25rem 0;
-		cursor: pointer;
 		outline: none;
 		width: 100%;
+		font-family: inherit;
 }
-.pk-search select:focus-visible { color: var(--pk-primary); }
+.pk-search select {
+		cursor: pointer;
+}
+.pk-search select:focus-visible,
+.pk-search input:focus-visible { color: var(--pk-primary) !important; }
+.pk-search .pk-place-input::placeholder,
+.pk-search input::placeholder {
+		color: var(--pk-muted);
+		opacity: 0.85;
+		font-weight: 500;
+}
 .pk-search-action { display: flex; align-items: flex-end; }
 .pk-btn-search:hover { background: var(--pk-primary-dark); }
 @media (max-width: 768px) {
@@ -1107,6 +1126,30 @@ html[dir="rtl"] .pk-card-price {
 /* Collision mesuree au navigateur : .pk-card-badge et .pk-card-actions etaient
 	tous deux en top:12px / right:12px, le bouton favori recouvrant le badge
 	("À vendre" apparaissait tronque en "À VE"). Le badge passe a gauche. */
+/* SE-048-R (E-4804) : badge premium — même gabarit que les badges d'action,
+   couleur d'accent dédiée pour rester lisible sur les visuels d'annonce. */
+.pk-card-badge-premium {
+	top: 12px;
+	right: 12px;
+	left: auto;
+	background: #b8860b;
+	color: #fff;
+}
+.pk-single-badge-premium {
+	margin: .55rem 0 0;
+}
+.pk-badge-premium {
+	display: inline-block;
+	background: #b8860b;
+	color: #fff;
+	font-size: 11px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: .06em;
+	padding: 5px 10px;
+	border-radius: 2px;
+}
+
 .pk-card-badge {
 		position: absolute;
 		top: 12px;
@@ -2024,12 +2067,13 @@ html[dir="rtl"] .pk-card-price {
 		margin: .25rem 0 0;
 		padding: 0;
 		list-style: none;
-		background: #fff;
+		background: #ffffff !important;
 		border: 1px solid var(--pk-line);
 		border-radius: 3px;
 		box-shadow: 0 12px 28px rgba(22, 23, 21, .10);
 		max-height: 17rem;
 		overflow-y: auto;
+		color: var(--pk-ink) !important;
 }
 .pk-suggest-item {
 		display: flex;
@@ -2040,10 +2084,14 @@ html[dir="rtl"] .pk-card-price {
 		font-size: .9rem;
 		cursor: pointer;
 		border-bottom: 1px solid #f2f1ec;
+		color: var(--pk-ink) !important;
+		background: #ffffff !important;
 }
 .pk-suggest-item:last-child { border-bottom: none; }
-.pk-suggest-item:hover, .pk-suggest-item:focus { background: #faf8f4; outline: none; }
-.pk-suggest-meta { font-size: .76rem; color: var(--pk-muted); flex-shrink: 0; }
+.pk-suggest-item:hover, .pk-suggest-item:focus { background: #faf8f4 !important; color: var(--pk-primary) !important; outline: none; }
+.pk-suggest-label { color: var(--pk-ink) !important; font-weight: 600; }
+.pk-suggest-item:hover .pk-suggest-label, .pk-suggest-item:focus .pk-suggest-label { color: var(--pk-primary) !important; }
+.pk-suggest-meta { font-size: .76rem; color: var(--pk-muted) !important; flex-shrink: 0; }
 
 /* --- zone photos --- */
 .pk-dropzone {
@@ -3111,7 +3159,7 @@ html[dir="rtl"] .pk-archive-content .pk-card-price { left: auto; right: 12px; }
 
 /* Autocomplete public des villes/quartiers. */
 .pk-place-autocomplete-wrap { position: relative; }
-.pk-place-input { width: 100%; }
+.pk-place-input { width: 100%; color: var(--pk-ink) !important; }
 .pk-place-suggestions {
 		position: absolute;
 		z-index: 1300;
@@ -3128,16 +3176,48 @@ html[dir="rtl"] .pk-archive-content .pk-card-price { left: auto; right: 12px; }
 		padding: 0;
 		list-style: none;
 		overflow-y: auto;
-		background: #fff;
+		background: #ffffff !important;
 		border: 1px solid var(--pk-line);
+		border-radius: var(--pk-radius);
 		box-shadow: 0 12px 28px rgba(22,23,21,.14);
+		color: var(--pk-ink) !important;
 }
 .pk-place-suggestions[hidden] { display: none; }
-.pk-place-suggestions .pk-suggest-item { min-height: 2.5rem; }
-.pk-place-suggestions .pk-suggest-label { font-weight: 600; }
-.pk-place-suggestions .pk-suggest-meta { color: var(--pk-muted); }
-.pk-search .pk-place-input { min-width: 0; }
-.pk-filter-city-form .pk-place-input { border-radius: 0; }
+.pk-place-suggestions .pk-suggest-item {
+		min-height: 2.5rem;
+		color: var(--pk-ink) !important;
+		background: #ffffff !important;
+		padding: .65rem .95rem;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: .75rem;
+		border-bottom: 1px solid #f2f1ec;
+		cursor: pointer;
+}
+.pk-place-suggestions .pk-suggest-item:last-child { border-bottom: none; }
+.pk-place-suggestions .pk-suggest-item:hover,
+.pk-place-suggestions .pk-suggest-item:focus {
+		background: #f5f4ef !important;
+		color: var(--pk-primary) !important;
+		outline: none;
+}
+.pk-place-suggestions .pk-suggest-label {
+		font-weight: 600;
+		color: var(--pk-ink) !important;
+		font-size: .9rem;
+}
+.pk-place-suggestions .pk-suggest-item:hover .pk-suggest-label,
+.pk-place-suggestions .pk-suggest-item:focus .pk-suggest-label {
+		color: var(--pk-primary) !important;
+}
+.pk-place-suggestions .pk-suggest-meta {
+		color: var(--pk-muted) !important;
+		font-size: .78rem;
+		flex-shrink: 0;
+}
+.pk-search .pk-place-input { min-width: 0; color: var(--pk-ink) !important; }
+.pk-filter-city-form .pk-place-input { border-radius: 0; color: var(--pk-ink) !important; }
 @media (max-width: 767px) {
 		.pk-place-suggestions { max-height: 12rem; }
 		.pk-filter-city-form .pk-place-suggestions { position: static; width: 100%; margin-top: .35rem; box-shadow: none; }

@@ -17,10 +17,39 @@ define( 'PARTIKULIER_VERSION', '6.20.7' );
 add_filter(
 	'language_attributes',
 	static function ( $output ) {
-		$language  = function_exists( 'pll_current_language' ) ? pll_current_language( 'slug' ) : substr( get_locale(), 0, 2 );
+		$language = function_exists( 'pll_current_language' ) ? pll_current_language( 'slug' ) : '';
+		if ( ! $language ) {
+			$post_id = get_queried_object_id() ?: ( isset( $GLOBALS['post']->ID ) ? $GLOBALS['post']->ID : 0 );
+			if ( $post_id && function_exists( 'pll_get_post_language' ) ) {
+				$language = pll_get_post_language( $post_id, 'slug' );
+			}
+			if ( ! $language && $post_id ) {
+				$p = get_post( $post_id );
+				if ( $p ) {
+					if ( str_ends_with( $p->post_name, '-ar' ) || str_starts_with( $p->post_name, 'ar-' ) ) {
+						$language = 'ar';
+					} elseif ( str_ends_with( $p->post_name, '-en' ) || str_starts_with( $p->post_name, 'en-' ) ) {
+						$language = 'en';
+					}
+				}
+			}
+		}
+		if ( ! $language ) {
+			$uri = isset( $_SERVER['REQUEST_URI'] ) ? (string) $_SERVER['REQUEST_URI'] : '';
+			if ( str_contains( $uri, '-ar/' ) || str_contains( $uri, 'ar-' ) || str_contains( $uri, 'lang=ar' ) || str_starts_with( $uri, '/ar/' ) ) {
+				$language = 'ar';
+			} elseif ( str_contains( $uri, '-en/' ) || str_contains( $uri, 'en-' ) || str_contains( $uri, 'lang=en' ) || str_starts_with( $uri, '/en/' ) ) {
+				$language = 'en';
+			}
+		}
+		if ( ! $language ) {
+			$language = substr( get_locale(), 0, 2 );
+		}
 		$direction = 'ar' === $language ? 'rtl' : 'ltr';
 		if ( false === strpos( $output, ' dir=' ) ) {
 			$output .= ' dir="' . esc_attr( $direction ) . '"';
+		} else {
+			$output = preg_replace( '/\s*dir=["\'][^"\']*["\']/', ' dir="' . esc_attr( $direction ) . '"', $output );
 		}
 		return $output;
 	},
@@ -186,6 +215,7 @@ $partikulier_modules = array(
 		'/inc/class-geo.php',
 		'/inc/class-search-filters.php',
 		'/inc/class-form.php',
+		'/inc/class-deposit-form.php',
 		'/inc/class-dashboard.php',
                 '/inc/class-listing-transitions.php',
 		'/inc/class-owner-insights.php',
@@ -237,6 +267,7 @@ $partikulier_modules = array(
 		'/inc/class-page-doctor.php',
 		'/inc/class-listing-approval.php',
 		'/inc/class-listing-urls.php',
+		'/inc/class-crypto.php',
 		'/inc/class-settings-customize.php',
 		'/templates/parts/menu.php',
 		'/templates/parts/helpers.php',

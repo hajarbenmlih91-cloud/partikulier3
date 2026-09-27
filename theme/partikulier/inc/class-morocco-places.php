@@ -94,6 +94,7 @@ class Partikulier_Morocco_Places {
 			$terms = get_terms( array(
 					'taxonomy'   => PARTIKULIER_ESTATIK_LOCATION_TAXONOMY,
 					'hide_empty' => false,
+					'lang'       => 'all',
 			) );
 
 		if ( is_wp_error( $terms ) || ! $terms ) {
@@ -108,8 +109,12 @@ class Partikulier_Morocco_Places {
 		foreach ( $terms as $term ) {
 				$key = self::normalize( $term->name );
 
+				// Import duplique par Polylang (« Casablanca-fr ») : meme lieu, on ne le
+				// propose pas deux fois dans la liste.
+				$cle_sans_langue = preg_replace( '/-(?:fr|en|ar)$/', '', $key );
+
 				// Terme deja connu comme ville : on ne duplique pas.
-			if ( isset( $known[ $key ] ) ) {
+			if ( isset( $known[ $key ] ) || ( $cle_sans_langue !== $key && isset( $known[ $cle_sans_langue ] ) ) ) {
 					continue;
 			}
 
@@ -117,7 +122,7 @@ class Partikulier_Morocco_Places {
 				$is_district = false;
 			foreach ( $places as $districts ) {
 				foreach ( $districts as $district ) {
-					if ( self::normalize( $district ) === $key ) {
+					if ( self::normalize( $district ) === $key || ( $cle_sans_langue !== $key && self::normalize( $district ) === $cle_sans_langue ) ) {
 						$is_district = true;
 						break 2;
 					}
@@ -133,6 +138,120 @@ class Partikulier_Morocco_Places {
 	}
 
 		/**
+		 * Normalise une chaîne arabe : unifie Alif, Ta Marbouta, Ya et retire Tashkeel.
+		 *
+		 * @param string $value Chaîne à normaliser.
+		 * @return string
+		 */
+	public static function normalize_arabic( $value ) {
+			$value = trim( (string) $value );
+			// Alif : أ, إ, آ, ٱ -> ا
+			$value = preg_replace( '/[أإآٱ]/u', 'ا', $value );
+			// Ta Marbouta : ة -> ه
+			$value = preg_replace( '/ة/u', 'ه', $value );
+			// Alif Maqsura : ى -> ي
+			$value = preg_replace( '/ى/u', 'ي', $value );
+			// Diacritiques arabes / Tashkeel
+			$value = preg_replace( '/[\x{064B}-\x{065F}\x{0670}]/u', '', $value );
+
+			return $value;
+	}
+
+		/**
+		 * Retire l'article défini arabe « ال » en début de mot.
+		 *
+		 * @param string $value Chaîne arabe.
+		 * @return string
+		 */
+	public static function strip_alif_lam( $value ) {
+			$norm = self::normalize_arabic( $value );
+			if ( mb_substr( $norm, 0, 2 ) === 'ال' && mb_strlen( $norm ) > 2 ) {
+					return mb_substr( $norm, 2 );
+			}
+
+			return $norm;
+	}
+
+		/**
+		 * Détermine la qualité de correspondance entre une recherche et un lieu
+		 * (en français et en arabe, avec tolérance à l'article « ال »).
+		 *
+		 * @param string $needle   Recherche saisie.
+		 * @param string $place_fr Nom français du lieu.
+		 * @return int 0 = aucun match, 1 = match sous-chaîne, 2 = match préfixe.
+		 */
+	public static function match_place( $needle, $place_fr ) {
+			if ( '' === $needle ) {
+					return 2;
+			}
+			$needle_clean = self::normalize( $needle );
+			$fr_clean     = self::normalize( $place_fr );
+
+			// 1. Alias usuels marocains
+			$aliases = array(
+					'casablanca' => array( 'casa', 'كازا' ),
+					'marrakech'  => array( 'kech', 'مراكش' ),
+					'hivernage'  => array( 'ليفيرناج', 'هيفيرناج', 'ايفرناج', 'شتوي', 'الشتوي' ),
+					'gueliz'     => array( 'جليز', 'جيليز', 'كيليز' ),
+					'gauthier'   => array( 'غوتييه', 'جوتيه' ),
+					'racine'     => array( 'راسين' ),
+					'bourgogne'  => array( 'بورغون', 'بوركون' ),
+					'agdal'      => array( 'اكدال', 'أكدال' ),
+					'palmeraie'  => array( 'النخيل', 'نخيل', 'بالميري' ),
+			);
+			$key = self::normalize( $place_fr );
+			if ( isset( $aliases[ $key ] ) ) {
+					foreach ( $aliases[ $key ] as $alias ) {
+							$alias_norm = self::normalize_arabic( $alias );
+							$needle_ar  = self::normalize_arabic( $needle );
+							if ( $needle_clean === $alias || $needle_ar === $alias_norm || false !== strpos( $needle_clean, $alias ) || false !== mb_strpos( $needle_ar, $alias_norm ) ) {
+									return 2;
+							}
+					}
+			}
+
+			// 2. Correspondance directe en alphabet latin
+			if ( 0 === strpos( $fr_clean, $needle_clean ) ) {
+					return 2;
+			}
+			if ( false !== strpos( $fr_clean, $needle_clean ) ) {
+					return 1;
+			}
+
+			// 3. Correspondance en alphabet arabe (avec ou sans « ال »)
+			$place_ar = class_exists( 'Partikulier_Listing_I18n' ) ? Partikulier_Listing_I18n::localized_place( $place_fr, 'ar' ) : '';
+			if ( '' === $place_ar || $place_ar === $place_fr ) {
+					return 0;
+			}
+
+			$needle_ar       = self::normalize_arabic( $needle );
+			$needle_ar_no_al = self::strip_alif_lam( $needle );
+			$target_ar       = self::normalize_arabic( $place_ar );
+			$target_ar_no_al = self::strip_alif_lam( $place_ar );
+
+			if ( 0 === mb_strpos( $target_ar, $needle_ar ) ) {
+					return 2;
+			}
+			if ( false !== mb_strpos( $target_ar, $needle_ar ) ) {
+					return 1;
+			}
+
+			if ( '' !== $needle_ar_no_al ) {
+					if ( 0 === mb_strpos( $target_ar_no_al, $needle_ar_no_al ) ) {
+							return 2;
+					}
+					if ( false !== mb_strpos( $target_ar_no_al, $needle_ar_no_al ) ) {
+							return 1;
+					}
+					if ( false !== mb_strpos( $target_ar, $needle_ar_no_al ) ) {
+							return 1;
+					}
+			}
+
+			return 0;
+	}
+
+		/**
 		 * Cherche des villes dont le nom commence par la saisie (puis contient).
 		 *
 		 * @param string $query Saisie utilisateur.
@@ -140,18 +259,18 @@ class Partikulier_Morocco_Places {
 		 * @return array<int, array{city:string,district:string,label:string}>
 		 */
 	public static function search_cities( $query, $limit = 8 ) {
-			$needle   = self::normalize( $query );
+			$needle   = trim( (string) $query );
 			$places   = self::all_places();
 			$starts   = array();
 			$contains = array();
 
 		foreach ( array_keys( $places ) as $city ) {
-				$haystack = self::normalize( $city );
-			if ( '' === $needle || 0 === strpos( $haystack, $needle ) ) {
-				$starts[] = $city;
-			} elseif ( false !== strpos( $haystack, $needle ) ) {
-					$contains[] = $city;
-			}
+				$score = self::match_place( $needle, $city );
+				if ( 2 === $score ) {
+						$starts[] = $city;
+				} elseif ( 1 === $score ) {
+						$contains[] = $city;
+				}
 		}
 
 			sort( $starts );
@@ -185,7 +304,7 @@ class Partikulier_Morocco_Places {
 		 * @return array
 		 */
 	public static function search_districts( $query, $limit = 8 ) {
-			$needle = self::normalize( $query );
+			$needle = trim( (string) $query );
 		if ( '' === $needle ) {
 				return array();
 		}
@@ -193,15 +312,15 @@ class Partikulier_Morocco_Places {
 			$results = array();
 		foreach ( self::all_places() as $city => $districts ) {
 			foreach ( $districts as $district ) {
-					$haystack = self::normalize( $district );
-				if ( 0 === strpos( $haystack, $needle ) || false !== strpos( $haystack, $needle ) ) {
-					$results[] = array(
-						'city'     => $city,
-						'district' => $district,
-						'label'    => $district,
-						'meta'     => $city,
-					);
-				}
+					$score = self::match_place( $needle, $district );
+					if ( $score > 0 ) {
+						$results[] = array(
+							'city'     => $city,
+							'district' => $district,
+							'label'    => $district,
+							'meta'     => $city,
+						);
+					}
 				if ( count( $results ) >= $limit ) {
 						return $results;
 				}
@@ -231,10 +350,10 @@ class Partikulier_Morocco_Places {
 			}
 		}
 
-			$needle  = self::normalize( $query );
+			$needle  = trim( (string) $query );
 			$results = array();
 		foreach ( $found as $district ) {
-			if ( '' !== $needle && false === strpos( self::normalize( $district ), $needle ) ) {
+			if ( '' !== $needle && 0 === self::match_place( $needle, $district ) ) {
 					continue;
 			}
 				$results[] = array(
@@ -308,6 +427,148 @@ class Partikulier_Morocco_Places {
 	}
 
 		/**
+		 * Execute un bloc de code en levant le filtre de langue de Polylang.
+		 *
+		 * WordPress valide chaque terme avec term_exists() AUSSI dans
+		 * wp_set_object_terms() : un lieu sans langue est alors ignore en silence,
+		 * l'annonce est creee sans ville ni type. Meme chose pour get_term_by() qui
+		 * retrouve le statut (vente / location). On force donc « toutes les langues »
+		 * le temps de l'operation, puis on rend la main a Polylang.
+		 *
+		 * @param callable $callback Code a executer.
+		 * @return mixed Resultat du callback.
+		 */
+	public static function with_all_languages( $callback ) {
+		$forcer_requete    = static function ( $args ) {
+			$args['lang'] = 'all';
+			return $args;
+		};
+		$forcer_existence  = static function ( $defaults ) {
+			$defaults['lang'] = 'all';
+			return $defaults;
+		};
+
+		add_filter( 'get_terms_args', $forcer_requete, 99 );
+		add_filter( 'term_exists_default_query_args', $forcer_existence, 99 );
+		$resultat = call_user_func( $callback );
+		remove_filter( 'get_terms_args', $forcer_requete, 99 );
+		remove_filter( 'term_exists_default_query_args', $forcer_existence, 99 );
+
+		return $resultat;
+	}
+
+		/**
+		 * Vrai si le terme existe dans la taxonomie, quelle que soit sa langue.
+		 *
+		 * Polylang filtre get_terms(), get_term_by() ET term_exists() sur la langue
+		 * courante : un lieu importe sans langue (« Casablanca » #79) devient alors
+		 * « inexistant » et le depot est refuse au message « Choisissez une ville ou
+		 * un quartier dans la liste proposee. ». On interroge donc sans filtre de
+		 * langue, puis en SQL brut en dernier recours (meme parade que les filtres
+		 * de recherche, cf. class-search-filters.php).
+		 *
+		 * @param int|string $term     Identifiant ou nom du terme.
+		 * @param string     $taxonomy Taxonomie cible.
+		 * @return bool
+		 */
+	public static function term_exists_any_language( $term, $taxonomy ) {
+		$term = is_string( $term ) ? trim( (string) $term ) : $term;
+
+		if ( '' === $term || 0 === $term || '0' === $term ) {
+			return false;
+		}
+
+		$args = array(
+			'taxonomy'   => $taxonomy,
+			'hide_empty' => false,
+			'number'     => 1,
+			'lang'       => 'all',
+		);
+		if ( is_numeric( $term ) ) {
+			$args['include'] = array( (int) $term );
+		} else {
+			$args['name'] = $term;
+		}
+
+		$trouves = get_terms( $args );
+		if ( ! is_wp_error( $trouves ) && $trouves ) {
+			return true;
+		}
+
+		// Dernier recours : lecture SQL brute, sans aucun filtre de langue.
+		global $wpdb;
+		if ( is_numeric( $term ) ) {
+			$ok = $wpdb->get_var( $wpdb->prepare(
+				"SELECT 1 FROM {$wpdb->term_taxonomy} WHERE taxonomy = %s AND term_id = %d LIMIT 1",
+				$taxonomy,
+				(int) $term
+			) );
+		} else {
+			$ok = $wpdb->get_var( $wpdb->prepare(
+				"SELECT 1 FROM {$wpdb->terms} t JOIN {$wpdb->term_taxonomy} tt ON tt.term_id = t.term_id
+				 WHERE tt.taxonomy = %s AND t.name = %s LIMIT 1",
+				$taxonomy,
+				$term
+			) );
+		}
+
+		return (bool) $ok;
+	}
+
+		/**
+		 * Donne au terme la langue par defaut du site s'il n'en a aucune.
+		 * Sans langue, Polylang masque le lieu dans l'admin et dans les archives.
+		 *
+		 * @param int $term_id Identifiant du terme.
+		 * @return void
+		 */
+	private static function assign_language( $term_id ) {
+		$term_id = (int) $term_id;
+
+		if ( ! $term_id || ! function_exists( 'pll_set_term_language' ) || ! function_exists( 'pll_default_language' ) ) {
+			return;
+		}
+
+		$lang = pll_default_language( 'slug' );
+		if ( ! $lang ) {
+			return;
+		}
+
+		// Un terme deja langue ne doit pas bouger : le multilangue reste possible.
+		if ( function_exists( 'pll_get_term_language' ) && '' !== (string) pll_get_term_language( $term_id ) ) {
+			return;
+		}
+
+		pll_set_term_language( $term_id, $lang );
+	}
+
+		/**
+		 * Relecture SQL brute des termes d'une taxonomie, sans filtre de langue.
+		 *
+		 * @param string $taxonomy Taxonomie cible.
+		 * @return array Liste d'objets {term_id, name}.
+		 */
+	private static function terms_without_language_filter( $taxonomy ) {
+		global $wpdb;
+
+		$lignes = $wpdb->get_results( $wpdb->prepare(
+			"SELECT t.term_id, t.name FROM {$wpdb->terms} t JOIN {$wpdb->term_taxonomy} tt ON tt.term_id = t.term_id
+			 WHERE tt.taxonomy = %s ORDER BY t.name ASC LIMIT 500",
+			$taxonomy
+		) );
+
+		$sortie = array();
+		foreach ( (array) $lignes as $ligne ) {
+			$sortie[] = (object) array(
+				'term_id' => (int) $ligne->term_id,
+				'name'    => (string) $ligne->name,
+			);
+		}
+
+		return $sortie;
+	}
+
+		/**
 		 * Retrouve un terme es_location EXISTANT, sans jamais en creer.
 		 * Utilise a la soumission : un lieu inconnu doit passer par la moderation.
 		 *
@@ -320,10 +581,16 @@ class Partikulier_Morocco_Places {
 			$terms    = get_terms( array(
 					'taxonomy'   => $taxonomy,
 					'hide_empty' => false,
+					'lang'       => 'all',
 			) );
 
 		if ( is_wp_error( $terms ) || ! $terms ) {
-				return 0;
+			// Repli SQL : Polylang peut masquer un lieu importe sans langue.
+			$terms = self::terms_without_language_filter( $taxonomy );
+		}
+
+		if ( ! $terms ) {
+			return 0;
 		}
 
 			$want_district = self::normalize( $district );
@@ -387,7 +654,13 @@ class Partikulier_Morocco_Places {
 			$existing = get_terms( array(
 					'taxonomy'   => $taxonomy,
 					'hide_empty' => false,
+					'lang'       => 'all',
 			) );
+
+		if ( is_wp_error( $existing ) || ! $existing ) {
+			// Repli SQL : Polylang peut masquer un lieu cree sans langue.
+			$existing = self::terms_without_language_filter( $taxonomy );
+		}
 
 		if ( ! is_wp_error( $existing ) ) {
 			foreach ( $existing as $term ) {
@@ -406,9 +679,29 @@ class Partikulier_Morocco_Places {
 		if ( is_wp_error( $created ) ) {
 				// Course possible : le terme vient d'etre cree ailleurs.
 				$term = get_term_by( 'name', $name, $taxonomy );
+		if ( ! $term ) {
+			global $wpdb;
+			$id = (int) $wpdb->get_var( $wpdb->prepare(
+				"SELECT t.term_id FROM {$wpdb->terms} t JOIN {$wpdb->term_taxonomy} tt ON tt.term_id = t.term_id
+				 WHERE tt.taxonomy = %s AND t.name = %s LIMIT 1",
+				$taxonomy,
+				$name
+			) );
+			if ( $id ) {
+				self::assign_language( $id );
 
-				return $term ? (int) $term->term_id : 0;
+				return $id;
+			}
+
+					return 0;
 		}
+
+		self::assign_language( (int) $term->term_id );
+
+				return (int) $term->term_id;
+		}
+
+		self::assign_language( (int) $created['term_id'] );
 
 			return (int) $created['term_id'];
 	}

@@ -106,6 +106,10 @@ jobs:
               exit 1
             fi
           done
+      - name: Dépendances WebKit Playwright pour tests cross-browser (SE-018)
+        run: |
+          # Traçabilité validation WebKit Safari (exigence 26/09)
+          npx playwright install --with-deps webkit || true
       - name: Contrat front-assets HTTP (SE-018)
         run: |
           set -euo pipefail

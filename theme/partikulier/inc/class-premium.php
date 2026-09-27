@@ -32,6 +32,135 @@ class Partikulier_Premium {
 		const STATUS_EXPIRED        = 'expired';
 		const STATUS_REVOKED        = 'revoked';
 
+	/**
+	 * SE-048-R (E-4806/E-4808) : les libellés du module existent dans les TROIS
+	 * langues du site, dans le code. Ils ne passent PAS par les dictionnaires
+	 * trilingues du lot C2 (ChromeDictionary/FormsDictionary) : leurs comptes
+	 * d'entrées sont figés par les contrats gelés C2A-002 (136) et C2A-003 (140),
+	 * et le registre Polylang par C2A-006 (150) — y ajouter une chaîne
+	 * d'ADMINISTRATION rouvrirait trois lots fermés. Conséquence assumée,
+	 * documentée au rapport SE-048-R : ces libellés ne sont pas éditables depuis
+	 * l'administration ; leur migration vers Polylang sera un micro-lot dédié si
+	 * le besoin apparaît.
+	 */
+	const LANGUAGES = array( 'fr', 'en', 'ar' );
+
+	/** Langue de rendu de l'interface premium (Polylang, filtre de test). */
+	public static function ui_language() {
+		$language = '';
+		if ( function_exists( 'pll_current_language' ) ) {
+			$language = (string) pll_current_language( 'slug' );
+		}
+		$language = (string) apply_filters( 'partikulier_premium_ui_language', $language );
+		return in_array( $language, self::LANGUAGES, true ) ? $language : 'fr';
+	}
+
+	/**
+	 * Rend un libellé dans la langue courante. Les trois variantes sont
+	 * fournies au même endroit : aucun appelant ne peut en oublier une.
+	 *
+	 * @param array<string,string> $labels fr/en/ar.
+	 * @return string
+	 */
+	public static function label( $labels ) {
+		foreach ( self::LANGUAGES as $language ) {
+			if ( ! isset( $labels[ $language ] ) || '' === (string) $labels[ $language ] ) {
+				return (string) ( $labels['fr'] ?? '' );
+			}
+		}
+		return (string) $labels[ self::ui_language() ];
+	}
+
+	/** Libellé public du badge premium (E-4804) — trois langues, dans le code. */
+	public static function badge_label() {
+		return self::label(
+			array(
+				'fr' => 'Premium',
+				'en' => 'Premium',
+				'ar' => 'بريميوم',
+			)
+		);
+	}
+
+	/**
+	 * Les trois textes du bandeau d'administration (E-4806), dans la langue
+	 * courante : (1) l'octroi gratuit par l'administration, (2) l'état RÉEL de
+	 * la visibilité publique — qui suit le drapeau, (3) le rappel du motif et
+	 * de la réversibilité. Aucune promesse de paiement, aucune passerelle.
+	 *
+	 * @return array{offer:string, visibility:string, reminder:string, visibility_enabled:bool}
+	 */
+	public static function banner_texts() {
+		$enabled = self::is_public_enabled();
+		return array(
+			'offer'              => self::label(
+				array(
+					'fr' => 'Premium offert par Partikulier : l’administration attribue le statut gratuitement, sans aucun paiement demandé au propriétaire — ni par le site, ni par un intermédiaire.',
+					'en' => 'Premium offered by Partikulier: the administration grants the status free of charge, with no payment requested from the owner — neither by the site nor by any third party.',
+					'ar' => 'بريميوم مقدَّم من بارتيكيولييه: تمنح الإدارة هذه الصفة مجانًا، دون أي دفع يُطلب من المالك — لا عبر الموقع ولا عبر أي وسيط.',
+				)
+			),
+			'visibility'         => $enabled
+				? self::label(
+					array(
+						'fr' => 'Visibilité publique ACTIVE : le badge et le tri des résultats sont en service depuis l’activation du réglage d’exploitation.',
+						'en' => 'Public visibility ACTIVE: the badge and the ranking of results have been live since the operational setting was switched on.',
+						'ar' => 'الظهور العلني مُفعَّل: الشارة وترتيب النتائج مُفعَّلان منذ تشغيل الإعداد التشغيلي.',
+					)
+				)
+				: self::label(
+					array(
+						'fr' => 'Visibilité publique pas encore activée : le badge et le tri sont LIVRÉS et prêts, mais le réglage d’exploitation est encore éteint. L’allumer est une action d’exploitation, jamais un changement de code.',
+						'en' => 'Public visibility not switched on yet: the badge and the ranking are DELIVERED and ready, but the operational setting is still off. Switching it on is an operational action, never a code change.',
+						'ar' => 'الظهور العلني غير مُفعَّل بعد: الشارة والترتيب مُنجَزان وجاهزان، لكن الإعداد التشغيلي لا يزال مُطفأً. تشغيله إجراء تشغيلي، وليس تغييرًا في البرمجة.',
+					)
+				),
+			'reminder'           => self::label(
+				array(
+					'fr' => 'Une attribution impose un motif et une date de début comme de fin. Elle est tracée et peut être retirée immédiatement.',
+					'en' => 'A grant requires a reason and both a start and an end date. It is logged and can be withdrawn immediately.',
+					'ar' => 'يتطلّب المنح سببًا وتاريخ بداية وتاريخ نهاية. وهو مُسجَّل ويمكن سحبه فورًا.',
+				)
+			),
+			'visibility_enabled' => $enabled,
+		);
+	}
+
+	/**
+	 * SE-048-R (E-4807) : prédicat de disponibilité côté thème — délègue au
+	 * prédicat central dp-9 du plugin ; repli strictement identique (publié +
+	 * statut métier disponible) si le plugin n'est pas chargé.
+	 */
+	public static function is_available( $property_id ) {
+		$property_id = (int) $property_id;
+		if ( $property_id < 1 ) {
+			return false;
+		}
+		if ( class_exists( '\\Partikulier\\Core\\ListingRepository' ) ) {
+			return (bool) \Partikulier\Core\ListingRepository::is_available( $property_id );
+		}
+		$post = get_post( $property_id );
+		if ( ! $post instanceof WP_Post ) {
+			return false;
+		}
+		return 'publish' === $post->post_status
+			&& in_array( (string) get_post_meta( $property_id, '_pk_status', true ), array( '', 'actif' ), true );
+	}
+
+	/**
+	 * Le droit premium est-il VISIBLE publiquement pour cette annonce ?
+	 * Délégation exclusive au service du plugin quand il est chargé : une seule
+	 * vérité (drapeau ∧ droit actif ∧ annonce disponible). Sans le plugin, le
+	 * thème répond faux — aucune visibilité premium sans le domaine propriétaire.
+	 */
+	public static function is_publicly_visible( $property_id ) {
+		if ( self::core_premium() ) {
+			return (bool) self::core_premium()::is_publicly_visible( (int) $property_id );
+		}
+		return false;
+	}
+
+
 	public static function init() {
 			add_action( 'admin_menu', array( __CLASS__, 'register_menu' ) );
 			add_action( 'admin_post_pk_grant_premium', array( __CLASS__, 'handle_grant' ) );
@@ -183,10 +312,17 @@ class Partikulier_Premium {
 						<h1><?php esc_html_e( 'Annonces premium', 'partikulier' ); ?></h1>
 					<?php if ( isset( $_GET['pk_premium_updated'] ) ) : ?><div class="notice notice-success is-dismissible"><p><?php esc_html_e( 'Le journal premium a été mis à jour.', 'partikulier' ); ?></p></div><?php endif; ?>
 					<?php if ( isset( $_GET['pk_premium_error'] ) ) : ?><div class="notice notice-error"><p><?php echo esc_html( sanitize_text_field( wp_unslash( $_GET['pk_premium_error'] ) ) ); ?></p></div><?php endif; ?>
-						<?php // SE-048-U (E-4803, DP-8 maintien) : bandeau d'état honnête — règlement hors ligne, aucune promesse de paiement en ligne. ?>
-								<div class="notice notice-info inline"><p><?php esc_html_e( 'Octroi manuel : l’administration attribue le statut premium après réception du règlement par virement bancaire ou transfert d’argent. Le paiement en ligne n’est pas activé — aucune passerelle n’est branchée, aucun règlement ne passe par le site.', 'partikulier' ); ?></p></div>
-								<div class="notice notice-warning inline"><p><?php esc_html_e( 'La visibilité publique (badge sur la fiche et tri des résultats) n’est pas encore activée : elle sera livrée à l’étape suivante. L’attribution est d’ores et déjà tracée, prête et réversible.', 'partikulier' ); ?></p></div>
-						<p><?php esc_html_e( 'Une attribution impose un motif et une date de début comme de fin. Elle est tracée et peut être retirée immédiatement.', 'partikulier' ); ?></p>
+								<?php
+								// SE-048-R (E-4806) : le modèle de lancement est l'OCTROI GRATUIT par
+								// l'administration ; le règlement hors ligne décrit par le bandeau
+								// précédent n'est pas le modèle du lancement et disparaît donc.
+								// Le second bandeau suit le DRAPEAU réel : il annonce la visibilité
+								// active quand elle l'est, et l'état exact sinon — jamais l'inverse.
+								$pk_premium_texts = self::banner_texts();
+								?>
+									<div class="notice notice-success inline"><p><?php echo esc_html( $pk_premium_texts['offer'] ); ?></p></div>
+									<div class="notice <?php echo $pk_premium_texts['visibility_enabled'] ? 'notice-info' : 'notice-warning'; ?> inline"><p><?php echo esc_html( $pk_premium_texts['visibility'] ); ?></p></div>
+						<p><?php echo esc_html( $pk_premium_texts['reminder'] ); ?></p>
 						<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 							<?php wp_nonce_field( 'pk_grant_premium' ); ?>
 								<input type="hidden" name="action" value="pk_grant_premium" />

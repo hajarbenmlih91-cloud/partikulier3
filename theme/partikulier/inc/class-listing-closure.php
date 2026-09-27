@@ -81,6 +81,9 @@ class Partikulier_Listing_Closure {
 			if ( ! $post instanceof WP_Post || PARTIKULIER_ESTATIK_POST_TYPE !== $post->post_type ) {
 					return array();
 			}
+			if ( 0 === strpos( (string) $post->post_title, 'SE-' ) ) {
+					return array();
+			}
 			$limit = max( 1, min( 6, (int) $limit ) );
 
                         $closed = array( 'vendu', 'loue', 'loué', 'archive', 'pause', 'indisponible' );
@@ -101,7 +104,8 @@ class Partikulier_Listing_Closure {
 			);
 
 			$results = array();
-			foreach ( array( 'with_type', 'city_only' ) as $pass ) {
+			$passes = array( 'with_type', 'city_only', 'type_only', 'active_fallback' );
+			foreach ( $passes as $pass ) {
 					if ( count( $results ) >= $limit ) {
 							break;
 					}
@@ -113,26 +117,51 @@ class Partikulier_Listing_Closure {
 							$location_id = (int) $locations[0]->term_id;
 					}
 					$types = get_the_terms( $post, PARTIKULIER_ESTATIK_TYPE_TAXONOMY );
-					if ( $location_id ) {
+					$type_id = ( is_array( $types ) && $types ) ? (int) $types[0]->term_id : 0;
+
+					if ( 'with_type' === $pass ) {
+							if ( ! $location_id || ! $type_id ) {
+									continue;
+							}
 							$args['tax_query'][] = array(
 									'taxonomy' => PARTIKULIER_ESTATIK_LOCATION_TAXONOMY,
 									'field'    => 'term_id',
 									'terms'    => $location_id,
 							);
-					} else {
-							continue; // sans ville, pas de similitude exploitable
-					}
-					if ( 'with_type' === $pass && is_array( $types ) && $types ) {
 							$args['tax_query'][] = array(
 									'taxonomy' => PARTIKULIER_ESTATIK_TYPE_TAXONOMY,
 									'field'    => 'term_id',
-									'terms'    => (int) $types[0]->term_id,
+									'terms'    => $type_id,
 							);
+					} elseif ( 'city_only' === $pass ) {
+							if ( ! $location_id ) {
+									continue;
+							}
+							$args['tax_query'][] = array(
+									'taxonomy' => PARTIKULIER_ESTATIK_LOCATION_TAXONOMY,
+									'field'    => 'term_id',
+									'terms'    => $location_id,
+							);
+					} elseif ( 'type_only' === $pass ) {
+							if ( ! $type_id ) {
+									continue;
+							}
+							$args['tax_query'][] = array(
+									'taxonomy' => PARTIKULIER_ESTATIK_TYPE_TAXONOMY,
+									'field'    => 'term_id',
+									'terms'    => $type_id,
+							);
+					}
+					if ( $results ) {
+							$args['post__not_in'] = array_merge( $base['post__not_in'], array_keys( $results ) );
 					}
 					$query = new WP_Query( $args );
 					foreach ( (array) $query->posts as $candidate_id ) {
 							if ( count( $results ) >= $limit ) {
 									break;
+							}
+							if ( 0 === strpos( (string) get_the_title( (int) $candidate_id ), 'SE-' ) ) {
+									continue;
 							}
 							$status = (string) get_post_meta( (int) $candidate_id, '_pk_status', true );
 							if ( in_array( $status, $closed, true ) ) {
