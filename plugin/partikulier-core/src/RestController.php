@@ -20,7 +20,6 @@ final class RestController
 	private ?FavoriteService $favorites    = null;
 	private ?RateLimiter $rateLimiter      = null;
 	private ?HealthCheck $health           = null;
-	private ?ListingsLiteService $liteService = null;
 
 	public function __construct()
 	{
@@ -59,10 +58,6 @@ final class RestController
 		return $this->leads ??= new LeadService();
 	}
 
-	private function liteService(): ListingsLiteService
-	{
-		return $this->liteService ??= new ListingsLiteService();
-	}
 
 	private function favorites(): FavoriteService
 	{
@@ -91,13 +86,6 @@ final class RestController
 			'callback'            => [$this, 'listings'],
 			'permission_callback' => [$this, 'guardPublic'],
 			'args'                => $this->listArgs(),
-		], 'plugin');
-
-		RouteRegistry::declare('/listings-lite', [
-			'methods'             => 'GET',
-			'callback'            => [$this, 'listingsLite'],
-			'permission_callback' => [$this, 'guardPublic'],
-			'args'                => $this->listLiteArgs(),
 		], 'plugin');
 
 		RouteRegistry::declare('/listings/(?P<id>[0-9]+)', [
@@ -210,25 +198,6 @@ final class RestController
 	public function listings( WP_REST_Request $request ): WP_REST_Response
 	{
 		return new WP_REST_Response(['data' => $this->search()->search($request->get_params()), 'page' => (int) $request['page']], 200);
-	}
-
-	public function listingsLite( WP_REST_Request $request ): WP_REST_Response
-	{
-		return $this->liteService()->handle($request);
-	}
-
-	private function listLiteArgs(): array
-	{
-		return [
-			'city'       => ['required' => false, 'type' => 'string'],
-			'type'       => ['required' => false, 'type' => 'string'],
-			'offer_type' => ['required' => false, 'type' => 'string'],
-			'price_min'  => ['required' => false, 'type' => 'number', 'minimum' => 0],
-			'price_max'  => ['required' => false, 'type' => 'number', 'minimum' => 0],
-			'page'       => ['required' => false, 'default' => 1, 'type' => 'integer', 'minimum' => 1],
-			'per_page'   => ['required' => false, 'default' => 12, 'type' => 'integer', 'minimum' => 1, 'maximum' => 50],
-			'locale'     => ['required' => false, 'default' => 'fr', 'type' => 'string'],
-		];
 	}
 
 	public function listing( WP_REST_Request $request ): WP_REST_Response|WP_Error

@@ -39,6 +39,10 @@ namespace Partikulier\Core\Domain\TranslationVariants;
 
 final class TranslationVariantsService
 {
+        use VariantTransitionsTrait;
+	/** Marqueurs administratifs jamais écrasés par une propagation (R1 §2.3-R1). */
+	public const ADMIN_MARKER_STATUSES = ['refuse', 'en_attente_whatsapp'];
+
 	/** Version du DDL héritée du thème (pk_localization_db_version). */
 	public const DB_VERSION = '1.0.0';
 

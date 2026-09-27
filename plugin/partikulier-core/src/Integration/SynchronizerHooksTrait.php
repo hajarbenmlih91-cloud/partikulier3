@@ -36,6 +36,7 @@ trait SynchronizerHooksTrait
 		add_action('before_delete_post', [$this, 'onDeletePost'], 10, 1);
 		add_action('added_post_meta', [$this, 'onMetaChange'], 10, 4);
 		add_action('updated_post_meta', [$this, 'onMetaChange'], 10, 4);
+                add_action('deleted_post_meta', [$this, 'onDeletedMeta'], 10, 4);
 		add_action('shutdown', [$this, 'flush']);
 	}
 
@@ -86,15 +87,31 @@ trait SynchronizerHooksTrait
 
 
 	/**
-	 * Changements de prix et de surface (métadonnées Estatik) : empilement,
-	 * la comparaison avant écriture évite toute requête inutile.
+         * deleted_post_meta (WordPress 6.6) : le premier argument est un TABLEAU
+         * d'identifiants de métas supprimées — délègue au même filtrage que les
+         * ajout/modification (la suppression d'une méta surveillée reprojette).
+         */
+        public function onDeletedMeta( array $metaIds, int $objectId, string $metaKey, $value ): void
+        {
+                $this->onMetaChange( 0, $objectId, $metaKey, $value );
+        }
+
+        /**
+         * Changements de prix et de surface (métadonnées Estatik) + statut de
+         * disponibilité DP-9 : empilement, la comparaison avant écriture évite
+         * toute requête inutile.
+         *
+         * SE-044 / DP-9 (v1.1 §6.2.3) : _pk_status, _pk_closed_reason et
+         * _pk_closed_note sont surveillées en ajout, modification ET suppression
+         * (deleted_post_meta) — la suppression d'une méta (retour à « absente »)
+         * change la disponibilité et doit reprojeter.
 	 */
 	public function onMetaChange( int $metaId, int $objectId, string $metaKey, $value ): void
 	{
 		if ( self::$flushing ) {
 			return;
 		}
-		if ( ! in_array($metaKey, ['es_property_price', 'es_property_area'], true) ) {
+                if ( ! in_array($metaKey, ['es_property_price', 'es_property_area', '_pk_status', '_pk_closed_reason', '_pk_closed_note'], true) ) {
 			return;
 		}
 		$post = get_post($objectId);
