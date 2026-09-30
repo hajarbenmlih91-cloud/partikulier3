@@ -160,7 +160,16 @@ final class RestController
 
 		RouteRegistry::declare('/health', [
 			'methods'             => 'GET',
-			'callback'            => fn(): WP_REST_Response => new WP_REST_Response($this->health()->get(), 200),
+			'callback'            => function(): WP_REST_Response {
+				$raw = $this->health()->get();
+				if ( ! current_user_can('manage_options') ) {
+					return new WP_REST_Response([
+						'status'   => $raw['status'] ?? 'ok',
+						'database' => $raw['database'] ?? 'ready',
+					], 200);
+				}
+				return new WP_REST_Response($raw, 200);
+			},
 			'permission_callback' => [$this, 'guardPublic'],
 		], 'plugin');
 	}

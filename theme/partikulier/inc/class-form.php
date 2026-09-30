@@ -778,11 +778,18 @@ class Partikulier_Form {
 
 		/**
 		 * Cree ou recupere l'utilisateur annonceur (contributor).
+		 * Protection F-01 : interdire l'appropriation anonyme d'un compte existant.
 		 */
 	private static function ensure_user( $email, $name ) {
 			$user = get_user_by( 'email', $email );
 		if ( $user && false === strpos( $email, '@partikulier.local' ) ) {
+			if ( is_user_logged_in() && get_current_user_id() === (int) $user->ID ) {
 				return $user;
+			}
+			return new WP_Error(
+				'pk_email_in_use',
+				__( 'Cette adresse e-mail est déjà associée à un compte. Veuillez vous connecter pour déposer votre annonce.', 'partikulier' )
+			);
 		}
 			$login    = sanitize_user( strtok( $email, '@' ) . wp_rand( 1000, 9999 ) );
 			$password = wp_generate_password( 16, true, false );
@@ -790,6 +797,7 @@ class Partikulier_Form {
 		if ( is_wp_error( $user_id ) ) {
 				return $user_id;
 		}
+			update_user_meta( $user_id, '_pk_deposit_account', 1 );
 			$user = get_user_by( 'id', $user_id );
 			$user->set_role( 'contributor' );
 			wp_update_user( array( 'ID' => $user_id, 'display_name' => $name ?: strtok( $email, '@' ) ) );
