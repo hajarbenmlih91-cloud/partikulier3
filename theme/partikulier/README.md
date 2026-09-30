@@ -18,10 +18,41 @@ Conçu pour **Estatik 4.3.x**, avec intégration complète **Polylang** trilingu
 - **Architecture Multilingue Trilingue & RTL (SE-025 / SE-027)** : Prise en charge intégrale du français, anglais et arabe littéraire avec inversion RTL native (`dir="rtl"` et `lang="ar"`), cluster hreflang 4 entrées (`fr`, `en`, `ar`, `x-default`), et règles de réécriture v5 sans double-préfixation (`/fr/annonces/`).
 - **Performance Front-Assets « Zéro jQuery » Public (DP-6 / SE-018)** : Élimination absolue de tout script jQuery ou composant lourd Estatik sur l'ensemble des pages publiques (`/`, `/annonces/`, `/location/casablanca/`, `/faq/`, `/contact/`, `/connexion/`).
 - **Sécurité d'Exécution Système (Lot E / SE-002)** : Zéro appel `exec()` direct hors de la passerelle unique `class-exec-whitelist.php` (vérifié par analyse lexicale sur 141 fichiers runtime).
+- **Passerelle d'Administration Secrète (Stealth Admin)** : Masquage total de `wp-login.php` et `/wp-admin` aux visiteurs non autorisés (redirection 302 vers l'accueil). Lien secret officiel : `https://partikulier.ma/wp-login.php?pk_admin_key=direction2026`.
+- **Authentification Propriétaire par Numéro Mobile (Cas "Grand-mère")** : Dépôt sans e-mail possible, connexion directe par numéro de téléphone portable (`06...` ou `+212...`).
+- **Protection Anti-Énumération & Rate Limiting CGNAT** : Unification des messages d'erreur et protection anti-brute force composite sans blocage collatéral sur les réseaux 4G/5G marocains.
 
 ---
 
-## 2. Intégration CI & Tests Navigateurs Réels (WebKit / Chromium / Firefox)
+## 2. Accès Administrateur & Passerelle Secrète (Stealth Admin Gateway)
+
+Pour protéger le site contre les attaques de force brute et les scanners de vulnérabilités WordPress, l'accès direct aux URLs standards `/wp-admin/` et `/wp-login.php` est **strictement bloqué** pour le public (redirection automatique vers l'accueil `/`).
+
+### Comment accéder à l'administration WordPress ?
+1. **URL Secrète Officielle pour l'Administrateur** :  
+   👉 `https://partikulier.ma/wp-login.php?pk_admin_key=direction2026`  
+   *(Alternative acceptée : `https://partikulier.ma/wp-login.php?pk_direction=direction2026`)*
+2. **Fonctionnement du jeton** :  
+   Dès la saisie de ce lien, un cookie sécurisé temporaire (`pk_admin_access`, durée 2h) est déposé sur votre navigateur. L'écran de connexion s'affiche et vous pouvez vous connecter avec vos identifiants administrateur.
+3. **Personnalisation de la clé secrète** :  
+   Pour modifier la clé par défaut (`direction2026`), ajoutez simplement cette ligne dans votre fichier `wp-config.php` :
+   ```php
+   define( 'PK_ADMIN_SECRET_KEY', 'votre_nouvelle_cle_secrete' );
+   ```
+4. **Accès via Hostinger hPanel (Bouton "Admin Panel" 1-clic)** :  
+   Le système embarque une liste blanche automatique des paramètres d'authentification SSO Hostinger (`token`, `hostinger_login`, `hpanel`, `sso_token`). Le bouton d'accès direct depuis votre espace client Hostinger reste **100% fonctionnel** et n'est pas bloqué.
+
+---
+
+## 3. Authentification Propriétaire par Numéro de Téléphone (Cas "Grand-mère")
+
+Les propriétaires n'ont pas besoin de disposer ou de se souvenir d'une adresse e-mail :
+- **Au dépôt** : Le champ e-mail est facultatif. Le système associe le compte au numéro de téléphone portable (`pk_phone`) et configure son identifiant principal sur ce numéro.
+- **À la connexion (`/connexion/`)** : Le propriétaire saisit son numéro de téléphone (`06...`, `+212...`, ou formaté avec espaces) et son mot de passe. Le résolveur d'authentification normalise le numéro et connecte l'utilisateur instantanément.
+
+---
+
+## 4. Intégration CI & Tests Navigateurs Réels (WebKit / Chromium / Firefox)
 
 Pour la recette multi-navigateurs E2E Playwright et la conformité Safari / iOS, le runner CI doit installer les dépendances WebKit :
 

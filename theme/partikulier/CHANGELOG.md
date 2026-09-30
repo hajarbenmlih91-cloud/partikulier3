@@ -6,9 +6,13 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ---
 
-## [6.20.7-FINAL] - 2026-09-27 (Homologation Complète 18 Scénarios de Recette)
+## [6.20.7-FINAL] - 2026-09-30 (Homologation Complète Sécurité, Invariants & Auth)
 
 ### Ajouté
+- **Passerelle d'Administration Secrète (Stealth Admin Gateway)** : Masquage total de `wp-login.php` et `/wp-admin/` pour les robots, curieux et scanners externes (redirection HTTP 302 immédiate vers la page d'accueil). Accès réservé à l'administrateur via l'URL secrète `https://partikulier.ma/wp-login.php?pk_admin_key=direction2026` (ou paramètre `?pk_direction=direction2026`). Dépose un cookie sécurisé de 2 heures (`pk_admin_access`). Clé personnalisable via `define('PK_ADMIN_SECRET_KEY', '...')` dans `wp-config.php`. Compatibilité 100% assurée avec le bouton de connexion 1-clic Hostinger hPanel grâce à la liste blanche des paramètres SSO.
+- **Authentification Propriétaire par Numéro de Téléphone Portable (Cas "Grand-mère")** : Possibilité de déposer une annonce sans renseigner d'adresse e-mail. Attribution automatique du numéro de téléphone comme identifiant (`user_login`), avec stockage de l'e-mail technique interne `{tel}@partikulier.local`. Sur la page `/connexion/`, le propriétaire peut se connecter indifféremment avec son numéro local (`06...`), international (`+212...`) ou formaté avec espaces.
+- **Unification des Erreurs de Connexion (Anti-Énumération OWASP WSTG-INFO-04)** : Remplacement de tous les messages différentiés de WordPress par le libellé neutre *"Identifiant ou mot de passe incorrect. Mot de passe oublié ?"*, neutralisant le moissonnage d'adresses ou de numéros.
+- **Rate Limiter Composite Spécial Réseaux Mobiles Marocains (CGNAT)** : Limitation des tentatives de mot de passe basée sur le couple `IP + Compte visé` (5 tentatives / 15 minutes). Protège contre le brute-force sans bloquer les autres utilisateurs partageant la même IP publique sur les antennes 4G/5G Maroc Telecom, Inwi ou Orange.
 - **Option B (100% WhatsApp Strict / SIM-07)** : Remplacement complet du formulaire web par le contact direct propriétaire par clic WhatsApp sécurisé sur toutes les fiches publiques singulières.
 - **Constructeur de Champs SE-042c** : Gestion dynamique des caractéristiques par type de bien avec plafonnement strict à 8 champs maximum, rejet côté serveur en cas de dépassement et alignement responsive mobile/tablette sur la maquette.
 - **Statut Premium Public à 0 MAD (SE-048-R)** : Activation immédiate du statut Premium offert pour le lancement (`pk_premium_public_enabled = 1`), affichage du bandeau informatif en 3 langues et purge automatique du cache à l'expiration.

@@ -73,6 +73,13 @@ class Partikulier_Security {
 			return;
 		}
 
+		// Compatibilité Hostinger hPanel & SSO : ne jamais bloquer la connexion 1-clic depuis l'hébergeur
+		foreach ( array( 'token', 'hostinger_login', 'hpanel', 'sso_token', 'wp_sso', 'hostinger_sso' ) as $sso_key ) {
+			if ( ! empty( $_GET[ $sso_key ] ) || ! empty( $_POST[ $sso_key ] ) ) {
+				return;
+			}
+		}
+
 		$secret_key    = self::get_admin_secret_key();
 		$cookie_name   = 'pk_admin_access';
 		$expected_hash = hash_hmac( 'sha256', $secret_key, wp_salt( 'auth' ) );
