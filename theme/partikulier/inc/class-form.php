@@ -686,15 +686,7 @@ class Partikulier_Form {
 		 * @return string
 		 */
 	public static function upload_hint() {
-			$max = size_format( wp_max_upload_size() );
-
-		if ( self::supports_heic() ) {
-				/* translators: %s: taille maximale. */
-				return sprintf( __( 'JPG, PNG, HEIC ou WebP · %s maximum par photo', 'partikulier' ), $max );
-		}
-
-			/* translators: %s: taille maximale. */
-			return sprintf( __( 'JPG, PNG ou WebP · %s maximum par photo', 'partikulier' ), $max );
+			return __( 'Prenez des photos avec votre smartphone ou ajoutez vos fichiers (JPG, PNG, WebP · 1 à 8 photos)', 'partikulier' );
 	}
 
 		/**

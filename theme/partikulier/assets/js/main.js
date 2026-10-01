@@ -345,22 +345,48 @@
 		var statusEl  = document.getElementById("pk-form-status");
 	if (form && submitBtn) {
 			form.addEventListener("submit", function (e) {
-					if (titleInput && ! titleInput.value.trim()) generateListingTitle();
-				if ( ! form.checkValidity()) {
-						// Laisse le navigateur afficher ses messages de validation natifs.
-						return;
-				}
-					e.preventDefault();
+					e.preventDefault(); // Toujours intercepter pour éviter le rechargement brut ou le blocage silencieux
+
+					if (titleInput && ! titleInput.value.trim() && typeof generateListingTitle === "function") {
+							generateListingTitle();
+					}
+
+					// Vérification des champs obligatoires visibles
+					var missing = [];
+					form.querySelectorAll("input, select, textarea").forEach(function (inp) {
+							if (inp.disabled || inp.type === "hidden") return;
+							var step = inp.closest(".pk-step");
+							if (step && step.hidden) return; // Les étapes masquées ont déjà été vérifiées par le stepper
+							if (inp.required && ! String(inp.value).trim()) {
+									missing.push(inp);
+									inp.classList.add("pk-invalid");
+							} else {
+									inp.classList.remove("pk-invalid");
+							}
+					});
+
+					if (missing.length > 0) {
+							missing[0].focus();
+							setStatus("✘ Veuillez renseigner tous les champs obligatoires (*) avant de valider.");
+							if (statusEl) statusEl.style.color = "#c0392b";
+							return;
+					}
+
 					submitBtn.disabled    = true;
+					var originalText      = submitBtn.textContent;
 					submitBtn.textContent = (pkConfig.i18n && pkConfig.i18n.publishing) || "Publication en cours…";
-					setStatus("");
+					setStatus("⏳ Enregistrement de votre annonce…");
+					if (statusEl) statusEl.style.color = "var(--pk-primary)";
 
 					var fd = new FormData(form);
 
 					fetch(pkConfig.ajaxUrl, { method: "POST", body: fd, credentials: "same-origin" })
 							.then(function (res) {
 									return res.json().then(function (data) {
-											if ( ! res.ok) throw new Error((data && data.data && data.data.message) || ((pkConfig.i18n && pkConfig.i18n.serverError) || "Erreur serveur"));
+											if ( ! res.ok || ! data.success) {
+													var errMsg = (data && data.data && data.data.message) || ((pkConfig.i18n && pkConfig.i18n.serverError) || "Erreur serveur");
+													throw new Error(errMsg);
+											}
 											return data;
 									});
 							})
@@ -371,12 +397,14 @@
 										return;
 								}
 									setStatus("✔ " + (payload.message || ((pkConfig.i18n && pkConfig.i18n.saved) || "Annonce enregistrée !")));
+									if (statusEl) statusEl.style.color = "#27ae60";
 									window.location.href = payload.url || pkConfig.homeUrl;
 							})
 							.catch(function (err) {
 									submitBtn.disabled    = false;
-									submitBtn.textContent = (pkConfig.i18n && pkConfig.i18n.whatsappOpen) || "Demander la validation WhatsApp";
-									setStatus("✘ " + err.message + " — " + ((pkConfig.i18n && pkConfig.i18n.retry) || "réessayez ou contactez-nous."));
+									submitBtn.textContent = originalText;
+									setStatus("✘ " + err.message + " — " + ((pkConfig.i18n && pkConfig.i18n.retry) || "veuillez vérifier vos informations."));
+									if (statusEl) statusEl.style.color = "#c0392b";
 							});
 			});
 	}

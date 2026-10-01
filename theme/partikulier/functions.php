@@ -93,8 +93,6 @@ function pk_localized_home_url( $language = '' ) {
 	if ( ! $language && function_exists( 'pll_current_language' ) ) {
 			$language = sanitize_key( (string) pll_current_language( 'slug' ) );
 	}
-		// Polylang peut ne pas encore exposer la langue pendant certains rendus
-		// froids. La route publique reste alors la source de vérité fonctionnelle.
 	if ( ! $language && isset( $_SERVER['REQUEST_URI'] ) ) {
 			$request_path  = sanitize_text_field( (string) wp_parse_url( wp_unslash( (string) $_SERVER['REQUEST_URI'] ), PHP_URL_PATH ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- REQUEST_URI is unslashed and sanitized for route detection
 			$first_segment = sanitize_key( (string) strtok( trim( $request_path, '/' ), '/' ) );
@@ -105,16 +103,17 @@ function pk_localized_home_url( $language = '' ) {
 	if ( ! $language && function_exists( 'determine_locale' ) ) {
 			$language = sanitize_key( substr( (string) determine_locale(), 0, 2 ) );
 	}
-	if ( ! $language ) {
-			return trailingslashit( home_url( '/' ) );
+
+		// Si Polylang est actif, utiliser son URL d'accueil localisée
+	if ( function_exists( 'pll_home_url' ) && $language ) {
+			$pll_url = pll_home_url( $language );
+			if ( ! empty( $pll_url ) ) {
+					return trailingslashit( $pll_url );
+			}
 	}
 
-		$url  = function_exists( 'pll_home_url' ) ? pll_home_url( $language ) : home_url( '/' . $language . '/' );
-		$path = (string) wp_parse_url( $url, PHP_URL_PATH );
-	if ( ! preg_match( '#(?:^|/)' . preg_quote( $language, '#' ) . '/?$#', untrailingslashit( $path ) ) ) {
-			$url = home_url( '/' . $language . '/' );
-	}
-		return trailingslashit( $url );
+		// Repli sûr et universel : accueil racine du site (évite les 404 sur /en/ ou /fr/ inexistants)
+		return trailingslashit( home_url( '/' ) );
 }
 
 /**
@@ -308,3 +307,13 @@ $partikulier_diagnostic_load = ( defined( 'WP_CLI' ) && WP_CLI )
 if ( $partikulier_diagnostic_load && file_exists( $partikulier_diagnostic_file ) ) {
 		require_once $partikulier_diagnostic_file;
 }
+
+/**
+ * Neutralise l'injection front-end du popup d'authentification brut d'Estatik
+ * (#es-authentication-popup) pour préserver l'expérience fluide sans mot de passe.
+ */
+add_action( 'wp_footer', function() {
+		if ( ! is_admin() ) {
+				echo '<style id="pk-suppress-es-auth-popup">#es-authentication-popup, .es-auth__popup, .mfp-bg, .mfp-wrap { display: none !important; visibility: hidden !important; pointer-events: none !important; }</style>';
+		}
+}, 999 );

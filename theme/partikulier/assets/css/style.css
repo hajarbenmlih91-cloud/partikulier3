@@ -854,7 +854,7 @@ body { background: var(--pk-white); color: var(--pk-ink); font-family: var(--pk-
 @media (max-width: 640px) {
 	.pk-container { padding-inline: 16px; }
 	.pk-header-inner { grid-template-columns: 1fr auto; }
-	.pk-header-search { display: none; }
+	.pk-header-search { grid-column: 1 / -1; width: 100%; display: block; margin-top: .4rem; }
 	.pk-main-nav { display: none; }
 	.pk-hero .pk-search { grid-template-columns: 1fr 1fr; }
 	.pk-search-action { grid-column: 1 / -1; }
@@ -1951,21 +1951,24 @@ html[dir="rtl"] .pk-card-price {
 		font-size: .76rem;
 		font-weight: 600;
 }
-@media (max-width: 560px) {
-		.pk-stepper { padding-inline: 0; }
-		.pk-stepper-list { gap: .35rem; }
-		.pk-stepper-item { align-items: flex-start; flex-direction: column; gap: .3rem; font-size: .7rem; }
-		.pk-stepper-item:not(:last-child)::after { inset-inline-end: -.28rem; inset-block-start: 1rem; width: .2rem; }
-		.pk-stepper-number { flex-basis: 2rem; }
+@media (max-width: 767px) {
+		.pk-stepper { padding-inline: 0; margin-bottom: 1.25rem; }
+		.pk-stepper-list { gap: .5rem; }
+		.pk-stepper-item { align-items: center; flex-direction: column; text-align: center; gap: .35rem; font-size: .74rem; }
+		.pk-stepper-item:not(:last-child)::after { display: none; }
+		.pk-stepper-number { flex-basis: 2.2rem; width: 2.2rem; height: 2.2rem; margin: 0 auto; font-size: .85rem; font-weight: 700; }
+		.pk-stepper-label { text-align: center; width: 100%; line-height: 1.25; }
+		.pk-stepper-status { text-align: center; }
 }
 
 /* --- carte d'etape --- */
-.pk-card {
+.pk-card, .pk-step {
 		background: #fff;
 		border: 1px solid var(--pk-line);
 		border-radius: 6px;
 		padding: 2.1rem 2.2rem 1.8rem;
 		box-shadow: 0 1px 2px rgba(22, 23, 21, .04);
+		overflow: visible !important;
 }
 .pk-card-title { font-size: 1.28rem; margin: 0 0 .3rem; letter-spacing: -.01em; }
 .pk-card-note { color: var(--pk-muted); font-size: .84rem; margin: 0 0 1.7rem; }
@@ -2026,20 +2029,24 @@ html[dir="rtl"] .pk-card-price {
 .pk-choice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
 .pk-choice {
 		position: relative;
-		display: block;
-		padding: .95rem 1.1rem;
-		border: 1px solid var(--pk-line);
-		border-radius: 3px;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		text-align: center;
+		padding: 1.15rem 1.25rem;
+		border: 1.5px solid var(--pk-line);
+		border-radius: 4px;
 		background: #faf9f6;
 		cursor: pointer;
 		transition: background .15s ease, color .15s ease, border-color .15s ease;
 }
 .pk-choice input { position: absolute; opacity: 0; pointer-events: none; }
-.pk-choice strong { display: block; font-size: .92rem; margin-bottom: .15rem; }
-.pk-choice span { display: block; font-size: .78rem; color: var(--pk-muted); }
+.pk-choice strong { display: block; font-size: 1.05rem; font-weight: 700; text-align: center; margin-bottom: .3rem; color: var(--pk-ink); }
+.pk-choice span { display: block; font-size: .8rem; text-align: center; color: var(--pk-muted); line-height: 1.35; }
 .pk-choice.is-active { background: var(--pk-ink); border-color: var(--pk-ink); }
 .pk-choice.is-active strong { color: #fff; }
-.pk-choice.is-active span { color: rgba(255, 255, 255, .72); }
+.pk-choice.is-active span { color: rgba(255, 255, 255, .78); }
 
 /* --- bascule Oui / Non --- */
 .pk-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
@@ -2058,10 +2065,11 @@ html[dir="rtl"] .pk-card-price {
 .pk-toggle-btn.is-on { background: var(--pk-ink); border-color: var(--pk-ink); color: #fff; font-weight: 600; }
 
 /* --- autocompletion --- */
-.pk-autocomplete { position: relative; }
+.pk-autocomplete { position: relative; z-index: 20; }
+.pk-autocomplete:focus-within { z-index: 2500 !important; }
 .pk-suggest {
 		position: absolute;
-		z-index: 40;
+		z-index: 3000 !important;
 		left: 0;
 		right: 0;
 		margin: .25rem 0 0;
@@ -2069,8 +2077,8 @@ html[dir="rtl"] .pk-card-price {
 		list-style: none;
 		background: #ffffff !important;
 		border: 1px solid var(--pk-line);
-		border-radius: 3px;
-		box-shadow: 0 12px 28px rgba(22, 23, 21, .10);
+		border-radius: 4px;
+		box-shadow: 0 16px 36px rgba(22, 23, 21, .16) !important;
 		max-height: 17rem;
 		overflow-y: auto;
 		color: var(--pk-ink) !important;
@@ -2198,10 +2206,10 @@ html[dir="rtl"] .pk-card-price {
 /* Espacement entre les cartes si plusieurs sont visibles (impression, no-JS). */
 .pk-steps .pk-card + .pk-card { margin-top: 1.5rem; }
 
-/* --- Cartes de choix : titre au-dessus, description en dessous --- */
-.pk-steps .pk-choice { display: block; }
-.pk-steps .pk-choice strong { display: block; margin-bottom: .2rem; }
-.pk-steps .pk-choice span { display: block; }
+/* --- Cartes de choix : titre au-dessus, description en dessous, toujours centres --- */
+.pk-steps .pk-choice { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.pk-steps .pk-choice strong { display: block; text-align: center; margin-bottom: .25rem; font-size: 1rem; }
+.pk-steps .pk-choice span { display: block; text-align: center; font-size: .78rem; }
 
 /* --- Champ avec icone : reserver la place du pictogramme --- */
 .pk-steps .pk-input-icon input,
@@ -3327,4 +3335,21 @@ html[dir="rtl"] .pk-archive-content .pk-card-price { left: auto; right: 12px; }
 @media (max-width: 767px) {
 		.pk-auth-card { border-radius: 10px; }
 		.pk-auth-trust { gap: .35rem .75rem; font-size: .8rem; }
+}
+
+/* --- Mode Tunnel Déposeur : zéro distraction sur le parcours de dépôt --- */
+.page-template-page-deposer-annonce .pk-header-search,
+.page-template-page-deposer-annonce .pk-topbar,
+.page-template-page-deposer-annonce .pk-main-nav {
+		display: none !important;
+}
+
+/* --- Neutralisation définitive de la modal brute d'authentification Estatik --- */
+#es-authentication-popup,
+.es-auth__popup,
+.mfp-bg,
+.mfp-wrap {
+		display: none !important;
+		visibility: hidden !important;
+		pointer-events: none !important;
 }
