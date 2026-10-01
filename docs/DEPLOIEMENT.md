@@ -85,8 +85,9 @@ La publication ne démarre que si les contrôles existants réussissent.
 3. Connexion SSH stricte avec `SSH_KNOWN_HOSTS`.
 4. Sauvegarde serveur dans
    `~/backups/partikulier/<timestamp>-<sha>/` :
-   archives `tar.gz` des répertoires plugin/thème existants et export
-   `wp db export` si WP-CLI est disponible. Les cinq dernières sauvegardes
+   archives `tar.gz` des répertoires plugin/thème existants et dump
+   `mysqldump` de la base (identifiants lus via `wp config get` ; Hostinger
+   désactive `proc_open()`, requis par `wp db export`). Les cinq dernières sauvegardes
    sont conservées.
 5. Activation du mode maintenance si WP-CLI est disponible.
 6. `rsync -az --delete` du plugin et du thème uniquement.
@@ -120,7 +121,10 @@ tar -xzf "$BACKUP/partikulier-core.tar.gz" -C "$WP_PATH/wp-content/plugins"
 tar -xzf "$BACKUP/partikulier.tar.gz" -C "$WP_PATH/wp-content/themes"
 
 # À n’utiliser que si le rollback applicatif exige aussi le retour base.
-gunzip -c "$BACKUP/database.sql.gz" | wp db import -
+# (`wp db import` est inutilisable sur Hostinger : proc_open() désactivé.)
+cd "$WP_PATH"
+gunzip -c "$BACKUP/database.sql.gz" | MYSQL_PWD="$(wp config get DB_PASSWORD)" \
+  mysql -h "$(wp config get DB_HOST)" -u "$(wp config get DB_USER)" "$(wp config get DB_NAME)"
 
 wp plugin activate partikulier-core
 wp cache flush

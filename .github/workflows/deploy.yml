@@ -114,8 +114,21 @@ jobs:
             tar -czf "$backup_dir/partikulier.tar.gz" -C "$WP_PATH/wp-content/themes" partikulier
           fi
           if command -v wp >/dev/null 2>&1 && [ -f "$WP_PATH/wp-config.php" ]; then
-            (cd "$WP_PATH" && wp db export "$backup_dir/database.sql" --quiet)
-            gzip "$backup_dir/database.sql"
+            # Hostinger disables proc_open(), which `wp db export` needs: call mysqldump directly.
+            cd "$WP_PATH"
+            db_name="$(wp config get DB_NAME)"
+            db_user="$(wp config get DB_USER)"
+            db_pass="$(wp config get DB_PASSWORD)"
+            db_host="$(wp config get DB_HOST)"
+            db_port=""
+            if [[ "$db_host" == *:* ]]; then
+              db_port="${db_host##*:}"
+              db_host="${db_host%%:*}"
+            fi
+            MYSQL_PWD="$db_pass" mysqldump --single-transaction --no-tablespaces \
+              -h "$db_host" ${db_port:+-P "$db_port"} -u "$db_user" "$db_name" \
+              | gzip > "$backup_dir/database.sql.gz"
+            echo "Base de données sauvegardée : $backup_dir/database.sql.gz"
           else
             echo "wp-cli indisponible ou wp-config.php absent : export DB ignoré"
           fi
