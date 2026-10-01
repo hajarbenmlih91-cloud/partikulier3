@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 		exit;
 }
 
-define( 'PARTIKULIER_VERSION', '6.20.7' );
+define( 'PARTIKULIER_VERSION', '6.20.8' );
 
 add_filter(
 	'language_attributes',
@@ -263,8 +263,9 @@ $partikulier_modules = array(
 		'/inc/class-listing-i18n.php',
 		'/inc/class-listing-translations.php',
 		'/inc/class-upgrade-wizard.php',
-		'/inc/class-page-doctor.php',
-		'/inc/class-listing-approval.php',
+	'/inc/class-page-doctor.php',
+	'/inc/class-demo-installer.php',
+	'/inc/class-listing-approval.php',
 		'/inc/class-listing-urls.php',
 		'/inc/class-crypto.php',
 		'/inc/class-settings-customize.php',
