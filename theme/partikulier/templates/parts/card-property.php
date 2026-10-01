@@ -192,7 +192,9 @@ if ( $price ) {
 										<span itemprop="addressLocality"><?php echo esc_html( $location ); ?></span>
 								</span>
 						<?php endif; ?>
-						<span class="pk-card-role"><?php echo esc_html( $pk_role_label ); ?></span>
+						<a class="pk-card-cta-top" href="<?php echo esc_url( $pk_property_url ); ?>">
+								<?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Voir l\'annonce', 'Voir l\'annonce', 'partikulier' ) ); ?> <span aria-hidden="true">&rarr;</span>
+						</a>
 				</p>
 				<dl class="pk-card-meta">
 						<?php if ( $surface ) : ?>

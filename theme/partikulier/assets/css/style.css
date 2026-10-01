@@ -1153,21 +1153,46 @@ html[dir="rtl"] .pk-card-price {
 .pk-card-badge {
 		position: absolute;
 		top: 12px;
+		left: 12px;
 		right: auto;
 		z-index: 3;
 		background: var(--pk-primary);
 		color: #fff;
-		font-size: 9px;
+		font-size: 10px;
 		font-weight: 700;
 		text-transform: uppercase;
 		letter-spacing: .06em;
-		padding: 7px 9px;
-		border-radius: 0;
+		padding: 5px 10px;
+		border-radius: 3px;
+		box-shadow: 0 2px 8px rgba(0,0,0,0.18);
 		white-space: nowrap;
-		max-width: calc(100% - 1.5rem);
+}
+.pk-card-badge.pk-badge-louer,
+.pk-card-badge.pk-badge-rent,
+.pk-card-badge.pk-badge-a-louer {
+		background: var(--pk-ink);
+}
+.pk-card-price {
+		position: absolute;
+		bottom: 12px;
 		left: 12px;
-		left: auto;
-		right: 12px;
+		z-index: 3;
+		background: rgba(22, 23, 21, 0.88);
+		backdrop-filter: blur(6px);
+		-webkit-backdrop-filter: blur(6px);
+		color: #fff;
+		font-size: 1.15rem;
+		font-weight: 800;
+		padding: 6px 12px;
+		border-radius: 4px;
+		border: 1px solid rgba(255, 255, 255, 0.12);
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+		letter-spacing: -.01em;
+}
+.pk-card-price-note {
+		font-size: .76rem;
+		font-weight: 500;
+		color: rgba(255, 255, 255, 0.75);
 }
 /* Les cases a cocher et boutons radio heritaient de .pk-field input{width:100%},
 	ce qui les etirait a 390px et provoquait un debordement horizontal de 41px
@@ -1658,6 +1683,21 @@ html[dir="rtl"] .pk-card-price {
 .pk-card-role {
 		flex: none; color: var(--pk-muted); font-size: .68rem;
 		font-weight: 700; letter-spacing: .04em;
+}
+.pk-card-cta-top {
+		flex: none;
+		color: var(--pk-primary);
+		font-size: .76rem;
+		font-weight: 700;
+		text-decoration: none;
+		display: inline-flex;
+		align-items: center;
+		gap: .25rem;
+		transition: color var(--pk-transition);
+}
+.pk-card-cta-top:hover {
+		color: var(--pk-primary-dark);
+		text-decoration: underline;
 }
 
 /* --- Bouton aperçu rapide (œil) --- */
