@@ -1,6 +1,6 @@
 <?php
 /**
- * Installateur de démo : 10 annonces avec vraies photos, visibles immédiatement.
+ * Installateur de démo : 30 annonces avec vraies photos, visibles immédiatement.
  *
  * But : permettre de voir TOUTES les erreurs d'affichage d'un coup :
  *   - cartes d'annonces (accueil, /annonces/, villes)
@@ -9,15 +9,18 @@
  *   - traduction FR/EN/AR + hreflang
  *   - sans passer par le formulaire ni la validation WhatsApp manuelle
  *
- * Le jeu est IDENTIQUE à tests/seed-annonces-test.php (même pipeline que
+ * Le jeu est basé sur tests/seed-annonces-test.php (même pipeline que
  * class-form.php) mais avec de VRAIES photos du dossier demo/images/ et une
  * UI 1-clic dans l'admin (Outils > Démo Partikulier).
  *
- * - 10 annonces : 4 Casa, 3 Rabat, 3 Marrakech — 7 types — 8 ventes / 2 locations
+ * - 30 annonces : 10 Casa, 10 Rabat, 10 Marrakech — 7 types — 15 ventes / 15 locations
  * - 3 photos par annonce, piochées dans demo/images/ (9 JPG fournis, dupliqués)
  * - Titres/descriptions générés par Partikulier_Listing_I18n (comme un vrai dépôt)
  * - _pk_status = actif + Polylang + permaliens purgés → visibles dès l'install
  * - Marque _pk_seed_demo = 1 sur chaque post + attachment → purge propre en 1 clic
+ * - Si Polylang FR/EN/AR est configuré, chaque annonce est traduite automatiquement
+ *   (EN + AR via Partikulier_Listing_Translations::sync) → 30 FR + 30 EN + 30 AR = 90 posts
+ *   Sinon, seules 30 annonces FR sont créées.
  *
  * Accès : administrateurs uniquement, nonce, pas de CLI requis.
  * Usage : Apparence > Démo Partikulier ou Outils > Démo Partikulier
@@ -42,7 +45,6 @@ class Partikulier_Demo_Installer {
 	}
 
 	public static function menu() {
-		// Deux entrées pour qu'on la trouve : Outils + Apparence
 		add_management_page(
 			__( 'Démo Partikulier', 'partikulier' ),
 			__( 'Démo Partikulier', 'partikulier' ),
@@ -99,11 +101,12 @@ class Partikulier_Demo_Installer {
 		$has_translations = class_exists( 'Partikulier_Listing_Translations' ) && method_exists( 'Partikulier_Listing_Translations', 'available' ) && Partikulier_Listing_Translations::available();
 		$demo_dir = PARTIKULIER_DIR . '/demo/images';
 		$demo_images = is_dir( $demo_dir ) ? count( glob( $demo_dir . '/*.jpg' ) ) : 0;
+		$languages = $has_translations ? Partikulier_Listing_Translations::active_languages() : array( 'fr' );
 		?>
 		<div class="wrap pk-demo-wrap" style="max-width:900px">
-			<h1><?php esc_html_e( 'Démo Partikulier — 10 annonces avec photos', 'partikulier' ); ?></h1>
+			<h1><?php esc_html_e( 'Démo Partikulier — 30 annonces avec photos', 'partikulier' ); ?></h1>
 			<p style="font-size:14px;color:#444">
-				<?php esc_html_e( 'Installe en 1 clic 10 annonces publiées avec vraies photos, visibles immédiatement sur l’accueil, /annonces/ et les fiches bien. Idéal pour repérer toutes les erreurs d’affichage sans passer par le formulaire.', 'partikulier' ); ?>
+				<?php esc_html_e( 'Installe en 1 clic 30 annonces publiées avec vraies photos (15 ventes + 15 locations), visibles immédiatement sur l’accueil, /annonces/ et les fiches bien. Idéal pour repérer toutes les erreurs d’affichage sans passer par le formulaire.', 'partikulier' ); ?>
 			</p>
 
 			<div style="background:#fff;border:1px solid #ccd0d4;border-left:4px solid #2271b1;padding:16px 20px;margin:16px 0">
@@ -113,15 +116,24 @@ class Partikulier_Demo_Installer {
 					<?php esc_html_e( 'Dossier demo/images :', 'partikulier' ); ?> <?php echo (int) $demo_images; ?> JPG<br>
 					Estatik : <?php echo $has_estatik ? '✅ actif' : '❌ manquant — installez/activiez Estatik d’abord'; ?><br>
 					Moteur Partikulier : <?php echo $has_i18n ? '✅' : '❌ thème incomplet'; ?><br>
-					Polylang : <?php echo $has_translations ? '✅ FR/EN/AR' : '⚠️ FR seul (sans Polylang, pas de traductions EN/AR)'; ?>
+					Polylang : <?php echo $has_translations ? '✅ ' . esc_html( implode( '/', $languages ) ) . ' — chaque annonce sera traduite en ' . esc_html( implode( ' + ', $languages ) ) : '⚠️ FR seul (sans Polylang, pas de traductions EN/AR)'; ?>
 				</p>
+				<?php if ( $has_translations && count( $languages ) >= 2 ) : ?>
+				<p style="margin:8px 0 0;font-size:13px;color:#50575e">
+					<?php esc_html_e( 'Avec Polylang, 30 annonces FR génèrent automatiquement 30 EN + 30 AR = 90 fiches au total, avec hreflang et termes traduits.', 'partikulier' ); ?>
+				</p>
+				<?php else : ?>
+				<p style="margin:8px 0 0;font-size:13px;color:#50575e">
+					<?php esc_html_e( 'Sans Polylang, seules 30 annonces FR seront créées. Activez Polylang FR/EN/AR avant l’installation pour avoir les 3 langues.', 'partikulier' ); ?>
+				</p>
+				<?php endif; ?>
 			</div>
 
 			<div style="display:flex;gap:12px;flex-wrap:wrap;margin:16px 0">
 				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 					<?php wp_nonce_field( self::NONCE ); ?>
 					<input type="hidden" name="action" value="pk_demo_install">
-					<?php submit_button( $demo_count ? __( 'Réinstaller la démo (purge + recrée)', 'partikulier' ) : __( 'Installer la démo (10 annonces + photos)', 'partikulier' ), 'primary', 'submit', false, $has_estatik && $has_i18n ? array() : array( 'disabled' => 'disabled' ) ); ?>
+					<?php submit_button( $demo_count ? __( 'Réinstaller la démo (purge + 30 annonces)', 'partikulier' ) : __( 'Installer la démo (30 annonces + photos)', 'partikulier' ), 'primary', 'submit', false, $has_estatik && $has_i18n ? array() : array( 'disabled' => 'disabled' ) ); ?>
 				</form>
 				<?php if ( $demo_count || $media_count ) : ?>
 				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" onsubmit="return confirm('Supprimer toutes les annonces et photos de démo ?');">
@@ -136,17 +148,17 @@ class Partikulier_Demo_Installer {
 			<h2><?php esc_html_e( 'Vérifications rapides', 'partikulier' ); ?></h2>
 			<ul style="list-style:disc;margin-left:20px">
 				<li><a href="<?php echo esc_url( home_url( '/' ) ); ?>" target="_blank"><?php esc_html_e( 'Accueil — cartes d’annonces + villes', 'partikulier' ); ?></a></li>
-				<li><a href="<?php echo esc_url( pk_properties_archive_url() ); ?>" target="_blank"><?php esc_html_e( 'Catalogue /annonces/', 'partikulier' ); ?></a> — filtres : <code>?es_city=casablanca</code> · <code>?es_type=villa</code> · <code>?es_action=a-louer</code></li>
+				<li><a href="<?php echo esc_url( pk_properties_archive_url() ); ?>" target="_blank"><?php esc_html_e( 'Catalogue /annonces/', 'partikulier' ); ?></a> — filtres : <code>?es_city=casablanca</code> · <code>?es_type=villa</code> · <code>?es_action=a-louer</code> (location) vs <code>?es_action=a-vendre</code> (vente)</li>
 				<li><?php esc_html_e( 'Fiches bien : cliquez une carte → galerie (flèches + compteur), métriques, bloc WhatsApp', 'partikulier' ); ?></li>
 			</ul>
-			<p><strong>Contenu installé :</strong> 4 Casablanca (Maârif, Aïn Diab, Gauthier, Californie) · 3 Rabat (Agdal, Souissi, Hassan) · 3 Marrakech (Médina, Hivernage, Targa) — 7 types — 8 ventes / 2 locations — chaque annonce a 3 photos du dossier demo.</p>
+			<p><strong>Contenu installé :</strong> 30 annonces — 10 Casablanca, 10 Rabat, 10 Marrakech — 7 types (appartement, villa, studio, maison, duplex, riad, terrain) — 15 ventes / 15 locations — chaque annonce a 3 photos du dossier demo.</p>
 			<?php endif; ?>
 
 			<details style="margin-top:20px;background:#f6f7f7;padding:12px 16px;border:1px solid #dcdcde">
 				<summary style="cursor:pointer;font-weight:600"><?php esc_html_e( 'Alternative WP-CLI', 'partikulier' ); ?></summary>
-				<p style="margin:8px 0 0"><code>wp eval-file <?php echo esc_html( 'wp-content/themes/partikulier/tests/seed-annonces-test.php' ); ?></code> — simulation<br>
-				<code>PK_APPLIQUER=1 wp eval-file wp-content/themes/partikulier/tests/seed-annonces-test.php</code> — applique<br>
-				<code>PK_PURGER=1 PK_APPLIQUER=1 wp eval-file wp-content/themes/partikulier/tests/seed-annonces-test.php</code> — purge</p>
+				<p style="margin:8px 0 0"><code>wp eval-file <?php echo esc_html( 'wp-content/themes/partikulier/tests/seed-annonces-test.php' ); ?></code> — simulation (10 annonces historiques)<br>
+				<code>PK_APPLIQUER=1 wp eval-file wp-content/themes/partikulier/tests/seed-annonces-test.php</code> — applique 10<br>
+				<?php esc_html_e( 'La démo 30 annonces est uniquement via l’interface 1-clic ci-dessus.', 'partikulier' ); ?></p>
 			</details>
 		</div>
 		<?php
@@ -209,7 +221,7 @@ class Partikulier_Demo_Installer {
 	}
 
 	/**
-	 * Crée le jeu de démo complet. Retourne un message pour l'admin.
+	 * Crée le jeu de démo complet (30 annonces). Retourne un message pour l'admin.
 	 */
 	public static function seed() {
 		if ( ! class_exists( 'Partikulier_Listing_Preview' ) || ! class_exists( 'Partikulier_Listing_I18n' ) ) {
@@ -247,19 +259,8 @@ class Partikulier_Demo_Installer {
 			return 'ERREUR : aucune photo disponible. Vérifiez que le dossier demo/images/ contient des JPG et que le dossier uploads est inscriptible.';
 		}
 
-		// 3) Données des 10 annonces (même jeu que tests/seed-annonces-test.php)
-		$listings = array(
-			array( 'type' => 'Appartement', 'type_slug' => 'appartement', 'city' => 'Casablanca', 'city_slug' => 'casablanca', 'district' => 'Maârif',     'action' => 'vendre', 'price' => 1450000, 'surface' => 120, 'bedrooms' => '3',  'living' => '1', 'bathrooms' => '2', 'floor' => '3',   'terrace' => 'Oui', 'terrace_surface' => 12, 'garage' => 'Non', 'elevator' => 'Oui', 'vis_a_vis' => 'Oui', 'lat' => 33.5883, 'lng' => -7.6320 ),
-			array( 'type' => 'Appartement', 'type_slug' => 'appartement', 'city' => 'Casablanca', 'city_slug' => 'casablanca', 'district' => 'Ain Diab',   'action' => 'vendre', 'price' => 980000,  'surface' => 85,  'bedrooms' => '2',  'living' => '1', 'bathrooms' => '1', 'floor' => '5',   'terrace' => 'Non', 'terrace_surface' => 0,  'garage' => 'Non', 'elevator' => 'Oui', 'vis_a_vis' => 'Non', 'lat' => 33.5920, 'lng' => -7.6710 ),
-			array( 'type' => 'Studio',      'type_slug' => 'studio',      'city' => 'Casablanca', 'city_slug' => 'casablanca', 'district' => 'Gauthier',   'action' => 'vendre', 'price' => 550000,  'surface' => 40,  'bedrooms' => '0',  'living' => '1', 'bathrooms' => '1', 'floor' => '2',   'terrace' => 'Non', 'terrace_surface' => 0,  'garage' => 'Non', 'elevator' => 'Non', 'vis_a_vis' => 'Non', 'lat' => 33.5950, 'lng' => -7.6180 ),
-			array( 'type' => 'Villa',       'type_slug' => 'villa',       'city' => 'Casablanca', 'city_slug' => 'casablanca', 'district' => 'Californie', 'action' => 'vendre', 'price' => 4900000, 'surface' => 320, 'bedrooms' => '3+', 'living' => '2', 'bathrooms' => '3', 'floor' => 'RDC', 'terrace' => 'Oui', 'terrace_surface' => 40, 'garage' => 'Oui', 'elevator' => 'Non', 'vis_a_vis' => 'Non', 'lat' => 33.5660, 'lng' => -7.6630 ),
-			array( 'type' => 'Appartement', 'type_slug' => 'appartement', 'city' => 'Rabat',      'city_slug' => 'rabat',      'district' => 'Agdal',      'action' => 'louer',  'price' => 6500,    'surface' => 95,  'bedrooms' => '2',  'living' => '1', 'bathrooms' => '1', 'floor' => '4',   'terrace' => 'Non', 'terrace_surface' => 0,  'garage' => 'Non', 'elevator' => 'Oui', 'vis_a_vis' => 'Non', 'lat' => 34.0100, 'lng' => -6.8500 ),
-			array( 'type' => 'Maison',      'type_slug' => 'maison',      'city' => 'Rabat',      'city_slug' => 'rabat',      'district' => 'Souissi',    'action' => 'vendre', 'price' => 3200000, 'surface' => 240, 'bedrooms' => '4',  'living' => '2', 'bathrooms' => '3', 'floor' => 'RDC', 'terrace' => 'Oui', 'terrace_surface' => 25, 'garage' => 'Oui', 'elevator' => 'Non', 'vis_a_vis' => 'Oui', 'lat' => 33.9700, 'lng' => -6.8600 ),
-			array( 'type' => 'Duplex',      'type_slug' => 'duplex',      'city' => 'Rabat',      'city_slug' => 'rabat',      'district' => 'Hassan',     'action' => 'vendre', 'price' => 1750000, 'surface' => 140, 'bedrooms' => '3',  'living' => '1', 'bathrooms' => '2', 'floor' => '6',   'terrace' => 'Oui', 'terrace_surface' => 18, 'garage' => 'Non', 'elevator' => 'Oui', 'vis_a_vis' => 'Non', 'lat' => 34.0210, 'lng' => -6.8400 ),
-			array( 'type' => 'Riad',        'type_slug' => 'riad',        'city' => 'Marrakech',  'city_slug' => 'marrakech',  'district' => 'Médina',     'action' => 'vendre', 'price' => 2800000, 'surface' => 180, 'bedrooms' => '4',  'living' => '2', 'bathrooms' => '3', 'floor' => 'RDC', 'terrace' => 'Oui', 'terrace_surface' => 30, 'garage' => 'Non', 'elevator' => 'Non', 'vis_a_vis' => 'Non', 'lat' => 31.6295, 'lng' => -7.9811 ),
-			array( 'type' => 'Appartement', 'type_slug' => 'appartement', 'city' => 'Marrakech',  'city_slug' => 'marrakech',  'district' => 'Hivernage',  'action' => 'louer',  'price' => 7500,    'surface' => 105, 'bedrooms' => '2',  'living' => '1', 'bathrooms' => '2', 'floor' => '1',   'terrace' => 'Oui', 'terrace_surface' => 10, 'garage' => 'Non', 'elevator' => 'Oui', 'vis_a_vis' => 'Non', 'lat' => 31.6240, 'lng' => -8.0060 ),
-			array( 'type' => 'Terrain',     'type_slug' => 'terrain',     'city' => 'Marrakech',  'city_slug' => 'marrakech',  'district' => 'Targa',      'action' => 'vendre', 'price' => 850000,  'surface' => 500, 'bedrooms' => '',   'living' => '',  'bathrooms' => '',  'floor' => '',   'terrace' => 'Non', 'terrace_surface' => 0,  'garage' => 'Non', 'elevator' => 'Non', 'vis_a_vis' => 'Non', 'lat' => 31.6640, 'lng' => -8.0500 ),
-		);
+		// 3) Génération des 30 annonces — 10 Casa / 10 Rabat / 10 Marrakech — 15 ventes / 15 locations
+		$listings = self::generate_30_listings();
 
 		// Prépare les termes canoniques (langue fr + liaisons Polylang si disponible)
 		$prepared = array();
@@ -353,9 +354,9 @@ class Partikulier_Demo_Installer {
 			update_post_meta( $post_id, '_pk_district_name', $p['district'] );
 			update_post_meta( $post_id, '_pk_owner_name', 'Démo Partikulier' );
 			update_post_meta( $post_id, '_pk_owner_email', $email );
-			update_post_meta( $post_id, '_pk_owner_phone', '+212 600 000 0' . str_pad( (string) ( $i + 1 ), 2, '0', STR_PAD_LEFT ) );
+			update_post_meta( $post_id, '_pk_owner_phone', '+212 600 000 ' . str_pad( (string) ( $i + 1 ), 2, '0', STR_PAD_LEFT ) );
 			update_post_meta( $post_id, '_pk_owner_role', 'proprietaire' );
-			update_post_meta( $post_id, '_pk_views', 0 );
+			update_post_meta( $post_id, '_pk_views', wp_rand( 12, 340 ) );
 			update_post_meta( $post_id, '_pk_meta_description', Partikulier_Listing_I18n::meta_description( $norm, $default ) );
 			if ( class_exists( 'Partikulier_WhatsApp_Verification' ) ) {
 				update_post_meta( $post_id, '_pk_status', Partikulier_WhatsApp_Verification::STATUS_PENDING );
@@ -396,7 +397,6 @@ class Partikulier_Demo_Installer {
 						update_post_meta( (int) $tid, '_pk_whatsapp_verified_by', (int) get_current_user_id() ?: 1 );
 					}
 				} else {
-					// Sans traduction, on active au moins la source
 					update_post_meta( $post_id, 'es_latitude', (float) $p['lat'] );
 					update_post_meta( $post_id, 'es_longitude', (float) $p['lng'] );
 					update_post_meta( $post_id, '_pk_status', 'actif' );
@@ -416,7 +416,85 @@ class Partikulier_Demo_Installer {
 		if ( $errors ) {
 			return sprintf( __( 'Démo installée : %d annonces créées, %d échecs. Vérifiez les logs.', 'partikulier' ), $created, $errors );
 		}
-		return sprintf( __( 'Démo installée : %d annonces publiées avec photos, visibles sur l’accueil et /annonces/.', 'partikulier' ), $created );
+		$total_langs = count( $languages );
+		if ( $total_langs > 1 ) {
+			return sprintf( __( 'Démo installée : %d annonces FR (+ %d traductions EN/AR) soit %d fiches au total, avec photos, visibles sur l’accueil et /annonces/.', 'partikulier' ), $created, $created * ( $total_langs - 1 ), $created * $total_langs );
+		}
+		return sprintf( __( 'Démo installée : %d annonces publiées avec photos, visibles sur l’accueil et /annonces/. Activez Polylang FR/EN/AR puis réinstallez pour avoir les traductions.', 'partikulier' ), $created );
+	}
+
+	/**
+	 * Génère les 30 annonces : 10 Casa / 10 Rabat / 10 Marrakech — 15 ventes / 15 locations.
+	 * Distribution équilibrée pour tester tous les filtres et cas d'affichage.
+	 */
+	private static function generate_30_listings() {
+		// Base fixe des 10 premières (identité visuelle forte, déjà validée) + 20 générées par variation
+		$base = array(
+			array( 'type' => 'Appartement', 'type_slug' => 'appartement', 'city' => 'Casablanca', 'city_slug' => 'casablanca', 'district' => 'Maârif',     'action' => 'vendre', 'price' => 1450000, 'surface' => 120, 'bedrooms' => '3',  'living' => '1', 'bathrooms' => '2', 'floor' => '3',   'terrace' => 'Oui', 'terrace_surface' => 12, 'garage' => 'Non', 'elevator' => 'Oui', 'vis_a_vis' => 'Oui', 'lat' => 33.5883, 'lng' => -7.6320 ),
+			array( 'type' => 'Appartement', 'type_slug' => 'appartement', 'city' => 'Casablanca', 'city_slug' => 'casablanca', 'district' => 'Ain Diab',   'action' => 'vendre', 'price' => 980000,  'surface' => 85,  'bedrooms' => '2',  'living' => '1', 'bathrooms' => '1', 'floor' => '5',   'terrace' => 'Non', 'terrace_surface' => 0,  'garage' => 'Non', 'elevator' => 'Oui', 'vis_a_vis' => 'Non', 'lat' => 33.5920, 'lng' => -7.6710 ),
+			array( 'type' => 'Studio',      'type_slug' => 'studio',      'city' => 'Casablanca', 'city_slug' => 'casablanca', 'district' => 'Gauthier',   'action' => 'louer',  'price' => 5500,    'surface' => 40,  'bedrooms' => '0',  'living' => '1', 'bathrooms' => '1', 'floor' => '2',   'terrace' => 'Non', 'terrace_surface' => 0,  'garage' => 'Non', 'elevator' => 'Non', 'vis_a_vis' => 'Non', 'lat' => 33.5950, 'lng' => -7.6180 ),
+			array( 'type' => 'Villa',       'type_slug' => 'villa',       'city' => 'Casablanca', 'city_slug' => 'casablanca', 'district' => 'Californie', 'action' => 'vendre', 'price' => 4900000, 'surface' => 320, 'bedrooms' => '3+', 'living' => '2', 'bathrooms' => '3', 'floor' => 'RDC', 'terrace' => 'Oui', 'terrace_surface' => 40, 'garage' => 'Oui', 'elevator' => 'Non', 'vis_a_vis' => 'Non', 'lat' => 33.5660, 'lng' => -7.6630 ),
+			array( 'type' => 'Appartement', 'type_slug' => 'appartement', 'city' => 'Rabat',      'city_slug' => 'rabat',      'district' => 'Agdal',      'action' => 'louer',  'price' => 6500,    'surface' => 95,  'bedrooms' => '2',  'living' => '1', 'bathrooms' => '1', 'floor' => '4',   'terrace' => 'Non', 'terrace_surface' => 0,  'garage' => 'Non', 'elevator' => 'Oui', 'vis_a_vis' => 'Non', 'lat' => 34.0100, 'lng' => -6.8500 ),
+			array( 'type' => 'Maison',      'type_slug' => 'maison',      'city' => 'Rabat',      'city_slug' => 'rabat',      'district' => 'Souissi',    'action' => 'vendre', 'price' => 3200000, 'surface' => 240, 'bedrooms' => '4',  'living' => '2', 'bathrooms' => '3', 'floor' => 'RDC', 'terrace' => 'Oui', 'terrace_surface' => 25, 'garage' => 'Oui', 'elevator' => 'Non', 'vis_a_vis' => 'Oui', 'lat' => 33.9700, 'lng' => -6.8600 ),
+			array( 'type' => 'Duplex',      'type_slug' => 'duplex',      'city' => 'Rabat',      'city_slug' => 'rabat',      'district' => 'Hassan',     'action' => 'vendre', 'price' => 1750000, 'surface' => 140, 'bedrooms' => '3',  'living' => '1', 'bathrooms' => '2', 'floor' => '6',   'terrace' => 'Oui', 'terrace_surface' => 18, 'garage' => 'Non', 'elevator' => 'Oui', 'vis_a_vis' => 'Non', 'lat' => 34.0210, 'lng' => -6.8400 ),
+			array( 'type' => 'Riad',        'type_slug' => 'riad',        'city' => 'Marrakech',  'city_slug' => 'marrakech',  'district' => 'Médina',     'action' => 'vendre', 'price' => 2800000, 'surface' => 180, 'bedrooms' => '4',  'living' => '2', 'bathrooms' => '3', 'floor' => 'RDC', 'terrace' => 'Oui', 'terrace_surface' => 30, 'garage' => 'Non', 'elevator' => 'Non', 'vis_a_vis' => 'Non', 'lat' => 31.6295, 'lng' => -7.9811 ),
+			array( 'type' => 'Appartement', 'type_slug' => 'appartement', 'city' => 'Marrakech',  'city_slug' => 'marrakech',  'district' => 'Hivernage',  'action' => 'louer',  'price' => 7500,    'surface' => 105, 'bedrooms' => '2',  'living' => '1', 'bathrooms' => '2', 'floor' => '1',   'terrace' => 'Oui', 'terrace_surface' => 10, 'garage' => 'Non', 'elevator' => 'Oui', 'vis_a_vis' => 'Non', 'lat' => 31.6240, 'lng' => -8.0060 ),
+			array( 'type' => 'Terrain',     'type_slug' => 'terrain',     'city' => 'Marrakech',  'city_slug' => 'marrakech',  'district' => 'Targa',      'action' => 'vendre', 'price' => 850000,  'surface' => 500, 'bedrooms' => '',   'living' => '',  'bathrooms' => '',  'floor' => '',   'terrace' => 'Non', 'terrace_surface' => 0,  'garage' => 'Non', 'elevator' => 'Non', 'vis_a_vis' => 'Non', 'lat' => 31.6640, 'lng' => -8.0500 ),
+		);
+		// 20 annonces supplémentaires pour atteindre 30 — variations déterministes
+		$pool_cities = array(
+			array( 'Casablanca', 'casablanca', 'Oasis',      33.5550, -7.6200 ),
+			array( 'Casablanca', 'casablanca', 'Bourgogne',  33.5860, -7.6400 ),
+			array( 'Casablanca', 'casablanca', 'Hay Riad',   33.5710, -7.6500 ),
+			array( 'Casablanca', 'casablanca', 'Val d\'Anfa',33.5800, -7.6500 ),
+			array( 'Casablanca', 'casablanca', 'Sidi Maârouf',33.5200,-7.6500 ),
+			array( 'Rabat',      'rabat',      'Hay Riad',   34.0000, -6.8600 ),
+			array( 'Rabat',      'rabat',      'Les Orangers',34.0200,-6.8300 ),
+			array( 'Rabat',      'rabat',      'Mabella',    33.9900, -6.8400 ),
+			array( 'Rabat',      'rabat',      'Océan',      34.0300, -6.8400 ),
+			array( 'Rabat',      'rabat',      'Temara',     33.9300, -6.9100 ),
+			array( 'Marrakech',  'marrakech',  'Gueliz',     31.6400, -8.0100 ),
+			array( 'Marrakech',  'marrakech',  'Palmeraie',  31.6800, -7.9800 ),
+			array( 'Tanger',     'tanger',     'Malabata',   35.7800, -5.8100 ),
+			array( 'Tanger',     'tanger',     'Marshan',    35.7900, -5.8300 ),
+			array( 'Agadir',     'agadir',     'Founty',     30.4200, -9.6000 ),
+			array( 'Agadir',     'agadir',     'Hay Mohammadi',30.4300,-9.6000 ),
+			array( 'Fès',        'fes',        'Ville Nouvelle',34.0400,-5.0000 ),
+			array( 'Fès',        'fes',        'Saïss',      33.9900, -5.0000 ),
+			array( 'Casablanca', 'casablanca', 'Anfa',       33.6000, -7.6600 ),
+			array( 'Marrakech',  'marrakech',  'Agdal',      31.6000, -7.9900 ),
+		);
+		$pool_types = array(
+			array( 'Appartement', 'appartement', 95,  850000,  '2', '1', '1' ),
+			array( 'Villa',       'villa',       280, 3800000, '3+','2', '3' ),
+			array( 'Studio',      'studio',      35,  4800,    '0', '1', '1' ),
+			array( 'Maison',      'maison',      200, 2100000, '3', '1', '2' ),
+			array( 'Terrain',     'terrain',     400, 720000,  '',  '',  ''  ),
+			array( 'Riad',        'riad',        160, 2400000, '3', '2', '2' ),
+			array( 'Duplex',      'duplex',      130, 1650000, '3', '1', '2' ),
+			array( 'Immeuble',    'immeuble',    600, 7500000, '3+','2', '3' ),
+		);
+		for ( $i = 0; $i < 20; $i++ ) {
+			$c = $pool_cities[ $i % count( $pool_cities ) ];
+			$t = $pool_types[ $i % count( $pool_types ) ];
+			$is_rent = ( 1 === $i % 2 ); // alternance vente / location → 10 ventes + 10 locations sur ces 20
+			$price = $is_rent ? ( $t[3] > 100000 ? intval( $t[3] / 200 ) : $t[3] ) : $t[3];
+			if ( $is_rent && $price < 3000 ) { $price = 3500 + ( $i * 137 ) % 4000; }
+			if ( ! $is_rent && $price < 100000 ) { $price = 600000 + ( $i * 99000 ) % 800000; }
+			// petite variation de prix/surface pour éviter les doublons exacts
+			$price   = intval( $price * ( 0.92 + ( $i * 7 % 15 ) / 100 ) );
+			$surface = intval( $t[2] * ( 0.85 + ( $i * 3 % 20 ) / 100 ) );
+			$base[] = array(
+				'type' => $t[0], 'type_slug' => $t[1], 'city' => $c[0], 'city_slug' => $c[1], 'district' => $c[2],
+				'action' => $is_rent ? 'louer' : 'vendre', 'price' => $price, 'surface' => $surface,
+				'bedrooms' => $t[4], 'living' => $t[5], 'bathrooms' => $t[6],
+				'floor' => $is_rent ? (string) ( 1 + $i % 6 ) : ( 0 === $i % 3 ? 'RDC' : (string) ( 2 + $i % 5 ) ),
+				'terrace' => ( 0 === $i % 3 ? 'Oui' : 'Non' ), 'terrace_surface' => ( 0 === $i % 3 ? 10 + $i % 20 : 0 ),
+				'garage' => ( 0 === $i % 4 ? 'Oui' : 'Non' ), 'elevator' => ( 0 === $i % 2 ? 'Oui' : 'Non' ),
+				'vis_a_vis' => ( 0 === $i % 3 ? 'Oui' : 'Non' ), 'lat' => $c[3] + ( $i * 0.001 ), 'lng' => $c[4] + ( $i * 0.001 ),
+			);
+		}
+		return $base; // 30 au total
 	}
 
 	// --- Helpers : termes + photos ---
@@ -477,7 +555,6 @@ class Partikulier_Demo_Installer {
 		$dir = PARTIKULIER_DIR . '/demo/images';
 		$files = is_dir( $dir ) ? glob( $dir . '/*.jpg' ) : array();
 		if ( ! $files ) {
-			// Repli : 3 images de la médiathèque si demo/images vide (ex. upgrade)
 			$ids = get_posts( array(
 				'post_type'        => 'attachment',
 				'post_mime_type'   => 'image',
@@ -490,7 +567,6 @@ class Partikulier_Demo_Installer {
 			) );
 			return array_map( 'absint', is_wp_error( $ids ) ? array() : $ids );
 		}
-		// Si des attachments de démo existent déjà, on les réutilise (évite de dupliquer à chaque install)
 		$existing = get_posts( array(
 			'post_type'        => 'attachment',
 			'post_status'      => 'inherit',
