@@ -39,7 +39,7 @@ for path in [Path('theme/partikulier/package.json')]:
 print('JSON lint: PASS')
 PY
 
-if find . -type f \( -name '.env' -o -name '.env.*' -o -name '*.sqlite' -o -name '*.sql.bak' \) -not -path './plugin/partikulier-core/migrations/*' -print -quit | grep -q .; then
+if find . -type f \( -name '.env' -o -name '.env.*' -o -name '*.sqlite' -o -name '*.sql.bak' \) -not -name '*.example' -not -path './plugin/partikulier-core/migrations/*' -print -quit | grep -q .; then
   echo 'Forbidden artifact found' >&2
   exit 1
 fi

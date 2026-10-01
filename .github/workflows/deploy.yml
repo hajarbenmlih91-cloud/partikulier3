@@ -1,0 +1,198 @@
+name: Déploiement Hostinger
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Environnement cible
+        required: true
+        default: dev
+        type: choice
+        options:
+          - dev
+          - uat
+          - prd
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-${{ github.event_name == 'workflow_dispatch' && inputs.environment || startsWith(github.ref, 'refs/tags/v') && 'prd' || github.ref == 'refs/heads/main' && 'uat' || 'dev' }}
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    name: CI réutilisée
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    name: Déployer vers ${{ github.event_name == 'workflow_dispatch' && inputs.environment || startsWith(github.ref, 'refs/tags/v') && 'prd' || github.ref == 'refs/heads/main' && 'uat' || 'dev' }}
+    runs-on: ubuntu-latest
+    needs: ci
+    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || startsWith(github.ref, 'refs/tags/v') && 'prd' || github.ref == 'refs/heads/main' && 'uat' || 'dev' }}
+    env:
+      DEPLOY_ENVIRONMENT: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || startsWith(github.ref, 'refs/tags/v') && 'prd' || github.ref == 'refs/heads/main' && 'uat' || 'dev' }}
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+      SSH_PORT: ${{ secrets.SSH_PORT }}
+      SSH_USER: ${{ secrets.SSH_USER }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+      WP_PATH: ${{ secrets.WP_PATH }}
+      SITE_URL: ${{ vars.SITE_URL }}
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Construire et préparer les artefacts
+        run: |
+          set -euo pipefail
+          bash scripts/package.sh dist
+          echo "Checksums SHA-256 :"
+          sha256sum dist/*.zip
+          rm -rf build/deploy-artifacts
+          mkdir -p build/deploy-artifacts
+          unzip -q dist/B-INSTALLER-PLUGIN-partikulier-core-*.zip -d build/deploy-artifacts
+          unzip -q dist/partikulier-theme-*.zip -d build/deploy-artifacts
+          test -d build/deploy-artifacts/partikulier-core
+          test -d build/deploy-artifacts/partikulier
+
+      - name: Configurer SSH strict
+        run: |
+          set -euo pipefail
+          : "${SSH_HOST:?secret SSH_HOST manquant}"
+          : "${SSH_PORT:?secret SSH_PORT manquant}"
+          : "${SSH_USER:?secret SSH_USER manquant}"
+          : "${SSH_PRIVATE_KEY:?secret SSH_PRIVATE_KEY manquant}"
+          : "${SSH_KNOWN_HOSTS:?secret SSH_KNOWN_HOSTS manquant}"
+          : "${WP_PATH:?secret WP_PATH manquant}"
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
+          chmod 600 "$HOME/.ssh/id_ed25519"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 644 "$HOME/.ssh/known_hosts"
+          {
+            echo "Host partikulier-hostinger"
+            echo "  HostName $SSH_HOST"
+            echo "  Port $SSH_PORT"
+            echo "  User $SSH_USER"
+            echo "  IdentityFile $HOME/.ssh/id_ed25519"
+            echo "  UserKnownHostsFile $HOME/.ssh/known_hosts"
+            echo "  StrictHostKeyChecking yes"
+            echo "  IdentitiesOnly yes"
+            echo "  BatchMode yes"
+          } > "$HOME/.ssh/config"
+          chmod 600 "$HOME/.ssh/config"
+
+      - name: Sauvegarde pré-déploiement
+        run: |
+          set -euo pipefail
+          ssh partikulier-hostinger 'bash -s' -- "$WP_PATH" "$GITHUB_SHA" "5" <<'REMOTE'
+          set -euo pipefail
+          WP_PATH="$1"
+          GITHUB_SHA="$2"
+          RETAIN_BACKUPS="$3"
+          timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+          short_sha="${GITHUB_SHA:0:12}"
+          backup_root="$HOME/backups/partikulier"
+          backup_dir="$backup_root/${timestamp}-${short_sha}"
+          mkdir -p "$backup_dir"
+          test -d "$WP_PATH" || { echo "WP_PATH introuvable"; exit 1; }
+          if [ -d "$WP_PATH/wp-content/plugins/partikulier-core" ]; then
+            tar -czf "$backup_dir/partikulier-core.tar.gz" -C "$WP_PATH/wp-content/plugins" partikulier-core
+          fi
+          if [ -d "$WP_PATH/wp-content/themes/partikulier" ]; then
+            tar -czf "$backup_dir/partikulier.tar.gz" -C "$WP_PATH/wp-content/themes" partikulier
+          fi
+          if command -v wp >/dev/null 2>&1 && [ -f "$WP_PATH/wp-config.php" ]; then
+            (cd "$WP_PATH" && wp db export "$backup_dir/database.sql" --quiet)
+            gzip "$backup_dir/database.sql"
+          else
+            echo "wp-cli indisponible ou wp-config.php absent : export DB ignoré"
+          fi
+          find "$backup_root" -mindepth 1 -maxdepth 1 -type d | sort -r | awk "NR>${RETAIN_BACKUPS}" | xargs -r rm -rf --
+          REMOTE
+
+      - name: Activer le mode maintenance
+        run: |
+          set -euo pipefail
+          ssh partikulier-hostinger 'bash -s' -- "$WP_PATH" <<'REMOTE'
+          set -euo pipefail
+          WP_PATH="$1"
+          if command -v wp >/dev/null 2>&1 && [ -f "$WP_PATH/wp-config.php" ]; then
+            cd "$WP_PATH"
+            wp maintenance-mode activate || true
+          fi
+          REMOTE
+
+      - name: Synchroniser plugin et thème
+        run: |
+          set -euo pipefail
+          ssh partikulier-hostinger 'bash -s' -- "$WP_PATH" <<'REMOTE'
+          set -euo pipefail
+          WP_PATH="$1"
+          mkdir -p "$WP_PATH/wp-content/plugins/partikulier-core" "$WP_PATH/wp-content/themes/partikulier"
+          REMOTE
+          rsync -az --delete -e "ssh -F $HOME/.ssh/config" \
+            build/deploy-artifacts/partikulier-core/ \
+            "partikulier-hostinger:$WP_PATH/wp-content/plugins/partikulier-core/"
+          rsync -az --delete -e "ssh -F $HOME/.ssh/config" \
+            build/deploy-artifacts/partikulier/ \
+            "partikulier-hostinger:$WP_PATH/wp-content/themes/partikulier/"
+
+      - name: Vérifications WordPress post-déploiement
+        run: |
+          set -euo pipefail
+          ssh partikulier-hostinger 'bash -s' -- "$WP_PATH" <<'REMOTE'
+          set -euo pipefail
+          WP_PATH="$1"
+          command -v wp >/dev/null 2>&1 || { echo "wp-cli introuvable"; exit 1; }
+          cd "$WP_PATH"
+          wp plugin activate partikulier-core
+          wp cache flush || true
+          wp rewrite flush || true
+          REMOTE
+
+      - name: Désactiver le mode maintenance
+        if: always()
+        run: |
+          set -euo pipefail
+          ssh partikulier-hostinger 'bash -s' -- "$WP_PATH" <<'REMOTE' || true
+          set -euo pipefail
+          WP_PATH="$1"
+          if command -v wp >/dev/null 2>&1 && [ -f "$WP_PATH/wp-config.php" ]; then
+            cd "$WP_PATH"
+            wp maintenance-mode deactivate || true
+          fi
+          REMOTE
+
+      - name: Smoke checks HTTP
+        run: |
+          set -euo pipefail
+          : "${SITE_URL:?variable SITE_URL manquante}"
+          site="${SITE_URL%/}"
+          code="$(curl -fsS -o /dev/null -w '%{http_code}' "$site")"
+          test "$code" = "200"
+          curl -fsS "$site/wp-json/partikulier/v1/health" > build/health.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          health = json.loads(Path("build/health.json").read_text(encoding="utf-8"))
+          assert health.get("status") == "ok", health
+          print("health endpoint: ok")
+          PY
+
+      - name: Nettoyer la clé SSH
+        if: always()
+        run: |
+          set -euo pipefail
+          rm -f "$HOME/.ssh/id_ed25519" "$HOME/.ssh/known_hosts" "$HOME/.ssh/config"
