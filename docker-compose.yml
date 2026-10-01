@@ -1,0 +1,79 @@
+# Local test stack for Partikulier — mirrors .github/workflows/contrats-recette.yml
+#   cp .env.example .env   (then set real local passwords)
+#   docker compose up -d --build
+#   docker compose exec -u www-data wordpress pk-wp-init
+name: partikulier
+
+services:
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${PK_DB_NAME:-partikulier}
+      MYSQL_USER: ${PK_DB_USER:-partikulier}
+      MYSQL_PASSWORD: ${PK_DB_PASSWORD:?set PK_DB_PASSWORD in .env}
+      MYSQL_ROOT_PASSWORD: ${PK_DB_ROOT_PASSWORD:?set PK_DB_ROOT_PASSWORD in .env}
+    volumes:
+      - db_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 --protocol=tcp -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  wordpress:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        WP_IMAGE_TAG: ${PK_WP_IMAGE_TAG:-6.6-php8.3-apache}
+        WITH_AVIF_TOOLS: ${PK_WITH_AVIF_TOOLS:-0}
+    image: partikulier-wordpress:local
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8099:8099"   # loopback only: never expose the test site on the LAN
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_NAME: ${PK_DB_NAME:-partikulier}
+      WORDPRESS_DB_USER: ${PK_DB_USER:-partikulier}
+      WORDPRESS_DB_PASSWORD: ${PK_DB_PASSWORD}
+      WORDPRESS_DEBUG: "1"
+      WORDPRESS_CONFIG_EXTRA: |
+        define('WP_ENVIRONMENT_TYPE', 'local');
+        define('WP_DEBUG_LOG', true);
+        define('WP_DEBUG_DISPLAY', false);
+        define('DISALLOW_FILE_EDIT', true);
+        define('PARTIKULIER_ENABLE_AVIF_DELIVERY', false);
+      PK_SITE_URL: http://localhost:8099
+      PK_ADMIN_USER: ${PK_ADMIN_USER:-admin}
+      PK_ADMIN_PASSWORD: ${PK_ADMIN_PASSWORD:?set PK_ADMIN_PASSWORD in .env}
+      PK_ADMIN_EMAIL: ${PK_ADMIN_EMAIL:-admin@example.test}
+      PK_WITH_POLYLANG: ${PK_WITH_POLYLANG:-0}
+      # Optional n8n bridge (leave empty to keep automation routes closed).
+      PARTIKULIER_N8N_SECRET: ${PARTIKULIER_N8N_SECRET:-}
+      PARTIKULIER_N8N_WEBHOOK_URL: ${PARTIKULIER_N8N_WEBHOOK_URL:-}
+      # Contract suites (php wp-content/plugins/partikulier-core/tests/*.php)
+      PK_WP_DIR: /var/www/html
+      PK_REPO_DIR: /repo
+      PK_THEME_DIR: /var/www/html/wp-content/themes/partikulier
+      PK_VERSION: "2.10.8"
+      WP_CLI_CACHE_DIR: /tmp/wp-cli-cache
+    volumes:
+      - wp_core:/var/www/html
+      - ./plugin/partikulier-core:/var/www/html/wp-content/plugins/partikulier-core
+      - ./theme/partikulier:/var/www/html/wp-content/themes/partikulier
+      - ./docker/mu-plugins/pk-dev-mailpit.php:/var/www/html/wp-content/mu-plugins/pk-dev-mailpit.php:ro
+      - .:/repo:ro
+
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8025:8025"   # web UI for captured e-mails
+
+volumes:
+  db_data:
+  wp_core:

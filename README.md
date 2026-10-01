@@ -47,6 +47,8 @@ Le script exclut les dépôts Git, caches, secrets, artefacts de test et dossier
 4. Vérifier `GET /wp-json/partikulier/v1/health` et contrôler que `status` vaut `ok`.
 5. Configurer les pages requises et les secrets d’automatisation uniquement via les réglages WordPress ou les variables d’environnement documentées.
 
+Le déploiement automatisé vers Hostinger par GitHub Actions est documenté dans [`docs/DEPLOIEMENT.md`](docs/DEPLOIEMENT.md).
+
 ## Qualité et traçabilité
 
 Le lot source a été vérifié par somme SHA-256 avant intégration. Les preuves textuelles de recette B1→B6, les journaux, contrats JSON, rapports et l’audit du monorepo sont regroupés dans [`preuves/`](preuves/), avec le [manifeste de campagne](preuves/MANIFESTE.md). Les preuves historiques restent distinctes des contrats rejouables dans `plugin/partikulier-core/tests/` et `theme/partikulier/tests/`.

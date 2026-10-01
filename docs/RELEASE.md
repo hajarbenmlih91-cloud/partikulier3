@@ -22,6 +22,8 @@ Les checksums ci-dessus correspondent aux archives reçues et sont conservés da
 
 Les tests d’intégration WordPress et les tests visuels ne sont pas simulés par la CI statique : ils doivent être rejoués sur un WordPress de staging avec Estatik et, si activé, Polylang.
 
+Pour publier les archives sur Hostinger via GitHub Actions, suivre le playbook [`DEPLOIEMENT.md`](DEPLOIEMENT.md). La production doit être protégée par l’approbation de l’environnement GitHub `prd`.
+
 ## Politique de versionnement
 
 Le plugin et le thème évoluent avec des versions indépendantes mais doivent être publiés comme une paire compatible lorsque le changement touche les domaines partagés ou l’i18n. Toute modification de schéma doit inclure une migration idempotente, une preuve de rollback et la mise à jour du contrat concerné.
