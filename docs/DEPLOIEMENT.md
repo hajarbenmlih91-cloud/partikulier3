@@ -53,6 +53,11 @@ valeurs adaptées à la cible :
 | `SSH_KNOWN_HOSTS` | Secret | sortie `ssh-keyscan -p 65002 host` | Vérification stricte de l’hôte |
 | `WP_PATH` | Secret | `/home/u123/domains/example.com/public_html` | Racine WordPress absolue |
 
+Pour préparer ces valeurs localement, copier `deploy/secrets.env.example` vers
+`deploy/secrets/<env>.env` (`dev`, `uat`, `prd` — dossier ignoré par Git), le
+compléter, puis le téléverser avec `gh secret set --env <env> -f deploy/secrets/<env>.env`.
+La clé privée et `SITE_URL` se téléversent séparément (commandes en tête du fichier).
+
 Ajouter aussi une variable d’environnement GitHub, non secrète :
 
 | Nom | Type | Exemple | Rôle |
