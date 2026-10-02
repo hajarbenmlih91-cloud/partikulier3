@@ -1,0 +1,22 @@
+# HSTS + HTTPS forcé — à placer TOUT EN HAUT du .htaccess (avant WordPress)
+// Ne coûte rien en perf : 1 redirection mise en cache 1 an par le navigateur.
+// PCI DSS 4.1 = VERT
+
+<IfModule mod_rewrite.c>
+RewriteEngine On
+# Force HTTPS
+RewriteCond %{HTTPS} !=on
+RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [R=301,L]
+</IfModule>
+
+<IfModule mod_headers.c>
+# HSTS : dis au navigateur "ne reviens jamais en http pendant 1 an, même si l'utilisateur tape http"
+Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" env=HTTPS
+# Optionnel mais recommandé (OWASP) :
+Header always set X-Frame-Options "SAMEORIGIN"
+Header always set X-Content-Type-Options "nosniff"
+</IfModule>
+
+# Alternative Nginx (à mettre dans server { } ) :
+# return 301 https://$host$request_uri;
+# add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
