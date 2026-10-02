@@ -583,7 +583,8 @@ class Partikulier_Demo_Installer {
 		require_once ABSPATH . 'wp-admin/includes/file.php';
 		require_once ABSPATH . 'wp-admin/includes/media.php';
 		$pool = array();
-		foreach ( array_slice( $files, 0, 9 ) as $path ) {
+		// Utilise jusqu'à 30 images max (au-delà, on tranche pour garder le zip léger et l'install rapide)
+		foreach ( array_slice( $files, 0, 30 ) as $path ) {
 			$bits = file_get_contents( $path );
 			if ( ! $bits ) { continue; }
 			$upload = wp_upload_bits( basename( $path ), null, $bits );

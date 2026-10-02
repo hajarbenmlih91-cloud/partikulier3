@@ -132,7 +132,7 @@ if ( $price ) {
 									<?php if ( $avif ) : ?>
 												<source type="image/avif" srcset="<?php echo esc_attr( $avif ); ?>">
 										<?php endif; ?>
-											<?php $pk_is_first_archive_card = isset( $pk_card_index ) && 1 === (int) $pk_card_index; ?>
+											<?php $pk_is_first_archive_card = isset( $pk_card_index ) && (int) $pk_card_index <= 2; // LCP : 2 premières cartes en eager (archive =1, home =2 visibles au-dessus du pli) ?>
 												<img src="<?php echo esc_url( $jpg ); ?>"<?php echo $pk_srcset ? ' srcset="' . esc_attr( $pk_srcset ) . '" sizes="' . esc_attr( $pk_sizes ) . '"' : ''; ?> width="640" height="480" alt="<?php echo esc_attr( $pk_display_title ); ?>" loading="<?php echo $pk_is_first_archive_card ? 'eager' : 'lazy'; ?>" decoding="async" fetchpriority="<?php echo $pk_is_first_archive_card ? 'high' : 'low'; ?>">
 								</picture>
 								<?php
