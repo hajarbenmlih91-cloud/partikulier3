@@ -52,17 +52,23 @@ trait LeadsContactTrait
 			return new \WP_REST_Response(['allowed' => false, 'reason' => 'owner_unavailable'], 200);
 		}
 
+		// Senior fix 03/10 : retry sur deadlock InnoDB (10 parallèles distinct phones -> gap lock).
+		// 3 tentatives max, backoff 50-150ms aléatoire. Sans retry, 1/10 distinct phones = 500 transient.
+		for ( $attempt = 0; $attempt < 3; $attempt++ ) {
 		$wpdb->query('START TRANSACTION');
 		try { // phpcs:ignore Generic.CodeAnalysis.EmptyStatement.Discarded
 
 			$lead_id = (int) $wpdb->get_var($wpdb->prepare("SELECT id FROM {$leads} WHERE phone_hash = %s FOR UPDATE", $hash));
 			if ( ! $lead_id ) {
-				$wpdb->insert($leads, [
+				$res = $wpdb->insert($leads, [
 					'phone_hash'      => $hash,
 					'phone_encrypted' => self::encrypt_phone($wa_id),
 					'first_seen_at'   => $now,
 					'last_seen_at'    => $now,
 				]);
+				if ( false === $res && str_contains((string) $wpdb->last_error, 'Deadlock') ) {
+					throw new \RuntimeException('Deadlock on leads insert: '.$wpdb->last_error);
+				}
 				$lead_id = (int) $wpdb->insert_id;
 			} else {
 				$wpdb->update($leads, ['last_seen_at' => $now], ['id' => $lead_id]);
@@ -78,8 +84,11 @@ trait LeadsContactTrait
 				$wpdb->query('ROLLBACK');
 				return new \WP_REST_Response(['allowed' => false, 'reason' => 'duplicate_message'], 200);
 			}
-			$wpdb->insert($messages, ['provider_message_id' => $provider_message_id, 'lead_id' => $lead_id, 'direction' => 'inbound', 'message_type' => 'property_interest', 'created_at' => $now]);
-			$wpdb->insert($interests, [
+			$resMsg = $wpdb->insert($messages, ['provider_message_id' => $provider_message_id, 'lead_id' => $lead_id, 'direction' => 'inbound', 'message_type' => 'property_interest', 'created_at' => $now]);
+			if ( false === $resMsg && str_contains((string) $wpdb->last_error, 'Deadlock') ) {
+				throw new \RuntimeException('Deadlock on messages insert: '.$wpdb->last_error);
+			}
+			$resInt = $wpdb->insert($interests, [
 				'lead_id'             => $lead_id,
 				'property_id'         => $property_id,
 				'reference_code'      => self::reference_for($property_id),
@@ -87,6 +96,9 @@ trait LeadsContactTrait
 				'provider_message_id' => $provider_message_id,
 				'created_at'          => $now,
 			]);
+			if ( false === $resInt && str_contains((string) $wpdb->last_error, 'Deadlock') ) {
+				throw new \RuntimeException('Deadlock on interests insert: '.$wpdb->last_error);
+			}
 
 			$existing = $wpdb->get_var($wpdb->prepare("SELECT id FROM {$disclosures} WHERE lead_id = %d AND property_id = %d FOR UPDATE", $lead_id, $property_id));
 			if ( $existing ) {
@@ -106,7 +118,10 @@ trait LeadsContactTrait
 				}
 			}
 
-			$wpdb->insert($disclosures, ['lead_id' => $lead_id, 'property_id' => $property_id, 'owner_id' => $owner_id, 'day_key' => $day, 'sent_at' => $now]);
+			$resDisc = $wpdb->insert($disclosures, ['lead_id' => $lead_id, 'property_id' => $property_id, 'owner_id' => $owner_id, 'day_key' => $day, 'sent_at' => $now]);
+			if ( false === $resDisc && str_contains((string) $wpdb->last_error, 'Deadlock') ) {
+				throw new \RuntimeException('Deadlock on disclosures insert: '.$wpdb->last_error);
+			}
 			if ( ! $known_owner ) {
 				$wpdb->query($wpdb->prepare("UPDATE {$limits} SET contacts_count = contacts_count + 1 WHERE lead_id = %d AND day_key = %s", $lead_id, $day));
 			}
@@ -119,8 +134,24 @@ trait LeadsContactTrait
 			return new \WP_REST_Response(array_merge(self::contact_response($property_id, false), ['lead_id' => $lead_id]), 200);
 		} catch ( \Throwable $error ) {
 			$wpdb->query('ROLLBACK');
+			error_log('[PK authorize_contact] attempt '.($attempt+1).' ' . $error->getMessage() . ' at ' . $error->getFile() . ':' . $error->getLine());
+			if ( $attempt < 2 && ( str_contains($error->getMessage(), 'Deadlock') || str_contains((string) $wpdb->last_error, 'Deadlock') ) ) {
+				usleep(50000 + random_int(0, 100000));
+				continue;
+			}
 			return new \WP_Error('pk_contact_transaction_failed', __('La demande de contact ne peut pas être traitée pour le moment.', 'partikulier-core'), ['status' => 500]);
 		}
+		// Deadlock sans exception : $wpdb->last_error contient 'Deadlock' après un INSERT/SELECT échoué.
+		if ( str_contains((string) $wpdb->last_error, 'Deadlock') && $attempt < 2 ) {
+			$wpdb->query('ROLLBACK');
+			error_log('[PK authorize_contact] deadlock via last_error attempt '.($attempt+1).' '.$wpdb->last_error);
+			usleep(50000 + random_int(0, 100000));
+			continue;
+		}
+		break;
+		} // end for retry
+		// Si on sort du for sans return, c'est qu'un deadlock a persisté 3 fois.
+		return new \WP_Error('pk_contact_transaction_failed', __('La demande de contact ne peut pas être traitée pour le moment.', 'partikulier-core'), ['status' => 500]);
 	}
 
 

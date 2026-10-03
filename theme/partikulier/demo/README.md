@@ -4,7 +4,7 @@
 
 ## Installation en 30 secondes (recommandé)
 
-1. Installez dans l'ordre : **Estatik** (v4.3.x) → **Plugin Partikulier Core** `B-INSTALLER-PLUGIN-partikulier-core-2.10.8.zip` → **Thème Partikulier** `partikulier-theme-6.20.8.zip` (ou suivant). Activez le plugin avant le thème.
+1. Installez dans l'ordre : **Estatik** (v4.3.x) → **Plugin Partikulier Core** `B-INSTALLER-PLUGIN-partikulier-core-2.10.9.zip` → **Thème Partikulier** `partikulier-theme-6.20.9.zip` (ou suivant). Activez le plugin avant le thème.
 2. Allez dans **Outils > Démo Partikulier** (ou **Apparence > Démo Partikulier**).
 3. Cliquez **Installer la démo (30 annonces + photos)**.
 4. C'est en ligne : accueil, `/annonces/`, fiches bien, filtres, traductions FR/EN/AR.

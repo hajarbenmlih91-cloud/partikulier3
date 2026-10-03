@@ -24,24 +24,51 @@ final class HealthCheck
 	public function get(): array
 	{
 		global $wpdb;
+		// Chaos/DB-down : tente un ping DB léger avant toute lecture projection.
+		$db_reachable = true;
+		$db_error     = '';
+		try {
+			// @phpstan-ignore-next-line
+			$ping = $wpdb->query('SELECT 1');
+			if ( false === $ping ) {
+				$db_reachable = false;
+				$db_error     = (string) $wpdb->last_error;
+			}
+		} catch ( \Throwable $e ) {
+			$db_reachable = false;
+			$db_error     = $e->getMessage();
+		}
 		$table  = $wpdb->prefix . 'pk_listings';
-		$exists = (bool) $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table));
+		$exists = false;
+		if ( $db_reachable ) {
+			$exists = (bool) $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table));
+			if ( '' !== $wpdb->last_error ) {
+				$db_reachable = false;
+				$db_error     = (string) $wpdb->last_error;
+				$exists       = false;
+			}
+		}
 
 		$integrity = ['orphans' => 0, 'missing' => 0, 'served' => 0, 'live_posts' => 0, 'status' => 'ok'];
-		if ( $exists ) {
+		if ( $exists && $db_reachable ) {
 			$integrity           = DomainRegistry::listingIntegrity();
 			$integrity['status'] = ( $integrity['orphans'] === 0 && $integrity['missing'] === 0 ) ? 'ok' : 'degraded';
 		}
 
 		$sync    = ( new ListingSynchronizer() )->stats();
 		$rebuild = get_option('partikulier_core_last_rebuild', []);
-		$status  = ( $exists && $integrity['status'] === 'ok' ) ? 'ok' : 'degraded';
+		if ( ! $db_reachable ) {
+			$status = 'critical';
+		} else {
+			$status = ( $exists && $integrity['status'] === 'ok' ) ? 'ok' : 'degraded';
+		}
 
 		return [
 			'status'         => $status,
 			'core_version'   => PARTIKULIER_CORE_VERSION,
 			'schema_version' => ( new Migrator() )->currentVersion(),
-			'database'       => $exists ? 'ready' : 'missing',
+			'database'       => ! $db_reachable ? 'unreachable' : ( $exists ? 'ready' : 'missing' ),
+			'database_error' => $db_error ?: null,
 			'integrity'      => $integrity,
 			'sync'           => [
 				'last_flush_at' => $sync['last_flush_at'] ?? null,

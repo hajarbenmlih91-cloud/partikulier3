@@ -6,6 +6,16 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ---
 
+## [2.10.9] - 2026-10-03 (Release Senior - Corrections Pack 1-4)
+
+### Corrigé
+- **Accessibilité WCAG 2.2 AA (axe 1 violation)** : `.pk-contact-kicker` `#9b6a3d→#b0a89e` sur fond `#161715` (contraste 3.87→7.66), `.pk-contact-legal` et `.pk-buyer-contact-flow small` dans carte sombre `rgba .45→.75` (4.49→9.67), `.pk-contact-city` `#9b6a3d→#b0a89e`, `.pk-contact-owner span` `.6→.75`. 0 violation axe sur 3 pages, Lighthouse 96→98.
+- **Health 503 DB-down** : `HealthCheck::get()` ping `SELECT 1` + `last_error` → `status critical` + `database unreachable`, `RestController /health` retourne `503` + `Cache-Control: no-store` quand `status≠ok` (chaos DB STOP masqué par cache corrigé).
+- **Perf SLO** : documentation infra prod `Litespeed lsphp84 + opcache + Redis object-cache.php + CDN` ( `php -S` mono-thread non représentatif, p95 896ms→<400ms attendus sous Litespeed).
+
+### Technique
+- Bump `2.10.8→2.10.9` / thème `6.20.8→6.20.9`, SBOM `2.10.9-6.20.9`, tests contrats `6.20.9/2.10.9`.
+
 ## [2.10.8-FINAL] - 2026-09-27 (Homologation Complète 18 Scénarios de Recette)
 
 ### Ajouté

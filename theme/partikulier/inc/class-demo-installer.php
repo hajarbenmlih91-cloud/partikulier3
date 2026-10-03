@@ -100,7 +100,7 @@ class Partikulier_Demo_Installer {
 		$has_i18n    = class_exists( 'Partikulier_Listing_I18n' ) && class_exists( 'Partikulier_Listing_Preview' );
 		$has_translations = class_exists( 'Partikulier_Listing_Translations' ) && method_exists( 'Partikulier_Listing_Translations', 'available' ) && Partikulier_Listing_Translations::available();
 		$demo_dir = PARTIKULIER_DIR . '/demo/images';
-		$demo_images = is_dir( $demo_dir ) ? count( glob( $demo_dir . '/*.jpg' ) ) : 0;
+		$demo_images = is_dir( $demo_dir ) ? count( glob( $demo_dir . '/*.{jpg,jpeg,avif,webp}', GLOB_BRACE ) ) : 0;
 		$languages = $has_translations ? Partikulier_Listing_Translations::active_languages() : array( 'fr' );
 		?>
 		<div class="wrap pk-demo-wrap" style="max-width:900px">
@@ -553,7 +553,7 @@ class Partikulier_Demo_Installer {
 
 	private static function build_photo_pool() {
 		$dir = PARTIKULIER_DIR . '/demo/images';
-		$files = is_dir( $dir ) ? glob( $dir . '/*.jpg' ) : array();
+		$files = is_dir( $dir ) ? glob( $dir . '/*.{jpg,jpeg,avif,webp}', GLOB_BRACE ) : array();
 		if ( ! $files ) {
 			$ids = get_posts( array(
 				'post_type'        => 'attachment',
@@ -589,8 +589,10 @@ class Partikulier_Demo_Installer {
 			if ( ! $bits ) { continue; }
 			$upload = wp_upload_bits( basename( $path ), null, $bits );
 			if ( ! empty( $upload['error'] ) ) { continue; }
+			$ext = strtolower( pathinfo( $path, PATHINFO_EXTENSION ) );
+			$mime = ( 'avif' === $ext ? 'image/avif' : ( 'webp' === $ext ? 'image/webp' : 'image/jpeg' ) );
 			$att = wp_insert_attachment( array(
-				'post_mime_type' => 'image/jpeg',
+				'post_mime_type' => $mime,
 				'post_title'     => sanitize_file_name( pathinfo( $path, PATHINFO_FILENAME ) ),
 				'post_status'    => 'inherit',
 			), $upload['file'], 0 );

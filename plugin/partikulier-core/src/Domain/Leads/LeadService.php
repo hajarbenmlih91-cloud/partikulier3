@@ -116,6 +116,10 @@ final class LeadService
 
 	private static function property_snapshot( int $property_id ): array
 	{
+		$terms = wp_get_object_terms($property_id, 'es_status', ['fields' => 'names']);
+		if ( is_wp_error($terms) || ! is_array($terms) ) {
+			$terms = [];
+		}
 		return [
 			'id'          => absint($property_id),
 			'reference'   => self::reference_for($property_id),
@@ -124,7 +128,7 @@ final class LeadService
 			'price'       => get_post_meta($property_id, 'es_property_price', true),
 			'location'    => self::location_string($property_id),
 			'layout'      => get_post_meta($property_id, '_pk_bedrooms_label', true),
-			'transaction' => implode(', ', wp_get_object_terms($property_id, 'es_status', ['fields' => 'names'])),
+			'transaction' => implode(', ', $terms),
 		];
 	}
 

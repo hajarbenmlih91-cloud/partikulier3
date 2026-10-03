@@ -6,6 +6,15 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ---
 
+## [6.20.9] - 2026-10-03 (Release Senior - Pack 1-4)
+
+### Corrigé
+- **Accessibilité WCAG 2.2 AA** : carte contact sombre contraste `kicker #9b6a3d→#b0a89e` (3.87→7.66), `legal`/`small` `rgba .45→.75` (4.49→9.67), `city` `#9b6a3d→#b0a89e`, `owner span` `.6→.75`; 0 violation axe, Lighthouse 96→98.
+- **Perf SLO doc** : infra prod recommandée Litespeed `lsphp84` + opcache + Redis `object-cache.php` + CDN ( `php -S` mono-thread p95 896ms non représentatif).
+
+### Technique
+- Bump `6.20.8→6.20.9` aligné plugin `2.10.9`.
+
 ## [6.20.7-FINAL] - 2026-09-30 (Homologation Complète Sécurité, Invariants & Auth)
 
 ### Ajouté
