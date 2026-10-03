@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Partikulier Core
  * Description: Cœur métier contractuel de Partikulier : données, politiques et REST.
- * Version: 2.10.14
+ * Version: 2.10.15
  * Requires PHP: 8.1
  */
 
@@ -12,7 +12,7 @@ if ( ! defined('ABSPATH') ) {
 	exit;
 }
 
-const PARTIKULIER_CORE_VERSION = '2.10.14';
+const PARTIKULIER_CORE_VERSION = '2.10.15';
 const PARTIKULIER_CORE_FILE    = __FILE__;
 
 // Domaine « partikulier » — le plugin est la source canonique (lot C1 :
@@ -69,6 +69,7 @@ require_once __DIR__ . '/src/Domain/Leads/LeadsRestTrait.php';
 require_once __DIR__ . '/src/Domain/Leads/LeadsPrivacyTrait.php';
 require_once __DIR__ . '/src/Domain/Leads/LeadsAdminTrait.php';
 require_once __DIR__ . '/src/Domain/Leads/LeadsEraseGuardTrait.php';
+require_once __DIR__ . '/src/Domain/Leads/LeadSettings.php';
 require_once __DIR__ . '/src/Domain/Leads/LeadService.php';
 require_once __DIR__ . '/src/Domain/Alerts/AlertService.php';
 require_once __DIR__ . '/src/Domain/Automation/AutomationPolicyTrait.php';
@@ -175,6 +176,19 @@ add_action('plugins_loaded', static function (): void {
 	}
 	add_action('init', [\Partikulier\Core\Domain\OwnerStats\OwnerStatsService::class, 'maybe_schedule_purge'], 20);
 	add_action(\Partikulier\Core\Domain\OwnerStats\OwnerStatsService::CRON_HOOK, [\Partikulier\Core\Domain\OwnerStats\OwnerStatsService::class, 'purge_expired_saves']);
+}, 2);
+
+/*
+ * Domaine leads — réglages (lot R3) : messages/prefill/limites éditables
+ * via option pk_lead_settings. Le menu WP sous « Leads WhatsApp » vit
+ * ici (LeadSettings::init) — source de vérité pour les textes
+ * d'intermédiaire/manuel et le template WhatsApp + les plafonds.
+ */
+add_action('plugins_loaded', static function (): void {
+	if ( ! class_exists(\Partikulier\Core\Domain\Leads\LeadSettings::class) ) {
+		return;
+	}
+	\Partikulier\Core\Domain\Leads\LeadSettings::init();
 }, 2);
 
 /*

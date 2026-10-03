@@ -88,24 +88,42 @@ trait LeadsContactTrait
 					$wpdb->update($leads, ['qualification_asked_at' => $now], ['id' => $lead_id]);
 					$wpdb->query('COMMIT');
 					$lang = self::detect_lang_for_lead($wa_id, $property_id, $message_text);
-					$msg = $lang === 'ar' ? 'هل أنت particulier أم وسيط؟' : 'Vous êtes particulier ou intermédiaire ?';
+					if ( class_exists(LeadSettings::class) ) {
+						$msg = LeadSettings::get_message('need_qualification', $lang);
+					} else {
+						$msg = $lang === 'ar' ? 'هل أنت particulier أم وسيط؟' : 'Vous êtes particulier ou intermédiaire ?';
+					}
 					return new \WP_REST_Response(['allowed' => false, 'reason' => 'need_qualification', 'question' => $msg, 'lead_id' => $lead_id], 200);
 				}
 				// Déjà demandé mais pas encore répondu
 				$wpdb->query('ROLLBACK');
 				$lang = self::detect_lang_for_lead($wa_id, $property_id, $message_text);
-				$msg = $lang === 'ar' ? 'هل أنت particulier أم وسيط؟' : 'Vous êtes particulier ou intermédiaire ?';
+				if ( class_exists(LeadSettings::class) ) {
+					$msg = LeadSettings::get_message('need_qualification', $lang);
+				} else {
+					$msg = $lang === 'ar' ? 'هل أنت particulier أم وسيط؟' : 'Vous êtes particulier ou intermédiaire ?';
+				}
 				return new \WP_REST_Response(['allowed' => false, 'reason' => 'need_qualification_pending', 'question' => $msg, 'lead_id' => $lead_id], 200);
 			}
 			if ( (int) $is_part === 0 ) {
 				$wpdb->query('ROLLBACK');
 				$lang = self::detect_lang_for_lead($wa_id, $property_id, $message_text);
-				$msg = $lang === 'ar' ? 'المالك يرفض الوسطاء. شكرا لتفهمكم.' : 'Le propriétaire refuse les intermédiaires. Merci de votre compréhension.';
+				if ( class_exists(LeadSettings::class) ) {
+					$msg = LeadSettings::get_message('intermediary_refused', $lang);
+				} else {
+					$msg = $lang === 'ar' ? 'المالك يرفض الوسطاء. شكرا لتفهمكم.' : 'Le propriétaire refuse les intermédiaires. Merci de votre compréhension.';
+				}
 				return new \WP_REST_Response(['allowed' => false, 'reason' => 'intermediary_refused', 'message' => $msg, 'lead_id' => $lead_id], 200);
 			}
-			// R2 : 3e contact en 24h → manuel (tous types confondus : villa/appart, achat/location)
-			$count24 = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$interests} WHERE lead_id = %d AND created_at >= DATE_SUB(%s, INTERVAL 24 HOUR)", $lead_id, $now));
-			if ( $count24 >= 2 ) {
+			// R3 : seuils éditables via LeadSettings (source de vérité WP) — fenêtre stockée en h/j, convertie en s pour SQL
+			$max24  = class_exists(LeadSettings::class) ? (int) LeadSettings::get_limit('max_24h') : 2;
+			$win24h = class_exists(LeadSettings::class) ? (int) LeadSettings::get_limit('window_24h') : 24;
+			$max7d  = class_exists(LeadSettings::class) ? (int) LeadSettings::get_limit('max_7d') : 5;
+			$win7dj = class_exists(LeadSettings::class) ? (int) LeadSettings::get_limit('window_7d') : 7;
+			$win24  = max(1, $win24h) * 3600;
+			$win7d  = max(1, $win7dj) * 86400;
+			$count24 = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$interests} WHERE lead_id = %d AND created_at >= DATE_SUB(%s, INTERVAL %d SECOND)", $lead_id, $now, $win24));
+			if ( $count24 >= $max24 ) {
 				$wpdb->query('ROLLBACK');
 				$wpdb->query('START TRANSACTION');
 				$wpdb->insert($interests, [
@@ -118,13 +136,16 @@ trait LeadsContactTrait
 				]);
 				$wpdb->query('COMMIT');
 				$lang = self::detect_lang_for_lead($wa_id, $property_id, $message_text);
-				$msg = $lang === 'ar' ? 'لأسباب أمنية، سيتم إرسال جهة الاتصال يدويا. شكرا لصبركم.' : 'Pour des raisons de sécurité, l’envoi du contact se fera manuellement. Merci de votre patience.';
+				if ( class_exists(LeadSettings::class) ) {
+					$msg = LeadSettings::get_message('manual_review', $lang);
+				} else {
+					$msg = $lang === 'ar' ? 'لأسباب أمنية، سيتم إرسال جهة الاتصال يدويا. شكرا لصبركم.' : 'Pour des raisons de sécurité, l’envoi du contact se fera manuellement. Merci de votre patience.';
+				}
 				return new \WP_REST_Response(['allowed' => false, 'reason' => 'manual_review', 'message' => $msg, 'lead_id' => $lead_id, 'limit' => '24h_3contacts'], 200);
 			}
-			// R2 : max 5 contacts automatiques en 7 jours → au-delà manuel
-			$count7d = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$interests} WHERE lead_id = %d AND created_at >= DATE_SUB(%s, INTERVAL 7 DAY) AND provider_message_id NOT LIKE %s", $lead_id, $now, '%_manual%'));
-			// On compte uniquement les envois automatiques (sans _manual) pour le plafond hebdo
-			if ( $count7d >= 5 ) {
+			// R3 : plafond hebdo éditable — on compte uniquement les envois automatiques (sans _manual)
+			$count7d = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$interests} WHERE lead_id = %d AND created_at >= DATE_SUB(%s, INTERVAL %d SECOND) AND provider_message_id NOT LIKE %s", $lead_id, $now, $win7d, '%_manual%'));
+			if ( $count7d >= $max7d ) {
 				$wpdb->query('ROLLBACK');
 				$wpdb->query('START TRANSACTION');
 				$wpdb->insert($interests, [
@@ -137,7 +158,11 @@ trait LeadsContactTrait
 				]);
 				$wpdb->query('COMMIT');
 				$lang = self::detect_lang_for_lead($wa_id, $property_id, $message_text);
-				$msg = $lang === 'ar' ? 'لأسباب أمنية، سيتم إرسال جهة الاتصال يدويا. شكرا لصبركم.' : 'Pour des raisons de sécurité, l’envoi du contact se fera manuellement. Merci de votre patience.';
+				if ( class_exists(LeadSettings::class) ) {
+					$msg = LeadSettings::get_message('manual_review', $lang);
+				} else {
+					$msg = $lang === 'ar' ? 'لأسباب أمنية، سيتم إرسال جهة الاتصال يدويا. شكرا لصبركم.' : 'Pour des raisons de sécurité, l’envoi du contact se fera manuellement. Merci de votre patience.';
+				}
 				return new \WP_REST_Response(['allowed' => false, 'reason' => 'manual_review', 'message' => $msg, 'lead_id' => $lead_id, 'limit' => '7d_5contacts'], 200);
 			}
 

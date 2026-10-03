@@ -76,6 +76,9 @@ final class LeadService
 
 	public static function daily_limit(): int
 	{
+		if ( class_exists(LeadSettings::class) ) {
+			return (int) LeadSettings::get_limit('daily_limit');
+		}
 		$value = class_exists('Partikulier_N8n_Security')
 			? (int) \Partikulier_N8n_Security::get('quota_per_day', self::DAILY_LIMIT_DEFAULT)
 			: self::DAILY_LIMIT_DEFAULT;
