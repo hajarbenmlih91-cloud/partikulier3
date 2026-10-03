@@ -32,9 +32,10 @@ trait LeadsContactTrait
 	 * @param string $wa_id Numéro normalisé du demandeur.
 	 * @param int    $property_id Annonce visée (rattachement obligatoire).
 	 * @param string $provider_message_id Identifiant unique de l'événement.
+	 * @param string $message_text Texte du message WhatsApp (optionnel, pour détection langue ar).
 	 * @return WP_REST_Response|WP_Error { allowed, replayed, property, owner, lead_id } ou motif de refus.
 	 */
-	public static function authorize_contact( string $wa_id, int $property_id, string $provider_message_id )
+	public static function authorize_contact( string $wa_id, int $property_id, string $provider_message_id, string $message_text = '' )
 	{
 		global $wpdb;
 		$leads       = self::leads_table();
@@ -86,19 +87,19 @@ trait LeadsContactTrait
 				if ( empty($lead->qualification_asked_at) ) {
 					$wpdb->update($leads, ['qualification_asked_at' => $now], ['id' => $lead_id]);
 					$wpdb->query('COMMIT');
-					$lang = self::detect_lang_for_lead($wa_id, $property_id);
+					$lang = self::detect_lang_for_lead($wa_id, $property_id, $message_text);
 					$msg = $lang === 'ar' ? 'هل أنت particulier أم وسيط؟' : 'Vous êtes particulier ou intermédiaire ?';
 					return new \WP_REST_Response(['allowed' => false, 'reason' => 'need_qualification', 'question' => $msg, 'lead_id' => $lead_id], 200);
 				}
 				// Déjà demandé mais pas encore répondu
 				$wpdb->query('ROLLBACK');
-				$lang = self::detect_lang_for_lead($wa_id, $property_id);
+				$lang = self::detect_lang_for_lead($wa_id, $property_id, $message_text);
 				$msg = $lang === 'ar' ? 'هل أنت particulier أم وسيط؟' : 'Vous êtes particulier ou intermédiaire ?';
 				return new \WP_REST_Response(['allowed' => false, 'reason' => 'need_qualification_pending', 'question' => $msg, 'lead_id' => $lead_id], 200);
 			}
 			if ( (int) $is_part === 0 ) {
 				$wpdb->query('ROLLBACK');
-				$lang = self::detect_lang_for_lead($wa_id, $property_id);
+				$lang = self::detect_lang_for_lead($wa_id, $property_id, $message_text);
 				$msg = $lang === 'ar' ? 'المالك يرفض الوسطاء. شكرا لتفهمكم.' : 'Le propriétaire refuse les intermédiaires. Merci de votre compréhension.';
 				return new \WP_REST_Response(['allowed' => false, 'reason' => 'intermediary_refused', 'message' => $msg, 'lead_id' => $lead_id], 200);
 			}
@@ -116,7 +117,7 @@ trait LeadsContactTrait
 					'created_at'          => $now,
 				]);
 				$wpdb->query('COMMIT');
-				$lang = self::detect_lang_for_lead($wa_id, $property_id);
+				$lang = self::detect_lang_for_lead($wa_id, $property_id, $message_text);
 				$msg = $lang === 'ar' ? 'لأسباب أمنية، سيتم إرسال جهة الاتصال يدويا. شكرا لصبركم.' : 'Pour des raisons de sécurité, l’envoi du contact se fera manuellement. Merci de votre patience.';
 				return new \WP_REST_Response(['allowed' => false, 'reason' => 'manual_review', 'message' => $msg, 'lead_id' => $lead_id, 'limit' => '24h_3contacts'], 200);
 			}
@@ -135,7 +136,7 @@ trait LeadsContactTrait
 					'created_at'          => $now,
 				]);
 				$wpdb->query('COMMIT');
-				$lang = self::detect_lang_for_lead($wa_id, $property_id);
+				$lang = self::detect_lang_for_lead($wa_id, $property_id, $message_text);
 				$msg = $lang === 'ar' ? 'لأسباب أمنية، سيتم إرسال جهة الاتصال يدويا. شكرا لصبركم.' : 'Pour des raisons de sécurité, l’envoi du contact se fera manuellement. Merci de votre patience.';
 				return new \WP_REST_Response(['allowed' => false, 'reason' => 'manual_review', 'message' => $msg, 'lead_id' => $lead_id, 'limit' => '7d_5contacts'], 200);
 			}
@@ -323,8 +324,12 @@ trait LeadsContactTrait
 	 * Priorité : 1) Polylang pll_get_post_language, 2) meta _locale,
 	 * 3) get_locale, 4) fr par défaut.
 	 */
-	private static function detect_lang_for_lead( string $wa_id, int $property_id ): string
+	private static function detect_lang_for_lead( string $wa_id, int $property_id, string $message_text = '' ): string
 	{
+		// 0) Contenu du message : si caractères arabes → ar (priorité, même si bien en fr)
+		if ( '' !== $message_text && preg_match('/[\x{0600}-\x{06FF}]/u', $message_text) ) {
+			return 'ar';
+		}
 		// 1) Polylang si présent
 		if ( function_exists('pll_get_post_language') ) {
 			$pll = (string) pll_get_post_language($property_id, 'slug');
