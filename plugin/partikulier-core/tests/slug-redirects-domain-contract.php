@@ -74,8 +74,8 @@ try {
     $assert('E43-001', Schema::VERSION === '2.7.0'
         && (new Migrator())->currentVersion() === '2.7.0'
         && ($health['schema_version'] ?? '') === '2.7.0'
-        && PARTIKULIER_CORE_VERSION === '2.10.8'
-        && wp_get_theme()->get('Version') === '6.20.7',
+        && PARTIKULIER_CORE_VERSION === '2.10.9'
+        && wp_get_theme()->get('Version') === '6.20.8',
         sprintf('versions : schéma %s (constante), %s installée, %s au health, plugin %s, thème %s (bump de fin de train appliqué)',
             Schema::VERSION, (new Migrator())->currentVersion(), $health['schema_version'] ?? '?',
             PARTIKULIER_CORE_VERSION, wp_get_theme()->get('Version')));

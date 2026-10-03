@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  PK_VERSION: '2.10.8'
+  PK_VERSION: '2.10.9'
 
 permissions:
   contents: read

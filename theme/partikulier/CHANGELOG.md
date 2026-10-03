@@ -6,6 +6,12 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ---
 
+## [6.20.8] - 2026-10-03
+
+### Modifié
+- Alignement de version avec le plugin Partikulier Core 2.10.9 (release outillage CI/CD et documentation, aucune évolution fonctionnelle).
+- Contrats de recette alignés sur la paire 2.10.9 / 6.20.8.
+
 ## [6.20.7-FINAL] - 2026-09-27 (Homologation Complète 18 Scénarios de Recette)
 
 ### Ajouté

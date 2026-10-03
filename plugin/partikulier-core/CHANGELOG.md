@@ -6,6 +6,12 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ---
 
+## [2.10.9] - 2026-10-03
+
+### Modifié
+- Alignement de version avec le thème 6.20.8 (release outillage CI/CD et documentation, aucune évolution fonctionnelle).
+- Contrats de recette alignés sur la paire 2.10.9 / 6.20.8.
+
 ## [2.10.8-FINAL] - 2026-09-27 (Homologation Complète 18 Scénarios de Recette)
 
 ### Ajouté

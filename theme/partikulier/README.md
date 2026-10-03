@@ -44,7 +44,7 @@ npm test
 
 ## 3. Installation & Déploiement
 
-1. Téléverser l'archive `THEME-PARTIKULIER-6.20.7-FINAL.zip` dans **Apparence $\rightarrow$ Thèmes $\rightarrow$ Ajouter $\rightarrow$ Téléverser**.
+1. Téléverser l'archive `THEME-PARTIKULIER-6.20.8.zip` dans **Apparence $\rightarrow$ Thèmes $\rightarrow$ Ajouter $\rightarrow$ Téléverser**.
 2. Activer le thème.
 3. Se rendre dans **Réglages $\rightarrow$ Permaliens** et cliquer sur **Enregistrer les modifications** pour régénérer la table de réécriture Polylang v5.
 4. Purger le cache LiteSpeed / Nginx.
