@@ -62,18 +62,49 @@ Ajouter aussi une variable d’environnement GitHub, non secrète :
 
 | Nom | Type | Exemple | Rôle |
 |---|---|---|---|
-| `SITE_URL` | Variable | `https://uat.example.com` | Smoke check HTTP post-déploiement |
+| `SITE_URL` | Variable | `https://uat.example.com` | Smoke check HTTP + URL affichée dans les logs |
 
-Dans l’environnement `prd`, activer la règle **Required reviewers** dans
-l’interface GitHub. Le workflow envoie les tags `v*` vers `prd`, mais la
-publication reste bloquée tant que l’approbation n’est pas donnée.
+### Protection des environnements (Settings → Environments)
+
+| Environnement | Required reviewers | Deployment branches and tags |
+|---|---|---|
+| `dev` | non | branche `develop` |
+| `uat` | **oui** | tag `pre-release-*` |
+| `prd` | **oui** | tag `release-*` |
+
+Les règles GitHub utilisent des motifs *glob* (fnmatch, ancrés), pas des
+regex : `release-*` ne correspond pas à `pre-release-…`. Pour être plus
+strict : `pre-release-[0-9]*.[0-9]*.[0-9]*` et `release-[0-9]*.[0-9]*.[0-9]*`.
+Le workflow valide en plus le tag avec les regex suivantes (job `resolve`) :
+
+```text
+uat : ^pre-release-([0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?)$
+prd : ^release-([0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?)$
+```
+
+Un tag non conforme fait échouer le workflow avant toute publication. Avec
+**Required reviewers**, le job `deploy` reste en attente (« Waiting for
+review ») jusqu’à l’approbation, avant tout accès aux secrets. Il est
+conseillé de limiter la création des tags `release-*` / `pre-release-*`
+via un *ruleset* de tags (Settings → Rules → Rulesets).
 
 ## Déclenchements
 
 - `push` sur `develop` : déploiement vers `dev` ;
-- `push` sur `main` : déploiement vers `uat` ;
-- tag `v*` : déploiement vers `prd` ;
-- `workflow_dispatch` : choix manuel `dev`, `uat` ou `prd`.
+- tag `pre-release-<version>` : déploiement vers `uat` (approbation requise) ;
+- tag `release-<version>` : déploiement vers `prd` (approbation requise) ;
+- `workflow_dispatch` : choix manuel `dev`, `uat` ou `prd` ; pour `uat`/`prd`,
+  sélectionner le tag correspondant dans « Use workflow from ».
+
+Un `push` sur `main` ne déclenche plus de déploiement.
+
+```bash
+git tag pre-release-2.10.9-6.20.8 && git push origin pre-release-2.10.9-6.20.8   # uat
+git tag release-2.10.9-6.20.8     && git push origin release-2.10.9-6.20.8       # prd
+```
+
+À la fin du déploiement, l’URL du site est affichée dans les logs (annotation
+`Déployé sur <env>`), dans le résumé du run et sur l’environnement GitHub.
 
 Le job de déploiement réutilise d’abord le workflow `CI` via `workflow_call`.
 La publication ne démarre que si les contrôles existants réussissent.
