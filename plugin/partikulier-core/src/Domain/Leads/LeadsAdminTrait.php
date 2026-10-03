@@ -117,6 +117,14 @@ trait LeadsAdminTrait
 			'owner_shared' => 'owner_shared',
 			'qualified'    => 'qualified',
 			'closed'       => 'closed',
+			// Lot R1 — anti-spam data qualifiée : statuts pilotables depuis WP ou Sheets
+			// (même table pk_lead_followups, même API POST /lead/status). n8n écrit
+			// restricted/blocked auto (3 demandes/10min, agent), l'admin peut repasser
+			// à valid/new en 1 clic depuis WP ou Sheets.
+			'restricted'   => 'restricted',
+			'blocked'      => 'blocked',
+			'stop'         => 'stop',
+			'valid'        => 'valid',
 		];
 	}
 

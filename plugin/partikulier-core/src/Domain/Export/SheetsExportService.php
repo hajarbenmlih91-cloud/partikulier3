@@ -211,11 +211,14 @@ final class SheetsExportService
     public static function handle_rest_status( \WP_REST_Request $req ): \WP_REST_Response
     {
         $lead_id = (int) $req->get_param('lead_id');
-        $status  = sanitize_text_field((string) $req->get_param('status')); // valid, restricted, blocked
+        $status  = sanitize_text_field((string) $req->get_param('status')); // WP ou Sheets : valid/restricted/blocked/stop/new/...
         $note    = sanitize_text_field((string) $req->get_param('note'));
-        if ( ! $lead_id || ! in_array($status, ['valid','restricted','blocked','stop'], true) ) {
-            return new \WP_REST_Response(['error'=>'lead_id et status requis (valid/restricted/blocked/stop)'], 400);
+        $allowed = ['valid','new','in_progress','owner_shared','qualified','closed','restricted','blocked','stop'];
+        if ( ! $lead_id || ! in_array($status, $allowed, true) ) {
+            return new \WP_REST_Response(['error'=>'lead_id et status requis (' . implode('/', $allowed) . ')'], 400);
         }
+        // Normalise valid -> new (même sens : débloqué)
+        if ( $status === 'valid' ) $status = 'new';
         global $wpdb;
         $table = $wpdb->prefix . 'pk_lead_followups';
         $now = gmdate('Y-m-d H:i:s');
