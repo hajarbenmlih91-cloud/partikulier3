@@ -106,13 +106,15 @@ final class LeadService
 
 	private static function contact_response( int $property_id, bool $replayed ): array
 	{
+		$raw_phone = (string) get_post_meta($property_id, '_pk_owner_phone', true);
+		$phone     = class_exists('\\Partikulier_Crypto') ? \Partikulier_Crypto::read_phone($raw_phone) : $raw_phone;
 		return [
 			'allowed'  => true,
 			'replayed' => $replayed,
 			'property' => self::property_snapshot($property_id),
 			'owner'    => [
 				'name'  => get_post_meta($property_id, '_pk_owner_name', true),
-				'phone' => get_post_meta($property_id, '_pk_owner_phone', true),
+				'phone' => $phone,
 			],
 		];
 	}

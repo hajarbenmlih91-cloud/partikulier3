@@ -47,7 +47,8 @@ trait LeadsContactTrait
 		$day         = current_time('Y-m-d');
 		$hash        = hash_hmac('sha256', $wa_id, wp_salt('auth'));
 		$owner_id    = (int) get_post_field('post_author', $property_id);
-		$owner_phone = (string) get_post_meta($property_id, '_pk_owner_phone', true);
+		$raw_phone   = (string) get_post_meta($property_id, '_pk_owner_phone', true);
+		$owner_phone = class_exists('\\Partikulier_Crypto') ? \Partikulier_Crypto::read_phone($raw_phone) : $raw_phone;
 
 		if ( ! $owner_id || ! $owner_phone ) {
 			return new \WP_REST_Response(['allowed' => false, 'reason' => 'owner_unavailable'], 200);

@@ -554,8 +554,8 @@ class Partikulier_Form {
 				update_post_meta( $post_id, '_pk_owner_email', $email );
 		}
 		if ( $phone_ok ) {
-				update_post_meta( $post_id, '_pk_owner_phone', $phone );
-		}
+				update_post_meta( $post_id, '_pk_owner_phone', class_exists( 'Partikulier_Crypto' ) ? Partikulier_Crypto::encrypt_phone( $phone ) : $phone );
+			}
 							update_post_meta( $post_id, '_pk_owner_role', 'proprietaire' );
 							update_post_meta( $post_id, '_pk_status', Partikulier_WhatsApp_Verification::STATUS_PENDING );
 		if ( ! $is_edit ) {
