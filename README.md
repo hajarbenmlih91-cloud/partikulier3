@@ -9,7 +9,8 @@ Monorepo de livraison du portail immobilier **Partikulier** : thème WordPress e
 | `plugin/partikulier-core` | Plugin cœur : domaines métier, REST, santé, migrations et contrats | 2.10.8 |
 | `theme/partikulier` | Thème immobilier : templates, front, i18n FR/EN/AR, Estatik et QA | 6.20.7 |
 | `scripts/package.sh` | Packaging reproductible des deux livrables | — |
-| `docs/` | Architecture, installation et release | — |
+| `docs/` | Architecture, installation, release, user stories et cahier de tests ([`docs/user-stories/`](docs/user-stories/README.md)) | — |
+| `CHANGELOG.md` | Journal des versions conjointes plugin + thème | — |
 
 Le thème délègue au plugin les domaines métier disponibles et conserve un mode de repli compatible lorsque le plugin est désactivé. Les deux composants sont livrés ensemble pour garantir la compatibilité des contrats i18n et des lots C à F.
 
@@ -54,6 +55,8 @@ Le déploiement automatisé vers Hostinger par GitHub Actions est documenté dan
 Le lot source a été vérifié par somme SHA-256 avant intégration. Les preuves textuelles de recette B1→B6, les journaux, contrats JSON, rapports et l’audit du monorepo sont regroupés dans [`preuves/`](preuves/), avec le [manifeste de campagne](preuves/MANIFESTE.md). Les preuves historiques restent distinctes des contrats rejouables dans `plugin/partikulier-core/tests/` et `theme/partikulier/tests/`.
 
 La campagne historique documente **695/695 assertions PASS** sur les lots B1→B6 et **189/189 assertions PASS** sur l’audit du monorepo. Les lots C à F sont traçables dans l’historique Git et couverts par les workflows [`CI`](.github/workflows/ci.yml) et [`Contrats de recette WordPress`](.github/workflows/contrats-recette.yml). L’état courant vise **20 suites dynamiques et 237/237 assertions**, dont les contrôles de sécurité AVIF SE-013, SE-014 et SE-015. Les snapshots SQLite et captures PNG sont publiés séparément dans la [Release `preuves-b1-b6`](https://github.com/hajarbenmlih91-cloud/partikulier3/releases/tag/preuves-b1-b6), conformément à [`preuves/ARTEFACTS-BINAIRES.md`](preuves/ARTEFACTS-BINAIRES.md). Les contrôles nécessitant WordPress vivant sont explicitement séparés des contrôles statiques.
+
+L’historique des versions est tenu dans [`CHANGELOG.md`](CHANGELOG.md) (vue projet) ; le détail par composant reste dans les journaux du [plugin](plugin/partikulier-core/CHANGELOG.md) et du [thème](theme/partikulier/CHANGELOG.md). Les parcours utilisateurs et le cahier de recette sont décrits dans [`docs/user-stories/`](docs/user-stories/README.md).
 
 Les versions, les checksums et le détail du périmètre des lots C à F sont documentés dans [`docs/RELEASE.md`](docs/RELEASE.md) et les rapports de [`preuves/rapports/`](preuves/rapports/). Pour l’exploitation, consulter [`docs/INSTALLATION.md`](docs/INSTALLATION.md).
 
