@@ -116,7 +116,10 @@ jobs:
         id: site
         run: |
           set -euo pipefail
-          : "${SITE_URL:?variable SITE_URL manquante pour l'environnement $DEPLOY_ENVIRONMENT}"
+          if [ -z "${SITE_URL:-}" ]; then
+            echo "::error::Variable SITE_URL manquante pour l'environnement $DEPLOY_ENVIRONMENT."
+            exit 1
+          fi
           site="${SITE_URL%/}"
           echo "url=$site" >> "$GITHUB_OUTPUT"
           echo "Déploiement $DEPLOY_ENVIRONMENT${DEPLOY_VERSION:+ v$DEPLOY_VERSION} vers $site (ref $GITHUB_REF_NAME, commit ${GITHUB_SHA:0:12})"
