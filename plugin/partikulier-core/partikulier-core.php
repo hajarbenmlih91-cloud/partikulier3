@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Partikulier Core
  * Description: Cœur métier contractuel de Partikulier : données, politiques et REST.
- * Version: 2.10.9
+ * Version: 2.10.10
  * Requires PHP: 8.1
  */
 
@@ -12,7 +12,7 @@ if ( ! defined('ABSPATH') ) {
 	exit;
 }
 
-const PARTIKULIER_CORE_VERSION = '2.10.9';
+const PARTIKULIER_CORE_VERSION = '2.10.10';
 const PARTIKULIER_CORE_FILE    = __FILE__;
 
 // Domaine « partikulier » — le plugin est la source canonique (lot C1 :
@@ -78,6 +78,8 @@ require_once __DIR__ . '/src/Domain/OwnerStats/OwnerStatsService.php';
 require_once __DIR__ . '/src/Domain/TranslationVariants/VariantTransitionsTrait.php';
 require_once __DIR__ . '/src/Domain/TranslationVariants/TranslationVariantsService.php';
 require_once __DIR__ . '/src/Domain/SlugRedirects/SlugRedirectsService.php';
+require_once __DIR__ . '/src/Domain/Recommendation/RecommendationService.php';
+require_once __DIR__ . '/src/Domain/Export/SheetsExportService.php';
 
 /*
  * Domaine listings — redirections d'anciens slugs (micro-lot pré-prod
@@ -184,6 +186,21 @@ add_action('plugins_loaded', static function (): void {
  * (class_exists) trouve la classe sur toute requête : coût de bootstrap
  * mesuré par REG-2.
  */
+
+/*
+ * Domaine recommandation data qualifiée (lot R1 — 03/10/2026) :
+ * deux tables neuves pk_search_events / pk_buyer_profiles (2.8.0),
+ * snapshot étendu dans LeadService, scoring 0-100 baseline Senior DS.
+ * Classe pure, cron quotidien pk_recommendation_rebuild (02h) — le thème
+ * 6.20.10+ cesse de logger les recherches quand ce service existe.
+ */
+add_action('plugins_loaded', static function (): void {
+	if ( ! class_exists(\Partikulier\Core\Domain\Recommendation\RecommendationService::class) ) {
+		return;
+	}
+	add_action('init', [\Partikulier\Core\Domain\Recommendation\RecommendationService::class, 'maybe_schedule'], 20);
+	add_action(\Partikulier\Core\Domain\Recommendation\RecommendationService::CRON_HOOK, [\Partikulier\Core\Domain\Recommendation\RecommendationService::class, 'rebuild_all_due']);
+}, 2);
 
 /*
  * Domaine i18n chrome (lot C2) — EXTINCTION du filtre gettext historique du

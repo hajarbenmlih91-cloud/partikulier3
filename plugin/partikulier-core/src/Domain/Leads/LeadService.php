@@ -120,15 +120,28 @@ final class LeadService
 		if ( is_wp_error($terms) || ! is_array($terms) ) {
 			$terms = [];
 		}
+		// Lot R1 — snapshot étendu data qualifiée (rétro-compatible) :
+		// on garde les 8 clés historiques et on ajoute les 9 qualifiantes
+		// pour la reco (ville/quartier/type/etage/ensoleillement/surface).
+		$loc_detail = self::location_detail($property_id);
 		return [
-			'id'          => absint($property_id),
-			'reference'   => self::reference_for($property_id),
-			'title'       => get_the_title($property_id),
-			'url'         => get_permalink($property_id),
-			'price'       => get_post_meta($property_id, 'es_property_price', true),
-			'location'    => self::location_string($property_id),
-			'layout'      => get_post_meta($property_id, '_pk_bedrooms_label', true),
-			'transaction' => implode(', ', $terms),
+			'id'              => absint($property_id),
+			'reference'       => self::reference_for($property_id),
+			'title'           => get_the_title($property_id),
+			'url'             => get_permalink($property_id),
+			'price'           => get_post_meta($property_id, 'es_property_price', true),
+			'location'        => self::location_string($property_id),
+			'layout'          => get_post_meta($property_id, '_pk_bedrooms_label', true),
+			'transaction'     => implode(', ', $terms),
+			// --- R1 qualifiant (tous string/bien typés, '' si absent) ---
+			'ville'           => $loc_detail['ville'],
+			'quartier'        => $loc_detail['quartier'],
+			'type'            => self::primary_term_name($property_id, 'es_type') ?: self::primary_term_name($property_id, 'es_property_type'),
+			'area'            => get_post_meta($property_id, 'es_property_area', true) ?: get_post_meta($property_id, '_pk_area', true) ?: get_post_meta($property_id, 'es_area', true),
+			'etage'           => get_post_meta($property_id, '_pk_etage', true) ?: get_post_meta($property_id, 'es_property_floor', true) ?: get_post_meta($property_id, '_es_floor', true),
+			'ensoleillement'  => get_post_meta($property_id, '_pk_ensoleillement', true) ?: get_post_meta($property_id, 'es_ensoleillement', true) ?: get_post_meta($property_id, '_es_sun', true),
+			'chambres'        => get_post_meta($property_id, 'es_property_bedrooms', true) ?: get_post_meta($property_id, '_pk_bedrooms', true),
+			'salons'          => get_post_meta($property_id, 'es_property_salons', true) ?: get_post_meta($property_id, '_pk_salons', true),
 		];
 	}
 
@@ -150,6 +163,45 @@ final class LeadService
 		}
 		$names = array_filter(array_map(static fn( $term ): string => (string) $term->name, $terms));
 		return implode(', ', array_unique($names));
+	}
+
+	/**
+	 * Lot R1 : décompose es_location en ville/quartier (premier/dernier terme
+	 * trié par parent). Si Partikulier_Geo existe, on réutilise son ordre ;
+	 * sinon on prend le terme le plus haut (ville) et le plus bas (quartier).
+	 *
+	 * @return array{ville: string, quartier: string}
+	 */
+	private static function location_detail( int $property_id ): array
+	{
+		if ( class_exists('Partikulier_Geo') && method_exists('Partikulier_Geo', 'location_terms') ) {
+			$terms = \Partikulier_Geo::location_terms($property_id);
+			if ( is_array($terms) && count($terms) > 0 ) {
+				$names = array_values(array_filter(array_map(static fn( $t ): string => (string) ($t->name ?? $t), $terms)));
+				return ['ville' => (string) ($names[0] ?? ''), 'quartier' => (string) ($names[count($names)-1] ?? '')];
+			}
+		}
+		$terms = get_the_terms($property_id, 'es_location');
+		if ( ! is_array($terms) || is_wp_error($terms) || count($terms) === 0 ) {
+			return ['ville' => '', 'quartier' => ''];
+		}
+		// Trie par parent (0 = ville) pour stabilité.
+		usort($terms, static fn( $a, $b ) => (int) $a->parent <=> (int) $b->parent);
+		$names = array_values(array_filter(array_map(static fn( $t ): string => (string) $t->name, $terms)));
+		if ( count($names) === 1 ) {
+			return ['ville' => (string) $names[0], 'quartier' => (string) $names[0]];
+		}
+		return ['ville' => (string) ($names[0] ?? ''), 'quartier' => (string) ($names[count($names)-1] ?? '')];
+	}
+
+	private static function primary_term_name( int $property_id, string $taxonomy ): string
+	{
+		$terms = get_the_terms($property_id, $taxonomy);
+		if ( ! is_array($terms) || is_wp_error($terms) || count($terms) === 0 ) {
+			return '';
+		}
+		$first = $terms[0];
+		return is_object($first) && isset($first->name) ? (string) $first->name : '';
 	}
 
 	private static function property_for_reference( string $reference ): int

@@ -179,6 +179,21 @@ final class RestController
 			},
 			'permission_callback' => [$this, 'guardPublic'],
 		], 'plugin');
+
+		// Lot R1 — export Data Qualifiée pour n8n → Google Sheets
+		// GET /export/interests?since=…&limit=500 -> tableau 1 ligne = 1 intention
+		RouteRegistry::declare('/export/interests', [
+			'methods'             => 'GET',
+			'callback'            => static fn( \WP_REST_Request $r ) => \Partikulier\Core\Domain\Export\SheetsExportService::handle_rest_export($r),
+			'permission_callback' => static fn() => current_user_can('manage_options'),
+		], 'plugin');
+
+		// POST /lead/status {lead_id, status: valid/restricted/blocked/stop, note} -> bouton Sheets Valide<->Restreint
+		RouteRegistry::declare('/lead/status', [
+			'methods'             => 'POST',
+			'callback'            => static fn( \WP_REST_Request $r ) => \Partikulier\Core\Domain\Export\SheetsExportService::handle_rest_status($r),
+			'permission_callback' => static fn() => current_user_can('manage_options'),
+		], 'plugin');
 	}
 
 	public function guardPublic( WP_REST_Request $request ): bool|WP_Error

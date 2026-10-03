@@ -34,7 +34,7 @@ if [[ "$OUT_INPUT" = /* ]]; then
 else
   OUT="$ROOT/$OUT_INPUT"
 fi
-PLUGIN_VERSION="2.10.9"
+PLUGIN_VERSION="2.10.10"
 THEME_VERSION="6.20.9"
 
 rm -rf "$OUT"
