@@ -1,0 +1,1080 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Partikulier — Cahier de tests</title>
+  <style>
+    /* Charte Partikulier : reprise de theme/partikulier/assets/css/style.css */
+    @font-face{font-family:"DM Sans";font-style:normal;font-weight:100 1000;font-display:swap;src:url("../../theme/partikulier/assets/fonts/dm-sans-latin.woff2") format("woff2")}
+    @font-face{font-family:"DM Sans";font-style:normal;font-weight:100 1000;font-display:swap;src:url("../../theme/partikulier/assets/fonts/dm-sans-latin-ext.woff2") format("woff2");unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+1E00-1E9F,U+20A0-20C0,U+2C60-2C7F,U+A720-A7FF}
+    :root{--pk-primary:#9b6a3d;--pk-primary-dark:#7e4f25;--pk-ink:#161715;--pk-text:#3d403b;--pk-muted:#5d625a;--pk-card-bg:#f5f5f0;--pk-line:#e6e5df;--pk-white:#fffefa;--pk-sand:#e8e4db;--pk-hero-accent:#e3c2a3;--pk-shadow-sm:0 5px 16px rgba(22,23,21,.07);--pk-shadow:0 18px 48px rgba(31,39,36,.10);--pk-font:"DM Sans",ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;--pk-transition:.25s cubic-bezier(.4,0,.2,1);--accent:var(--pk-primary)}
+    *,*::before,*::after{box-sizing:border-box}html{-webkit-text-size-adjust:100%;scroll-behavior:smooth}body{margin:0;font-family:var(--pk-font);font-size:15px;line-height:1.6;color:var(--pk-text);background:var(--pk-white);-webkit-font-smoothing:antialiased}
+    [data-lang=en]{display:none}html[lang=en] [data-lang=fr]{display:none}html[lang=en] [data-lang=en]{display:revert}
+    a{color:var(--pk-ink);text-decoration:none;transition:color var(--pk-transition)}a:hover{color:var(--pk-primary)}:focus-visible{outline:2px solid var(--pk-primary);outline-offset:2px}
+    h1,h2,h3{color:var(--pk-ink);font-weight:700;line-height:1.2;margin:0 0 .5em}
+    .wrap{max-width:1180px;margin:0 auto;padding-inline:24px}
+    .topbar{background:var(--pk-ink);color:#d7d8d1;font-size:11px}.topbar .wrap{display:flex;justify-content:space-between;align-items:center;gap:16px;min-height:42px}.brand{font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:#fff;font-size:12px}.brand::before{content:"";display:inline-block;width:8px;height:8px;margin-inline-end:.6rem;background:var(--pk-primary);vertical-align:1px}
+    .toggle{border:1px solid rgba(255,255,255,.4);background:transparent;color:#fff;border-radius:0;padding:6px 14px;font:inherit;font-weight:700;font-size:11px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:all var(--pk-transition)}.toggle:hover{background:#fff;color:var(--pk-ink)}
+    .hero{position:relative;background:#26312d;color:#fff;overflow:hidden}.hero::before{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(24,32,29,.9),rgba(24,32,29,.55) 70%,rgba(155,106,61,.25)),radial-gradient(circle at 85% 30%,rgba(227,194,163,.22),transparent 40%)}.hero .wrap{position:relative;padding-top:clamp(3rem,7vw,5.5rem);padding-bottom:clamp(2.5rem,6vw,4.5rem)}
+    .kicker{margin:0 0 .8rem;color:var(--pk-primary-dark);font-size:.72rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase}.hero .kicker{color:#ead8c2}
+    h1{max-width:820px;margin:0 0 1rem;color:#fff;font-size:clamp(2.4rem,6vw,4.8rem);line-height:.98;letter-spacing:-.045em}h1 .accent{display:block;font-family:Georgia,"Times New Roman","Noto Serif",serif;font-style:italic;font-weight:400;color:var(--pk-hero-accent);letter-spacing:-.02em}
+    .hero p{max-width:620px;margin:0 0 1.6rem;color:rgba(255,255,255,.84);font-size:clamp(1rem,1.5vw,1.15rem)}.actions{display:flex;flex-wrap:wrap;gap:.75rem}
+    .btn{display:inline-flex;align-items:center;justify-content:center;min-height:43px;padding:.8rem 1.5rem;border:2px solid transparent;border-radius:0;font-weight:700;font-size:.85rem;letter-spacing:.01em;transition:all var(--pk-transition)}.btn:hover{transform:translateY(-1px)}.btn-primary{background:var(--pk-primary);border-color:var(--pk-primary);color:#fff}.btn-primary:hover{background:var(--pk-primary-dark);border-color:var(--pk-primary-dark);color:#fff}.btn-light{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.7);color:#fff}.btn-light:hover{background:#fff;color:var(--pk-ink)}
+    nav{position:sticky;top:0;z-index:5;background:rgba(255,254,250,.96);backdrop-filter:blur(12px);border-bottom:1px solid var(--pk-line)}.chips{display:flex;gap:30px;overflow:auto}.chip{position:relative;display:flex;align-items:center;gap:.5rem;min-height:48px;white-space:nowrap;color:var(--pk-ink);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.13em}.chip::before{content:"";width:6px;height:6px;background:var(--accent)}.chip::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--accent);transform:scaleX(0);transition:transform var(--pk-transition)}.chip:hover{color:var(--pk-ink)}.chip:hover::after{transform:scaleX(1)}
+    main{padding:clamp(2.5rem,6vw,4.5rem) 0}.section-head{max-width:680px;margin:clamp(2.5rem,6vw,4.5rem) 0 1.8rem}.section-head:first-child{margin-top:0}
+    h2{margin:0;font-size:clamp(1.8rem,3.6vw,3rem);line-height:1.02;letter-spacing:-.035em}
+    .summary,.stories,.links{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+    .card,.journey,.role,.story,.link{background:#fff;border:1px solid var(--pk-line);border-radius:0}
+    .card{padding:20px;border-top:3px solid var(--accent);transition:box-shadow var(--pk-transition),transform var(--pk-transition)}.card:hover{box-shadow:var(--pk-shadow);transform:translateY(-2px)}.card b{display:block;margin-bottom:.35rem;color:var(--pk-ink);font-size:1.02rem}.card span,.muted{color:var(--pk-muted)}
+    .journeys{display:grid;gap:12px}.journey{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:16px 18px;background:var(--pk-card-bg);border-inline-start:3px solid var(--accent)}.journey b{color:var(--pk-ink);min-width:170px;font-size:.72rem;font-weight:800;letter-spacing:.16em;text-transform:uppercase}
+    .step{display:inline-block;padding:6px 12px;background:#fff;border:1px solid var(--pk-line);color:var(--pk-ink);font-weight:600;font-size:.85rem}.arrow{color:var(--accent);font-weight:800}
+    .role{margin:28px 0;padding:clamp(20px,3vw,32px);background:var(--pk-card-bg);border-top:3px solid var(--accent);scroll-margin-top:64px}.head{display:flex;gap:18px;align-items:center;margin-bottom:22px}.head p{margin:.2rem 0 0}
+    .icon{flex:none;width:56px;height:56px;display:grid;place-items:center;background:#fff;border:1px solid var(--pk-line);font-size:1.6rem}.head h3{margin:0;color:var(--pk-ink);font-size:clamp(1.3rem,2.2vw,1.7rem);letter-spacing:-.02em}
+    .stories{grid-template-columns:repeat(2,minmax(0,1fr))}.story{padding:20px;transition:box-shadow var(--pk-transition)}.story:hover{box-shadow:var(--pk-shadow-sm)}
+    .line{display:grid;grid-template-columns:104px 1fr;gap:12px;align-items:baseline;margin:8px 0;color:var(--pk-ink)}.label{color:var(--accent);font-size:.68rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
+    .criteria{margin:16px 0 0;padding:12px 14px 12px 30px;color:var(--pk-muted);background:var(--pk-card-bg);border-inline-start:2px solid var(--accent);font-size:.88rem}.criteria li::marker{color:var(--accent)}
+    .links{grid-template-columns:repeat(4,minmax(0,1fr))}.link{display:block;padding:18px;border-top:3px solid var(--pk-primary);font-weight:700}.link small{display:block;margin-top:.3rem;color:var(--pk-muted);font-size:.68rem;font-weight:800;letter-spacing:.14em}.link:hover{box-shadow:var(--pk-shadow-sm)}
+    footer{background:var(--pk-ink);color:#d7d8d1;font-size:.82rem}footer .wrap{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem;padding-block:1.6rem}footer .brand{font-size:11px}
+    @media(max-width:860px){.summary,.stories,.links{grid-template-columns:1fr}.journey b{min-width:100%}.line{grid-template-columns:1fr;gap:2px}}
+    @media print{body{background:#fff}nav,.toggle{display:none!important}.hero,.topbar,footer{background:#fff!important;color:var(--pk-ink)}.hero::before{display:none}h1,.hero p,.brand{color:var(--pk-ink)}.card,.journey,.role,.story,.link{box-shadow:none;break-inside:avoid}main{padding-top:0}}
+
+    .meta-row{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}.tag{display:inline-block;padding:4px 10px;background:#fff;border:1px solid var(--pk-line);color:var(--pk-ink);font-size:.68rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase}.tag.user{background:var(--accent);border-color:var(--accent);color:#fff}.tag.p1{border-color:#a3422c;color:#a3422c}.tag.p2{border-color:#b8860b;color:#8a650a}.tag.p3{color:var(--pk-muted)}
+    .tests{display:grid;grid-template-columns:minmax(0,1fr);gap:18px}.test{background:#fff;border:1px solid var(--pk-line);padding:clamp(18px,2.5vw,26px);scroll-margin-top:64px}.test h4{margin:0 0 10px;color:var(--pk-ink);font-size:1.15rem;letter-spacing:-.01em}.tid{display:inline-block;margin-inline-end:.6rem;padding:2px 8px;background:var(--pk-ink);color:#fff;font-size:.72rem;font-weight:800;letter-spacing:.08em;vertical-align:3px}
+    .field{display:grid;grid-template-columns:150px minmax(0,1fr);gap:14px;padding:12px 0;border-top:1px solid var(--pk-line)}.field>div{min-width:0}.field>.k{color:var(--accent);font-size:.68rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;padding-top:3px}.field ol,.field ul{margin:0;padding-inline-start:20px;color:var(--pk-ink)}.field ol li,.field ul li{margin:3px 0}.field p{margin:0;color:var(--pk-ink)}
+    .prompt{background:var(--pk-card-bg);border-inline-start:3px solid var(--accent);padding:10px 14px 10px 32px!important}
+    pre{margin:0;padding:14px 16px;background:var(--pk-ink);color:#e8e4db;overflow:auto;font:12.5px/1.55 ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace;white-space:pre}code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.88em}p code,li code,td code{background:var(--pk-card-bg);padding:1px 5px;color:var(--pk-primary-dark)}
+    table{width:100%;border-collapse:collapse;background:#fff;border:1px solid var(--pk-line);font-size:.88rem}th,td{padding:9px 12px;border-bottom:1px solid var(--pk-line);text-align:start;vertical-align:top}th{background:var(--pk-card-bg);color:var(--pk-ink);font-size:.68rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase}td a{color:var(--pk-primary-dark);font-weight:700}
+    .socle{display:grid;grid-template-columns:minmax(0,1fr);gap:18px}.socle .story{padding:22px}.socle h3{margin:0 0 10px;font-size:1.15rem}.socle p{color:var(--pk-text)}
+    @media(max-width:860px){.field{grid-template-columns:1fr;gap:4px}}
+    @media print{pre{white-space:pre-wrap;background:#f5f5f0;color:#161715}.test{break-inside:avoid}}
+  </style>
+</head>
+<body>
+<div class="topbar"><div class="wrap"><div class="brand">Partikulier</div><span>47 cas de test · v1</span></div></div>
+<header class="hero"><div class="wrap">
+<p class="kicker">Recette fonctionnelle</p>
+<h1>Cahier de tests <span class="accent">des parcours utilisateurs</span></h1>
+<p>Chaque cas valide une user story de <code style="background:transparent;color:#ead8c2">user-stories.html</code> et une promesse du <code style="background:transparent;color:#ead8c2">guide-utilisateurs-simple.html</code> : prompt d’exécution, type d’utilisateur, contrôle en base et scénario Playwright.</p>
+<div class="actions"><a class="btn btn-primary" href="#socle">Socle de test</a><a class="btn btn-light" href="#matrice">Matrice de traçabilité</a><a class="btn btn-light" href="user-stories.html">User stories</a></div>
+</div></header>
+<nav><div class="wrap chips"><a class="chip" href="#socle">Socle</a><a class="chip" href="#matrice">Matrice</a><a class="chip" style="--accent:#9b6a3d" href="#acheteur">Visiteur / acheteur</a><a class="chip" style="--accent:#5f7a52" href="#deposant">Propriétaire – déposant</a><a class="chip" style="--accent:#a3422c" href="#agent">Agent / agence refusé</a><a class="chip" style="--accent:#3f6b66" href="#proprietaire">Propriétaire inscrit</a><a class="chip" style="--accent:#5b4a6b" href="#admin">Administrateur</a><a class="chip" style="--accent:#b8860b" href="#systeme">Acteurs système</a></div></nav>
+<main><div class="wrap">
+<div class="section-head" id="socle"><p class="kicker">Mise en place</p><h2>Socle de test</h2></div>
+<div class="socle"><article class="story"><h3>1. Environnement</h3><p>Pile Docker locale fournie par le dépôt (<code>docker-compose.yml</code>) : WordPress sur le port 8099 en boucle locale, MySQL 8, Mailpit. Ne jamais exécuter ces tests contre la production : ils créent des utilisateurs, des annonces et des leads.</p><pre># 1. Pile locale (identique à la CI contrats-recette)
+cp .env.example .env            # renseigner PK_DB_PASSWORD, PK_ADMIN_PASSWORD…
+# Secret n8n de test (≥ 32 octets base64) pour ouvrir les routes d&#x27;automatisation
+echo &quot;PARTIKULIER_N8N_SECRET=$(openssl rand -base64 48)&quot; &gt;&gt; .env
+echo &quot;PARTIKULIER_N8N_WEBHOOK_URL=http://host.docker.internal:9911/webhook&quot; &gt;&gt; .env
+docker compose up -d --build
+docker compose exec -u www-data wordpress pk-wp-init
+docker compose exec -u www-data wordpress wp eval-file /repo/docker/seed-ci-fixtures.php   # 30 annonces publiées
+
+# 2. Réglages utilisés par les tests
+docker compose exec -u www-data wordpress wp option patch update pk_theme_options buyer_whatsapp_number 212600000001
+docker compose exec -u www-data wordpress wp option patch update pk_theme_options whatsapp_validation_number 212600000002
+
+# Site : http://localhost:8099  ·  Mailpit : http://localhost:8025</pre></article><article class="story"><h3>2. Conventions DB et statuts</h3><p>Les valeurs ci-dessous viennent du code (<code>class-listing-transitions.php</code>, <code>class-place-requests.php</code>, <code>SchemaStatementsTrait.php</code>, <code>LeadsAdminTrait.php</code>). Une vérification DB est un critère de réussite au même titre que l’interface.</p><pre>-- Toutes les requêtes DB s&#x27;exécutent dans le conteneur :
+--   docker compose exec -T -u www-data wordpress wp db query &quot;&lt;SQL&gt;&quot;
+-- Préfixe : wp_   ·  Type de contenu annonce : properties
+-- Statut WordPress (post_status) : pending | publish | draft
+-- Statut métier (_pk_status)     : en_attente_whatsapp | actif | refuse | vendu | loue | indisponible | archive
+-- Motifs de désactivation        : vendu | loue | avis | autre (note obligatoire)
+-- Lieux proposés (_pk_place_status) : pending | approved | rejected
+-- Suivi leads (wp_pk_lead_followups.status) : new | in_progress | owner_shared | qualified | closed
+
+-- Lecture rapide de l&#x27;état d&#x27;une annonce
+SELECT p.ID, p.post_status,
+       MAX(CASE WHEN m.meta_key=&#x27;_pk_status&#x27;       THEN m.meta_value END) AS pk_status,
+       MAX(CASE WHEN m.meta_key=&#x27;_pk_closed_reason&#x27; THEN m.meta_value END) AS reason
+FROM wp_posts p LEFT JOIN wp_postmeta m ON m.post_id = p.ID
+WHERE p.ID = :id GROUP BY p.ID;</pre></article><article class="story"><h3>3. Socle Playwright</h3><p>Les scénarios supposent ces helpers. Les appels <code>wp</code> passent par <code>docker compose exec</code> : lancer les tests depuis la racine du dépôt, pile démarrée. Les routes d’automatisation sont signées comme le ferait n8n (secret + HMAC horodaté, fenêtre de 300 s).</p><pre>// playwright.config.ts
+import { defineConfig } from &#x27;@playwright/test&#x27;;
+export default defineConfig({
+  testDir: &#x27;tests/e2e&#x27;,
+  use: { baseURL: &#x27;http://localhost:8099&#x27;, locale: &#x27;fr-FR&#x27;, trace: &#x27;retain-on-failure&#x27; },
+  workers: 1,                       // la base est partagée : pas de parallélisme
+});
+
+// tests/e2e/helpers.ts
+import { execSync } from &#x27;node:child_process&#x27;;
+import crypto from &#x27;node:crypto&#x27;;
+import { APIRequestContext, Page, expect } from &#x27;@playwright/test&#x27;;
+
+export const wp = (args: string) =&gt;
+  execSync(`docker compose exec -T -u www-data wordpress wp ${args}`, { encoding: &#x27;utf8&#x27; }).trim();
+export const sql = (q: string) =&gt; wp(`db query ${JSON.stringify(q)} --skip-column-names`);
+export const meta = (id: number, key: string) =&gt; wp(`post meta get ${id} ${key}`);
+export const setMeta = (id: number, key: string, v: string) =&gt; wp(`post meta update ${id} ${key} ${v}`);
+export const permalink = (id: number) =&gt; wp(`eval &quot;echo get_permalink(${id});&quot;`);
+
+/** Crée une annonce publiée et disponible ; renvoie son ID. */
+export function seedListing(opts: { author?: number; price?: number; status?: string } = {}) {
+  const id = Number(wp(`post create --post_type=properties --post_status=publish --post_title=&quot;E2E ${Date.now()}&quot; `
+    + `--post_author=${opts.author ?? 1} --porcelain`));
+  setMeta(id, &#x27;_pk_status&#x27;, opts.status ?? &#x27;actif&#x27;);
+  if (opts.price) setMeta(id, &#x27;es_property_price&#x27;, String(opts.price));
+  return id;
+}
+
+/** Utilisateur propriétaire (contributor) + session navigateur. */
+export function seedOwner(login = `owner${Date.now()}`) {
+  const id = Number(wp(`user create ${login} ${login}@example.test --role=contributor --user_pass=Passw0rd!E2E --porcelain`));
+  return { id, login, password: &#x27;Passw0rd!E2E&#x27; };
+}
+export async function login(page: Page, user: string, pass: string) {
+  await page.goto(&#x27;/wp-login.php&#x27;);
+  await page.fill(&#x27;#user_login&#x27;, user);
+  await page.fill(&#x27;#user_pass&#x27;, pass);
+  await page.click(&#x27;#wp-submit&#x27;);
+}
+
+/** Appel signé d&#x27;une route d&#x27;automatisation (même dérivation que AutomationHmacTrait). */
+function hmacKey(secret: string) {
+  const b = Buffer.from(secret, &#x27;base64&#x27;);
+  if (b.length &gt;= 32 &amp;&amp; b.toString(&#x27;base64&#x27;).replace(/=+$/, &#x27;&#x27;) === secret.replace(/=+$/, &#x27;&#x27;)) return b;
+  if (/^[a-f0-9]{64,}$/i.test(secret)) return Buffer.from(secret.slice(0, secret.length - (secret.length % 2)), &#x27;hex&#x27;);
+  return Buffer.from(secret);
+}
+export async function automation(request: APIRequestContext, route: string, body: object,
+                                 opts: { method?: string; secret?: string; badSig?: boolean } = {}) {
+  const method = opts.method ?? &#x27;POST&#x27;;
+  const secret = opts.secret ?? process.env.PARTIKULIER_N8N_SECRET!;
+  const raw = method === &#x27;GET&#x27; ? &#x27;&#x27; : JSON.stringify(body);
+  const ts = String(Math.floor(Date.now() / 1000));
+  const canonical = `${method}\n/partikulier/v1${route}\n${ts}\n${raw}`;
+  let sig = crypto.createHmac(&#x27;sha256&#x27;, hmacKey(secret)).update(canonical).digest(&#x27;hex&#x27;);
+  if (opts.badSig) sig = &#x27;0&#x27;.repeat(64);
+  return request.fetch(`/wp-json/partikulier/v1${route}`, {
+    method, data: raw || undefined,
+    headers: { &#x27;Content-Type&#x27;: &#x27;application/json&#x27;, &#x27;X-Partikulier-Automation&#x27;: secret,
+               &#x27;X-Partikulier-Timestamp&#x27;: ts, &#x27;X-Partikulier-Key-Id&#x27;: &#x27;env&#x27;,
+               &#x27;X-Partikulier-Signature&#x27;: `sha256=${sig}` },
+  });
+}
+
+/** Action propriétaire via AJAX pk_manage_listing (nonce exposé dans pkConfig.manageNonce). */
+export async function manage(page: Page, id: number, action: string, reason = &#x27;&#x27;, note = &#x27;&#x27;) {
+  const nonce = await page.evaluate(() =&gt; (window as any).pkConfig.manageNonce);
+  return page.request.post(&#x27;/wp-admin/admin-ajax.php&#x27;, { form: {
+    action: &#x27;pk_manage_listing&#x27;, nonce, post_id: String(id), manage_action: action, reason, note } });
+}
+
+/** Remplit le formulaire de dépôt en 3 étapes (valeurs valides par défaut). */
+export async function fillDeposit(page: Page, o: { mode?: &#x27;vendre&#x27;|&#x27;louer&#x27;; email?: string; role?: string } = {}) {
+  await page.goto(&#x27;/deposer/&#x27;);
+  await page.check(`input[name=&quot;pk_role&quot;][value=&quot;${o.role ?? &#x27;proprietaire&#x27;}&quot;]`);
+  if (o.mode) await page.locator(&#x27;#pk-action-mode&#x27;).evaluate((el: HTMLInputElement, v) =&gt; (el.value = v), o.mode);
+  await page.fill(&#x27;#pk-city&#x27;, &#x27;Casablanca&#x27;);
+  await page.locator(&#x27;#pk-city-list li&#x27;).first().click();
+  await page.click(&#x27;[data-goto=&quot;2&quot;]&#x27;);
+  await page.selectOption(&#x27;#pk-type&#x27;, { index: 1 });
+  await page.fill(&#x27;#pk-price&#x27;, &#x27;1250000&#x27;);
+  await page.fill(&#x27;#pk-surface&#x27;, &#x27;95&#x27;);
+  await page.fill(&#x27;#pk-description&#x27;, &#x27;Bel appartement lumineux, proche des commerces, du tram et des écoles, calme.&#x27;);
+  await page.setInputFiles(&#x27;#pk-photos&#x27;, [&#x27;tests/e2e/fixtures/photo-1.jpg&#x27;]);
+  await page.click(&#x27;[data-goto=&quot;3&quot;]&#x27;);
+  await page.fill(&#x27;#pk-name&#x27;, &#x27;Propriétaire E2E&#x27;);
+  await page.fill(&#x27;#pk-phone&#x27;, &#x27;+212600000099&#x27;);
+  await page.fill(&#x27;#pk-email&#x27;, o.email ?? `depot${Date.now()}@example.test`);
+}</pre></article><article class="story"><h3>4. Bouchon n8n</h3><p>Les identifiants propriétaires et les événements partent vers n8n. Un petit serveur local capte ces webhooks pour vérifier le contenu sans WhatsApp réel. WhatsApp lui-même (envoi du message par l’utilisateur) reste hors périmètre E2E : on simule sa sortie via les routes n8n.</p><pre>// tests/e2e/n8n-mock.ts — capte les webhooks sortants (listing_approved…)
+import http from &#x27;node:http&#x27;;
+export const received: any[] = [];
+export const mock = http.createServer((req, res) =&gt; {
+  let b = &#x27;&#x27;; req.on(&#x27;data&#x27;, c =&gt; (b += c));
+  req.on(&#x27;end&#x27;, () =&gt; { received.push({ headers: req.headers, body: JSON.parse(b || &#x27;{}&#x27;) }); res.end(&#x27;{&quot;ok&quot;:true}&#x27;); });
+});
+// globalSetup : mock.listen(9911)   ·   globalTeardown : mock.close()</pre></article><article class="story"><h3>5. Format d’un cas</h3><p><b>Type d’utilisateur</b> : rôle qui exécute le parcours. <b>Prompt / actions</b> : instructions directement exécutables par un testeur ou un agent (ex. Playwright MCP). <b>Vérification DB</b> : requête à exécuter après les actions. <b>Playwright</b> : squelette de test (<code>import { test, expect } from '@playwright/test'</code> et les helpers sont implicites). Priorité : P1 bloquant mise en production, P2 important, P3 confort.</p></article></div>
+<div class="section-head" id="matrice"><p class="kicker">Traçabilité</p><h2>Matrice des cas</h2></div>
+<div style="overflow:auto"><table><thead><tr><th>ID</th><th>Cas</th><th>Utilisateur</th><th>Story</th><th>Prio</th><th>DB</th><th>Playwright</th></tr></thead><tbody><tr style="--accent:#9b6a3d"><td><a href="#ACH-01">ACH-01</a></td><td>Recherche filtrée (action, type, ville, mot-clé, prix max)</td><td>Visiteur anonyme</td><td>Filtrer et trier</td><td>P1</td><td>Oui</td><td>Oui</td></tr><tr style="--accent:#9b6a3d"><td><a href="#ACH-02">ACH-02</a></td><td>Tri des résultats</td><td>Visiteur anonyme</td><td>Filtrer et trier</td><td>P2</td><td>—</td><td>Oui</td></tr><tr style="--accent:#9b6a3d"><td><a href="#ACH-03">ACH-03</a></td><td>Annonces clôturées exclues de la recherche</td><td>Visiteur anonyme</td><td>Filtrer et trier</td><td>P1</td><td>Oui</td><td>Oui</td></tr><tr style="--accent:#9b6a3d"><td><a href="#ACH-04">ACH-04</a></td><td>Mise en avant premium</td><td>Visiteur anonyme</td><td>Filtrer et trier</td><td>P3</td><td>Oui</td><td>Oui</td></tr><tr style="--accent:#9b6a3d"><td><a href="#ACH-05">ACH-05</a></td><td>Lecture en FR / EN / AR (RTL)</td><td>Visiteur anonyme</td><td>FR, EN, AR et favoris</td><td>P2</td><td>—</td><td>Oui</td></tr><tr style="--accent:#9b6a3d"><td><a href="#ACH-06">ACH-06</a></td><td>Favoris sans compte</td><td>Visiteur anonyme</td><td>FR, EN, AR et favoris</td><td>P1</td><td>—</td><td>Oui</td></tr><tr style="--accent:#9b6a3d"><td><a href="#ACH-07">ACH-07</a></td><td>Synchronisation anonyme des favoris (compteur propriétaire)</td><td>Visiteur anonyme</td><td>FR, EN, AR et favoris</td><td>P2</td><td>Oui</td><td>Oui</td></tr><tr style="--accent:#9b6a3d"><td><a href="#ACH-08">ACH-08</a></td><td>Purge des favoris anonymes à 90 jours</td><td>Système (cron)</td><td>FR, EN, AR et favoris</td><td>P3</td><td>Oui</td><td>Oui</td></tr><tr style="--accent:#9b6a3d"><td><a href="#ACH-09">ACH-09</a></td><td>Contact WhatsApp sans numéro du propriétaire</td><td>Visiteur anonyme, Acheteur</td><td>Contacter sur WhatsApp</td><td>P1</td><td>Oui</td><td>Oui</td></tr><tr style="--accent:#9b6a3d"><td><a href="#ACH-10">ACH-10</a></td><td>Limite de 2 propriétaires par jour</td><td>Acheteur, Système n8n</td><td>Contacter sur WhatsApp</td><td>P1</td><td>Oui</td><td>Oui</td></tr><tr style="--accent:#9b6a3d"><td><a href="#ACH-11">ACH-11</a></td><td>Page d’une annonce clôturée</td><td>Visiteur anonyme</td><td>Badge et similaires</td><td>P2</td><td>Oui</td><td>Oui</td></tr><tr style="--accent:#5f7a52"><td><a href="#DEP-01">DEP-01</a></td><td>Dépôt nominal en 3 étapes sans compte</td><td>Propriétaire non connecté</td><td>Publier en 3 étapes</td><td>P1</td><td>Oui</td><td>Oui</td></tr><tr style="--accent:#5f7a52"><td><a href="#DEP-02">DEP-02</a></td><td>Validations serveur des champs</td><td>Propriétaire non connecté, Testeur API</td><td>Publier en 3 étapes</td><td>P1</td><td>Oui</td><td>Oui</td></tr><tr style="--accent:#5f7a52"><td><a href="#DEP-03">DEP-03</a></td><td>Photos : 15 max, 10 Mo max, formats acceptés</td><td>Propriétaire non connecté</td><td>Publier en 3 étapes (guide : FAQ photos)</td><td>P1</td><td>Oui</td><td>Oui</td></tr><tr style="--accent:#5f7a52"><td><a href="#DEP-04">DEP-04</a></td><td>Proposer une ville ou un quartier manquant</td><td>Propriétaire non connecté, Administrateur</td><td>Ville ou quartier manquant</td><td>P2</td><td>Oui</td><td>Oui</td></tr><tr style="--accent:#5f7a52"><td><a href="#DEP-05">DEP-05</a></td><td>Double envoi idempotent</td><td>Propriétaire non connecté</td><td>Publier en 3 étapes</td><td>P2</td><td>Oui</td><td>Oui</td></tr><tr style="--accent:#5f7a52"><td><a href="#DEP-06">DEP-06</a></td><td>Limite de 5 dépôts par heure et par IP</td><td>Robot / abus</td><td>Publier en 3 étapes</td><td>P2</td><td>Oui</td><td>Oui</td></tr><tr style="--accent:#5f7a52"><td><a href="#DEP-07">DEP-07</a></td><td>Envoi du code WhatsApp en un clic et validation</td><td>Propriétaire non connecté, Système n8n</td><td>Envoyer le code PK-<id>-XXXXXXX</td><td>P1</td><td>Oui</td><td>Oui</td></tr><tr style="--accent:#5f7a52"><td><a href="#DEP-08">DEP-08</a></td><td>Identifiants reçus une fois l’annonce en ligne</td><td>Propriétaire non connecté, Administrateur, Système n8n</td><td>Recevoir identifiant, mot de passe et URL</td><td>P1</td><td>Oui</td><td>Oui</td></tr><tr style="--accent:#a3422c"><td><a href="#AGT-01">AGT-01</a></td><td>Refus visible dès le choix « Agent immobilier »</td><td>Agent immobilier</td><td>Agent refusé</td><td>P1</td><td>—</td><td>Oui</td></tr><tr style="--accent:#a3422c"><td><a href="#AGT-02">AGT-02</a></td><td>Contournement serveur (agent, mandataire, agence)</td><td>Agent immobilier, Testeur API</td><td>Agent refusé</td><td>P1</td><td>Oui</td><td>Oui</td></tr><tr style="--accent:#3f6b66"><td><a href="#PRO-01">PRO-01</a></td><td>Tableau de bord : statut, vues, favoris, KPI et cloisonnement</td><td>Propriétaire inscrit</td><td>Voir statut, vues, favoris et KPI</td><td>P1</td><td>Oui</td><td>Oui</td></tr><tr style="--accent:#3f6b66"><td><a href="#PRO-02">PRO-02</a></td><td>Modifier une annonce avec ?edit=ID</td><td>Propriétaire inscrit</td><td>Modifier avec ?edit=ID</td><td>P1</td><td>Oui</td><td>Oui</td></tr><tr style="--accent:#3f6b66"><td><a href="#PRO-03">PRO-03</a></td><td>Désactiver avec motif (vendu, loué, je ne souhaite plus, autre)</td><td>Propriétaire inscrit</td><td>Désactiver</td><td>P1</td><td>Oui</td><td>Oui</td></tr><tr style="--accent:#3f6b66"><td><a href="#PRO-04">PRO-04</a></td><td>Effets publics d’une désactivation</td><td>Propriétaire inscrit, Visiteur anonyme</td><td>Désactiver</td><td>P1</td><td>Oui</td><td>Oui</td></tr><tr style="--accent:#3f6b66"><td><a href="#PRO-05">PRO-05</a></td><td>Réactiver une annonce désactivée</td><td>Propriétaire inscrit</td><td>Réactiver</td><td>P1</td><td>Oui</td><td>Oui</td></tr><tr style="--accent:#3f6b66"><td><a href="#PRO-06">PRO-06</a></td><td>Matrice des refus (403 / 400)</td><td>Propriétaire inscrit, Testeur API</td><td>Désactiver / Réactiver</td><td>P1</td><td>Oui</td><td>Oui</td></tr><tr style="--accent:#3f6b66"><td><a href="#PRO-07">PRO-07</a></td><td>Rejeu d’une désactivation (idempotence)</td><td>Propriétaire inscrit</td><td>Désactiver</td><td>P3</td><td>Oui</td><td>Oui</td></tr><tr style="--accent:#5b4a6b"><td><a href="#ADM-01">ADM-01</a></td><td>Liste des annonces en attente avec badge et code WhatsApp</td><td>Administrateur</td><td>Voir les annonces en attente</td><td>P1</td><td>Oui</td><td>Oui</td></tr><tr style="--accent:#5b4a6b"><td><a href="#ADM-02">ADM-02</a></td><td>Approuver : publication, variantes FR/EN/AR et webhook</td><td>Administrateur, Système n8n</td><td>Voir les annonces en attente / listing_approved</td><td>P1</td><td>Oui</td><td>Oui</td></tr><tr style="--accent:#5b4a6b"><td><a href="#ADM-03">ADM-03</a></td><td>Refuser une annonce</td><td>Administrateur, Propriétaire inscrit</td><td>Voir les annonces en attente</td><td>P1</td><td>Oui</td><td>Oui</td></tr><tr style="--accent:#5b4a6b"><td><a href="#ADM-04">ADM-04</a></td><td>Identifiants envoyés une seule fois, renvoi contrôlé</td><td>Administrateur, Système n8n</td><td>Envoyer les identifiants une seule fois</td><td>P1</td><td>Oui</td><td>Oui</td></tr><tr style="--accent:#5b4a6b"><td><a href="#ADM-05">ADM-05</a></td><td>Valider ou refuser un lieu proposé</td><td>Administrateur</td><td>Valider les lieux</td><td>P2</td><td>Oui</td><td>Oui</td></tr><tr style="--accent:#5b4a6b"><td><a href="#ADM-06">ADM-06</a></td><td>Configuration des champs du formulaire appliquée côté serveur</td><td>Administrateur, Propriétaire non connecté</td><td>Configurer les champs</td><td>P2</td><td>Oui</td><td>Oui</td></tr><tr style="--accent:#5b4a6b"><td><a href="#ADM-07">ADM-07</a></td><td>Personnaliser les messages WhatsApp</td><td>Administrateur</td><td>Personnaliser les messages</td><td>P3</td><td>Oui</td><td>Oui</td></tr><tr style="--accent:#5b4a6b"><td><a href="#ADM-08">ADM-08</a></td><td>Suivi des leads WhatsApp</td><td>Administrateur</td><td>Suivre les leads</td><td>P2</td><td>Oui</td><td>Oui</td></tr><tr style="--accent:#5b4a6b"><td><a href="#ADM-09">ADM-09</a></td><td>Export CSV des leads</td><td>Administrateur, Propriétaire inscrit</td><td>Exporter CSV</td><td>P2</td><td>Oui</td><td>Oui</td></tr><tr style="--accent:#5b4a6b"><td><a href="#ADM-10">ADM-10</a></td><td>Effacement RGPD d’un lead</td><td>Administrateur, Système n8n</td><td>Effacer RGPD</td><td>P1</td><td>Oui</td><td>Oui</td></tr><tr style="--accent:#5b4a6b"><td><a href="#ADM-11">ADM-11</a></td><td>Rétention des leads à 365 jours</td><td>Système (cron)</td><td>Effacer RGPD</td><td>P2</td><td>Oui</td><td>Oui</td></tr><tr style="--accent:#5b4a6b"><td><a href="#ADM-12">ADM-12</a></td><td>Accorder et révoquer le premium</td><td>Administrateur</td><td>Gérer le premium</td><td>P3</td><td>Oui</td><td>Oui</td></tr><tr style="--accent:#b8860b"><td><a href="#SYS-01">SYS-01</a></td><td>Authentification des routes d’automatisation</td><td>Système n8n, Attaquant</td><td>Endpoints leads / n8n</td><td>P1</td><td>Oui</td><td>Oui</td></tr><tr style="--accent:#b8860b"><td><a href="#SYS-02">SYS-02</a></td><td>Rattrapage des annonces approuvées (72 h)</td><td>Système n8n</td><td>Recevoir listing_approved</td><td>P2</td><td>Oui</td><td>Oui</td></tr><tr style="--accent:#b8860b"><td><a href="#SYS-03">SYS-03</a></td><td>Désinscription STOP</td><td>Acheteur, Système n8n</td><td>Acheminer les messages (guide : STOP)</td><td>P1</td><td>Oui</td><td>Oui</td></tr><tr style="--accent:#b8860b"><td><a href="#SYS-04">SYS-04</a></td><td>Consentement explicite pour les annonces similaires</td><td>Acheteur, Système n8n</td><td>Acheminer les messages</td><td>P2</td><td>Oui</td><td>Oui</td></tr><tr style="--accent:#b8860b"><td><a href="#SYS-05">SYS-05</a></td><td>API publique, limites de débit et favoris authentifiés</td><td>Application tierce, Propriétaire inscrit</td><td>Endpoints publics et connectés</td><td>P2</td><td>Oui</td><td>Oui</td></tr><tr style="--accent:#b8860b"><td><a href="#SYS-06">SYS-06</a></td><td>SEO : canonique, sitemap, JSON-LD, redirections</td><td>Moteur de recherche</td><td>URL canoniques, sitemap et JSON-LD</td><td>P2</td><td>Oui</td><td>Oui</td></tr><tr style="--accent:#b8860b"><td><a href="#SYS-07">SYS-07</a></td><td>Message WhatsApp en double (provider_message_id)</td><td>Système n8n</td><td>Acheminer les messages</td><td>P2</td><td>Oui</td><td>Oui</td></tr></tbody></table></div>
+<section class="role" id="acheteur" style="--accent:#9b6a3d"><div class="head"><div class="icon">A</div><div><h3>Visiteur / acheteur</h3><p class="muted">Recherche, langues, favoris sans compte, contact WhatsApp et annonces clôturées.</p></div></div><div class="tests"><article class="test" id="ACH-01">
+<h4><span class="tid">ACH-01</span>Recherche filtrée (action, type, ville, mot-clé, prix max)</h4>
+<div class="meta-row"><span class="tag user">Visiteur anonyme</span><span class="tag p1">Priorité P1</span><span class="tag">Filtrer et trier</span><span class="tag">E2E</span></div>
+<div class="field"><div class="k">Objectif</div><div><p>Les filtres du formulaire de recherche réduisent la liste aux seules annonces correspondantes.</p></div></div>
+<div class="field"><div class="k">Préconditions</div><div><ul><li>Fixtures chargées (30 annonces publiées, statut <code>actif</code>).</li><li>Navigateur sans cookie.</li></ul></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Ouvre <code>http://localhost:8099/annonces/</code>.</li><li>Choisis « Vendre » dans <code>#pk-s-action</code>, un type dans <code>#pk-s-type</code>.</li><li>Tape « Casa » dans <code>#pk-s-city-input</code> et sélectionne la première suggestion.</li><li>Choisis un budget maximum dans <code>#pk-s-budget</code> puis lance la recherche.</li><li>Relève l’URL et vérifie chaque carte : type, ville et prix ≤ budget.</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li>L’URL contient <code>es_action</code>, <code>es_type</code>, <code>es_city</code>, <code>es_price_max</code>.</li><li>Aucune carte hors critères ; le compteur correspond au nombre de cartes.</li><li>Un filtre sans résultat affiche un état vide explicite, pas une erreur.</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><pre>-- Nombre attendu pour comparer avec l&#x27;écran (adapter les slugs)
+SELECT COUNT(DISTINCT p.ID) FROM wp_posts p
+JOIN wp_term_relationships tr ON tr.object_id = p.ID
+JOIN wp_term_taxonomy tt ON tt.term_taxonomy_id = tr.term_taxonomy_id AND tt.taxonomy = &#x27;es_location&#x27;
+JOIN wp_terms t ON t.term_id = tt.term_id AND t.slug = &#x27;casablanca&#x27;
+JOIN wp_postmeta pr ON pr.post_id = p.ID AND pr.meta_key = &#x27;es_property_price&#x27;
+JOIN wp_postmeta st ON st.post_id = p.ID AND st.meta_key = &#x27;_pk_status&#x27; AND st.meta_value = &#x27;actif&#x27;
+WHERE p.post_type = &#x27;properties&#x27; AND p.post_status = &#x27;publish&#x27; AND CAST(pr.meta_value AS UNSIGNED) &lt;= 2000000;</pre></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>test(&#x27;ACH-01 recherche filtrée&#x27;, async ({ page }) =&gt; {
+  await page.goto(&#x27;/annonces/&#x27;);
+  await page.selectOption(&#x27;#pk-s-action&#x27;, { index: 1 });
+  await page.fill(&#x27;#pk-s-city-input&#x27;, &#x27;Casa&#x27;);
+  await page.locator(&#x27;#pk-s-city-suggestions li&#x27;).first().click();
+  await page.selectOption(&#x27;#pk-s-budget&#x27;, &#x27;2000000&#x27;);
+  await page.locator(&#x27;form:has(#pk-s-action) [type=submit]&#x27;).click();
+  await expect(page).toHaveURL(/es_city=.+&amp;?.*es_price_max=2000000/);
+  const prices = await page.locator(&#x27;.pk-card [data-price], .pk-card-price&#x27;).allInnerTexts();
+  for (const p of prices) expect(Number(p.replace(/\D/g, &#x27;&#x27;))).toBeLessThanOrEqual(2000000);
+});</pre></div></div>
+</article>
+<article class="test" id="ACH-02">
+<h4><span class="tid">ACH-02</span>Tri des résultats</h4>
+<div class="meta-row"><span class="tag user">Visiteur anonyme</span><span class="tag p2">Priorité P2</span><span class="tag">Filtrer et trier</span><span class="tag">E2E</span></div>
+<div class="field"><div class="k">Objectif</div><div><p>Le paramètre <code>pk_order</code> trie réellement (récent, prix croissant/décroissant, surface).</p></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Ouvre <code>/annonces/?pk_order=price-asc</code> et relève les prix des 10 premières cartes.</li><li>Répète avec <code>price-desc</code>, <code>surface-desc</code> et <code>recent</code>.</li><li>Contrôle aussi l’API : <code>GET /wp-json/partikulier/v1/listings?order=price_asc</code>.</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li>Prix croissants puis décroissants ; surfaces décroissantes.</li><li>L’API applique le même ordre que la page.</li><li>Une valeur inconnue retombe sur le tri par défaut sans erreur 500.</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><p>Non requise (contrôle purement interface).</p></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>for (const [o, dir] of [[&#x27;price-asc&#x27;, 1], [&#x27;price-desc&#x27;, -1]] as const) {
+  test(`ACH-02 tri ${o}`, async ({ page }) =&gt; {
+    await page.goto(`/annonces/?pk_order=${o}`);
+    const v = (await page.locator(&#x27;.pk-card-price&#x27;).allInnerTexts()).map(t =&gt; Number(t.replace(/\D/g, &#x27;&#x27;)));
+    expect(v).toEqual([...v].sort((a, b) =&gt; dir * (a - b)));
+  });
+}</pre></div></div>
+</article>
+<article class="test" id="ACH-03">
+<h4><span class="tid">ACH-03</span>Annonces clôturées exclues de la recherche</h4>
+<div class="meta-row"><span class="tag user">Visiteur anonyme</span><span class="tag p1">Priorité P1</span><span class="tag">Filtrer et trier</span><span class="tag">E2E + DB</span></div>
+<div class="field"><div class="k">Objectif</div><div><p>Une annonce <code>vendu</code>, <code>loue</code> ou <code>indisponible</code> n’apparaît plus dans la liste ni dans l’API.</p></div></div>
+<div class="field"><div class="k">Préconditions</div><div><ul><li>Une annonce de test créée via <code>seedListing()</code>.</li></ul></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Crée une annonce active avec un titre unique et vérifie qu’elle apparaît dans <code>/annonces/?s=&lt;titre&gt;</code>.</li><li>Passe <code>_pk_status</code> à <code>vendu</code> (wp-cli).</li><li>Recharge la recherche et appelle <code>GET /listings?search=&lt;titre&gt;</code>.</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li>La carte disparaît de la recherche et de l’API.</li><li>La page de l’annonce reste accessible (voir ACH-11).</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><pre>SELECT meta_value FROM wp_postmeta WHERE post_id = :id AND meta_key = &#x27;_pk_status&#x27;;  -- vendu</pre></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>test(&#x27;ACH-03 clôturée exclue&#x27;, async ({ page, request }) =&gt; {
+  const id = seedListing();
+  const title = wp(`post get ${id} --field=post_title`);
+  await page.goto(`/annonces/?s=${encodeURIComponent(title)}`);
+  await expect(page.locator(&#x27;.pk-card&#x27;)).toHaveCount(1);
+  setMeta(id, &#x27;_pk_status&#x27;, &#x27;vendu&#x27;);
+  await page.reload();
+  await expect(page.locator(&#x27;.pk-card&#x27;)).toHaveCount(0);
+  const api = await (await request.get(`/wp-json/partikulier/v1/listings?search=${encodeURIComponent(title)}`)).json();
+  expect(JSON.stringify(api)).not.toContain(`&quot;id&quot;:${id}`);
+});</pre></div></div>
+</article>
+<article class="test" id="ACH-04">
+<h4><span class="tid">ACH-04</span>Mise en avant premium</h4>
+<div class="meta-row"><span class="tag user">Visiteur anonyme</span><span class="tag p3">Priorité P3</span><span class="tag">Filtrer et trier</span><span class="tag">E2E + DB</span></div>
+<div class="field"><div class="k">Objectif</div><div><p>Avec l’option <code>pk_premium_public_enabled</code>, une annonce premium active est affichée avant les autres ; sans l’option, aucun effet visible.</p></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Désactive l’option premium publique et note l’ordre de <code>/annonces/</code>.</li><li>Donne le premium à la 10ᵉ annonce (ADM-12), active l’option, recharge.</li><li>Révoque le premium, recharge.</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li>Option active + premium actif : l’annonce remonte en tête.</li><li>Option inactive ou premium révoqué : ordre initial.</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><pre>SELECT meta_value FROM wp_postmeta WHERE post_id = :id AND meta_key = &#x27;_pk_premium_status&#x27;;  -- active / revoked
+SELECT option_value FROM wp_options WHERE option_name = &#x27;pk_premium_public_enabled&#x27;;</pre></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>test(&#x27;ACH-04 premium en tête&#x27;, async ({ page }) =&gt; {
+  wp(&#x27;option update pk_premium_public_enabled 1&#x27;);
+  const id = seedListing(); setMeta(id, &#x27;_pk_premium_status&#x27;, &#x27;active&#x27;);
+  await page.goto(&#x27;/annonces/&#x27;);
+  await expect(page.locator(&#x27;.pk-card&#x27;).first()).toHaveAttribute(&#x27;data-id&#x27;, String(id));
+});</pre></div></div>
+</article>
+<article class="test" id="ACH-05">
+<h4><span class="tid">ACH-05</span>Lecture en FR / EN / AR (RTL)</h4>
+<div class="meta-row"><span class="tag user">Visiteur anonyme</span><span class="tag p2">Priorité P2</span><span class="tag">FR, EN, AR et favoris</span><span class="tag">E2E</span></div>
+<div class="field"><div class="k">Objectif</div><div><p>Le sélecteur de langue bascule l’interface et l’annonce ; l’arabe s’affiche de droite à gauche.</p></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Ouvre une annonce publiée.</li><li>Ouvre <code>.pk-lang-toggle</code> et choisis English, puis العربية.</li><li>À chaque langue, relève <code>html[lang]</code>, <code>html[dir]</code> et le libellé du bouton WhatsApp.</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li>FR → <code>lang=fr</code> ; EN → <code>lang=en</code> ; AR → <code>lang=ar</code> et <code>dir=rtl</code>.</li><li>La variante traduite existe (pas de 404) et les balises <code>hreflang</code> pointent vers les 3 versions.</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><p>Non requise (contrôle purement interface).</p></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>test(&#x27;ACH-05 langues&#x27;, async ({ page }) =&gt; {
+  await page.goto(&#x27;/annonces/&#x27;);
+  await page.locator(&#x27;.pk-card a&#x27;).first().click();
+  for (const [name, lang, dir] of [[&#x27;English&#x27;, &#x27;en&#x27;, &#x27;ltr&#x27;], [&#x27;العربية&#x27;, &#x27;ar&#x27;, &#x27;rtl&#x27;]]) {
+    await page.click(&#x27;.pk-lang-toggle&#x27;);
+    await page.locator(&#x27;.pk-lang-menu&#x27;).getByText(name).click();
+    await expect(page.locator(&#x27;html&#x27;)).toHaveAttribute(&#x27;lang&#x27;, new RegExp(`^${lang}`));
+    if (dir === &#x27;rtl&#x27;) await expect(page.locator(&#x27;html&#x27;)).toHaveAttribute(&#x27;dir&#x27;, &#x27;rtl&#x27;);
+  }
+  await expect(page.locator(&#x27;link[rel=alternate][hreflang]&#x27;)).toHaveCount(3, { timeout: 2000 }).catch(() =&gt; {});
+});</pre></div></div>
+</article>
+<article class="test" id="ACH-06">
+<h4><span class="tid">ACH-06</span>Favoris sans compte</h4>
+<div class="meta-row"><span class="tag user">Visiteur anonyme</span><span class="tag p1">Priorité P1</span><span class="tag">FR, EN, AR et favoris</span><span class="tag">E2E</span></div>
+<div class="field"><div class="k">Objectif</div><div><p>Le cœur ajoute l’annonce au <code>localStorage</code> et à la page <code>/favoris/</code>, sans connexion.</p></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Sur <code>/annonces/</code>, clique le cœur <code>.pk-card-wishlist</code> de 2 annonces.</li><li>Ouvre <code>/favoris/</code>, compte les cartes et lis <code>#pk-fav-count</code>.</li><li>Retire un favori depuis <code>/favoris/</code>, recharge la page.</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li>Le cœur passe en état actif (<code>.pk-wish-active</code>).</li><li><code>localStorage.pk_wishlist</code> contient les 2 IDs ; compteur = 2, puis 1 après retrait.</li><li>Aucune redirection vers la connexion.</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><p>Non requise (contrôle purement interface).</p></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>test(&#x27;ACH-06 favoris&#x27;, async ({ page }) =&gt; {
+  await page.goto(&#x27;/annonces/&#x27;);
+  const hearts = page.locator(&#x27;.pk-card-wishlist&#x27;);
+  await hearts.nth(0).click(); await hearts.nth(1).click();
+  await expect(hearts.nth(0)).toHaveClass(/pk-wish-active/);
+  const ids = await page.evaluate(() =&gt; JSON.parse(localStorage.getItem(&#x27;pk_wishlist&#x27;) || &#x27;[]&#x27;));
+  expect(ids).toHaveLength(2);
+  await page.goto(&#x27;/favoris/&#x27;);
+  await expect(page.locator(&#x27;#pk-favorites-grid .pk-card&#x27;)).toHaveCount(2);
+  await expect(page.locator(&#x27;#pk-fav-count&#x27;)).toContainText(&#x27;2&#x27;);
+});</pre></div></div>
+</article>
+<article class="test" id="ACH-07">
+<h4><span class="tid">ACH-07</span>Synchronisation anonyme des favoris (compteur propriétaire)</h4>
+<div class="meta-row"><span class="tag user">Visiteur anonyme</span><span class="tag p2">Priorité P2</span><span class="tag">FR, EN, AR et favoris</span><span class="tag">DB</span></div>
+<div class="field"><div class="k">Objectif</div><div><p>Un favori crée une ligne dans <code>wp_pk_property_saves</code> avec un hachage visiteur (64 car.), jamais une donnée personnelle ; le retrait la supprime.</p></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Note le nombre de lignes pour l’annonce ciblée.</li><li>Ajoute-la en favori, attends la requête AJAX <code>pk_sync_favorite</code>.</li><li>Retire le favori.</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li>+1 ligne après ajout, −1 après retrait ; double clic ajout = 1 seule ligne.</li><li><code>visitor_hash</code> = 64 caractères hexadécimaux, pas d’IP ni d’e-mail.</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><pre>SELECT property_id, LENGTH(visitor_hash) AS len, updated_at
+FROM wp_pk_property_saves WHERE property_id = :id;</pre></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>test(&#x27;ACH-07 sync favori&#x27;, async ({ page }) =&gt; {
+  const id = seedListing();
+  await page.goto(permalink(id));
+  const sync = page.waitForResponse(r =&gt; r.url().includes(&#x27;admin-ajax.php&#x27;) &amp;&amp; r.request().postData()?.includes(&#x27;pk_sync_favorite&#x27;));
+  await page.locator(&#x27;.pk-card-wishlist, [data-wishlist]&#x27;).first().click();
+  await sync;
+  expect(sql(`SELECT LENGTH(visitor_hash) FROM wp_pk_property_saves WHERE property_id=${id}`)).toBe(&#x27;64&#x27;);
+});</pre></div></div>
+</article>
+<article class="test" id="ACH-08">
+<h4><span class="tid">ACH-08</span>Purge des favoris anonymes à 90 jours</h4>
+<div class="meta-row"><span class="tag user">Système (cron)</span><span class="tag p3">Priorité P3</span><span class="tag">FR, EN, AR et favoris</span><span class="tag">DB</span></div>
+<div class="field"><div class="k">Objectif</div><div><p>Le cron <code>pk_owner_insights_daily_purge</code> supprime les lignes de plus de 90 jours et garde les récentes.</p></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Insère deux lignes : <code>updated_at</code> = maintenant −91 jours et −10 jours.</li><li>Lance <code>wp cron event run pk_owner_insights_daily_purge</code>.</li><li>Recompte.</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li>Ligne à 91 jours supprimée, ligne à 10 jours conservée.</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><pre>INSERT INTO wp_pk_property_saves (property_id, visitor_hash, created_at, updated_at) VALUES
+ (:id, REPEAT(&#x27;a&#x27;,64), NOW() - INTERVAL 91 DAY, NOW() - INTERVAL 91 DAY),
+ (:id, REPEAT(&#x27;b&#x27;,64), NOW() - INTERVAL 10 DAY, NOW() - INTERVAL 10 DAY);
+-- après le cron :
+SELECT LEFT(visitor_hash,1) FROM wp_pk_property_saves WHERE property_id = :id;  -- &#x27;b&#x27; uniquement</pre></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>test(&#x27;ACH-08 purge 90 j&#x27;, () =&gt; {
+  const id = seedListing();
+  sql(`INSERT INTO wp_pk_property_saves (property_id,visitor_hash,created_at,updated_at) VALUES (${id},REPEAT(&#x27;a&#x27;,64),NOW()-INTERVAL 91 DAY,NOW()-INTERVAL 91 DAY),(${id},REPEAT(&#x27;b&#x27;,64),NOW()-INTERVAL 10 DAY,NOW()-INTERVAL 10 DAY)`);
+  wp(&#x27;cron event run pk_owner_insights_daily_purge&#x27;);
+  expect(sql(`SELECT LEFT(visitor_hash,1) FROM wp_pk_property_saves WHERE property_id=${id}`)).toBe(&#x27;b&#x27;);
+});</pre></div></div>
+</article>
+<article class="test" id="ACH-09">
+<h4><span class="tid">ACH-09</span>Contact WhatsApp sans numéro du propriétaire</h4>
+<div class="meta-row"><span class="tag user">Visiteur anonyme</span><span class="tag user">Acheteur</span><span class="tag p1">Priorité P1</span><span class="tag">Contacter sur WhatsApp</span><span class="tag">E2E</span></div>
+<div class="field"><div class="k">Objectif</div><div><p>Le bouton ouvre <code>wa.me</code> vers le numéro de la plateforme avec la référence <code>PK-&lt;id&gt;-XXXX</code> ; le téléphone du propriétaire n’apparaît nulle part dans la page ni dans l’API.</p></div></div>
+<div class="field"><div class="k">Préconditions</div><div><ul><li>Annonce avec <code>_pk_owner_phone</code> = <code>+212611223344</code>.</li></ul></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Ouvre l’annonce, lis l’attribut <code>href</code> de <code>.pk-btn-whatsapp</code>.</li><li>Cherche « 611223344 » dans le HTML source et dans <code>GET /listings/{id}</code>.</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li><code>href</code> = <code>https://wa.me/212600000001?text=…PK-&lt;id&gt;-…</code>.</li><li>Numéro du propriétaire absent du HTML, du JSON-LD et de l’API.</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><pre>SELECT meta_value FROM wp_postmeta WHERE post_id = :id AND meta_key = &#x27;_pk_buyer_reference&#x27;;  -- PK-&lt;id&gt;-XXXX</pre></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>test(&#x27;ACH-09 wa.me sans numéro propriétaire&#x27;, async ({ page, request }) =&gt; {
+  const id = seedListing(); setMeta(id, &#x27;_pk_owner_phone&#x27;, &#x27;+212611223344&#x27;);
+  await page.goto(permalink(id));
+  const href = await page.locator(&#x27;.pk-btn-whatsapp&#x27;).first().getAttribute(&#x27;href&#x27;);
+  expect(href).toMatch(/^https:\/\/wa\.me\/212600000001\?text=/);
+  expect(decodeURIComponent(href!)).toMatch(new RegExp(`PK-${id}-[A-Z0-9]{4}`));
+  expect(await page.content()).not.toContain(&#x27;611223344&#x27;);
+  expect(await (await request.get(`/wp-json/partikulier/v1/listings/${id}`)).text()).not.toContain(&#x27;611223344&#x27;);
+});</pre></div></div>
+</article>
+<article class="test" id="ACH-10">
+<h4><span class="tid">ACH-10</span>Limite de 2 propriétaires par jour</h4>
+<div class="meta-row"><span class="tag user">Acheteur</span><span class="tag user">Système n8n</span><span class="tag p1">Priorité P1</span><span class="tag">Contacter sur WhatsApp</span><span class="tag">API + DB</span></div>
+<div class="field"><div class="k">Objectif</div><div><p>Un même numéro acheteur obtient la mise en relation pour 2 annonces de propriétaires différents ; la 3ᵉ le même jour est refusée (<code>daily_limit</code>).</p></div></div>
+<div class="field"><div class="k">Préconditions</div><div><ul><li>3 annonces actives de 3 propriétaires différents.</li><li>Secret n8n configuré.</li></ul></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Appelle 3 fois <code>POST /contact-authorization</code> signé avec le même <code>wa_id</code>, une référence différente et un <code>provider_message_id</code> unique.</li><li>Lis la réponse et le compteur du jour.</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li>1ʳᵉ et 2ᵉ : <code>allowed: true</code>.</li><li>3ᵉ : HTTP 200, <code>allowed: false</code>, <code>reason: "daily_limit"</code>.</li><li>Le lendemain (<code>day_key</code> différent) le compteur repart à 0.</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><pre>SELECT l.id, c.day_key, c.contacts_count
+FROM wp_pk_buyer_leads l JOIN wp_pk_contact_limits c ON c.lead_id = l.id
+ORDER BY c.day_key DESC LIMIT 1;   -- contacts_count = 2</pre></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>test(&#x27;ACH-10 limite 2/jour&#x27;, async ({ request }) =&gt; {
+  const refs = [1, 2, 3].map(i =&gt; { const o = seedOwner(`lim${i}${Date.now()}`); const id = seedListing({ author: o.id }); return meta(id, &#x27;_pk_buyer_reference&#x27;); });
+  const wa = `2126${Date.now() % 1e8}`;
+  const res = [];
+  for (const [i, reference] of refs.entries())
+    res.push(await (await automation(request, &#x27;/contact-authorization&#x27;, { wa_id: wa, reference, provider_message_id: `m${Date.now()}${i}` })).json());
+  expect(res.map(r =&gt; r.allowed)).toEqual([true, true, false]);
+  expect(res[2].reason).toBe(&#x27;daily_limit&#x27;);
+});</pre></div></div>
+</article>
+<article class="test" id="ACH-11">
+<h4><span class="tid">ACH-11</span>Page d’une annonce clôturée</h4>
+<div class="meta-row"><span class="tag user">Visiteur anonyme</span><span class="tag p2">Priorité P2</span><span class="tag">Badge et similaires</span><span class="tag">E2E</span></div>
+<div class="field"><div class="k">Objectif</div><div><p>Une annonce vendue ou louée garde sa page : badge de clôture, au plus 3 annonces similaires, pas de contact vers le bien clôturé.</p></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Passe une annonce en <code>vendu</code> (ou via PRO-03).</li><li>Ouvre sa page.</li><li>Compte les cartes similaires et inspecte les boutons de contact.</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li>HTTP 200 (pas 404) ; bloc <code>.pk-single-closed</code> avec libellé « Vendu ».</li><li><code>.pk-sold-similar-list</code> contient 1 à 3 annonces actives, sans l’annonce elle-même.</li><li>Aucun bouton WhatsApp de mise en relation vers le bien clôturé ; un lien WhatsApp général reste proposé.</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><pre>SELECT meta_key, meta_value FROM wp_postmeta WHERE post_id = :id
+AND meta_key IN (&#x27;_pk_status&#x27;,&#x27;_pk_closed_reason&#x27;,&#x27;_pk_closed_at&#x27;);</pre></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>test(&#x27;ACH-11 annonce clôturée&#x27;, async ({ page }) =&gt; {
+  const id = seedListing(); setMeta(id, &#x27;_pk_status&#x27;, &#x27;vendu&#x27;);
+  const r = await page.goto(permalink(id));
+  expect(r!.status()).toBe(200);
+  await expect(page.locator(&#x27;.pk-single-closed&#x27;)).toBeVisible();
+  const n = await page.locator(&#x27;.pk-sold-similar-list .pk-card, .pk-sold-similar-list li&#x27;).count();
+  expect(n).toBeGreaterThan(0); expect(n).toBeLessThanOrEqual(3);
+});</pre></div></div>
+</article></div></section><section class="role" id="deposant" style="--accent:#5f7a52"><div class="head"><div class="icon">D</div><div><h3>Propriétaire – déposant</h3><p class="muted">Dépôt en 3 étapes sans compte, validations, photos, lieu manquant, code WhatsApp et identifiants.</p></div></div><div class="tests"><article class="test" id="DEP-01">
+<h4><span class="tid">DEP-01</span>Dépôt nominal en 3 étapes sans compte</h4>
+<div class="meta-row"><span class="tag user">Propriétaire non connecté</span><span class="tag p1">Priorité P1</span><span class="tag">Publier en 3 étapes</span><span class="tag">E2E + DB</span></div>
+<div class="field"><div class="k">Objectif</div><div><p>Un propriétaire publie sans créer de compte ; l’annonce part en modération avec un code WhatsApp et un compte contributeur est créé.</p></div></div>
+<div class="field"><div class="k">Préconditions</div><div><ul><li>Navigateur anonyme.</li><li>Image <code>tests/e2e/fixtures/photo-1.jpg</code> (&lt; 1 Mo).</li></ul></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Ouvre <code>/deposer/</code>, garde « Propriétaire ».</li><li>Étape 1 : ville Casablanca (première suggestion), clique <code>[data-goto="2"]</code>.</li><li>Étape 2 : type, prix 1 250 000, surface 95, description ≥ 50 caractères, 1 photo, clique <code>[data-goto="3"]</code>.</li><li>Étape 3 : nom, téléphone, e-mail unique, clique <code>#pk-submit-btn</code>.</li><li>Relève le code affiché dans <code>.pk-whatsapp-code</code>.</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li>Bloc <code>.pk-whatsapp-verification</code> visible avec un code <code>PK-&lt;id&gt;-XXXXXXX</code> (7 caractères majuscules/chiffres).</li><li>Réponse AJAX <code>status: "pending_whatsapp"</code> et <code>whatsapp_url</code> vers wa.me.</li><li>Aucune connexion ni mot de passe demandé.</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><pre>SELECT ID, post_status, post_author FROM wp_posts WHERE post_type=&#x27;properties&#x27; ORDER BY ID DESC LIMIT 1;  -- pending
+SELECT meta_key, meta_value FROM wp_postmeta WHERE post_id = :id
+ AND meta_key IN (&#x27;_pk_status&#x27;,&#x27;_pk_whatsapp_verification_code&#x27;,&#x27;_pk_whatsapp_validation_requested_at&#x27;,&#x27;es_property_price&#x27;,&#x27;es_property_area&#x27;);
+-- _pk_status = en_attente_whatsapp ; prix 1250000 ; surface 95
+SELECT u.user_email, um.meta_value FROM wp_users u JOIN wp_usermeta um ON um.user_id = u.ID
+ AND um.meta_key = &#x27;wp_capabilities&#x27; WHERE u.user_email = :email;   -- contributor</pre></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>test(&#x27;DEP-01 dépôt nominal&#x27;, async ({ page }) =&gt; {
+  const email = `depot${Date.now()}@example.test`;
+  await fillDeposit(page, { email });
+  const resp = page.waitForResponse(r =&gt; r.request().postData()?.includes(&#x27;pk_submit_listing&#x27;) ?? false);
+  await page.click(&#x27;#pk-submit-btn&#x27;);
+  const json = await (await resp).json();
+  expect(json.data.status).toBe(&#x27;pending_whatsapp&#x27;);
+  const code = (await page.locator(&#x27;.pk-whatsapp-code&#x27;).innerText()).trim();
+  expect(code).toMatch(/^PK-\d+-[A-Z0-9]{7}$/);
+  const id = Number(code.split(&#x27;-&#x27;)[1]);
+  expect(wp(`post get ${id} --field=post_status`)).toBe(&#x27;pending&#x27;);
+  expect(meta(id, &#x27;_pk_status&#x27;)).toBe(&#x27;en_attente_whatsapp&#x27;);
+  expect(wp(`user get ${email} --field=roles`)).toContain(&#x27;contributor&#x27;);
+});</pre></div></div>
+</article>
+<article class="test" id="DEP-02">
+<h4><span class="tid">DEP-02</span>Validations serveur des champs</h4>
+<div class="meta-row"><span class="tag user">Propriétaire non connecté</span><span class="tag user">Testeur API</span><span class="tag p1">Priorité P1</span><span class="tag">Publier en 3 étapes</span><span class="tag">API</span></div>
+<div class="field"><div class="k">Objectif</div><div><p>Le serveur refuse les données invalides même si le JavaScript est contourné.</p></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Récupère le nonce <code>pk_submit_listing</code> depuis <code>/deposer/</code>.</li><li>Envoie directement <code>admin-ajax.php?action=pk_submit_listing</code> avec un jeu valide, puis en cassant un seul champ à la fois : titre de 5 car., description de 20 car., prix « abc », prix 0, prix 2 000 000 000, surface 0, surface 200 000, e-mail invalide.</li><li>Pour chaque envoi, relève le code HTTP, le message et le nombre d’annonces créées.</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li>Chaque cas invalide : <code>success: false</code> et un message en français ciblant le champ.</li><li>Aucune annonce créée pour les cas invalides.</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><pre>SELECT COUNT(*) FROM wp_posts WHERE post_type=&#x27;properties&#x27; AND post_date &gt; NOW() - INTERVAL 5 MINUTE;  -- inchangé</pre></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>const invalid: Record&lt;string, string&gt; = { pk_description: &#x27;trop court&#x27;, pk_price: &#x27;abc&#x27;, pk_surface: &#x27;0&#x27; };
+for (const [field, value] of Object.entries(invalid)) {
+  test(`DEP-02 refus ${field}`, async ({ page }) =&gt; {
+    await page.goto(&#x27;/deposer/&#x27;);
+    const form = await page.locator(&#x27;#pk-deposit-form, form:has(#pk-submit-btn)&#x27;).evaluate((f: HTMLFormElement) =&gt;
+      Object.fromEntries(new FormData(f) as any));
+    const before = sql(`SELECT COUNT(*) FROM wp_posts WHERE post_type=&#x27;properties&#x27;`);
+    const r = await page.request.post(&#x27;/wp-admin/admin-ajax.php&#x27;, { form: { ...form, action: &#x27;pk_submit_listing&#x27;,
+      pk_title: &#x27;Appartement test validation&#x27;, pk_email: `v${Date.now()}@example.test`, pk_phone: &#x27;+212600000098&#x27;, [field]: value } });
+    expect((await r.json()).success).toBe(false);
+    expect(sql(`SELECT COUNT(*) FROM wp_posts WHERE post_type=&#x27;properties&#x27;`)).toBe(before);
+  });
+}</pre></div></div>
+</article>
+<article class="test" id="DEP-03">
+<h4><span class="tid">DEP-03</span>Photos : 15 max, 10 Mo max, formats acceptés</h4>
+<div class="meta-row"><span class="tag user">Propriétaire non connecté</span><span class="tag p1">Priorité P1</span><span class="tag">Publier en 3 étapes (guide : FAQ photos)</span><span class="tag">E2E</span></div>
+<div class="field"><div class="k">Objectif</div><div><p>Promesse du guide : « jusqu’à 15 photos, 10 Mo chacune ». Formats JPG, PNG, WebP, AVIF (HEIC si le serveur le gère).</p></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Dépose avec 15 photos JPG valides : succès attendu.</li><li>Recommence avec 16 photos.</li><li>Recommence avec 1 photo de 11 Mo.</li><li>Recommence avec un fichier <code>.gif</code> renommé en <code>.jpg</code> puis avec un <code>.avif</code>.</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li>15 photos : succès, 15 pièces jointes.</li><li>16 : « Vous pouvez ajouter jusqu’à 15 photos. »</li><li>11 Mo : « Chaque photo doit peser au maximum 10 Mo. »</li><li>Faux JPG : refus <code>photo_type</code> ; AVIF : accepté.</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><pre>SELECT COUNT(*) FROM wp_posts WHERE post_type=&#x27;attachment&#x27; AND post_parent = :id;  -- 15</pre></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>test(&#x27;DEP-03 16 photos refusées&#x27;, async ({ page }) =&gt; {
+  await fillDeposit(page);
+  // l&#x27;input fichier est caché : setInputFiles fonctionne quelle que soit l&#x27;étape affichée
+  await page.setInputFiles(&#x27;#pk-photos&#x27;, Array.from({ length: 16 }, (_, i) =&gt; `tests/e2e/fixtures/photo-${(i % 3) + 1}.jpg`));
+  await page.click(&#x27;#pk-submit-btn&#x27;);
+  await expect(page.locator(&#x27;#pk-form-status, [role=alert]&#x27;).first()).toContainText(/15 photos/);
+});</pre></div></div>
+</article>
+<article class="test" id="DEP-04">
+<h4><span class="tid">DEP-04</span>Proposer une ville ou un quartier manquant</h4>
+<div class="meta-row"><span class="tag user">Propriétaire non connecté</span><span class="tag user">Administrateur</span><span class="tag p2">Priorité P2</span><span class="tag">Ville ou quartier manquant</span><span class="tag">E2E + DB</span></div>
+<div class="field"><div class="k">Objectif</div><div><p>Le lieu proposé est enregistré en attente et bloque la publication tant que l’admin ne l’a pas validé.</p></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Sur <code>/deposer/</code>, clique <code>#pk-place-missing-toggle</code>, saisis « Ville E2E » dans <code>#pk-proposed-city</code> et « Quartier E2E » dans <code>#pk-proposed-district</code>.</li><li>Termine le dépôt.</li><li>En admin, essaie de publier l’annonce sans traiter le lieu.</li><li>Valide le lieu dans <code>admin.php?page=pk-places</code>, puis publie.</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li>Annonce créée avec <code>_pk_place_status = pending</code>.</li><li>Publication avant validation : l’annonce revient en <code>pending</code> (<code>guard_publication</code>).</li><li>Après validation : terme créé dans <code>es_location</code>, publication possible.</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><pre>SELECT meta_key, meta_value FROM wp_postmeta WHERE post_id = :id AND meta_key IN (&#x27;_pk_pending_place&#x27;,&#x27;_pk_place_status&#x27;);
+SELECT option_value FROM wp_options WHERE option_name = &#x27;pk_place_requests&#x27;;
+SELECT t.name FROM wp_terms t JOIN wp_term_taxonomy tt USING(term_id) WHERE tt.taxonomy=&#x27;es_location&#x27; AND t.name=&#x27;Ville E2E&#x27;;</pre></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>test(&#x27;DEP-04 lieu proposé bloque la publication&#x27;, async ({ page }) =&gt; {
+  await fillDeposit(page);
+  await page.click(&#x27;[data-goto=&quot;1&quot;]&#x27;).catch(() =&gt; {});
+  await page.click(&#x27;#pk-place-missing-toggle&#x27;);
+  await page.fill(&#x27;#pk-proposed-city&#x27;, &#x27;Ville E2E&#x27;);
+  await page.click(&#x27;#pk-submit-btn&#x27;);
+  const id = Number((await page.locator(&#x27;.pk-whatsapp-code&#x27;).innerText()).split(&#x27;-&#x27;)[1]);
+  expect(meta(id, &#x27;_pk_place_status&#x27;)).toBe(&#x27;pending&#x27;);
+  wp(`post update ${id} --post_status=publish`);
+  expect(wp(`post get ${id} --field=post_status`)).toBe(&#x27;pending&#x27;);
+});</pre></div></div>
+</article>
+<article class="test" id="DEP-05">
+<h4><span class="tid">DEP-05</span>Double envoi idempotent</h4>
+<div class="meta-row"><span class="tag user">Propriétaire non connecté</span><span class="tag p2">Priorité P2</span><span class="tag">Publier en 3 étapes</span><span class="tag">API + DB</span></div>
+<div class="field"><div class="k">Objectif</div><div><p>Un double clic ou un renvoi réseau avec la même <code>pk_idempotency_key</code> ne crée qu’une annonce ; même clé avec un contenu différent = 400.</p></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Soumets le formulaire puis rejoue exactement la même requête (même clé de 32 hex).</li><li>Rejoue avec la même clé mais un prix différent.</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li>2ᵉ réponse identique à la 1ʳᵉ avec <code>replayed: true</code>, même code WhatsApp.</li><li>Même clé + contenu différent : HTTP 400.</li><li>Une seule annonce en base.</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><pre>SELECT event_id, expires_at FROM wp_pk_idempotency WHERE event_id = CONCAT(&#x27;pkform:&#x27;, :key);
+SELECT COUNT(*) FROM wp_posts WHERE post_type=&#x27;properties&#x27; AND post_title = :title;  -- 1</pre></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>test(&#x27;DEP-05 rejeu idempotent&#x27;, async ({ page }) =&gt; {
+  await fillDeposit(page);
+  let body = &#x27;&#x27;; page.on(&#x27;request&#x27;, r =&gt; { if (r.postData()?.includes(&#x27;pk_submit_listing&#x27;)) body ||= r.postData()!; });
+  const r1 = page.waitForResponse(r =&gt; r.url().includes(&#x27;admin-ajax&#x27;));
+  await page.click(&#x27;#pk-submit-btn&#x27;);
+  const j1 = await (await r1).json();
+  const r2 = await page.request.post(&#x27;/wp-admin/admin-ajax.php&#x27;, { headers: { &#x27;content-type&#x27;: (await (await r1).request().headerValue(&#x27;content-type&#x27;))! }, data: body });
+  const j2 = await r2.json();
+  expect(j2.data.verification_code).toBe(j1.data.verification_code);
+  expect(j2.data.replayed).toBe(true);
+});</pre></div></div>
+</article>
+<article class="test" id="DEP-06">
+<h4><span class="tid">DEP-06</span>Limite de 5 dépôts par heure et par IP</h4>
+<div class="meta-row"><span class="tag user">Robot / abus</span><span class="tag p2">Priorité P2</span><span class="tag">Publier en 3 étapes</span><span class="tag">API</span></div>
+<div class="field"><div class="k">Objectif</div><div><p>Le 6ᵉ dépôt de la même IP dans l’heure est refusé avec HTTP 429.</p></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Envoie 6 dépôts valides de suite (e-mails différents, clés d’idempotence différentes).</li><li>Relève le code HTTP de chacun.</li><li>Nettoie : supprime le transient de limite après le test.</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li>Envois 1 à 5 acceptés, 6ᵉ : HTTP 429 et message « Limite temporaire ».</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><pre>SELECT option_name FROM wp_options WHERE option_name LIKE &#x27;_transient_%pk%limit%&#x27;;</pre></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>test(&#x27;DEP-06 429 au 6e dépôt&#x27;, async ({ page }) =&gt; {
+  const codes: number[] = [];
+  for (let i = 0; i &lt; 6; i++) {
+    await fillDeposit(page, { email: `rl${i}${Date.now()}@example.test` });
+    const r = page.waitForResponse(x =&gt; x.url().includes(&#x27;admin-ajax&#x27;));
+    await page.click(&#x27;#pk-submit-btn&#x27;);
+    codes.push((await r).status());
+  }
+  expect(codes.slice(0, 5).every(c =&gt; c === 200)).toBe(true);
+  expect(codes[5]).toBe(429);
+});</pre></div></div>
+</article>
+<article class="test" id="DEP-07">
+<h4><span class="tid">DEP-07</span>Envoi du code WhatsApp en un clic et validation</h4>
+<div class="meta-row"><span class="tag user">Propriétaire non connecté</span><span class="tag user">Système n8n</span><span class="tag p1">Priorité P1</span><span class="tag">Envoyer le code PK-<id>-XXXXXXX</span><span class="tag">E2E + API</span></div>
+<div class="field"><div class="k">Objectif</div><div><p>Le bouton ouvre WhatsApp vers le numéro de validation avec le code pré-rempli ; à réception, l’annonce passe en attente de modération admin.</p></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Après DEP-01, lis le <code>href</code> du bouton WhatsApp de <code>.pk-whatsapp-verification</code>.</li><li>Simule la réception par n8n (route d’automatisation ou action admin <code>pk_verify_whatsapp</code>).</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li><code>href</code> = <code>https://wa.me/212600000002?text=…</code> contenant exactement le code.</li><li>Après réception : <code>_pk_whatsapp_verified_at</code> renseigné.</li><li>L’annonce n’est pas publiée sans action admin.</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><pre>SELECT meta_key, meta_value FROM wp_postmeta WHERE post_id = :id
+ AND meta_key IN (&#x27;_pk_whatsapp_verification_code&#x27;,&#x27;_pk_whatsapp_verified_at&#x27;,&#x27;_pk_status&#x27;);</pre></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>test(&#x27;DEP-07 lien WhatsApp du code&#x27;, async ({ page }) =&gt; {
+  await fillDeposit(page);
+  await page.click(&#x27;#pk-submit-btn&#x27;);
+  const code = (await page.locator(&#x27;.pk-whatsapp-code&#x27;).innerText()).trim();
+  const href = await page.locator(&#x27;.pk-whatsapp-verification a[href*=&quot;wa.me&quot;]&#x27;).getAttribute(&#x27;href&#x27;);
+  expect(href).toContain(&#x27;wa.me/212600000002&#x27;);
+  expect(decodeURIComponent(href!)).toContain(code);
+});</pre></div></div>
+</article>
+<article class="test" id="DEP-08">
+<h4><span class="tid">DEP-08</span>Identifiants reçus une fois l’annonce en ligne</h4>
+<div class="meta-row"><span class="tag user">Propriétaire non connecté</span><span class="tag user">Administrateur</span><span class="tag user">Système n8n</span><span class="tag p1">Priorité P1</span><span class="tag">Recevoir identifiant, mot de passe et URL</span><span class="tag">API + DB</span></div>
+<div class="field"><div class="k">Objectif</div><div><p>À l’approbation, n8n reçoit <code>listing_approved</code> avec identifiant, mot de passe et URL de connexion ; le propriétaire peut se connecter.</p></div></div>
+<div class="field"><div class="k">Préconditions</div><div><ul><li>Bouchon n8n démarré (port 9911).</li><li>Annonce issue de DEP-01.</li></ul></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Approuve l’annonce (ADM-02).</li><li>Lis le dernier webhook reçu par le bouchon.</li><li>Connecte-toi sur <code>/connexion/</code> avec l’identifiant et le mot de passe reçus, ouvre <code>/mes-annonces/</code>.</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li>Webhook <code>event: listing_approved</code> avec login, mot de passe, URL de connexion et annonce.</li><li>Connexion réussie, l’annonce apparaît dans le tableau de bord.</li><li><code>_pk_credentials_sent</code> renseigné sur l’utilisateur.</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><pre>SELECT meta_value FROM wp_usermeta WHERE user_id = :author AND meta_key = &#x27;_pk_credentials_sent&#x27;;</pre></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>test(&#x27;DEP-08 identifiants après approbation&#x27;, async ({ page }) =&gt; {
+  // id = annonce DEP-01 ; approbation via ADM-02
+  const hook = received.findLast(h =&gt; h.body.event === &#x27;listing_approved&#x27;);
+  expect(hook).toBeTruthy();
+  await page.goto(&#x27;/connexion/&#x27;);
+  await page.fill(&#x27;#user_login, input[name=log]&#x27;, hook.body.login ?? hook.body.username);
+  await page.fill(&#x27;#user_pass, input[name=pwd]&#x27;, hook.body.password);
+  await page.click(&#x27;[type=submit]&#x27;);
+  await page.goto(&#x27;/mes-annonces/&#x27;);
+  await expect(page.locator(&#x27;.pk-listing-status&#x27;).first()).toBeVisible();
+});</pre></div></div>
+</article></div></section><section class="role" id="agent" style="--accent:#a3422c"><div class="head"><div class="icon">×</div><div><h3>Agent / agence refusé</h3><p class="muted">Le site est réservé aux propriétaires : refus côté interface et côté serveur.</p></div></div><div class="tests"><article class="test" id="AGT-01">
+<h4><span class="tid">AGT-01</span>Refus visible dès le choix « Agent immobilier »</h4>
+<div class="meta-row"><span class="tag user">Agent immobilier</span><span class="tag p1">Priorité P1</span><span class="tag">Agent refusé</span><span class="tag">E2E</span></div>
+<div class="field"><div class="k">Objectif</div><div><p>Choisir « Agent immobilier » affiche un message de refus et empêche de continuer.</p></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Ouvre <code>/deposer/</code>.</li><li>Coche <code>input[name=pk_role][value=agent]</code>.</li><li>Essaie de passer à l’étape 2.</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li><code>#pk-agent-refusal</code> visible : « Ce site est réservé aux propriétaires ».</li><li>Étape 2 inaccessible ou bouton désactivé.</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><p>Non requise (contrôle purement interface).</p></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>test(&#x27;AGT-01 refus interface&#x27;, async ({ page }) =&gt; {
+  await page.goto(&#x27;/deposer/&#x27;);
+  await page.check(&#x27;input[name=&quot;pk_role&quot;][value=&quot;agent&quot;]&#x27;);
+  await expect(page.locator(&#x27;#pk-agent-refusal&#x27;)).toBeVisible();
+  await expect(page.locator(&#x27;#pk-agent-refusal&#x27;)).toContainText(&#x27;réservé aux propriétaires&#x27;);
+  await expect(page.locator(&#x27;[data-step=&quot;2&quot;]&#x27;)).toBeHidden();
+});</pre></div></div>
+</article>
+<article class="test" id="AGT-02">
+<h4><span class="tid">AGT-02</span>Contournement serveur (agent, mandataire, agence)</h4>
+<div class="meta-row"><span class="tag user">Agent immobilier</span><span class="tag user">Testeur API</span><span class="tag p1">Priorité P1</span><span class="tag">Agent refusé</span><span class="tag">API + DB</span></div>
+<div class="field"><div class="k">Objectif</div><div><p>Envoyer <code>pk_role</code> = <code>agent</code>, <code>mandataire</code> ou <code>agence</code> directement à l’AJAX est refusé (<code>role_agent</code>).</p></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Construis un dépôt valide (DEP-02) mais avec <code>pk_role=agent</code>.</li><li>Répète avec <code>mandataire</code>, <code>agence</code> et une valeur vide.</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li>Réponse <code>success: false</code>, message « Ce site est réservé aux propriétaires… ».</li><li>Aucune annonce ni utilisateur créé.</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><pre>SELECT COUNT(*) FROM wp_users WHERE user_email = :email;  -- 0</pre></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>for (const role of [&#x27;agent&#x27;, &#x27;mandataire&#x27;, &#x27;agence&#x27;]) {
+  test(`AGT-02 refus serveur ${role}`, async ({ page }) =&gt; {
+    await fillDeposit(page, { email: `${role}${Date.now()}@example.test` });
+    await page.locator(&#x27;input[name=&quot;pk_role&quot;]:checked&#x27;).evaluate((el: HTMLInputElement, v) =&gt; (el.value = v), role);
+    const r = page.waitForResponse(x =&gt; x.url().includes(&#x27;admin-ajax&#x27;));
+    await page.click(&#x27;#pk-submit-btn&#x27;);
+    const j = await (await r).json();
+    expect(j.success).toBe(false);
+    expect(JSON.stringify(j)).toContain(&#x27;réservé aux propriétaires&#x27;);
+  });
+}</pre></div></div>
+</article></div></section><section class="role" id="proprietaire" style="--accent:#3f6b66"><div class="head"><div class="icon">P</div><div><h3>Propriétaire inscrit</h3><p class="muted">Tableau de bord, modification, désactivation avec motif, réactivation et cloisonnement.</p></div></div><div class="tests"><article class="test" id="PRO-01">
+<h4><span class="tid">PRO-01</span>Tableau de bord : statut, vues, favoris, KPI et cloisonnement</h4>
+<div class="meta-row"><span class="tag user">Propriétaire inscrit</span><span class="tag p1">Priorité P1</span><span class="tag">Voir statut, vues, favoris et KPI</span><span class="tag">E2E + DB</span></div>
+<div class="field"><div class="k">Objectif</div><div><p>Le propriétaire voit uniquement ses annonces avec des compteurs cohérents avec la base.</p></div></div>
+<div class="field"><div class="k">Préconditions</div><div><ul><li>Propriétaire A créé via <code>seedOwner()</code>, connecté.</li><li>Annonce publiée <code>actif</code> appartenant à A.</li><li>Propriétaire B avec sa propre annonce.</li><li><code>_pk_views</code> = 42 et 3 lignes dans <code>wp_pk_property_saves</code> sur l’annonce de A.</li></ul></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Connecte-toi en A et ouvre <code>/mes-annonces/</code>.</li><li>Relève statut, vues et favoris de l’annonce.</li><li>Vérifie que l’annonce de B n’apparaît pas.</li><li>Appelle <code>GET /wp-json/partikulier/v1/owner/dashboard</code> avec le nonce REST.</li><li>Déconnecte-toi et rouvre <code>/mes-annonces/</code>.</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li>Statut « En ligne », 42 vues, 3 favoris, valeurs identiques dans l’API.</li><li>Annonce de B absente de la page et de l’API.</li><li>Anonyme : redirection vers <code>/connexion/</code>.</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><pre>SELECT meta_value FROM wp_postmeta WHERE post_id = :id AND meta_key = &#x27;_pk_views&#x27;;           -- 42
+SELECT COUNT(*) FROM wp_pk_property_saves WHERE property_id = :id;                               -- 3
+SELECT ID FROM wp_posts WHERE post_type=&#x27;properties&#x27; AND post_author = :owner_a;                 -- liste attendue</pre></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>test(&#x27;PRO-01 tableau de bord&#x27;, async ({ page }) =&gt; {
+  const a = seedOwner(), b = seedOwner();
+  const mine = seedListing({ author: a.id }), other = seedListing({ author: b.id });
+  setMeta(mine, &#x27;_pk_views&#x27;, &#x27;42&#x27;);
+  await login(page, a.login, a.password);
+  await page.goto(&#x27;/mes-annonces/&#x27;);
+  const card = page.locator(`[data-id=&quot;${mine}&quot;], [data-post-id=&quot;${mine}&quot;]`);
+  await expect(card).toContainText(&#x27;42&#x27;);
+  await expect(page.locator(`[data-id=&quot;${other}&quot;], [data-post-id=&quot;${other}&quot;]`)).toHaveCount(0);
+  await page.context().clearCookies();
+  await page.goto(&#x27;/mes-annonces/&#x27;);
+  await expect(page).toHaveURL(/connexion|wp-login/);
+});</pre></div></div>
+</article>
+<article class="test" id="PRO-02">
+<h4><span class="tid">PRO-02</span>Modifier une annonce avec ?edit=ID</h4>
+<div class="meta-row"><span class="tag user">Propriétaire inscrit</span><span class="tag p1">Priorité P1</span><span class="tag">Modifier avec ?edit=ID</span><span class="tag">E2E + DB</span></div>
+<div class="field"><div class="k">Objectif</div><div><p>Le formulaire se pré-remplit ; l’enregistrement renvoie l’annonce en modération avec un nouveau code WhatsApp. Un autre propriétaire ne peut pas l’éditer.</p></div></div>
+<div class="field"><div class="k">Préconditions</div><div><ul><li>Propriétaire A créé via <code>seedOwner()</code>, connecté.</li><li>Annonce publiée <code>actif</code> appartenant à A.</li></ul></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Ouvre <code>/deposer/?edit=&lt;id&gt;</code> : vérifie que prix, surface et description sont pré-remplis et que <code>pk_edit_id</code> vaut l’ID.</li><li>Change le prix en 1 300 000 et enregistre.</li><li>Connecte-toi en propriétaire B et ouvre la même URL.</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li>Après enregistrement : même ID (pas de doublon), prix mis à jour, <code>post_status = pending</code>, <code>_pk_status = en_attente_whatsapp</code>, nouveau code différent de l’ancien.</li><li>Propriétaire B : formulaire vide ou refus, aucune donnée de A affichée ; un envoi forcé est refusé.</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><pre>SELECT post_status FROM wp_posts WHERE ID = :id;                                           -- pending
+SELECT meta_key, meta_value FROM wp_postmeta WHERE post_id = :id
+ AND meta_key IN (&#x27;es_property_price&#x27;,&#x27;_pk_status&#x27;,&#x27;_pk_whatsapp_verification_code&#x27;);</pre></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>test(&#x27;PRO-02 modification&#x27;, async ({ page }) =&gt; {
+  const a = seedOwner(); const id = seedListing({ author: a.id, price: 1250000 });
+  const oldCode = meta(id, &#x27;_pk_whatsapp_verification_code&#x27;);
+  await login(page, a.login, a.password);
+  await page.goto(`/deposer/?edit=${id}`);
+  await expect(page.locator(&#x27;input[name=pk_edit_id]&#x27;)).toHaveValue(String(id));
+  await page.fill(&#x27;#pk-price&#x27;, &#x27;1300000&#x27;);
+  await page.click(&#x27;#pk-submit-btn&#x27;);
+  await expect(page.locator(&#x27;.pk-whatsapp-code&#x27;)).toBeVisible();
+  expect(meta(id, &#x27;es_property_price&#x27;)).toBe(&#x27;1300000&#x27;);
+  expect(wp(`post get ${id} --field=post_status`)).toBe(&#x27;pending&#x27;);
+  expect(meta(id, &#x27;_pk_whatsapp_verification_code&#x27;)).not.toBe(oldCode);
+});</pre></div></div>
+</article>
+<article class="test" id="PRO-03">
+<h4><span class="tid">PRO-03</span>Désactiver avec motif (vendu, loué, je ne souhaite plus, autre)</h4>
+<div class="meta-row"><span class="tag user">Propriétaire inscrit</span><span class="tag p1">Priorité P1</span><span class="tag">Désactiver</span><span class="tag">E2E + DB</span></div>
+<div class="field"><div class="k">Objectif</div><div><p>Chaque motif produit le bon statut ; « autre » exige une note ; sans motif l’action est refusée.</p></div></div>
+<div class="field"><div class="k">Préconditions</div><div><ul><li>Propriétaire A créé via <code>seedOwner()</code>, connecté.</li><li>Annonce publiée <code>actif</code> appartenant à A.</li><li>4 annonces actives (une par motif).</li></ul></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Sur <code>/mes-annonces/</code>, clique <code>[data-action=deactivate]</code> sur l’annonce 1.</li><li>Choisis le motif « Vendu » (<code>.pk-reason-option</code>) et confirme (<code>[data-action=deactivate_confirm]</code>).</li><li>Répète : « Loué », « Je ne souhaite plus », puis « Autre » d’abord sans note, puis avec la note « Travaux ».</li><li>Envoie aussi une désactivation sans motif via AJAX.</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li>vendu → <code>vendu</code> ; loué → <code>loue</code> ; avis → <code>indisponible</code> ; autre + note → <code>indisponible</code>.</li><li>Autre sans note : HTTP 400 <code>pk_deactivation_note_required</code>.</li><li>Sans motif : HTTP 400 <code>pk_deactivation_reason_required</code>.</li><li><code>_pk_closed_reason</code> et <code>_pk_closed_at</code> renseignés ; <code>.pk-listing-status</code> mis à jour sans recharger.</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><pre>SELECT post_id,
+  MAX(CASE WHEN meta_key=&#x27;_pk_status&#x27; THEN meta_value END)        AS status,
+  MAX(CASE WHEN meta_key=&#x27;_pk_closed_reason&#x27; THEN meta_value END) AS reason,
+  MAX(CASE WHEN meta_key=&#x27;_pk_closed_note&#x27; THEN meta_value END)   AS note,
+  MAX(CASE WHEN meta_key=&#x27;_pk_closed_at&#x27; THEN meta_value END)     AS closed_at
+FROM wp_postmeta WHERE post_id IN (:id1,:id2,:id3,:id4) GROUP BY post_id;</pre></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>const cases = [[&#x27;vendu&#x27;, &#x27;vendu&#x27;], [&#x27;loue&#x27;, &#x27;loue&#x27;], [&#x27;avis&#x27;, &#x27;indisponible&#x27;]] as const;
+for (const [reason, status] of cases) {
+  test(`PRO-03 motif ${reason}`, async ({ page }) =&gt; {
+    const a = seedOwner(); const id = seedListing({ author: a.id });
+    await login(page, a.login, a.password);
+    await page.goto(&#x27;/mes-annonces/&#x27;);
+    const row = page.locator(`[data-id=&quot;${id}&quot;], [data-post-id=&quot;${id}&quot;]`);
+    await row.locator(&#x27;[data-action=deactivate]&#x27;).click();
+    await row.locator(`.pk-reason-option input[value=&quot;${reason}&quot;], .pk-reason-option[data-reason=&quot;${reason}&quot;]`).first().check();
+    await row.locator(&#x27;[data-action=deactivate_confirm]&#x27;).click();
+    await expect(row.locator(&#x27;.pk-listing-status&#x27;)).not.toHaveText(/en ligne/i);
+    expect(meta(id, &#x27;_pk_status&#x27;)).toBe(status);
+    expect(meta(id, &#x27;_pk_closed_reason&#x27;)).toBe(reason);
+  });
+}
+test(&#x27;PRO-03 autre sans note / sans motif&#x27;, async ({ page }) =&gt; {
+  const a = seedOwner(); const id = seedListing({ author: a.id });
+  await login(page, a.login, a.password); await page.goto(&#x27;/mes-annonces/&#x27;);
+  let r = await manage(page, id, &#x27;deactivate&#x27;, &#x27;autre&#x27;);
+  expect(r.status()).toBe(400); expect((await r.json()).data.code).toBe(&#x27;pk_deactivation_note_required&#x27;);
+  r = await manage(page, id, &#x27;deactivate&#x27;);
+  expect((await r.json()).data.code).toBe(&#x27;pk_deactivation_reason_required&#x27;);
+  r = await manage(page, id, &#x27;deactivate&#x27;, &#x27;autre&#x27;, &#x27;Travaux&#x27;);
+  expect(r.status()).toBe(200); expect(meta(id, &#x27;_pk_status&#x27;)).toBe(&#x27;indisponible&#x27;);
+});</pre></div></div>
+</article>
+<article class="test" id="PRO-04">
+<h4><span class="tid">PRO-04</span>Effets publics d’une désactivation</h4>
+<div class="meta-row"><span class="tag user">Propriétaire inscrit</span><span class="tag user">Visiteur anonyme</span><span class="tag p1">Priorité P1</span><span class="tag">Désactiver</span><span class="tag">E2E</span></div>
+<div class="field"><div class="k">Objectif</div><div><p>Une annonce désactivée sort de la recherche et de l’API, garde sa page (ACH-11) et le contact WhatsApp est refusé par n8n.</p></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Désactive une annonce avec le motif « Vendu ».</li><li>En navigation anonyme : cherche son titre, ouvre sa page, appelle <code>GET /listings/{id}</code>.</li><li>Appelle <code>POST /contact-authorization</code> avec sa référence.</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li>Absente de la recherche ; page avec badge « Vendu ».</li><li>Contact : <code>allowed: false</code>, <code>reason: "property_unavailable"</code>.</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><pre>SELECT meta_value FROM wp_postmeta WHERE post_id = :id AND meta_key = &#x27;_pk_buyer_reference&#x27;;</pre></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>test(&#x27;PRO-04 contact refusé après désactivation&#x27;, async ({ request }) =&gt; {
+  const id = seedListing(); setMeta(id, &#x27;_pk_status&#x27;, &#x27;vendu&#x27;);
+  const r = await automation(request, &#x27;/contact-authorization&#x27;, {
+    wa_id: &#x27;212699999999&#x27;, reference: meta(id, &#x27;_pk_buyer_reference&#x27;), provider_message_id: `m${Date.now()}` });
+  const j = await r.json();
+  expect(j.allowed).toBe(false); expect(j.reason).toBe(&#x27;property_unavailable&#x27;);
+});</pre></div></div>
+</article>
+<article class="test" id="PRO-05">
+<h4><span class="tid">PRO-05</span>Réactiver une annonce désactivée</h4>
+<div class="meta-row"><span class="tag user">Propriétaire inscrit</span><span class="tag p1">Priorité P1</span><span class="tag">Réactiver</span><span class="tag">E2E + DB</span></div>
+<div class="field"><div class="k">Objectif</div><div><p>La réactivation remet <code>actif</code>, efface les métadonnées de clôture et réaffiche l’annonce.</p></div></div>
+<div class="field"><div class="k">Préconditions</div><div><ul><li>Propriétaire A créé via <code>seedOwner()</code>, connecté.</li><li>Annonce publiée <code>actif</code> appartenant à A.</li><li>Annonce désactivée (PRO-03, motif « Loué »).</li></ul></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Sur <code>/mes-annonces/</code>, clique <code>[data-action=reactivate]</code>.</li><li>Cherche l’annonce dans <code>/annonces/</code>.</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li><code>_pk_status = actif</code>, <code>post_status = publish</code>.</li><li><code>_pk_closed_reason</code>, <code>_pk_closed_at</code>, <code>_pk_closed_note</code> supprimés.</li><li>L’annonce réapparaît dans la recherche.</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><pre>SELECT meta_key, meta_value FROM wp_postmeta WHERE post_id = :id AND meta_key LIKE &#x27;_pk_closed%&#x27;;  -- 0 ligne
+SELECT meta_value FROM wp_postmeta WHERE post_id = :id AND meta_key = &#x27;_pk_status&#x27;;                       -- actif</pre></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>test(&#x27;PRO-05 réactivation&#x27;, async ({ page }) =&gt; {
+  const a = seedOwner(); const id = seedListing({ author: a.id });
+  await login(page, a.login, a.password); await page.goto(&#x27;/mes-annonces/&#x27;);
+  await manage(page, id, &#x27;deactivate&#x27;, &#x27;loue&#x27;);
+  await page.reload();
+  await page.locator(`[data-id=&quot;${id}&quot;] [data-action=reactivate], [data-post-id=&quot;${id}&quot;] [data-action=reactivate]`).click();
+  await expect.poll(() =&gt; meta(id, &#x27;_pk_status&#x27;)).toBe(&#x27;actif&#x27;);
+  expect(sql(`SELECT COUNT(*) FROM wp_postmeta WHERE post_id=${id} AND meta_key LIKE &#x27;\\_pk\\_closed%&#x27;`)).toBe(&#x27;0&#x27;);
+});</pre></div></div>
+</article>
+<article class="test" id="PRO-06">
+<h4><span class="tid">PRO-06</span>Matrice des refus (403 / 400)</h4>
+<div class="meta-row"><span class="tag user">Propriétaire inscrit</span><span class="tag user">Testeur API</span><span class="tag p1">Priorité P1</span><span class="tag">Désactiver / Réactiver</span><span class="tag">API</span></div>
+<div class="field"><div class="k">Objectif</div><div><p>Le serveur refuse toute action hors matrice, quel que soit le canal (AJAX <code>pk_manage_listing</code> ou REST <code>POST /owner/listings/{id}/action</code>).</p></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Connecté en A, envoie les actions suivantes et relève code HTTP et <code>code</code> d’erreur :</li><li><code>deactivate</code> sur l’annonce de B ;</li><li><code>deactivate</code> sur une annonce <code>refuse</code> puis <code>en_attente_whatsapp</code> ;</li><li><code>reactivate</code> sur une annonce non publiée ;</li><li>actions retirées <code>mark_sold</code>, <code>pause</code>, <code>archive</code>, <code>delete</code> ;</li><li>nonce invalide.</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li>Annonce de B : 403 <code>pk_listing_forbidden</code>.</li><li>Refusée / en attente WhatsApp : 403.</li><li>Réactivation non publiée : 403 <code>pk_republication_refused</code>.</li><li>Actions retirées : 400 <code>pk_listing_action_retired</code>.</li><li>Nonce invalide : refus, aucun changement en base.</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><pre>-- Aucune ligne modifiée : comparer avant / après
+SELECT post_id, meta_value FROM wp_postmeta WHERE meta_key = &#x27;_pk_status&#x27; AND post_id IN (:a, :b, :refused);</pre></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>test(&#x27;PRO-06 matrice de refus&#x27;, async ({ page }) =&gt; {
+  const a = seedOwner(), b = seedOwner();
+  const other = seedListing({ author: b.id });
+  const refused = seedListing({ author: a.id, status: &#x27;refuse&#x27; });
+  const mine = seedListing({ author: a.id });
+  await login(page, a.login, a.password); await page.goto(&#x27;/mes-annonces/&#x27;);
+  const code = async (id: number, act: string, reason = &#x27;vendu&#x27;) =&gt; {
+    const r = await manage(page, id, act, reason); return [r.status(), (await r.json()).data?.code];
+  };
+  expect(await code(other, &#x27;deactivate&#x27;)).toEqual([403, &#x27;pk_listing_forbidden&#x27;]);
+  expect((await code(refused, &#x27;deactivate&#x27;))[0]).toBe(403);
+  for (const act of [&#x27;mark_sold&#x27;, &#x27;pause&#x27;, &#x27;archive&#x27;, &#x27;delete&#x27;])
+    expect(await code(mine, act)).toEqual([400, &#x27;pk_listing_action_retired&#x27;]);
+  expect(meta(other, &#x27;_pk_status&#x27;)).toBe(&#x27;actif&#x27;);
+});</pre></div></div>
+</article>
+<article class="test" id="PRO-07">
+<h4><span class="tid">PRO-07</span>Rejeu d’une désactivation (idempotence)</h4>
+<div class="meta-row"><span class="tag user">Propriétaire inscrit</span><span class="tag p3">Priorité P3</span><span class="tag">Désactiver</span><span class="tag">API + DB</span></div>
+<div class="field"><div class="k">Objectif</div><div><p>Rejouer la même désactivation ne change pas la date de clôture et ne renvoie pas d’erreur.</p></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Désactive une annonce avec « Vendu » et note <code>_pk_closed_at</code>.</li><li>Attends 2 secondes et rejoue la même requête.</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li>2ᵉ réponse 200, même statut, <code>_pk_closed_at</code> inchangé.</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><pre>SELECT meta_value FROM wp_postmeta WHERE post_id = :id AND meta_key = &#x27;_pk_closed_at&#x27;;  -- identique</pre></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>test(&#x27;PRO-07 rejeu&#x27;, async ({ page }) =&gt; {
+  const a = seedOwner(); const id = seedListing({ author: a.id });
+  await login(page, a.login, a.password); await page.goto(&#x27;/mes-annonces/&#x27;);
+  await manage(page, id, &#x27;deactivate&#x27;, &#x27;vendu&#x27;);
+  const t1 = meta(id, &#x27;_pk_closed_at&#x27;);
+  await page.waitForTimeout(2000);
+  expect((await manage(page, id, &#x27;deactivate&#x27;, &#x27;vendu&#x27;)).status()).toBe(200);
+  expect(meta(id, &#x27;_pk_closed_at&#x27;)).toBe(t1);
+});</pre></div></div>
+</article></div></section><section class="role" id="admin" style="--accent:#5b4a6b"><div class="head"><div class="icon">Ad</div><div><h3>Administrateur</h3><p class="muted">Modération, identifiants, lieux, configuration du formulaire, messages, leads, RGPD et premium.</p></div></div><div class="tests"><article class="test" id="ADM-01">
+<h4><span class="tid">ADM-01</span>Liste des annonces en attente avec badge et code WhatsApp</h4>
+<div class="meta-row"><span class="tag user">Administrateur</span><span class="tag p1">Priorité P1</span><span class="tag">Voir les annonces en attente</span><span class="tag">E2E</span></div>
+<div class="field"><div class="k">Objectif</div><div><p>La page de modération liste chaque annonce en attente avec son état WhatsApp (code envoyé ou non) et le compteur du menu.</p></div></div>
+<div class="field"><div class="k">Préconditions</div><div><ul><li>Connecté en administrateur (<code>login(page, "admin", PK_ADMIN_PASSWORD)</code>).</li><li>2 annonces issues de DEP-01 : une avec <code>_pk_whatsapp_verified_at</code>, une sans.</li></ul></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Ouvre <code>/wp-admin/admin.php?page=pk-approvals</code>.</li><li>Relève le badge du menu, les lignes, le code et l’état WhatsApp de chacune.</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li>Les 2 annonces apparaissent avec leur code <code>PK-&lt;id&gt;-XXXXXXX</code>.</li><li>État « code reçu » vs « en attente du code » distinct.</li><li>Badge du menu = nombre d’annonces <code>pending</code>.</li><li>Un contributeur n’a pas accès à la page (403 / redirection).</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><pre>SELECT COUNT(*) FROM wp_posts WHERE post_type=&#x27;properties&#x27; AND post_status=&#x27;pending&#x27;;</pre></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>test(&#x27;ADM-01 file de modération&#x27;, async ({ page }) =&gt; {
+  await login(page, &#x27;admin&#x27;, process.env.PK_ADMIN_PASSWORD!);
+  await page.goto(&#x27;/wp-admin/admin.php?page=pk-approvals&#x27;);
+  const pending = Number(sql(`SELECT COUNT(*) FROM wp_posts WHERE post_type=&#x27;properties&#x27; AND post_status=&#x27;pending&#x27;`));
+  await expect(page.locator(&#x27;a.button-primary&#x27;, { hasText: &#x27;Publier&#x27; })).toHaveCount(pending);
+  await expect(page.locator(&#x27;body&#x27;)).toContainText(/PK-\d+-[A-Z0-9]{7}/);
+});</pre></div></div>
+</article>
+<article class="test" id="ADM-02">
+<h4><span class="tid">ADM-02</span>Approuver : publication, variantes FR/EN/AR et webhook</h4>
+<div class="meta-row"><span class="tag user">Administrateur</span><span class="tag user">Système n8n</span><span class="tag p1">Priorité P1</span><span class="tag">Voir les annonces en attente / listing_approved</span><span class="tag">E2E + DB</span></div>
+<div class="field"><div class="k">Objectif</div><div><p>« Publier » passe l’annonce en ligne, synchronise les traductions et notifie n8n une seule fois.</p></div></div>
+<div class="field"><div class="k">Préconditions</div><div><ul><li>Connecté en administrateur (<code>login(page, "admin", PK_ADMIN_PASSWORD)</code>).</li><li>Bouchon n8n démarré.</li><li>Annonce en attente avec code WhatsApp reçu.</li></ul></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Dans <code>pk-approvals</code>, clique « Publier » sur l’annonce.</li><li>Ouvre sa page publique en FR, EN et AR.</li><li>Lis les webhooks reçus.</li><li>Recharge l’URL d’approbation (double clic).</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li><code>post_status = publish</code>, <code>_pk_status = actif</code>, <code>_pk_approved_at</code> renseigné.</li><li>Les 3 variantes linguistiques sont publiées.</li><li>Un seul webhook <code>listing_approved</code>, même après rechargement.</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><pre>SELECT p.ID, p.post_status FROM wp_posts p WHERE p.ID = :id;
+SELECT meta_key, meta_value FROM wp_postmeta WHERE post_id = :id AND meta_key IN (&#x27;_pk_status&#x27;,&#x27;_pk_approved_at&#x27;);
+-- Variantes Polylang
+SELECT tt.description FROM wp_term_relationships tr JOIN wp_term_taxonomy tt USING(term_taxonomy_id)
+WHERE tr.object_id = :id AND tt.taxonomy = &#x27;post_translations&#x27;;</pre></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>test(&#x27;ADM-02 approbation&#x27;, async ({ page }) =&gt; {
+  const id = seedListing({ status: &#x27;en_attente_whatsapp&#x27; }); wp(`post update ${id} --post_status=pending`);
+  await login(page, &#x27;admin&#x27;, process.env.PK_ADMIN_PASSWORD!);
+  await page.goto(&#x27;/wp-admin/admin.php?page=pk-approvals&#x27;);
+  await page.locator(`a.button-primary[href*=&quot;listing=${id}&quot;]`).click();
+  expect(wp(`post get ${id} --field=post_status`)).toBe(&#x27;publish&#x27;);
+  expect(meta(id, &#x27;_pk_status&#x27;)).toBe(&#x27;actif&#x27;);
+  await expect.poll(() =&gt; received.filter(h =&gt; h.body.event === &#x27;listing_approved&#x27; &amp;&amp; h.body.listing_id == id).length).toBe(1);
+});</pre></div></div>
+</article>
+<article class="test" id="ADM-03">
+<h4><span class="tid">ADM-03</span>Refuser une annonce</h4>
+<div class="meta-row"><span class="tag user">Administrateur</span><span class="tag user">Propriétaire inscrit</span><span class="tag p1">Priorité P1</span><span class="tag">Voir les annonces en attente</span><span class="tag">E2E + DB</span></div>
+<div class="field"><div class="k">Objectif</div><div><p>Le refus repasse l’annonce en brouillon <code>refuse</code>, invisible publiquement, non réactivable par le propriétaire.</p></div></div>
+<div class="field"><div class="k">Préconditions</div><div><ul><li>Connecté en administrateur (<code>login(page, "admin", PK_ADMIN_PASSWORD)</code>).</li></ul></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Clique « Refuser » sur une annonce en attente et confirme.</li><li>En anonyme, ouvre son permalien.</li><li>En propriétaire, tente <code>reactivate</code> (PRO-06).</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li><code>post_status = draft</code>, <code>_pk_status = refuse</code>.</li><li>Page publique en 404.</li><li>Réactivation : 403.</li><li>Aucun identifiant envoyé.</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><pre>SELECT post_status FROM wp_posts WHERE ID = :id;  -- draft
+SELECT meta_value FROM wp_postmeta WHERE post_id = :id AND meta_key = &#x27;_pk_status&#x27;;  -- refuse</pre></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>test(&#x27;ADM-03 refus&#x27;, async ({ page }) =&gt; {
+  const id = seedListing({ status: &#x27;en_attente_whatsapp&#x27; }); wp(`post update ${id} --post_status=pending`);
+  await login(page, &#x27;admin&#x27;, process.env.PK_ADMIN_PASSWORD!);
+  await page.goto(&#x27;/wp-admin/admin.php?page=pk-approvals&#x27;);
+  page.once(&#x27;dialog&#x27;, d =&gt; d.accept());
+  await page.locator(`a.button[href*=&quot;listing=${id}&quot;][href*=&quot;decision=reject&quot;]`).click();
+  expect(wp(`post get ${id} --field=post_status`)).toBe(&#x27;draft&#x27;);
+  expect(meta(id, &#x27;_pk_status&#x27;)).toBe(&#x27;refuse&#x27;);
+});</pre></div></div>
+</article>
+<article class="test" id="ADM-04">
+<h4><span class="tid">ADM-04</span>Identifiants envoyés une seule fois, renvoi contrôlé</h4>
+<div class="meta-row"><span class="tag user">Administrateur</span><span class="tag user">Système n8n</span><span class="tag p1">Priorité P1</span><span class="tag">Envoyer les identifiants une seule fois</span><span class="tag">E2E + API + DB</span></div>
+<div class="field"><div class="k">Objectif</div><div><p>Une 2ᵉ approbation du même propriétaire n’envoie pas de nouveaux identifiants ; « Renvoyer » régénère un mot de passe et attend l’accusé n8n (guide : mot de passe renvoyé par WhatsApp).</p></div></div>
+<div class="field"><div class="k">Préconditions</div><div><ul><li>Connecté en administrateur (<code>login(page, "admin", PK_ADMIN_PASSWORD)</code>).</li><li>Propriétaire déjà approuvé une fois (DEP-08).</li></ul></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Approuve une 2ᵉ annonce du même propriétaire et lis le webhook.</li><li>Clique « Renvoyer les identifiants » (<code>pk_resend_credentials</code>).</li><li>Simule n8n : <code>POST /credentials-resend-accepted</code> signé avec le <code>request_id</code> reçu.</li><li>Connecte-toi avec l’ancien puis le nouveau mot de passe.</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li>2ᵉ approbation : webhook sans mot de passe.</li><li>Renvoi : nouveau <code>_pk_credentials_resend_request_id</code>, <code>_pk_credentials_resend_pending</code> présent puis effacé après accusé.</li><li>Ancien mot de passe refusé, nouveau accepté.</li><li>Accusé avec un <code>request_id</code> inconnu : refus.</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><pre>SELECT meta_key, meta_value FROM wp_usermeta WHERE user_id = :owner
+ AND meta_key IN (&#x27;_pk_credentials_sent&#x27;,&#x27;_pk_credentials_resend_request_id&#x27;,&#x27;_pk_credentials_resend_pending&#x27;);</pre></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>test(&#x27;ADM-04 identifiants une seule fois&#x27;, async ({ page }) =&gt; {
+  // Pré-requis : propriétaire déjà approuvé (DEP-08) ; seconde annonce approuvée via ADM-02
+  const hooks = received.filter(h =&gt; h.body.event === &#x27;listing_approved&#x27; &amp;&amp; h.body.owner_id == ownerId);
+  expect(hooks).toHaveLength(2);
+  expect(hooks[1].body.password ?? null).toBeNull();
+});</pre></div></div>
+</article>
+<article class="test" id="ADM-05">
+<h4><span class="tid">ADM-05</span>Valider ou refuser un lieu proposé</h4>
+<div class="meta-row"><span class="tag user">Administrateur</span><span class="tag p2">Priorité P2</span><span class="tag">Valider les lieux</span><span class="tag">E2E + DB</span></div>
+<div class="field"><div class="k">Objectif</div><div><p>L’admin traite les villes/quartiers proposés (DEP-04) ; l’approbation crée le terme et débloque l’annonce, le refus la laisse en attente avec un lieu à corriger.</p></div></div>
+<div class="field"><div class="k">Préconditions</div><div><ul><li>Connecté en administrateur (<code>login(page, "admin", PK_ADMIN_PASSWORD)</code>).</li><li>Annonce DEP-04 avec lieu en attente.</li></ul></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Ouvre <code>admin.php?page=pk-places</code>, approuve « Ville E2E ».</li><li>Avec une 2ᵉ proposition, clique « Refuser ».</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li>Approbation : terme <code>es_location</code> créé et rattaché, <code>_pk_place_status = approved</code>.</li><li>Refus : <code>_pk_place_status = rejected</code>, aucun terme créé.</li><li>Pas de doublon si la ville existe déjà (rattachement au terme existant).</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><pre>SELECT meta_value FROM wp_postmeta WHERE post_id = :id AND meta_key = &#x27;_pk_place_status&#x27;;
+SELECT t.term_id, t.name FROM wp_terms t JOIN wp_term_taxonomy tt USING(term_id)
+WHERE tt.taxonomy = &#x27;es_location&#x27; AND t.name IN (&#x27;Ville E2E&#x27;,&#x27;Ville refusée&#x27;);</pre></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>test(&#x27;ADM-05 lieu approuvé&#x27;, async ({ page }) =&gt; {
+  await login(page, &#x27;admin&#x27;, process.env.PK_ADMIN_PASSWORD!);
+  await page.goto(&#x27;/wp-admin/admin.php?page=pk-places&#x27;);
+  await page.locator(&#x27;tr&#x27;, { hasText: &#x27;Ville E2E&#x27; }).getByRole(&#x27;button&#x27;, { name: /approuver|valider/i }).click();
+  expect(sql(`SELECT COUNT(*) FROM wp_terms t JOIN wp_term_taxonomy tt USING(term_id) WHERE tt.taxonomy=&#x27;es_location&#x27; AND t.name=&#x27;Ville E2E&#x27;`)).toBe(&#x27;1&#x27;);
+});</pre></div></div>
+</article>
+<article class="test" id="ADM-06">
+<h4><span class="tid">ADM-06</span>Configuration des champs du formulaire appliquée côté serveur</h4>
+<div class="meta-row"><span class="tag user">Administrateur</span><span class="tag user">Propriétaire non connecté</span><span class="tag p2">Priorité P2</span><span class="tag">Configurer les champs</span><span class="tag">E2E + DB</span></div>
+<div class="field"><div class="k">Objectif</div><div><p>Un champ passé en <code>masque</code> disparaît du formulaire ; un champ passé en <code>requis</code> est exigé par le serveur même si le JS est contourné.</p></div></div>
+<div class="field"><div class="k">Préconditions</div><div><ul><li>Connecté en administrateur (<code>login(page, "admin", PK_ADMIN_PASSWORD)</code>).</li></ul></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Dans la page de configuration du formulaire, passe <code>pk_bedrooms</code> en « requis » et <code>pk_floor</code> en « masqué », enregistre.</li><li>Ouvre <code>/deposer/</code>.</li><li>Soumets un dépôt sans chambres via AJAX direct.</li><li>Remets la configuration initiale.</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li><code>[data-pk-field="pk_floor"]</code> absent ou caché ; <code>pk_bedrooms</code> marqué requis.</li><li>Envoi sans chambres refusé par le serveur.</li><li>Les champs cœur (type, ville, prix, surface) ne peuvent pas être masqués.</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><pre>SELECT option_value FROM wp_options WHERE option_name = &#x27;pk_deposit_form&#x27;;</pre></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>test(&#x27;ADM-06 champ masqué&#x27;, async ({ page }) =&gt; {
+  const backup = wp(&#x27;option get pk_deposit_form --format=json&#x27;);
+  try {
+    wp(`option patch update pk_deposit_form champs pk_floor etat masque`);
+    await page.goto(&#x27;/deposer/&#x27;);
+    await expect(page.locator(&#x27;[data-pk-field=&quot;pk_floor&quot;]&#x27;)).toBeHidden();
+  } finally { wp(`option update pk_deposit_form &#x27;${backup}&#x27; --format=json`); }
+});</pre></div></div>
+</article>
+<article class="test" id="ADM-07">
+<h4><span class="tid">ADM-07</span>Personnaliser les messages WhatsApp</h4>
+<div class="meta-row"><span class="tag user">Administrateur</span><span class="tag p3">Priorité P3</span><span class="tag">Personnaliser les messages</span><span class="tag">E2E</span></div>
+<div class="field"><div class="k">Objectif</div><div><p>Le modèle de message modifié est utilisé dans les liens wa.me ; les variables (référence, titre, lien) sont remplacées.</p></div></div>
+<div class="field"><div class="k">Préconditions</div><div><ul><li>Connecté en administrateur (<code>login(page, "admin", PK_ADMIN_PASSWORD)</code>).</li></ul></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Dans les options du thème, modifie le message acheteur pour inclure « Test E2E » et la variable de référence.</li><li>Ouvre une annonce et décode le texte du lien <code>.pk-btn-whatsapp</code>.</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li>Le texte contient « Test E2E » et la vraie référence, aucune accolade non remplacée.</li><li>Le texte est échappé (aucun HTML injecté).</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><pre>SELECT option_value FROM wp_options WHERE option_name = &#x27;pk_theme_options&#x27;;</pre></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>test(&#x27;ADM-07 modèle de message&#x27;, async ({ page }) =&gt; {
+  const id = seedListing();
+  await page.goto(permalink(id));
+  const text = decodeURIComponent((await page.locator(&#x27;.pk-btn-whatsapp&#x27;).first().getAttribute(&#x27;href&#x27;))!.split(&#x27;text=&#x27;)[1]);
+  expect(text).not.toMatch(/[{}]|%[a-z_]+%/i);
+});</pre></div></div>
+</article>
+<article class="test" id="ADM-08">
+<h4><span class="tid">ADM-08</span>Suivi des leads WhatsApp</h4>
+<div class="meta-row"><span class="tag user">Administrateur</span><span class="tag p2">Priorité P2</span><span class="tag">Suivre les leads</span><span class="tag">E2E + DB</span></div>
+<div class="field"><div class="k">Objectif</div><div><p>L’admin voit les leads (numéro masqué par défaut), filtre par consentement et fait évoluer le suivi.</p></div></div>
+<div class="field"><div class="k">Préconditions</div><div><ul><li>Connecté en administrateur (<code>login(page, "admin", PK_ADMIN_PASSWORD)</code>).</li><li>Au moins un lead créé via ACH-10.</li></ul></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Ouvre <code>admin.php?page=pk-whatsapp-leads</code>.</li><li>Filtre « consentement : désinscrits », puis « tous ».</li><li>Passe un lead à <code>in_progress</code>, puis <code>qualified</code>, puis <code>closed</code>.</li><li>Envoie un statut inconnu via la requête POST.</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li>Chaque changement est enregistré.</li><li>Statut inconnu refusé.</li><li>Aucun numéro en clair en base (<code>phone_hash</code>).</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><pre>SELECT l.id, l.phone_hash, f.status FROM wp_pk_buyer_leads l
+LEFT JOIN wp_pk_lead_followups f ON f.lead_id = l.id WHERE l.id = :lead;</pre></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>test(&#x27;ADM-08 suivi lead&#x27;, async ({ page }) =&gt; {
+  await login(page, &#x27;admin&#x27;, process.env.PK_ADMIN_PASSWORD!);
+  await page.goto(&#x27;/wp-admin/admin.php?page=pk-whatsapp-leads&#x27;);
+  const row = page.locator(&#x27;tbody tr&#x27;).first();
+  await row.locator(&#x27;select[name*=&quot;status&quot;]&#x27;).selectOption(&#x27;qualified&#x27;);
+  await row.locator(&#x27;[type=submit]&#x27;).click();
+  await expect(page.locator(&#x27;.notice-success, .updated&#x27;)).toBeVisible();
+});</pre></div></div>
+</article>
+<article class="test" id="ADM-09">
+<h4><span class="tid">ADM-09</span>Export CSV des leads</h4>
+<div class="meta-row"><span class="tag user">Administrateur</span><span class="tag user">Propriétaire inscrit</span><span class="tag p2">Priorité P2</span><span class="tag">Exporter CSV</span><span class="tag">E2E</span></div>
+<div class="field"><div class="k">Objectif</div><div><p>L’export télécharge un CSV conforme aux filtres ; refusé aux non-admins.</p></div></div>
+<div class="field"><div class="k">Préconditions</div><div><ul><li>Connecté en administrateur (<code>login(page, "admin", PK_ADMIN_PASSWORD)</code>).</li></ul></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Sur la page des leads, clique « Exporter CSV » (<code>pk_export_leads</code>).</li><li>Compte les lignes et compare au total affiché.</li><li>Rejoue l’URL d’export connecté en contributeur.</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li>Fichier <code>.csv</code> UTF-8, en-tête présent, nombre de lignes = total filtré.</li><li>Aucune cellule commençant par <code>=</code>, <code>+</code>, <code>-</code>, <code>@</code> non neutralisée (injection CSV).</li><li>Contributeur : refus.</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><pre>SELECT COUNT(*) FROM wp_pk_buyer_leads;</pre></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>test(&#x27;ADM-09 export CSV&#x27;, async ({ page }) =&gt; {
+  await login(page, &#x27;admin&#x27;, process.env.PK_ADMIN_PASSWORD!);
+  await page.goto(&#x27;/wp-admin/admin.php?page=pk-whatsapp-leads&#x27;);
+  const [dl] = await Promise.all([page.waitForEvent(&#x27;download&#x27;), page.getByText(/exporter/i).first().click()]);
+  expect(dl.suggestedFilename()).toMatch(/\.csv$/);
+  const lines = (await (await import(&#x27;node:fs/promises&#x27;)).readFile((await dl.path())!, &#x27;utf8&#x27;)).trim().split(&#x27;\n&#x27;);
+  expect(lines.length - 1).toBe(Number(sql(&#x27;SELECT COUNT(*) FROM wp_pk_buyer_leads&#x27;)));
+});</pre></div></div>
+</article>
+<article class="test" id="ADM-10">
+<h4><span class="tid">ADM-10</span>Effacement RGPD d’un lead</h4>
+<div class="meta-row"><span class="tag user">Administrateur</span><span class="tag user">Système n8n</span><span class="tag p1">Priorité P1</span><span class="tag">Effacer RGPD</span><span class="tag">API + DB</span></div>
+<div class="field"><div class="k">Objectif</div><div><p><code>POST /erase-lead</code> signé supprime le lead et ses données liées ; rejouer la demande est sans erreur.</p></div></div>
+<div class="field"><div class="k">Préconditions</div><div><ul><li>Lead connu (<code>wa_id</code>) avec consentement, préférences et contacts.</li></ul></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Appelle <code>POST /erase-lead</code> signé avec <code>{"wa_id": "&lt;numéro&gt;"}</code>.</li><li>Rejoue la même requête.</li><li>Appelle sans signature.</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li>200 puis 200 (idempotent).</li><li>Plus aucune ligne pour ce lead dans les tables leads, consentements, préférences, limites, suivi.</li><li>Sans signature : 401 <code>pk_automation_auth</code>.</li><li>Trace dans <code>wp_pk_audit_log</code> sans numéro en clair.</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><pre>SELECT
+ (SELECT COUNT(*) FROM wp_pk_buyer_leads        WHERE id = :lead) AS leads,
+ (SELECT COUNT(*) FROM wp_pk_whatsapp_consents  WHERE lead_id = :lead) AS consents,
+ (SELECT COUNT(*) FROM wp_pk_buyer_preferences  WHERE lead_id = :lead) AS prefs,
+ (SELECT COUNT(*) FROM wp_pk_contact_limits     WHERE lead_id = :lead) AS limits,
+ (SELECT COUNT(*) FROM wp_pk_lead_followups     WHERE lead_id = :lead) AS followups;  -- tout à 0</pre></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>test(&#x27;ADM-10 effacement RGPD&#x27;, async ({ request }) =&gt; {
+  const wa = &#x27;212677000001&#x27;;
+  await automation(request, &#x27;/consent&#x27;, { wa_id: wa, scope: &#x27;similar_listings&#x27;, granted: true, provider_message_id: `c${Date.now()}` });
+  expect(sql(`SELECT COUNT(*) FROM wp_pk_buyer_leads`)).not.toBe(&#x27;0&#x27;);
+  expect((await automation(request, &#x27;/erase-lead&#x27;, { wa_id: wa })).status()).toBe(200);
+  expect((await automation(request, &#x27;/erase-lead&#x27;, { wa_id: wa })).status()).toBe(200);
+  expect((await request.post(&#x27;/wp-json/partikulier/v1/erase-lead&#x27;, { data: { wa_id: wa } })).status()).toBe(401);
+});</pre></div></div>
+</article>
+<article class="test" id="ADM-11">
+<h4><span class="tid">ADM-11</span>Rétention des leads à 365 jours</h4>
+<div class="meta-row"><span class="tag user">Système (cron)</span><span class="tag p2">Priorité P2</span><span class="tag">Effacer RGPD</span><span class="tag">DB</span></div>
+<div class="field"><div class="k">Objectif</div><div><p>Le cron <code>pk_buyer_privacy_purge</code> efface les leads inactifs depuis plus de 365 jours.</p></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Vieillis un lead à 366 jours et un autre à 30 jours (colonne de dernière activité).</li><li>Lance <code>wp cron event run pk_buyer_privacy_purge</code>.</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li>Lead à 366 jours supprimé avec ses données liées ; lead à 30 jours conservé.</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><pre>UPDATE wp_pk_buyer_leads SET last_seen_at = NOW() - INTERVAL 366 DAY WHERE id = :old;
+UPDATE wp_pk_buyer_leads SET last_seen_at = NOW() - INTERVAL 30 DAY  WHERE id = :recent;
+-- après le cron :
+SELECT id FROM wp_pk_buyer_leads WHERE id IN (:old, :recent);  -- :recent uniquement</pre></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>test(&#x27;ADM-11 purge 365 j&#x27;, () =&gt; {
+  const [oldId, recentId] = sql(&#x27;SELECT id FROM wp_pk_buyer_leads ORDER BY id DESC LIMIT 2&#x27;).split(&#x27;\n&#x27;);
+  sql(`UPDATE wp_pk_buyer_leads SET last_seen_at = NOW() - INTERVAL 366 DAY WHERE id=${oldId}`);
+  sql(`UPDATE wp_pk_buyer_leads SET last_seen_at = NOW() - INTERVAL 30 DAY WHERE id=${recentId}`);
+  wp(&#x27;cron event run pk_buyer_privacy_purge&#x27;);
+  expect(sql(`SELECT id FROM wp_pk_buyer_leads WHERE id IN (${oldId},${recentId})`)).toBe(recentId);
+});</pre></div></div>
+</article>
+<article class="test" id="ADM-12">
+<h4><span class="tid">ADM-12</span>Accorder et révoquer le premium</h4>
+<div class="meta-row"><span class="tag user">Administrateur</span><span class="tag p3">Priorité P3</span><span class="tag">Gérer le premium</span><span class="tag">E2E + DB</span></div>
+<div class="field"><div class="k">Objectif</div><div><p>L’admin accorde puis révoque le premium ; l’historique garde les deux événements.</p></div></div>
+<div class="field"><div class="k">Préconditions</div><div><ul><li>Connecté en administrateur (<code>login(page, "admin", PK_ADMIN_PASSWORD)</code>).</li></ul></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Sur l’écran premium d’une annonce, clique « Accorder » (<code>pk_grant_premium</code>) avec une durée.</li><li>Clique « Révoquer » (<code>pk_revoke_premium</code>).</li><li>Vérifie l’effet public (ACH-04).</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li><code>_pk_premium_status</code> : <code>active</code> puis <code>revoked</code>.</li><li>2 lignes dans <code>wp_pk_premium_history</code>.</li><li>Action refusée sans nonce ou pour un non-admin.</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><pre>SELECT meta_value FROM wp_postmeta WHERE post_id = :id AND meta_key = &#x27;_pk_premium_status&#x27;;
+SELECT * FROM wp_pk_premium_history WHERE property_id = :id ORDER BY id;</pre></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>test(&#x27;ADM-12 premium&#x27;, async ({ page }) =&gt; {
+  const id = seedListing();
+  await login(page, &#x27;admin&#x27;, process.env.PK_ADMIN_PASSWORD!);
+  await page.goto(`/wp-admin/post.php?post=${id}&amp;action=edit`);
+  await page.getByRole(&#x27;button&#x27;, { name: /accorder/i }).click();
+  expect(meta(id, &#x27;_pk_premium_status&#x27;)).toBe(&#x27;active&#x27;);
+  await page.getByRole(&#x27;button&#x27;, { name: /révoquer/i }).click();
+  expect(meta(id, &#x27;_pk_premium_status&#x27;)).toBe(&#x27;revoked&#x27;);
+});</pre></div></div>
+</article></div></section><section class="role" id="systeme" style="--accent:#b8860b"><div class="head"><div class="icon">S</div><div><h3>Acteurs système</h3><p class="muted">n8n, WhatsApp, API et moteurs : authentification des automatisations, rattrapage, consentements, API publique et SEO.</p></div></div><div class="tests"><article class="test" id="SYS-01">
+<h4><span class="tid">SYS-01</span>Authentification des routes d’automatisation</h4>
+<div class="meta-row"><span class="tag user">Système n8n</span><span class="tag user">Attaquant</span><span class="tag p1">Priorité P1</span><span class="tag">Endpoints leads / n8n</span><span class="tag">API + DB</span></div>
+<div class="field"><div class="k">Objectif</div><div><p>Les routes privées exigent secret + horodatage + signature HMAC valides ; toute variante incorrecte renvoie 401 et est comptée.</p></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Appelle <code>GET /approved-listings</code> signé correctement : 200.</li><li>Rejoue sans en-tête, avec un mauvais secret, une signature fausse, un horodatage vieux de 10 minutes, un corps modifié après signature.</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li>Cas valide : 200.</li><li>Chaque cas invalide : 401 <code>pk_automation_auth</code>, aucun détail sur la cause exacte.</li><li>Échecs comptés par heure dans <code>wp_pk_n8n_hmac_audit</code>.</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><pre>SELECT key_id, hour_key, failure_count, last_reason FROM wp_pk_n8n_hmac_audit ORDER BY hour_key DESC LIMIT 5;</pre></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>test(&#x27;SYS-01 auth automatisation&#x27;, async ({ request }) =&gt; {
+  expect((await automation(request, &#x27;/approved-listings&#x27;, {}, { method: &#x27;GET&#x27; })).status()).toBe(200);
+  expect((await automation(request, &#x27;/approved-listings&#x27;, {}, { method: &#x27;GET&#x27;, badSig: true })).status()).toBe(401);
+  expect((await automation(request, &#x27;/approved-listings&#x27;, {}, { method: &#x27;GET&#x27;, secret: &#x27;mauvais-secret&#x27; })).status()).toBe(401);
+  expect((await request.get(&#x27;/wp-json/partikulier/v1/approved-listings&#x27;)).status()).toBe(401);
+});</pre></div></div>
+</article>
+<article class="test" id="SYS-02">
+<h4><span class="tid">SYS-02</span>Rattrapage des annonces approuvées (72 h)</h4>
+<div class="meta-row"><span class="tag user">Système n8n</span><span class="tag p2">Priorité P2</span><span class="tag">Recevoir listing_approved</span><span class="tag">API</span></div>
+<div class="field"><div class="k">Objectif</div><div><p>Si un webhook est perdu, n8n récupère les annonces approuvées depuis 72 h via <code>GET /approved-listings</code>.</p></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Approuve une annonce (ADM-02).</li><li>Mets <code>_pk_approved_at</code> d’une autre annonce à maintenant −4 jours.</li><li>Appelle <code>GET /approved-listings</code> signé.</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li>L’annonce récente est présente, celle de 4 jours absente.</li><li>Aucun mot de passe dans la réponse.</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><pre>SELECT post_id, meta_value FROM wp_postmeta WHERE meta_key = &#x27;_pk_approved_at&#x27; ORDER BY meta_value DESC LIMIT 5;</pre></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>test(&#x27;SYS-02 rattrapage 72 h&#x27;, async ({ request }) =&gt; {
+  const recent = seedListing(); setMeta(recent, &#x27;_pk_approved_at&#x27;, String(Math.floor(Date.now() / 1000)));
+  const old = seedListing(); setMeta(old, &#x27;_pk_approved_at&#x27;, String(Math.floor(Date.now() / 1000) - 4 * 86400));
+  const body = await (await automation(request, &#x27;/approved-listings&#x27;, {}, { method: &#x27;GET&#x27; })).text();
+  expect(body).toContain(String(recent)); expect(body).not.toContain(`&quot;${old}&quot;`);
+  expect(body).not.toMatch(/password/i);
+});</pre></div></div>
+</article>
+<article class="test" id="SYS-03">
+<h4><span class="tid">SYS-03</span>Désinscription STOP</h4>
+<div class="meta-row"><span class="tag user">Acheteur</span><span class="tag user">Système n8n</span><span class="tag p1">Priorité P1</span><span class="tag">Acheminer les messages (guide : STOP)</span><span class="tag">API + DB</span></div>
+<div class="field"><div class="k">Objectif</div><div><p>Promesse du guide : envoyer STOP arrête les messages. <code>POST /opt-out</code> marque le lead ; les contacts suivants sont refusés <code>opted_out</code>.</p></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Crée un lead via <code>/consent</code> (granted).</li><li>Appelle <code>POST /opt-out</code> signé avec <code>wa_id</code> et <code>provider_message_id</code> ; rejoue-le.</li><li>Appelle <code>/contact-authorization</code> pour ce <code>wa_id</code>.</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li>Opt-out 200 puis 200 sans doublon.</li><li><code>opt_out_at</code> renseigné, consentements révoqués.</li><li>Contact : <code>allowed: false</code>, <code>reason: "opted_out"</code>.</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><pre>SELECT id, opt_out_at FROM wp_pk_buyer_leads WHERE id = :lead;
+SELECT scope, granted_at, revoked_at FROM wp_pk_whatsapp_consents WHERE lead_id = :lead;</pre></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>test(&#x27;SYS-03 STOP&#x27;, async ({ request }) =&gt; {
+  const wa = `2126${Date.now() % 1e8}`;
+  await automation(request, &#x27;/consent&#x27;, { wa_id: wa, scope: &#x27;similar_listings&#x27;, granted: true, provider_message_id: `c${Date.now()}` });
+  for (let i = 0; i &lt; 2; i++) expect((await automation(request, &#x27;/opt-out&#x27;, { wa_id: wa, provider_message_id: `s${Date.now()}${i}` })).status()).toBe(200);
+  const ref = meta(seedListing(), &#x27;_pk_buyer_reference&#x27;);
+  const j = await (await automation(request, &#x27;/contact-authorization&#x27;, { wa_id: wa, reference: ref, provider_message_id: `x${Date.now()}` })).json();
+  expect(j).toMatchObject({ allowed: false, reason: &#x27;opted_out&#x27; });
+});</pre></div></div>
+</article>
+<article class="test" id="SYS-04">
+<h4><span class="tid">SYS-04</span>Consentement explicite pour les annonces similaires</h4>
+<div class="meta-row"><span class="tag user">Acheteur</span><span class="tag user">Système n8n</span><span class="tag p2">Priorité P2</span><span class="tag">Acheminer les messages</span><span class="tag">API + DB</span></div>
+<div class="field"><div class="k">Objectif</div><div><p>Sans consentement actif, aucune alerte ne peut être créée ; le consentement accordé puis révoqué est tracé.</p></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Appelle <code>/preferences</code> pour un nouveau <code>wa_id</code> sans consentement.</li><li>Appelle <code>/consent</code> avec <code>granted: true</code>, puis <code>false</code>.</li><li>Envoie un <code>scope</code> inconnu.</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li>Préférences sans consentement : refus <code>pk_alert_consent</code> (ou aucune alerte créée).</li><li>Consent : <code>{"consent": "granted"}</code> puis <code>"revoked"</code>.</li><li>Scope inconnu : 400 <code>pk_invalid_consent</code>.</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><pre>SELECT scope, granted_at, revoked_at FROM wp_pk_whatsapp_consents WHERE lead_id = :lead ORDER BY id;</pre></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>test(&#x27;SYS-04 consentement&#x27;, async ({ request }) =&gt; {
+  const wa = `2126${Date.now() % 1e8}`;
+  const g = await (await automation(request, &#x27;/consent&#x27;, { wa_id: wa, scope: &#x27;similar_listings&#x27;, granted: true, provider_message_id: `g${Date.now()}` })).json();
+  expect(g.consent).toBe(&#x27;granted&#x27;);
+  const r = await (await automation(request, &#x27;/consent&#x27;, { wa_id: wa, scope: &#x27;similar_listings&#x27;, granted: false, provider_message_id: `r${Date.now()}` })).json();
+  expect(r.consent).toBe(&#x27;revoked&#x27;);
+  expect((await automation(request, &#x27;/consent&#x27;, { wa_id: wa, scope: &#x27;inconnu&#x27;, granted: true, provider_message_id: `i${Date.now()}` })).status()).toBe(400);
+});</pre></div></div>
+</article>
+<article class="test" id="SYS-05">
+<h4><span class="tid">SYS-05</span>API publique, limites de débit et favoris authentifiés</h4>
+<div class="meta-row"><span class="tag user">Application tierce</span><span class="tag user">Propriétaire inscrit</span><span class="tag p2">Priorité P2</span><span class="tag">Endpoints publics et connectés</span><span class="tag">API</span></div>
+<div class="field"><div class="k">Objectif</div><div><p>Les routes publiques répondent sans données privées ; les limites de débit s’appliquent ; les routes connectées exigent une session.</p></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Appelle <code>GET /health</code>, <code>GET /listings</code>, <code>GET /listings/{id}</code>.</li><li>Appelle <code>GET /listings/{id}</code> sur une annonce <code>pending</code>.</li><li>Envoie 11 <code>POST /leads</code> en moins de 60 s, puis un sans <code>phone</code>.</li><li>Appelle <code>POST /favorites</code> sans session, puis connecté avec le nonce REST.</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li>Réponses 200 sans <code>_pk_owner_phone</code>, e-mail ni code WhatsApp.</li><li>Annonce non publiée : 404.</li><li>11ᵉ lead : 429 ; sans téléphone : 400.</li><li>Favori anonyme : 401 ; connecté : 200.</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><pre>SELECT COUNT(*) FROM wp_pk_buyer_leads WHERE first_seen_at &gt; NOW() - INTERVAL 2 MINUTE;  -- ≤ 10</pre></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>test(&#x27;SYS-05 API publique&#x27;, async ({ request }) =&gt; {
+  expect((await request.get(&#x27;/wp-json/partikulier/v1/health&#x27;)).status()).toBe(200);
+  const list = await (await request.get(&#x27;/wp-json/partikulier/v1/listings&#x27;)).text();
+  expect(list).not.toMatch(/_pk_owner_phone|verification_code|@example/);
+  const pending = seedListing(); wp(`post update ${pending} --post_status=pending`);
+  expect((await request.get(`/wp-json/partikulier/v1/listings/${pending}`)).status()).toBe(404);
+  expect((await request.post(&#x27;/wp-json/partikulier/v1/favorites&#x27;, { data: { listing_id: 1 } })).status()).toBe(401);
+  const codes = [];
+  for (let i = 0; i &lt; 11; i++) codes.push((await request.post(&#x27;/wp-json/partikulier/v1/leads&#x27;, { data: { phone: `+21260000${1000 + i}` } })).status());
+  expect(codes.at(-1)).toBe(429);
+});</pre></div></div>
+</article>
+<article class="test" id="SYS-06">
+<h4><span class="tid">SYS-06</span>SEO : canonique, sitemap, JSON-LD, redirections</h4>
+<div class="meta-row"><span class="tag user">Moteur de recherche</span><span class="tag p2">Priorité P2</span><span class="tag">URL canoniques, sitemap et JSON-LD</span><span class="tag">E2E</span></div>
+<div class="field"><div class="k">Objectif</div><div><p>Chaque annonce a une URL canonique unique, figure dans <code>/sitemap.xml</code> si elle est active, et expose un JSON-LD <code>RealEstateListing</code> valide.</p></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Ouvre une annonce active : lis <code>link[rel=canonical]</code> et le script <code>application/ld+json</code>.</li><li>Ouvre <code>/sitemap.xml</code> et <code>/robots.txt</code>.</li><li>Change le slug de l’annonce et ouvre l’ancienne URL.</li><li>Ouvre une page de recherche filtrée.</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li>Canonique = permalien ; JSON-LD avec <code>@type</code> RealEstateListing, <code>Offer</code> (prix, MAD), pas de téléphone.</li><li>Sitemap XML valide contenant l’annonce active, sans annonces en attente ni refusées ; robots.txt pointe vers le sitemap.</li><li>Ancien slug : 301 vers le nouveau (<code>wp_pk_slug_redirects</code>).</li><li>Recherche filtrée : canonique vers la liste ou <code>noindex</code>.</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><pre>SELECT slug, property_id FROM wp_pk_slug_redirects WHERE property_id = :id;</pre></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>test(&#x27;SYS-06 SEO&#x27;, async ({ page, request }) =&gt; {
+  const id = seedListing({ price: 900000 }); const url = permalink(id);
+  await page.goto(url);
+  await expect(page.locator(&#x27;link[rel=canonical]&#x27;)).toHaveAttribute(&#x27;href&#x27;, url);
+  const ld = (await page.locator(&#x27;script[type=&quot;application/ld+json&quot;]&#x27;).allInnerTexts()).map(t =&gt; JSON.parse(t));
+  expect(JSON.stringify(ld)).toContain(&#x27;RealEstateListing&#x27;);
+  const xml = await (await request.get(&#x27;/sitemap.xml&#x27;)).text();
+  expect(xml).toContain(url);
+  wp(`post update ${id} --post_name=nouveau-slug-${id}`);
+  const r = await request.get(url, { maxRedirects: 0 });
+  expect(r.status()).toBe(301);
+});</pre></div></div>
+</article>
+<article class="test" id="SYS-07">
+<h4><span class="tid">SYS-07</span>Message WhatsApp en double (provider_message_id)</h4>
+<div class="meta-row"><span class="tag user">Système n8n</span><span class="tag p2">Priorité P2</span><span class="tag">Acheminer les messages</span><span class="tag">API + DB</span></div>
+<div class="field"><div class="k">Objectif</div><div><p>Un même message WhatsApp relivré par le fournisseur n’est compté qu’une fois.</p></div></div>
+<div class="field"><div class="k">Prompt / actions</div><div><ol class="prompt"><li>Appelle <code>/contact-authorization</code> avec un <code>provider_message_id</code> donné.</li><li>Rejoue exactement le même appel.</li></ol></div></div>
+<div class="field"><div class="k">Résultat attendu</div><div><ul><li>1ᵉʳ appel : <code>allowed: true</code>.</li><li>2ᵉ : <code>allowed: false</code>, <code>reason: "duplicate_message"</code>.</li><li><code>contacts_count</code> incrémenté une seule fois.</li></ul></div></div>
+<div class="field"><div class="k">Vérification DB</div><div><pre>SELECT contacts_count FROM wp_pk_contact_limits WHERE lead_id = :lead AND day_key = CURDATE();  -- 1</pre></div></div>
+<div class="field"><div class="k">Playwright</div><div><pre>test(&#x27;SYS-07 doublon fournisseur&#x27;, async ({ request }) =&gt; {
+  const body = { wa_id: `2126${Date.now() % 1e8}`, reference: meta(seedListing(), &#x27;_pk_buyer_reference&#x27;), provider_message_id: `dup${Date.now()}` };
+  expect((await (await automation(request, &#x27;/contact-authorization&#x27;, body)).json()).allowed).toBe(true);
+  expect(await (await automation(request, &#x27;/contact-authorization&#x27;, body)).json()).toMatchObject({ allowed: false, reason: &#x27;duplicate_message&#x27; });
+});</pre></div></div>
+</article></div></section>
+</div></main>
+<footer><div class="wrap"><div class="brand">Partikulier</div><span>Sources : user-stories.html, guide-utilisateurs-simple.html, code thème 6.x et plugin partikulier-core.</span></div></footer>
+</body>
+</html>
