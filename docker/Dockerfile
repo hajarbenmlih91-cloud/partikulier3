@@ -1,4 +1,4 @@
-# Local test image for Partikulier (plugin partikulier-core 2.10.8 + theme 6.20.7).
+# Local test image for Partikulier (plugin partikulier-core 2.10.9 + theme 6.20.8).
 # Mirrors the "Contrats de recette (WordPress)" CI job: WordPress 6.6, PHP 8.3,
 # MySQL 8.0, extensions mbstring/mysqli/curl/apcu, WP-CLI, site served on :8099.
 ARG WP_IMAGE_TAG=6.6-php8.3-apache

@@ -3,7 +3,7 @@
 Plugin WordPress central assurant l'intégrité métier, le stockage relationnel durci, l'API REST haute performance et la conformité légale de **Partikulier.ma**.
 Le thème [partikulier](../themes/partikulier) lui délègue l'espace de noms d'API REST `/partikulier/v1`, le dispositif de leads, la modération des dépôts, les alertes et les webhooks.
 
-**Version : 2.10.8 (Release Finale)** · Licence GPL v3 ou ultérieure · Requiert WordPress 6.2+ et PHP 8.1 à 8.4+.
+**Version : 2.10.9** · Licence GPL v3 ou ultérieure · Requiert WordPress 6.2+ et PHP 8.1 à 8.4+.
 
 ---
 
@@ -51,7 +51,7 @@ Pour exécuter les suites de tests officielles du plugin :
 export PK_WP_DIR="/chemin/vers/wordpress"
 export PK_BASE="http://127.0.0.1:8080"
 export PK_COMMIT="0a7d91bd707a891300c404f3ae79f34c7d75d46c"
-export PK_VERSION="2.10.8"
+export PK_VERSION="2.10.9"
 
 # Exécution des contrats fondamentaux :
 php partikulier-core/tests/core-contract.php
@@ -71,6 +71,6 @@ php partikulier-core/tests/avif-security-contract.php
 
 ## 3. Installation
 
-1. Téléverser l'archive `PLUGIN-partikulier-core-2.10.8-FINAL.zip` via **Extensions $\rightarrow$ Ajouter $\rightarrow$ Téléverser**.
+1. Téléverser l'archive `PLUGIN-partikulier-core-2.10.9.zip` via **Extensions $\rightarrow$ Ajouter $\rightarrow$ Téléverser**.
 2. Activer l'extension. Les tables de schéma et adoptions sont créées automatiquement à l'activation.
 3. Vérifier le point de santé : `GET /wp-json/partikulier/v1/health` $\rightarrow$ `"status": "ok"`, 0 collision de routes.
