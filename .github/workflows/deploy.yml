@@ -1,16 +1,23 @@
 name: Déploiement Hostinger
 
+# Routage :
+#   push develop                     -> dev
+#   tag pre-release-<version>        -> uat (approbation requise : règle « Required reviewers » de l'environnement uat)
+#   tag release-<version>            -> prd (approbation requise : règle « Required reviewers » de l'environnement prd)
+#   workflow_dispatch                -> choix manuel ; uat/prd exigent d'être lancés sur un tag conforme
+# <version> = X.Y.Z (numérique), suivi optionnellement de -<texte libre>, ex. 2.10.8-6.20.7 ou 2.10.9-rc.1
+
 on:
   push:
     branches:
       - develop
-      - main
     tags:
-      - 'v*'
+      - 'pre-release-*'
+      - 'release-*'
   workflow_dispatch:
     inputs:
       environment:
-        description: Environnement cible
+        description: Environnement cible (uat/prd uniquement depuis un tag pre-release-* / release-*)
         required: true
         default: dev
         type: choice
@@ -22,22 +29,74 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: deploy-${{ github.event_name == 'workflow_dispatch' && inputs.environment || startsWith(github.ref, 'refs/tags/v') && 'prd' || github.ref == 'refs/heads/main' && 'uat' || 'dev' }}
-  cancel-in-progress: false
-
 jobs:
+  resolve:
+    name: Résoudre l'environnement cible
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.target.outputs.environment }}
+      version: ${{ steps.target.outputs.version }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Déterminer et valider la cible
+        id: target
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_ENVIRONMENT: ${{ inputs.environment }}
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          uat_regex='^pre-release-([0-9]+\.[0-9]+\.[0-9]+(-.+)?)$'
+          prd_regex='^release-([0-9]+\.[0-9]+\.[0-9]+(-.+)?)$'
+          version=""
+          if [ "$REF_TYPE" = "tag" ] && [[ "$REF_NAME" =~ $uat_regex ]]; then
+            tag_env="uat"; version="${BASH_REMATCH[1]}"
+          elif [ "$REF_TYPE" = "tag" ] && [[ "$REF_NAME" =~ $prd_regex ]]; then
+            tag_env="prd"; version="${BASH_REMATCH[1]}"
+          elif [ "$REF_TYPE" = "tag" ]; then
+            echo "::error::Tag « $REF_NAME » non conforme. Attendu : pre-release-X.Y.Z[-texte libre] (uat) ou release-X.Y.Z[-texte libre] (prd)."
+            exit 1
+          else
+            tag_env=""
+          fi
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            environment="$INPUT_ENVIRONMENT"
+            if [ "$environment" != "dev" ] && [ "$environment" != "$tag_env" ]; then
+              echo "::error::Un déploiement manuel vers $environment doit être lancé sur un tag $([ "$environment" = uat ] && echo pre-release-* || echo release-*) (ref actuelle : $REF_NAME)."
+              exit 1
+            fi
+          else
+            environment="${tag_env:-dev}"
+          fi
+          echo "environment=$environment" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Cible : $environment${version:+ (version $version)} depuis $REF_TYPE $REF_NAME"
+          if [ "$environment" != "dev" ]; then
+            echo "::notice title=Approbation requise::Le déploiement vers $environment attend la validation d'un reviewer de l'environnement $environment."
+          fi
+
   ci:
     name: CI réutilisée
     uses: ./.github/workflows/ci.yml
 
   deploy:
-    name: Déployer vers ${{ github.event_name == 'workflow_dispatch' && inputs.environment || startsWith(github.ref, 'refs/tags/v') && 'prd' || github.ref == 'refs/heads/main' && 'uat' || 'dev' }}
+    name: Déployer vers ${{ needs.resolve.outputs.environment }}
     runs-on: ubuntu-latest
-    needs: ci
-    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || startsWith(github.ref, 'refs/tags/v') && 'prd' || github.ref == 'refs/heads/main' && 'uat' || 'dev' }}
+    needs: [resolve, ci]
+    concurrency:
+      group: deploy-${{ needs.resolve.outputs.environment }}
+      cancel-in-progress: false
+    # Les règles de l'environnement (Required reviewers, tags autorisés) s'appliquent ici :
+    # le job attend l'approbation avant d'accéder aux secrets.
+    environment:
+      name: ${{ needs.resolve.outputs.environment }}
+      url: ${{ steps.site.outputs.url }}
     env:
-      DEPLOY_ENVIRONMENT: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || startsWith(github.ref, 'refs/tags/v') && 'prd' || github.ref == 'refs/heads/main' && 'uat' || 'dev' }}
+      DEPLOY_ENVIRONMENT: ${{ needs.resolve.outputs.environment }}
+      DEPLOY_VERSION: ${{ needs.resolve.outputs.version }}
       SSH_HOST: ${{ secrets.SSH_HOST }}
       SSH_PORT: ${{ secrets.SSH_PORT }}
       SSH_USER: ${{ secrets.SSH_USER }}
@@ -52,6 +111,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: URL du site cible
+        id: site
+        run: |
+          set -euo pipefail
+          : "${SITE_URL:?variable SITE_URL manquante pour l'environnement $DEPLOY_ENVIRONMENT}"
+          site="${SITE_URL%/}"
+          echo "url=$site" >> "$GITHUB_OUTPUT"
+          echo "Déploiement $DEPLOY_ENVIRONMENT${DEPLOY_VERSION:+ v$DEPLOY_VERSION} vers $site (ref $GITHUB_REF_NAME, commit ${GITHUB_SHA:0:12})"
 
       - name: Construire et préparer les artefacts
         run: |
@@ -203,6 +271,26 @@ jobs:
           assert health.get("status") == "ok", health
           print("health endpoint: ok")
           PY
+
+      - name: Déploiement terminé
+        env:
+          SITE: ${{ steps.site.outputs.url }}
+        run: |
+          set -euo pipefail
+          echo "::notice title=Déployé sur $DEPLOY_ENVIRONMENT::$SITE"
+          echo "Site déployé ($DEPLOY_ENVIRONMENT) : $SITE"
+          echo "Santé : $SITE/wp-json/partikulier/v1/health"
+          {
+            echo "## Déploiement $DEPLOY_ENVIRONMENT réussi"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Site | <$SITE> |"
+            echo "| Santé | <$SITE/wp-json/partikulier/v1/health> |"
+            echo "| Version | ${DEPLOY_VERSION:-—} |"
+            echo "| Ref | \`$GITHUB_REF_NAME\` |"
+            echo "| Commit | \`${GITHUB_SHA:0:12}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Nettoyer la clé SSH
         if: always()
