@@ -78,8 +78,8 @@ strict : `pre-release-[0-9]*.[0-9]*.[0-9]*` et `release-[0-9]*.[0-9]*.[0-9]*`.
 Le workflow valide en plus le tag avec les regex suivantes (job `resolve`) :
 
 ```text
-uat : ^pre-release-([0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?)$
-prd : ^release-([0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?)$
+uat : ^pre-release-([0-9]+\.[0-9]+\.[0-9]+(-.+)?)$
+prd : ^release-([0-9]+\.[0-9]+\.[0-9]+(-.+)?)$
 ```
 
 Un tag non conforme fait échouer le workflow avant toute publication. Avec

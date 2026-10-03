@@ -5,7 +5,7 @@ name: Déploiement Hostinger
 #   tag pre-release-<version>        -> uat (approbation requise : règle « Required reviewers » de l'environnement uat)
 #   tag release-<version>            -> prd (approbation requise : règle « Required reviewers » de l'environnement prd)
 #   workflow_dispatch                -> choix manuel ; uat/prd exigent d'être lancés sur un tag conforme
-# <version> = X.Y.Z avec suffixe optionnel, ex. 2.10.8-6.20.7 ou 2.10.9-rc.1
+# <version> = X.Y.Z (numérique), suivi optionnellement de -<texte libre>, ex. 2.10.8-6.20.7 ou 2.10.9-rc.1
 
 on:
   push:
@@ -49,15 +49,15 @@ jobs:
           REF_NAME: ${{ github.ref_name }}
         run: |
           set -euo pipefail
-          uat_regex='^pre-release-([0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?)$'
-          prd_regex='^release-([0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?)$'
+          uat_regex='^pre-release-([0-9]+\.[0-9]+\.[0-9]+(-.+)?)$'
+          prd_regex='^release-([0-9]+\.[0-9]+\.[0-9]+(-.+)?)$'
           version=""
           if [ "$REF_TYPE" = "tag" ] && [[ "$REF_NAME" =~ $uat_regex ]]; then
             tag_env="uat"; version="${BASH_REMATCH[1]}"
           elif [ "$REF_TYPE" = "tag" ] && [[ "$REF_NAME" =~ $prd_regex ]]; then
             tag_env="prd"; version="${BASH_REMATCH[1]}"
           elif [ "$REF_TYPE" = "tag" ]; then
-            echo "::error::Tag « $REF_NAME » non conforme. Attendu : pre-release-X.Y.Z[-suffixe] (uat) ou release-X.Y.Z[-suffixe] (prd)."
+            echo "::error::Tag « $REF_NAME » non conforme. Attendu : pre-release-X.Y.Z[-texte libre] (uat) ou release-X.Y.Z[-texte libre] (prd)."
             exit 1
           else
             tag_env=""
