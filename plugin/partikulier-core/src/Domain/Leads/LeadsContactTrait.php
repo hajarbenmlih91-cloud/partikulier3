@@ -73,10 +73,71 @@ trait LeadsContactTrait
 			} else {
 				$wpdb->update($leads, ['last_seen_at' => $now], ['id' => $lead_id]);
 			}
-			$lead = $wpdb->get_row($wpdb->prepare("SELECT opt_out_at FROM {$leads} WHERE id = %d FOR UPDATE", $lead_id));
+			$lead = $wpdb->get_row($wpdb->prepare("SELECT opt_out_at, is_particulier, qualification_asked_at FROM {$leads} WHERE id = %d FOR UPDATE", $lead_id));
 			if ( $lead && $lead->opt_out_at ) {
 				$wpdb->query('ROLLBACK');
 				return new \WP_REST_Response(['allowed' => false, 'reason' => 'opted_out'], 200);
+			}
+			// R2 : filtre particulier / intermédiaire — on ne demande qu'une fois
+			$is_part = $lead ? $lead->is_particulier : null;
+			// is_particulier est tinyint NULL : NULL=unknown, 1=particulier, 0=intermédiaire
+			if ( null === $is_part || '' === $is_part ) {
+				// Première fois : on pose la question, on ne donne pas le numéro
+				if ( empty($lead->qualification_asked_at) ) {
+					$wpdb->update($leads, ['qualification_asked_at' => $now], ['id' => $lead_id]);
+					$wpdb->query('COMMIT');
+					$lang = self::detect_lang_for_lead($wa_id, $property_id);
+					$msg = $lang === 'ar' ? 'هل أنت particulier أم وسيط؟' : 'Vous êtes particulier ou intermédiaire ?';
+					return new \WP_REST_Response(['allowed' => false, 'reason' => 'need_qualification', 'question' => $msg, 'lead_id' => $lead_id], 200);
+				}
+				// Déjà demandé mais pas encore répondu
+				$wpdb->query('ROLLBACK');
+				$lang = self::detect_lang_for_lead($wa_id, $property_id);
+				$msg = $lang === 'ar' ? 'هل أنت particulier أم وسيط؟' : 'Vous êtes particulier ou intermédiaire ?';
+				return new \WP_REST_Response(['allowed' => false, 'reason' => 'need_qualification_pending', 'question' => $msg, 'lead_id' => $lead_id], 200);
+			}
+			if ( (int) $is_part === 0 ) {
+				$wpdb->query('ROLLBACK');
+				$lang = self::detect_lang_for_lead($wa_id, $property_id);
+				$msg = $lang === 'ar' ? 'المالك يرفض الوسطاء. شكرا لتفهمكم.' : 'Le propriétaire refuse les intermédiaires. Merci de votre compréhension.';
+				return new \WP_REST_Response(['allowed' => false, 'reason' => 'intermediary_refused', 'message' => $msg, 'lead_id' => $lead_id], 200);
+			}
+			// R2 : 3e contact en 24h → manuel (tous types confondus : villa/appart, achat/location)
+			$count24 = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$interests} WHERE lead_id = %d AND created_at >= DATE_SUB(%s, INTERVAL 24 HOUR)", $lead_id, $now));
+			if ( $count24 >= 2 ) {
+				$wpdb->query('ROLLBACK');
+				$wpdb->query('START TRANSACTION');
+				$wpdb->insert($interests, [
+					'lead_id'             => $lead_id,
+					'property_id'         => $property_id,
+					'reference_code'      => self::reference_for($property_id),
+					'property_snapshot'   => wp_json_encode(self::property_snapshot($property_id)),
+					'provider_message_id' => $provider_message_id . '_manual_24h',
+					'created_at'          => $now,
+				]);
+				$wpdb->query('COMMIT');
+				$lang = self::detect_lang_for_lead($wa_id, $property_id);
+				$msg = $lang === 'ar' ? 'لأسباب أمنية، سيتم إرسال جهة الاتصال يدويا. شكرا لصبركم.' : 'Pour des raisons de sécurité, l’envoi du contact se fera manuellement. Merci de votre patience.';
+				return new \WP_REST_Response(['allowed' => false, 'reason' => 'manual_review', 'message' => $msg, 'lead_id' => $lead_id, 'limit' => '24h_3contacts'], 200);
+			}
+			// R2 : max 5 contacts automatiques en 7 jours → au-delà manuel
+			$count7d = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$interests} WHERE lead_id = %d AND created_at >= DATE_SUB(%s, INTERVAL 7 DAY) AND provider_message_id NOT LIKE %s", $lead_id, $now, '%_manual%'));
+			// On compte uniquement les envois automatiques (sans _manual) pour le plafond hebdo
+			if ( $count7d >= 5 ) {
+				$wpdb->query('ROLLBACK');
+				$wpdb->query('START TRANSACTION');
+				$wpdb->insert($interests, [
+					'lead_id'             => $lead_id,
+					'property_id'         => $property_id,
+					'reference_code'      => self::reference_for($property_id),
+					'property_snapshot'   => wp_json_encode(self::property_snapshot($property_id)),
+					'provider_message_id' => $provider_message_id . '_manual_7d',
+					'created_at'          => $now,
+				]);
+				$wpdb->query('COMMIT');
+				$lang = self::detect_lang_for_lead($wa_id, $property_id);
+				$msg = $lang === 'ar' ? 'لأسباب أمنية، سيتم إرسال جهة الاتصال يدويا. شكرا لصبركم.' : 'Pour des raisons de sécurité, l’envoi du contact se fera manuellement. Merci de votre patience.';
+				return new \WP_REST_Response(['allowed' => false, 'reason' => 'manual_review', 'message' => $msg, 'lead_id' => $lead_id, 'limit' => '7d_5contacts'], 200);
 			}
 
 			$seen = (int) $wpdb->get_var($wpdb->prepare("SELECT id FROM {$messages} WHERE provider_message_id = %s FOR UPDATE", $provider_message_id));
@@ -255,5 +316,71 @@ trait LeadsContactTrait
 			$row['lead_id'] = $lead_id;
 			$wpdb->insert($followups, $row);
 		}
+	}
+
+	/**
+	 * R2 : détecte la langue pour le message de qualification / manuel.
+	 * Priorité : 1) Polylang pll_get_post_language, 2) meta _locale,
+	 * 3) get_locale, 4) fr par défaut.
+	 */
+	private static function detect_lang_for_lead( string $wa_id, int $property_id ): string
+	{
+		// 1) Polylang si présent
+		if ( function_exists('pll_get_post_language') ) {
+			$pll = (string) pll_get_post_language($property_id, 'slug');
+			if ( $pll === 'ar' ) return 'ar';
+			if ( $pll === 'en' ) return 'en';
+			if ( $pll === 'fr' ) return 'fr';
+		}
+		// 2) meta _locale (test / R1)
+		$locale = (string) get_post_meta($property_id, '_locale', true);
+		if ( '' !== $locale ) {
+			if ( str_starts_with($locale, 'ar') ) return 'ar';
+			if ( str_starts_with($locale, 'en') ) return 'en';
+			return 'fr';
+		}
+		$locale = (string) get_locale();
+		if ( str_starts_with($locale, 'ar') ) return 'ar';
+		if ( str_starts_with($locale, 'en') ) return 'en';
+		return 'fr';
+	}
+
+	/**
+	 * R2 : enregistre la réponse à "particulier ou intermédiaire ?"
+	 * Appelé par n8n quand l'utilisateur répond. Une fois répondu, on ne
+	 * redemande plus (is_particulier reste figé sauf maj manuelle WP/Sheets).
+	 *
+	 * @return bool
+	 */
+	public static function set_qualification( string $wa_id, bool $is_particulier ): bool
+	{
+		global $wpdb;
+		$hash = hash_hmac('sha256', $wa_id, wp_salt('auth'));
+		$leads = self::leads_table();
+		$lead_id = (int) $wpdb->get_var($wpdb->prepare("SELECT id FROM {$leads} WHERE phone_hash = %s", $hash));
+		if ( ! $lead_id ) return false;
+		$wpdb->update($leads, ['is_particulier' => $is_particulier ? 1 : 0], ['id' => $lead_id]);
+		// Log audit
+		self::audit($is_particulier ? 'lead_qualified_particulier' : 'lead_qualified_intermediaire', 'lead', $lead_id, ['wa_id_hash' => substr($hash,0,8)]);
+		return true;
+	}
+
+	/**
+	 * R2 : handler REST pour n8n — POST /qualification {wa_id, is_particulier, provider_message_id}
+	 */
+	public static function rest_set_qualification( \WP_REST_Request $request )
+	{
+		$wa_id = self::normalize_phone((string) $request->get_param('wa_id'));
+		$is_part = rest_sanitize_boolean($request->get_param('is_particulier'));
+		// Accepte aussi "particulier"/"intermediaire" en string
+		$raw = strtolower(trim((string) $request->get_param('is_particulier')));
+		if ( in_array($raw, ['1','true','particulier','oui','yes'], true) ) $is_part = true;
+		if ( in_array($raw, ['0','false','intermediaire','intermédiaire','agent','non'], true) ) $is_part = false;
+		if ( ! $wa_id ) {
+			return new \WP_Error('pk_missing_wa_id', 'wa_id requis', ['status'=>400]);
+		}
+		$ok = self::set_qualification($wa_id, (bool) $is_part);
+		if ( ! $ok ) return new \WP_Error('pk_unknown_lead', 'lead introuvable', ['status'=>404]);
+		return new \WP_REST_Response(['qualified' => $is_part ? 'particulier' : 'intermediaire'], 200);
 	}
 }

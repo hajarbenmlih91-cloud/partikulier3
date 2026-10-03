@@ -194,6 +194,18 @@ final class RestController
 			'callback'            => static fn( \WP_REST_Request $r ) => \Partikulier\Core\Domain\Export\SheetsExportService::handle_rest_status($r),
 			'permission_callback' => static fn() => current_user_can('manage_options'),
 		], 'plugin');
+
+		// R2 : qualification particulier / intermédiaire — n8n appelle après la question
+		RouteRegistry::declare('/qualification', [
+			'methods'             => 'POST',
+			'callback'            => static fn( \WP_REST_Request $r ) => \Partikulier\Core\Domain\Leads\LeadService::rest_set_qualification($r),
+			'permission_callback' => static function( \WP_REST_Request $r ) {
+				$auth = \Partikulier\Core\Domain\Automation\AutomationService::check_automation_secret($r);
+				if ( true === $auth ) return true;
+				if ( current_user_can('manage_options') ) return true;
+				return $auth;
+			},
+		], 'plugin');
 	}
 
 	public function guardPublic( WP_REST_Request $request ): bool|WP_Error

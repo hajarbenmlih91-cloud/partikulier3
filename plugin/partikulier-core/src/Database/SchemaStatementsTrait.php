@@ -134,8 +134,11 @@ trait SchemaStatementsTrait
                 first_seen_at datetime NOT NULL,
                 last_seen_at datetime NOT NULL,
                 opt_out_at datetime NULL,
+                is_particulier tinyint(1) NULL DEFAULT NULL,
+                qualification_asked_at datetime NULL,
                 PRIMARY KEY  (id),
-                UNIQUE KEY phone_hash (phone_hash)
+                UNIQUE KEY phone_hash (phone_hash),
+                KEY is_particulier (is_particulier)
             ) {$GLOBALS['wpdb']->get_charset_collate()};",
 			'interest_events'       => "CREATE TABLE {$prefix}pk_interest_events (
                 id bigint(20) unsigned NOT NULL AUTO_INCREMENT,

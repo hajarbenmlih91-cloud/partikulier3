@@ -206,6 +206,14 @@ final class Migrator
 					$report['steps'][] = ['step' => 'create_recommendation_tables', 'result' => $this->createRecommendationTables()];
 				}
 
+				if ( version_compare($from, '2.9.0', '<') ) {
+					// Lot R2 — filtre particulier/intermédiaire + 3e en 10min manuel
+					// (03/10/2026) : 2 colonnes neuves sur pk_buyer_leads, NULL
+					// par défaut pour les leads existants (unknown). dbDelta les
+					// a déjà ajoutées via CREATE TABLE, on ne fait que logger.
+					$report['steps'][] = ['step' => 'add_qualification_columns', 'result' => $this->addQualificationColumns()];
+				}
+
 				update_option(self::OPTION, Schema::VERSION, false);
 				$this->audit()->record('schema_migrated', 'schema', null, ['from' => $from, 'to' => Schema::VERSION]);
 			} finally {

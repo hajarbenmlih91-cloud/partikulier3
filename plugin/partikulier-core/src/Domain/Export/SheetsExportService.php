@@ -58,7 +58,7 @@ final class SheetsExportService
         // 1) Intérêts avec snapshot
         $rows = $wpdb->get_results($wpdb->prepare(
             "SELECT i.id, i.lead_id, i.property_id, i.reference_code, i.property_snapshot, i.provider_message_id, i.created_at,
-                    l.phone_encrypted, l.phone_hash, l.opt_out_at
+                    l.phone_encrypted, l.phone_hash, l.opt_out_at, l.is_particulier, l.qualification_asked_at
              FROM {$interest} i
              JOIN {$leads} l ON l.id = i.lead_id
              WHERE i.created_at >= %s
@@ -89,24 +89,36 @@ final class SheetsExportService
             $envoye = $disclosure ? 'OUI ' . $disclosure['sent_at'] : 'NON';
             $raison = '';
             if ( ! $disclosure ) {
-                // Si pas de disclosure, on infère la raison depuis limits / duplicate
-                $dup = $wpdb->get_var($wpdb->prepare(
-                    "SELECT id FROM {$discl} WHERE lead_id = %d AND property_id = %d", $lead_id, $pid
-                ));
-                if ( $dup ) $raison = 'duplicate';
-                else {
-                    $today = gmdate('Y-m-d', strtotime((string) $r['created_at']));
-                    $cnt = $wpdb->get_var($wpdb->prepare(
-                        "SELECT contacts_count FROM {$limits} WHERE lead_id = %d AND day_key = %s", $lead_id, $today
+                // R2 : manuel si provider_message_id contient _manual (24h ou 7d)
+                if ( str_contains((string) $r['provider_message_id'], '_manual_24h') ) {
+                    $raison = 'manual_review (3e contact en 24h → manuel)';
+                } elseif ( str_contains((string) $r['provider_message_id'], '_manual_7d') ) {
+                    $raison = 'manual_review (6e contact en 7j → manuel, max 5/semaine)';
+                } elseif ( str_contains((string) $r['provider_message_id'], '_manual') ) {
+                    $raison = 'manual_review (3e contact en 24h → manuel)';
+                } elseif ( null !== $r['is_particulier'] && (int)$r['is_particulier'] === 0 ) {
+                    $raison = 'intermediary_refused';
+                } elseif ( null === $r['is_particulier'] || '' === (string) $r['is_particulier'] ) {
+                    $raison = 'need_qualification (attente réponse particulier/intermédiaire)';
+                } else {
+                    $dup = $wpdb->get_var($wpdb->prepare(
+                        "SELECT id FROM {$discl} WHERE lead_id = %d AND property_id = %d", $lead_id, $pid
                     ));
-                    if ( $cnt !== null && (int)$cnt >= LeadService::daily_limit() ) $raison = 'daily_limit (2/jour)';
+                    if ( $dup ) $raison = 'duplicate';
+                    else {
+                        $today = gmdate('Y-m-d', strtotime((string) $r['created_at']));
+                        $cnt = $wpdb->get_var($wpdb->prepare(
+                            "SELECT contacts_count FROM {$limits} WHERE lead_id = %d AND day_key = %s", $lead_id, $today
+                        ));
+                        if ( $cnt !== null && (int)$cnt >= LeadService::daily_limit() ) $raison = 'daily_limit (2/jour)';
+                    }
+                    // Followup restreint
+                    $f = $wpdb->get_row($wpdb->prepare("SELECT status, note FROM {$follow} WHERE lead_id = %d", $lead_id), ARRAY_A);
+                    if ( is_array($f) && in_array($f['status'], ['restricted','blocked'], true) ) {
+                        $raison = $raison ? $raison . ' + ' . $f['status'] : $f['status'] . ': ' . ($f['note'] ?? '');
+                    }
+                    if ( $raison === '' ) $raison = 'en_attente / non_disclosed';
                 }
-                // Followup restreint
-                $f = $wpdb->get_row($wpdb->prepare("SELECT status, note FROM {$follow} WHERE lead_id = %d", $lead_id), ARRAY_A);
-                if ( is_array($f) && in_array($f['status'], ['restricted','blocked'], true) ) {
-                    $raison = $raison ? $raison . ' + ' . $f['status'] : $f['status'] . ': ' . ($f['note'] ?? '');
-                }
-                if ( $raison === '' ) $raison = 'en_attente / non_disclosed';
             }
 
             // Consents
@@ -133,20 +145,32 @@ final class SheetsExportService
                 if ( $follow_row['status'] === 'blocked' ) { $restreint = 'BLOQUÉ'; $raison_restr = (string) ($follow_row['note'] ?? ''); }
                 if ( $follow_row['status'] === 'stop' ) { $restreint = 'STOP'; $raison_restr = (string) $follow_row['updated_at']; }
             }
-            // Détection auto : 3 demandes en <10min dans interest_events
+            // Détection auto : R2 3 en 24h → manuel, 6 en 7j → manuel (max 5/semaine)
             if ( $restreint === 'NON' ) {
-                $cnt10 = $wpdb->get_var($wpdb->prepare(
-                    "SELECT COUNT(*) FROM {$interest} WHERE lead_id = %d AND created_at >= DATE_SUB(%s, INTERVAL 10 MINUTE)",
+                $cnt24 = $wpdb->get_var($wpdb->prepare(
+                    "SELECT COUNT(*) FROM {$interest} WHERE lead_id = %d AND created_at >= DATE_SUB(%s, INTERVAL 24 HOUR)",
                     $lead_id, $r['created_at']
                 ));
-                if ( (int)$cnt10 >= 3 ) { $restreint = 'RESTREINT (auto)'; $raison_restr = (int)$cnt10 . ' demandes en 10min'; }
+                if ( (int)$cnt24 >= 3 ) { $restreint = 'RESTREINT (auto 24h)'; $raison_restr = (int)$cnt24 . ' demandes en 24h (3e → manuel)'; }
+                else {
+                    $cnt7d = $wpdb->get_var($wpdb->prepare(
+                        "SELECT COUNT(*) FROM {$interest} WHERE lead_id = %d AND created_at >= DATE_SUB(%s, INTERVAL 7 DAY)",
+                        $lead_id, $r['created_at']
+                    ));
+                    if ( (int)$cnt7d >= 6 ) { $restreint = 'RESTREINT (auto 7j)'; $raison_restr = (int)$cnt7d . ' demandes en 7j (6e → manuel, max 5)'; }
+                }
             }
 
+            // R2 : libellé particulier / intermédiaire
+            $qualif = null === $r['is_particulier'] || '' === (string) $r['is_particulier'] ? 'inconnu (question posée le ' . (string) ($r['qualification_asked_at'] ?? '') . ')' : ((int)$r['is_particulier'] === 1 ? 'particulier' : 'intermédiaire (refusé)');
             $out[] = [
                 'numero_hash'       => (string) $r['phone_hash'],
                 'numero_last4'      => $phone_last4,
                 'numero_complet'    => $phone, // vide si pas admin, n8n le reçoit hashé par défaut
                 'lead_id'           => $lead_id,
+                'qualif'            => $qualif,
+                'is_particulier'    => $r['is_particulier'],
+                'qualification_asked_at' => (string) ($r['qualification_asked_at'] ?? ''),
                 'date_heure'        => (string) $r['created_at'],
                 'reference'         => (string) $r['reference_code'],
                 'property_id'       => $pid,

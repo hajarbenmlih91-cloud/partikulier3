@@ -124,19 +124,23 @@ final class LeadService
 		// on garde les 8 clés historiques et on ajoute les 9 qualifiantes
 		// pour la reco (ville/quartier/type/etage/ensoleillement/surface).
 		$loc_detail = self::location_detail($property_id);
+		// Fallback meta si taxonomies non enregistrées (test sans Estatik)
+		$ville = $loc_detail['ville'] ?: (string) get_post_meta($property_id, '_pk_ville', true) ?: (string) get_post_meta($property_id, '_es_ville', true);
+		$quartier = $loc_detail['quartier'] ?: (string) get_post_meta($property_id, '_pk_quartier', true) ?: (string) get_post_meta($property_id, '_es_quartier', true);
+		$type = self::primary_term_name($property_id, 'es_type') ?: self::primary_term_name($property_id, 'es_property_type') ?: (string) get_post_meta($property_id, '_pk_type', true) ?: (string) get_post_meta($property_id, 'es_property_type', true);
 		return [
 			'id'              => absint($property_id),
 			'reference'       => self::reference_for($property_id),
 			'title'           => get_the_title($property_id),
 			'url'             => get_permalink($property_id),
 			'price'           => get_post_meta($property_id, 'es_property_price', true),
-			'location'        => self::location_string($property_id),
+			'location'        => self::location_string($property_id) ?: trim($ville . ($quartier ? ', '.$quartier : '')),
 			'layout'          => get_post_meta($property_id, '_pk_bedrooms_label', true),
 			'transaction'     => implode(', ', $terms),
 			// --- R1 qualifiant (tous string/bien typés, '' si absent) ---
-			'ville'           => $loc_detail['ville'],
-			'quartier'        => $loc_detail['quartier'],
-			'type'            => self::primary_term_name($property_id, 'es_type') ?: self::primary_term_name($property_id, 'es_property_type'),
+			'ville'           => $ville,
+			'quartier'        => $quartier,
+			'type'            => $type,
 			'area'            => get_post_meta($property_id, 'es_property_area', true) ?: get_post_meta($property_id, '_pk_area', true) ?: get_post_meta($property_id, 'es_area', true),
 			'etage'           => get_post_meta($property_id, '_pk_etage', true) ?: get_post_meta($property_id, 'es_property_floor', true) ?: get_post_meta($property_id, '_es_floor', true),
 			'ensoleillement'  => get_post_meta($property_id, '_pk_ensoleillement', true) ?: get_post_meta($property_id, 'es_ensoleillement', true) ?: get_post_meta($property_id, '_es_sun', true),

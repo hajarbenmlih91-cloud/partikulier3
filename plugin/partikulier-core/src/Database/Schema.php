@@ -65,6 +65,12 @@
  * à 23 tables. pk_search_events journalise chaque recherche filtrée
  * (même anonyme, HMAC pseudonymisé) ; pk_buyer_profiles agrège 1 ligne /
  * lead les combinaisons qui se répètent (ville/quartier/type/etage/budget).
+ *
+ * Version 2.9.0 (lot R2 — filtre particulier/intermédiaire + 3e en 10min manuel, 03/10/2026) :
+ * ajout de 2 colonnes à pk_buyer_leads (is_particulier + qualification_asked_at)
+ * pour ne demander qu'une fois "particulier ou intermédiaire ?" et pour le mode
+ * "3e demande en 10min → envoi manuel". Aucune donnée déplacée, valeur NULL
+ * par défaut (unknown) pour les leads existants.
  */
 
 declare(strict_types=1);
@@ -73,7 +79,7 @@ namespace Partikulier\Core\Database;
 
 final class Schema
 {
-	public const VERSION = '2.8.0';
+	public const VERSION = '2.9.0';
 
 	use SchemaStatementsTrait;
 
