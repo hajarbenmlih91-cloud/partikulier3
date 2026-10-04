@@ -85,6 +85,7 @@ class Partikulier_Demo_Installer {
 			'fields'           => 'ids',
 			'meta_key'         => self::MARK,
 			'meta_value'       => '1',
+			'lang'             => '',
 			'suppress_filters' => true,
 		) ) );
 		$media_count = count( get_posts( array(
@@ -94,6 +95,7 @@ class Partikulier_Demo_Installer {
 			'fields'           => 'ids',
 			'meta_key'         => self::MARK,
 			'meta_value'       => '1',
+			'lang'             => '',
 			'suppress_filters' => true,
 		) ) );
 		$has_estatik = class_exists( 'Estatik' ) || class_exists( 'Es_Main_Class' ) || defined( 'ES_VERSION' ) || function_exists( 'es_get_properties' );
@@ -192,6 +194,7 @@ class Partikulier_Demo_Installer {
 			'fields'           => 'ids',
 			'meta_key'         => self::MARK,
 			'meta_value'       => '1',
+			'lang'             => '',
 			'suppress_filters' => true,
 		) );
 		$media = get_posts( array(
@@ -201,6 +204,7 @@ class Partikulier_Demo_Installer {
 			'fields'           => 'ids',
 			'meta_key'         => self::MARK,
 			'meta_value'       => '1',
+			'lang'             => '',
 			'suppress_filters' => true,
 		) );
 		foreach ( $posts as $id ) {
@@ -239,6 +243,7 @@ class Partikulier_Demo_Installer {
 			'fields'           => 'ids',
 			'meta_key'         => self::MARK,
 			'meta_value'       => '1',
+			'lang'             => '',
 			'suppress_filters' => true,
 		) );
 		$old_media = get_posts( array(
@@ -248,6 +253,7 @@ class Partikulier_Demo_Installer {
 			'fields'           => 'ids',
 			'meta_key'         => self::MARK,
 			'meta_value'       => '1',
+			'lang'             => '',
 			'suppress_filters' => true,
 		) );
 		foreach ( $old_posts as $id ) { wp_delete_post( (int) $id, true ); }

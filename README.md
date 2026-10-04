@@ -130,6 +130,8 @@ réessayés, au maximum trois fois. Les sondes de santé cessent les lectures d�
 que le ping échoue. La concurrence conserve la qualification et la revue
 manuelle au troisième contact, et la démo installe exactement 15 ventes et
 15 locations sans toucher aux annonces réelles.
+Les compteurs, réinstallations et purges de démo couvrent toutes les langues
+Polylang, et ne sélectionnent que les annonces et médias marqués comme démo.
 
 ```bash
 make lint
