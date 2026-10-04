@@ -69,6 +69,7 @@ class Partikulier_Required_Pages {
 
 	public static function init() {
 			add_action( 'init', array( __CLASS__, 'maybe_migrate_legacy_slugs' ), 1 );
+			add_action( 'init', array( __CLASS__, 'ensure_front' ), 20 );
 			add_action( 'init', array( __CLASS__, 'sync_estatik_login_page' ), 99 );
 			add_action( 'after_switch_theme', array( __CLASS__, 'create_missing' ) );
 			add_action( 'admin_notices', array( __CLASS__, 'notice' ) );
@@ -281,6 +282,94 @@ class Partikulier_Required_Pages {
 				<?php
 	}
 
+	/**
+	 * Accueil statique FR/EN/AR + préfixe de langue (sinon /fr/ et /en/ 404).
+	 * Idempotent. Polylang hide_default=0 comme le banc CI.
+	 */
+	public static function ensure_front() {
+		if ( '2.10.16' === get_option( 'pk_front_ensured' ) ) {
+			return;
+		}
+		if ( ! function_exists( 'pll_languages_list' ) || ! function_exists( 'pll_set_post_language' ) ) {
+			return;
+		}
+		$langs = pll_languages_list( array( 'fields' => 'slug' ) );
+		if ( ! is_array( $langs ) || count( $langs ) < 2 ) {
+			return;
+		}
+		// CI (hide_default=0, home blog en /fr/) : ne pas voler la page d'accueil.
+		// UAT Hostinger (hide_default=1) : /fr/ et /en/ 404 — on répare.
+		$hide = 1;
+		if ( isset( $GLOBALS['polylang']->options ) ) {
+			$opt = $GLOBALS['polylang']->options;
+			if ( is_object( $opt ) && method_exists( $opt, 'get' ) ) {
+				$hide = (int) $opt->get( 'hide_default' );
+			} elseif ( is_array( $opt ) ) {
+				$hide = (int) ( $opt['hide_default'] ?? 1 );
+			}
+		}
+		if ( 0 === $hide ) {
+			return;
+		}
+		if ( isset( $GLOBALS['polylang']->options ) && method_exists( $GLOBALS['polylang']->options, 'merge' ) ) {
+			$GLOBALS['polylang']->options->merge(
+				array(
+					'force_lang'    => 1,
+					'hide_default'  => 0,
+					'redirect_lang' => 0,
+					'browser'       => 0,
+				)
+			);
+		}
+		$titles = array( 'fr' => 'Accueil', 'en' => 'Home', 'ar' => 'الرئيسية' );
+		$map    = array();
+		foreach ( $langs as $lang ) {
+			$found = get_posts(
+				array(
+					'post_type'      => 'page',
+					'name'           => 'accueil',
+					'post_status'    => 'publish',
+					'posts_per_page' => 1,
+					'fields'         => 'ids',
+					'lang'           => $lang,
+				)
+			);
+			if ( $found ) {
+				$map[ $lang ] = (int) $found[0];
+				continue;
+			}
+			$id = wp_insert_post(
+				array(
+					'post_type'    => 'page',
+					'post_status'  => 'publish',
+					'post_title'   => $titles[ $lang ] ?? 'Accueil',
+					'post_name'    => 'accueil',
+					'post_content' => '',
+				),
+				true
+			);
+			if ( is_wp_error( $id ) || ! $id ) {
+				continue;
+			}
+			pll_set_post_language( (int) $id, $lang );
+			$map[ $lang ] = (int) $id;
+		}
+		if ( function_exists( 'pll_save_post_translations' ) && count( $map ) > 1 ) {
+			pll_save_post_translations( $map );
+		}
+		$default = function_exists( 'pll_default_language' ) ? pll_default_language() : 'fr';
+		$front   = isset( $map[ $default ] ) ? $map[ $default ] : reset( $map );
+		if ( $front ) {
+			update_option( 'show_on_front', 'page' );
+			update_option( 'page_on_front', (int) $front );
+		}
+		flush_rewrite_rules( false );
+		if ( class_exists( 'Partikulier_Cache' ) && method_exists( 'Partikulier_Cache', 'purge_all' ) ) {
+			Partikulier_Cache::purge_all();
+		}
+		update_option( 'pk_front_ensured', '2.10.16', false );
+	}
+
 		/**
 		 * Reparation declenchee depuis l'alerte admin.
 		 */
@@ -291,6 +380,8 @@ class Partikulier_Required_Pages {
 			check_admin_referer( self::ACTION );
 
 			$created = self::create_missing();
+			delete_option( 'pk_front_ensured' );
+			self::ensure_front();
 
 			$redirect = wp_get_referer() ? wp_get_referer() : admin_url();
 			wp_safe_redirect( add_query_arg( 'pk_pages_created', count( $created ), $redirect ) );
