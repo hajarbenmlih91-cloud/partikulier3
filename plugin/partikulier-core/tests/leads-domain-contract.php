@@ -108,6 +108,13 @@ try {
     // 3) Cœur transactionnel via le service : voie webhook (wa_id + référence).
     $reference = LeadService::reference_for($primary);
     $messageId = 'b2l-wa-' . $run;
+    $unqualified = LeadService::authorize_contact($phone, $primary, $messageId);
+    $unqualifiedData = $unqualified instanceof WP_REST_Response ? (array) $unqualified->get_data() : [];
+    $leadIds[] = (int) ($unqualifiedData['lead_id'] ?? 0);
+    $qualificationRequired = ($unqualifiedData['allowed'] ?? null) === false
+        && ($unqualifiedData['reason'] ?? '') === 'need_qualification'
+        && !isset($unqualifiedData['owner']);
+    $qualified = LeadService::set_qualification($phone, true);
     $result = LeadService::authorize_contact($phone, $primary, $messageId);
     $resultData = $result instanceof WP_REST_Response ? (array) $result->get_data() : (array) $result;
     $leadIds[] = $leadId = (int) ($resultData['lead_id'] ?? 0);
@@ -118,7 +125,8 @@ try {
     $message = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$prefix}pk_whatsapp_messages WHERE provider_message_id = %s", $messageId));
     $auditAuth = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$prefix}pk_audit_log WHERE action = %s AND object_id = %d", 'lead_authorized', $leadId));
     $snapshot = (string) $wpdb->get_var($wpdb->prepare("SELECT property_snapshot FROM {$prefix}pk_interest_events WHERE lead_id = %d", $leadId));
-    $assert('B2L-003', !empty($resultData['allowed']) && $leadId > 0 && is_array($leadRow)
+    $assert('B2L-003', $qualificationRequired && $qualified
+        && !empty($resultData['allowed']) && $leadId > 0 && is_array($leadRow)
         && $leadRow['phone_hash'] === $hash && $leadRow['phone_encrypted'] !== $phone
         && $interest === 1 && $disclosure === 1 && $message === 1 && $auditAuth === 1
         && str_contains($snapshot, '"reference":"' . $reference . '"'),
@@ -131,29 +139,37 @@ try {
     $assert('B2L-004', empty($replayData['allowed']) && ($replayData['reason'] ?? '') === 'duplicate_message' && $messagesAfter === 1,
         'message provider rejoué → duplicate_message, aucune seconde écriture');
 
-    // 5) Plafonnement quotidien : deux propriétaires distincts consommés, le troisième refusé.
+    // 5) R3 : deux contacts automatiques, le troisième en revue manuelle.
     $second = LeadService::authorize_contact($phone, $propertyIds[1], 'b2l-wa2-' . $run);
     $third = LeadService::authorize_contact($phone, $propertyIds[2], 'b2l-wa3-' . $run);
     $thirdData = $third instanceof WP_REST_Response ? (array) $third->get_data() : (array) $third;
     $limitUsed = (int) $wpdb->get_var($wpdb->prepare("SELECT contacts_count FROM {$prefix}pk_contact_limits WHERE lead_id = %d AND day_key = %s", $leadId, current_time('Y-m-d')));
     $assert('B2L-005', !empty(($second instanceof WP_REST_Response ? (array) $second->get_data() : (array) $second)['allowed'])
-        && empty($thirdData['allowed']) && ($thirdData['reason'] ?? '') === 'daily_limit'
+        && empty($thirdData['allowed']) && ($thirdData['reason'] ?? '') === 'manual_review'
+        && ($thirdData['limit'] ?? '') === '24h_3contacts' && !isset($thirdData['owner'])
         && $limitUsed === LeadService::daily_limit(),
-        'plafonnement quotidien porté sur les propriétaires distincts : ' . $limitUsed . '/' . LeadService::daily_limit() . ' puis daily_limit');
+        'plafonnement R3 : ' . $limitUsed . ' contacts puis manual_review, sans coordonnées propriétaire');
 
     // 6) Pont REST INTEG-2 via LeadBridge → service du plugin (lead 2e numéro, autre annonce 1er propriétaire ? non : limite).
-    $bridgeLead = (new LeadBridge())->create([
+    $bridgeInput = [
         'phone' => $phone2,
         'property_id' => $primary,
         'message' => 'Contrat B2 : intéressé.',
         'name' => 'Test B2L',
         'email' => 'b2l@example.test',
-    ]);
+    ];
+    $unqualifiedBridge = (new LeadBridge())->create($bridgeInput);
+    $leadIds[] = LeadService::lead_id_for_phone($phone2);
+    $bridgeQualificationRequired = is_wp_error($unqualifiedBridge)
+        && ($unqualifiedBridge->get_error_data()['reason'] ?? '') === 'need_qualification';
+    $bridgeQualified = LeadService::set_qualification($phone2, true);
+    $bridgeLead = (new LeadBridge())->create($bridgeInput);
     $bridgeLeadId = is_wp_error($bridgeLead) ? 0 : (int) $bridgeLead['lead_id'];
     $leadIds[] = $bridgeLeadId;
     $followup = $wpdb->get_row($wpdb->prepare("SELECT note FROM {$prefix}pk_lead_followups WHERE lead_id = %d", $bridgeLeadId), ARRAY_A);
     $note = $followup ? (array) json_decode((string) $followup['note'], true) : null;
-    $assert('B2L-006', !is_wp_error($bridgeLead) && $bridgeLeadId > 0
+    $assert('B2L-006', $bridgeQualificationRequired && $bridgeQualified
+        && !is_wp_error($bridgeLead) && $bridgeLeadId > 0
         && ($bridgeLead['contact']['allowed'] ?? false) === true
         && is_array($note) && ($note['source'] ?? '') === 'rest_api' && ($note['email'] ?? '') === 'b2l@example.test',
         'LeadBridge → LeadService::register_api_lead : dispositif complet + suivi contextuel du canal REST');
@@ -235,7 +251,7 @@ try {
     $encrypted = (string) $wpdb->get_var($wpdb->prepare("SELECT phone_encrypted FROM {$prefix}pk_buyer_leads WHERE id = %d", $bridgeLeadId));
     $decrypted = LeadService::decrypt_phone_for_admin($encrypted);
     $assert('B2L-013', $decrypted === $phone2 && strlen($encrypted) > 16,
-        'déchiffrement admin : round-trip AES-256-CBC exact (réservé manage_options)');
+        'déchiffrement admin : round-trip du numéro chiffré exact (réservé manage_options)');
 
     // 14) Effacement de rétention : les huit tables vidées pour ce lead, journalisé.
     $erased = LeadService::erase_lead($bridgeLeadId);
@@ -260,12 +276,18 @@ try {
     //     recette après stabilisation).
     $health = (new \Partikulier\Core\HealthCheck())->get();
     $leadsTables = $health['domains']['leads']['tables'] ?? [];
-    $allTables = count($leadsTables) === 8 && !in_array(false, $leadsTables, true);
+    $expectedTables = ['pk_buyer_leads', 'pk_interest_events', 'pk_contact_limits',
+        'pk_contact_disclosures', 'pk_whatsapp_consents', 'pk_whatsapp_messages',
+        'pk_buyer_preferences', 'pk_lead_followups', 'pk_search_events', 'pk_buyer_profiles'];
+    $actualTables = array_keys($leadsTables);
+    sort($expectedTables);
+    sort($actualTables);
+    $allTables = $actualTables === $expectedTables && !in_array(false, $leadsTables, true);
     $domainsOk = ($health['domains']['leads']['owner'] ?? '') === 'plugin'
         && $allTables
         && (int) ($health['routes']['collisions'] ?? -1) === 0;
     $assert('B2L-016', $domainsOk,
-        'health check : domaine leads owner=plugin, 8/8 tables suivies, 0 collision de routes');
+        'health check : domaine leads owner=plugin, 10/10 tables suivies, 0 collision de routes');
 } catch (Throwable $error) {
     $assert('B2L-EXCEPTION', false, $error->getMessage());
 } finally {

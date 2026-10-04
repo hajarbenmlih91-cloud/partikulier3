@@ -106,6 +106,12 @@ l'appel HMAC n'est pas une session administrateur. Ne pas contourner cette
 garde ni remplacer le stockage chiffré par du texte clair. Cette intégration
 ne doit pas être publiée ou déployée avant correction et rejeu du parcours.
 
+Les contrats `core-contract`, `leads-contract` et `leads-domain-contract`
+vérifient désormais la qualification explicite avant acceptation et la revue
+manuelle au troisième contact en 24 heures. Le contrat d'automatisation vérifie
+les cinq en-têtes signés, sans transmission du secret brut. Ces ajustements du
+banc ne corrigent pas le blocage des numéros propriétaire chiffrés.
+
 ```bash
 make lint
 make package
