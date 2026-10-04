@@ -345,22 +345,46 @@
 		var statusEl  = document.getElementById("pk-form-status");
 	if (form && submitBtn) {
 			form.addEventListener("submit", function (e) {
-					if (titleInput && ! titleInput.value.trim()) generateListingTitle();
-				if ( ! form.checkValidity()) {
-						// Laisse le navigateur afficher ses messages de validation natifs.
-						return;
-				}
 					e.preventDefault();
+
+					if (titleInput && ! titleInput.value.trim() && typeof generateListingTitle === "function") {
+							generateListingTitle();
+					}
+
+					var missing = [];
+					form.querySelectorAll("input, select, textarea").forEach(function (inp) {
+							if (inp.disabled || inp.type === "hidden" || inp.closest("[hidden]")) return;
+							if (!inp.checkValidity()) {
+									missing.push(inp);
+									inp.classList.add("pk-invalid");
+							} else {
+									inp.classList.remove("pk-invalid");
+							}
+					});
+
+					if (missing.length > 0) {
+							missing[0].focus();
+							missing[0].reportValidity();
+							setStatus("✘ " + pkConfig.i18n.requiredFields);
+							if (statusEl) statusEl.style.color = "#c0392b";
+							return;
+					}
+
 					submitBtn.disabled    = true;
+					var originalText      = submitBtn.textContent;
 					submitBtn.textContent = (pkConfig.i18n && pkConfig.i18n.publishing) || "Publication en cours…";
-					setStatus("");
+					setStatus(pkConfig.i18n.publishing);
+					if (statusEl) statusEl.style.color = "var(--pk-primary)";
 
 					var fd = new FormData(form);
 
 					fetch(pkConfig.ajaxUrl, { method: "POST", body: fd, credentials: "same-origin" })
 							.then(function (res) {
 									return res.json().then(function (data) {
-											if ( ! res.ok) throw new Error((data && data.data && data.data.message) || ((pkConfig.i18n && pkConfig.i18n.serverError) || "Erreur serveur"));
+											if ( ! res.ok || ! data.success) {
+													var errMsg = (data && data.data && data.data.message) || ((pkConfig.i18n && pkConfig.i18n.serverError) || "Erreur serveur");
+													throw new Error(errMsg);
+											}
 											return data;
 									});
 							})
@@ -371,12 +395,14 @@
 										return;
 								}
 									setStatus("✔ " + (payload.message || ((pkConfig.i18n && pkConfig.i18n.saved) || "Annonce enregistrée !")));
+									if (statusEl) statusEl.style.color = "#176b3a";
 									window.location.href = payload.url || pkConfig.homeUrl;
 							})
 							.catch(function (err) {
 									submitBtn.disabled    = false;
-									submitBtn.textContent = (pkConfig.i18n && pkConfig.i18n.whatsappOpen) || "Demander la validation WhatsApp";
-									setStatus("✘ " + err.message + " — " + ((pkConfig.i18n && pkConfig.i18n.retry) || "réessayez ou contactez-nous."));
+									submitBtn.textContent = originalText;
+									setStatus("✘ " + err.message + " — " + ((pkConfig.i18n && pkConfig.i18n.retry) || "veuillez vérifier vos informations."));
+									if (statusEl) statusEl.style.color = "#c0392b";
 							});
 			});
 	}

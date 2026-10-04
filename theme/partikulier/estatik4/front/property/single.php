@@ -452,6 +452,10 @@ endif;
 				method: "POST",
 				body: (new URLSearchParams({ action: "pk_views_counter", post_id: "<?php echo (int) $post->ID; ?>", nonce: "<?php echo esc_js( wp_create_nonce( 'pk_views_counter' ) ); ?>" })),
 				credentials: "same-origin"
+			}).then(function (response) {
+				if (!response.ok) { throw new Error("HTTP " + response.status); }
+			}).catch(function (error) {
+				console.warn("[Partikulier] View counter request failed:", error);
 			});
 	}
 </script>

@@ -37,16 +37,23 @@ class Partikulier_Header {
 	}
 
 	public static function fallback_menu( $args ) {
+		$home_link = function_exists( 'pk_localized_home_url' ) ? pk_localized_home_url() : home_url( '/' );
 		$items = array(
-			( function_exists( 'pk_localized_home_url' ) ? pk_localized_home_url() : home_url( '/' ) ) => __( 'Accueil', 'partikulier' ),
-			pk_properties_archive_url()               => __( 'Annonces', 'partikulier' ),
-				pk_page_url( 'deposer', '/deposer/' ) => __( 'Déposer une annonce', 'partikulier' ),
+			$home_link                            => __( 'Accueil', 'partikulier' ),
+			pk_properties_archive_url()           => __( 'Annonces', 'partikulier' ),
+			pk_page_url( 'deposer', '/deposer/' ) => __( 'Déposer une annonce', 'partikulier' ),
+			pk_page_url( 'favoris', '/favoris/' ) => __( 'Favoris', 'partikulier' ),
 		);
+		if ( is_user_logged_in() ) {
+			$items[ pk_page_url( 'mes-annonces', '/mes-annonces/' ) ] = __( 'Mon espace', 'partikulier' );
+		} else {
+			$items[ pk_login_page_url( pk_page_url( 'mes-annonces', '/mes-annonces/' ) ) ] = __( 'Se connecter', 'partikulier' );
+		}
 		$items = array_filter( $items );
-		echo '<ul class="' . esc_attr( $args['menu_class'] ) . '">';
+		$menu_class = is_array( $args ) ? ( $args['menu_class'] ?? 'pk-menu' ) : ( is_object( $args ) && isset( $args->menu_class ) ? $args->menu_class : 'pk-menu' );
+		echo '<ul class="' . esc_attr( $menu_class ) . '">';
 		foreach ( $items as $url => $label ) {
-				$current_home = function_exists( 'pk_localized_home_url' ) ? pk_localized_home_url() : home_url( '/' );
-				$is_current   = ( untrailingslashit( $url ) === untrailingslashit( $current_home ) );
+				$is_current = ( untrailingslashit( $url ) === untrailingslashit( $home_link ) && is_front_page() );
 			printf(
 				'<li class="pk-menu-item%s"><a href="%s">%s</a></li>',
 				$is_current ? ' pk-current' : '',

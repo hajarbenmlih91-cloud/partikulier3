@@ -14,6 +14,39 @@ msgstr ""
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: partikulier\n"
 
+msgid "Veuillez vérifier les champs obligatoires."
+msgstr ""
+
+msgid "Identifiant ou mot de passe incorrect."
+msgstr ""
+
+msgid "Mot de passe oublié ?"
+msgstr ""
+
+msgid "Trop de tentatives échouées. Par mesure de sécurité, veuillez patienter 15 minutes avant de réessayer."
+msgstr ""
+
+msgid "Cette adresse e-mail est déjà associée à un compte. Veuillez vous connecter pour déposer votre annonce."
+msgstr ""
+
+msgid "Ce numéro de téléphone est déjà associé à un compte. Veuillez vous connecter pour déposer votre annonce."
+msgstr ""
+
+msgid "Prenez des photos avec votre smartphone ou ajoutez vos fichiers (JPG, PNG, WebP · 1 à 8 photos)"
+msgstr ""
+
+msgid "Indifférent / Non précisé"
+msgstr ""
+
+msgid "Code 2FA (si activé)"
+msgstr ""
+
+msgid "Code 2FA requis."
+msgstr ""
+
+msgid "Code 2FA invalide."
+msgstr ""
+
 #. Theme Name of the theme
 #: style.css
 #: inc/class-customization.php:27

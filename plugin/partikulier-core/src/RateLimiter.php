@@ -20,7 +20,8 @@ final class RateLimiter
 		$requestMarker = spl_object_id($request) . '|' . $bucket . '|' . $identity;
 		if (isset($this->seen[ $requestMarker ])) return true;
 		$this->seen[ $requestMarker ] = true;
-		$route                        = preg_replace('/[^a-z0-9_-]/i', '_', $request->get_route()) ?: 'route';
+		$rawRoute                     = preg_replace('#/\d+(/|$)#', '/{id}$1', $request->get_route());
+		$route                        = preg_replace('/[^a-z0-9_-]/i', '_', $rawRoute) ?: 'route';
 		$key                          = 'pk_rl_' . md5($bucket . '|' . $route . '|' . $identity);
 		$now                          = time();
 		if ( function_exists('apcu_enabled') && apcu_enabled() && function_exists('apcu_fetch') && function_exists('apcu_store') && function_exists('apcu_inc') ) {

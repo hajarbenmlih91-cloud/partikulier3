@@ -195,10 +195,11 @@ foreach ($orderPairs as [$traitFile, $classFile]) {
 $assert('DA-008', $orderErrors === [],
     $orderErrors === [] ? 'bootstrap : les 12 require_once de traits précèdent leurs 4 classes shells' : 'ordre incorrect : ' . implode(' ; ', $orderErrors));
 
-/* DA-009 — baseline thème gelée, actualisée au lot F puis au lot DP-9 (SE-044 :
-moteur de transitions class-listing-transitions.php — périmètre v1.1 §4.3) : exactement les 14 fichiers (extinction des 8 vestiges : buyer-qualification et n8n-security sous le seuil). */
+/* DA-009 — baseline gelée, actualisée pour le module démo explicite en 6.20.9 :
+exactement 15 fichiers ; les huit domaines métier restent propriété du plugin. */
 $themeRoot = (string) get_template_directory();
 $frozenBaseline = [
+    'inc/class-demo-installer.php',
     'inc/class-listing-transitions.php',
     'inc/class-listing-approval.php',
     'inc/class-form.php',
@@ -239,7 +240,7 @@ $assert('DA-009', $themeOversized === $frozenBaseline,
 $themeVersion = wp_get_theme()->get('Version');
 $health = (new HealthCheck())->get();
 $pluginDomains = count(array_filter($health['domains'] ?? [], static fn($d): bool => ($d['owner'] ?? '') === 'plugin'));
-$assert('DA-010', PARTIKULIER_CORE_VERSION === '2.10.9' && $themeVersion === '6.20.8'
+$assert('DA-010', PARTIKULIER_CORE_VERSION === '2.10.10' && $themeVersion === '6.20.9'
     && \Partikulier\Core\Database\Schema::VERSION === '2.7.0' && ($health['status'] ?? '') === 'ok'
     && $pluginDomains === 8 && (int) ($health['routes']['collisions'] ?? -1) === 0,
     sprintf('santé : %s, plugin %s, thème %s (lot F — extinction finale), schéma %s (zéro migration au lot D — bump micro-lot pré-prod, postérieur), %d/8 domaines, 0 collision',

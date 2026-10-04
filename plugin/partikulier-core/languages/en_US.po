@@ -4,6 +4,39 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Language: en_US\n"
 
+msgid "Veuillez vérifier les champs obligatoires."
+msgstr "Please check the required fields."
+
+msgid "Identifiant ou mot de passe incorrect."
+msgstr "Incorrect username or password."
+
+msgid "Mot de passe oublié ?"
+msgstr "Forgot your password?"
+
+msgid "Trop de tentatives échouées. Par mesure de sécurité, veuillez patienter 15 minutes avant de réessayer."
+msgstr "Too many failed attempts. For your security, please wait 15 minutes before trying again."
+
+msgid "Cette adresse e-mail est déjà associée à un compte. Veuillez vous connecter pour déposer votre annonce."
+msgstr "This email address is already associated with an account. Please sign in to post your listing."
+
+msgid "Ce numéro de téléphone est déjà associé à un compte. Veuillez vous connecter pour déposer votre annonce."
+msgstr "This phone number is already associated with an account. Please sign in to post your listing."
+
+msgid "Prenez des photos avec votre smartphone ou ajoutez vos fichiers (JPG, PNG, WebP · 1 à 8 photos)"
+msgstr "Take photos with your smartphone or upload your files (JPG, PNG, WebP · 1 to 8 photos)"
+
+msgid "Indifférent / Non précisé"
+msgstr "No preference / Not specified"
+
+msgid "Code 2FA (si activé)"
+msgstr "2FA code (if enabled)"
+
+msgid "Code 2FA requis."
+msgstr "A 2FA code is required."
+
+msgid "Code 2FA invalide."
+msgstr "Invalid 2FA code."
+
 msgid " + salon"
 msgstr " + living room"
 

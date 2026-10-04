@@ -326,7 +326,7 @@ try {
     $avifLignes = count((array) file($fichierAvifModule));
     $versionTheme = (string) wp_get_theme()->get('Version');
     $assert('SE-012', $sitesDiagnostic === [] && $diagPasseParPasserelle && $sitesAvif === [] && $avifLignes <= 400
-        && $versionTheme === '6.20.8' && PARTIKULIER_CORE_VERSION === '2.10.9',
+        && $versionTheme === '6.20.9' && PARTIKULIER_CORE_VERSION === '2.10.10',
         sprintf('pk-diagnostic : 0 appel direct (passe par la passerelle) ; class-avif %d l. sans exec direct ; thème %s, plugin %s (src inchangé, +contrat)',
             $avifLignes, $versionTheme, PARTIKULIER_CORE_VERSION));
 

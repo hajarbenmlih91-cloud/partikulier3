@@ -49,14 +49,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<div class="pk-container pk-header-inner">
 				<div class="pk-header-brand">
 						<?php
-						// Marque en texte : pas d'image, donc nette a toutes les resolutions,
-						// traduisible, selectionnable, et sans requete HTTP supplementaire.
-						// Un logo televerse dans Personnaliser reste prioritaire s'il y en a un.
 						if ( function_exists( 'get_custom_logo' ) && has_custom_logo() ) {
-								$pk_logo_html                 = get_custom_logo();
-								$pk_logo_home                 = function_exists( 'pk_localized_home_url' ) ? pk_localized_home_url() : home_url( '/' );
-										$pk_logo_href_pattern = '/' . 'href' . '="[^"]*"' . '/';
-										$pk_logo_html         = preg_replace( $pk_logo_href_pattern, 'href' . '="' . esc_url( $pk_logo_home ) . '"', (string) $pk_logo_html, 1 );
+								$pk_logo_html         = get_custom_logo();
+								$pk_logo_home         = function_exists( 'pk_localized_home_url' ) ? pk_localized_home_url() : home_url( '/' );
+								$pk_logo_href_pattern = '/' . 'href' . '="[^"]*"' . '/';
+								$pk_logo_html         = preg_replace( $pk_logo_href_pattern, 'href' . '="' . esc_url( $pk_logo_home ) . '"', (string) $pk_logo_html, 1 );
 								echo $pk_logo_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 						} else {
 								$pk_home = esc_url( function_exists( 'pk_localized_home_url' ) ? pk_localized_home_url() : home_url( '/' ) );
@@ -70,20 +67,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 						?>
 				</div>
 
+				<?php
+				// En mode tunnel (dépôt d'annonce), masquer la barre de recherche globale pour éviter les distractions
+				$pk_is_deposit_page = is_page( 'deposer' ) || is_page_template( 'templates/page-deposer-annonce.php' );
+				if ( ! $pk_is_deposit_page ) :
+				?>
 				<div class="pk-header-search">
 						<?php
-						/* La barre du haut envoyait « s=… » : WordPress interprete s comme une
-							recherche PLEIN TEXTE sur les titres et les descriptions, jamais sur la
-							taxonomie des lieux. Un visiteur qui tape « casablanca » cherche donc un
-							bien dont le texte contient ce mot : 0 resultat, alors que la ville en a
-							8 (mesure sur le staging, ?es_city=casablanca -> 8 cartes).
-							Le champ reutilise desormais le MEME composant que le formulaire de depot
-							(data-pk-place-input + .pk-suggest) et soumet es_city, le slug du terme
-							es_location reellement trouve par l'AJAX des lieux. */
-						/* E-5105 (F-T17-2, lot sécurité 6.20.6) : garde scalaire —
-						un paramètre tableau est traité comme non résolu (''),
-						jamais passé à sanitize_title() (TypeError PHP 8 → 500). */
-					$pk_city_slug  = isset( $_GET['es_city'] ) && is_scalar( $_GET['es_city'] ) ? sanitize_title( wp_unslash( $_GET['es_city'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+						$pk_city_slug  = isset( $_GET['es_city'] ) && is_scalar( $_GET['es_city'] ) ? sanitize_title( wp_unslash( $_GET['es_city'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 						$pk_city_term  = '' !== $pk_city_slug ? get_term_by( 'slug', $pk_city_slug, PARTIKULIER_ESTATIK_LOCATION_TAXONOMY ) : false;
 						$pk_city_label = ( $pk_city_term && ! is_wp_error( $pk_city_term ) ) ? $pk_city_term->name : '';
 						?>
@@ -93,11 +84,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 										<?php echo Partikulier_Geo::property_type_options( false ); // phpcs:ignore WordPress.Security.EscapeOutput ?>
 								</select>
 								<div class="pk-place-autocomplete-wrap pk-header-place">
-										<?php /* Sans JavaScript, le champ visible est la SEULE chose qui part : il garde
-										donc un name="s". Le serveur traduit deja s -> ville (class-search-filters,
-										traduction par libelle), et la recherche plein texte reste le repli final.
-										Quand l'autocompletion a fixe es_city, le JS desactive ce champ a la
-										soumission : s ne part jamais en double (un champ disabled n'est pas soumis). */ ?>
 										<input type="search" name="s" class="pk-place-input" id="pk-header-city" placeholder="<?php esc_attr_e( 'Ville, code postal, quartier…', 'partikulier' ); ?>" aria-label="<?php esc_attr_e( 'Rechercher une ville', 'partikulier' ); ?>" autocomplete="off" autocapitalize="off" spellcheck="false" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="pk-header-city-list" data-pk-place-input="true" data-pk-place-value="pk-header-city-value" value="<?php echo esc_attr( $pk_city_label ); ?>">
 										<ul class="pk-suggest pk-place-suggestions" id="pk-header-city-list" role="listbox" hidden></ul>
 								</div>
@@ -107,62 +93,68 @@ if ( ! defined( 'ABSPATH' ) ) {
 								</button>
 						</form>
 				</div>
+				<?php endif; ?>
 
 				<div class="pk-header-actions">
 						<?php
-						if ( function_exists( 'pll_the_languages' ) ) {
-								$pk_langs   = pll_the_languages( array( 'raw' => 1, 'hide_if_empty' => 0 ) );
-								$pk_current = '';
-							foreach ( (array) $pk_langs as $pk_l ) {
-								if ( ! empty( $pk_l['current_lang'] ) ) {
-										$pk_current = $pk_l['slug'];
+						// Sélecteur de langue interactif et universel (avec drapeaux et bascule mobile/desktop)
+						$pk_current_lang = 'fr';
+						if ( function_exists( 'pll_current_language' ) && pll_current_language() ) {
+								$pk_current_lang = sanitize_key( (string) pll_current_language() );
+						} elseif ( strpos( (string) get_locale(), 'ar' ) === 0 ) {
+								$pk_current_lang = 'ar';
+						} elseif ( strpos( (string) get_locale(), 'en' ) === 0 ) {
+								$pk_current_lang = 'en';
+						}
+
+						$pk_flag_svg = static function( $slug ) {
+								$slug = sanitize_key( $slug );
+								if ( 'ar' === $slug ) {
+										return '<svg class="pk-flag" viewBox="0 0 24 16" width="20" height="14" aria-hidden="true"><rect width="24" height="16" rx="2" fill="#c1272d"/><path d="M12 3.7l1.1 3.4h3.6l-2.9 2.1 1.1 3.4-2.9-2.1-2.9 2.1 1.1-3.4-2.9-2.1h3.6z" fill="none" stroke="#006233" stroke-width=".8"/></svg>';
 								}
-							}
-							if ( ! $pk_current && function_exists( 'pll_current_language' ) ) {
-									$pk_current = (string) pll_current_language();
-							}
-							if ( ! empty( $pk_langs ) ) :
-									$pk_flag_svg = static function( $slug ) {
-											$slug = sanitize_key( $slug );
-										if ( 'ar' === $slug ) {
-														return '<svg class="pk-flag" viewBox="0 0 24 16" aria-hidden="true" focusable="false"><rect width="24" height="16" rx="2" fill="#c1272d"/><path d="M12 3.7l1.1 3.4h3.6l-2.9 2.1 1.1 3.4-2.9-2.1-2.9 2.1 1.1-3.4-2.9-2.1h3.6z" fill="none" stroke="#006233" stroke-width=".8"/></svg>';
+								if ( 'en' === $slug ) {
+										return '<svg class="pk-flag" viewBox="0 0 24 16" width="20" height="14" aria-hidden="true"><rect width="24" height="16" rx="2" fill="#012169"/><path d="M0 0l24 16M24 0L0 16" stroke="#fff" stroke-width="2.5"/><path d="M0 0l24 16M24 0L0 16" stroke="#c8102e" stroke-width="1.2"/><path d="M12 0v16M0 8h24" stroke="#fff" stroke-width="4.5"/><path d="M12 0v16M0 8h24" stroke="#c8102e" stroke-width="2.5"/></svg>';
+								}
+								return '<svg class="pk-flag" viewBox="0 0 24 16" width="20" height="14" aria-hidden="true"><path d="M0 0h8v16H0z" fill="#002654"/><path d="M8 0h8v16H8z" fill="#fff"/><path d="M16 0h8v16h-8z" fill="#ce1126"/></svg>';
+						};
+
+						$pk_lang_names = array(
+								'fr' => 'Français',
+								'ar' => 'العربية',
+								'en' => 'English',
+						);
+						$pk_langs = array();
+						if ( function_exists( 'pll_the_languages' ) ) {
+								foreach ( (array) pll_the_languages( array( 'raw' => 1, 'hide_if_empty' => 0 ) ) as $pk_lang ) {
+										if ( ! empty( $pk_lang['slug'] ) && ! empty( $pk_lang['url'] ) ) {
+												$pk_langs[ $pk_lang['slug'] ] = $pk_lang;
 										}
-										if ( 'en' === $slug ) {
-															return '<svg class="pk-flag" viewBox="0 0 24 16" aria-hidden="true" focusable="false"><rect width="24" height="16" rx="2" fill="#fff"/><path d="M0 1h24M0 4h24M0 7h24M0 10h24M0 13h24" stroke="#b22234" stroke-width="1.5"/><path d="M0 0h10v9H0z" fill="#3c3b6e"/><circle cx="2" cy="2" r=".35" fill="#fff"/><circle cx="5" cy="2" r=".35" fill="#fff"/><circle cx="8" cy="2" r=".35" fill="#fff"/><circle cx="3.5" cy="4.5" r=".35" fill="#fff"/><circle cx="6.5" cy="4.5" r=".35" fill="#fff"/><circle cx="2" cy="7" r=".35" fill="#fff"/><circle cx="5" cy="7" r=".35" fill="#fff"/><circle cx="8" cy="7" r=".35" fill="#fff"/></svg>';
-										}
-																return '<svg class="pk-flag" viewBox="0 0 24 16" aria-hidden="true" focusable="false"><path d="M0 0h8v16H0z" fill="#0055a4"/><path d="M8 0h8v16H8z" fill="#fff"/><path d="M16 0h8v16h-8z" fill="#ef4135"/></svg>';
-									};
-								?>
-										<div class="pk-lang" data-pk-lang>
-												<button type="button" class="pk-lang-toggle" aria-expanded="false" aria-haspopup="true" aria-label="<?php esc_attr_e( 'Choisir la langue', 'partikulier' ); ?>">
-											<?php echo $pk_flag_svg( $pk_current ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-														<span class="pk-lang-code"><?php echo esc_html( strtoupper( $pk_current ) ); ?></span>
-												</button>
-												<ul class="pk-lang-menu" hidden>
-											<?php foreach ( (array) $pk_langs as $pk_l ) : ?>
-																<li<?php echo ! empty( $pk_l['current_lang'] ) ? ' class="is-current"' : ''; ?>>
-																		<a href="<?php echo esc_url( $pk_l['url'] ); ?>" lang="<?php echo esc_attr( $pk_l['locale'] ); ?>" hreflang="<?php echo esc_attr( $pk_l['locale'] ); ?>">
-																				<?php echo $pk_flag_svg( $pk_l['slug'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-																				<span class="pk-lang-abbr"><?php echo esc_html( strtoupper( $pk_l['slug'] ) ); ?></span>
-																				<span class="pk-lang-name"><?php echo esc_html( $pk_l['name'] ); ?></span>
-																		</a>
-																</li>
-														<?php endforeach; ?>
-												</ul>
-										</div>
-										<?php
-								endif;
-						} else {
-							?>
-								<div class="pk-lang pk-lang--static">
-										<span class="pk-lang-toggle" aria-hidden="true">
-												<svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3.6 9h16.8M3.6 15h16.8"/><path d="M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18z"/></svg>
-												<span class="pk-lang-code"><?php echo esc_html( strtoupper( substr( (string) get_locale(), 0, 2 ) ) ); ?></span>
-										</span>
-								</div>
-								<?php
+								}
+						}
+						if ( empty( $pk_langs ) ) {
+								$pk_langs[ $pk_current_lang ] = array( 'url' => home_url( '/' ) );
 						}
 						?>
+						<div class="pk-lang" data-pk-lang>
+								<button type="button" class="pk-lang-toggle" aria-expanded="false" aria-haspopup="true" aria-label="<?php esc_attr_e( 'Choisir la langue', 'partikulier' ); ?>"<?php disabled( count( $pk_langs ) < 2 ); ?>>
+										<?php echo $pk_flag_svg( $pk_current_lang ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+										<span class="pk-lang-code"><?php echo esc_html( strtoupper( $pk_current_lang ) ); ?></span>
+								</button>
+								<ul class="pk-lang-menu" hidden>
+										<?php
+										foreach ( $pk_langs as $pk_slug => $pk_lang ) :
+												$pk_target_url = $pk_lang['url'];
+										?>
+												<li<?php echo ( $pk_slug === $pk_current_lang ) ? ' class="is-current"' : ''; ?>>
+														<a href="<?php echo esc_url( $pk_target_url ); ?>" lang="<?php echo esc_attr( $pk_slug ); ?>" hreflang="<?php echo esc_attr( $pk_slug ); ?>">
+																<?php echo $pk_flag_svg( $pk_slug ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+																<span class="pk-lang-abbr"><?php echo esc_html( strtoupper( $pk_slug ) ); ?></span>
+																<span class="pk-lang-name"><?php echo esc_html( $pk_lang_names[ $pk_slug ] ?? $pk_lang['name'] ?? $pk_slug ); ?></span>
+														</a>
+												</li>
+										<?php endforeach; ?>
+								</ul>
+						</div>
 						<a class="pk-header-icon" href="<?php echo esc_url( pk_page_url( 'favoris', '/favoris/' ) ); ?>" aria-label="<?php esc_attr_e( 'Favoris', 'partikulier' ); ?>">
 								<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
 						</a>
@@ -193,7 +185,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 						'container'      => false,
 						'menu_class'     => 'pk-menu pk-menu-mobile',
 						'depth'          => 1,
-						'fallback_cb'    => false,
+						'fallback_cb'    => array( 'Partikulier_Header', 'fallback_menu' ),
 				) );
 				?>
 		</div>

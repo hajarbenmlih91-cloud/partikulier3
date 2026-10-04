@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Partikulier Core
  * Description: Cœur métier contractuel de Partikulier : données, politiques et REST.
- * Version: 2.10.9
+ * Version: 2.10.10
  * Requires PHP: 8.1
  */
 
@@ -12,8 +12,12 @@ if ( ! defined('ABSPATH') ) {
 	exit;
 }
 
-const PARTIKULIER_CORE_VERSION = '2.10.9';
+const PARTIKULIER_CORE_VERSION = '2.10.10';
 const PARTIKULIER_CORE_FILE    = __FILE__;
+
+if ( defined('PARTIKULIER_ENABLE_2FA') && PARTIKULIER_ENABLE_2FA ) {
+	require_once __DIR__ . '/mu-plugins/partikulier-2fa-light.php';
+}
 
 // Domaine « partikulier » — le plugin est la source canonique (lot C1 :
 // catalogues <locale>.mo consolidés, contrats C1A-011/013) et détient LE

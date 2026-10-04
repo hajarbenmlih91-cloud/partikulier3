@@ -54,6 +54,7 @@ jobs:
           path: |
             dist/*.zip
             dist/SHA256SUMS
+            dist/sbom.cyclonedx.json
 
   contrats-statiques:
     name: contrats-statiques (PHP ${{ matrix.php }})

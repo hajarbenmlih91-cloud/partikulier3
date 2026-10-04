@@ -4,7 +4,7 @@ Thème WordPress de portail immobilier pour **Partikulier.ma** : annonces immobi
 Zéro jQuery sur le parcours public (exception documentée DP-6 option a sur les parcours propriétaires : galerie, filtres, sélection, upload), cache de page intégré (LiteSpeed / Nginx), conversion AVIF automatique des images, métadonnées Schema.org JSON-LD complètes (*RealEstateListing*, *Place*, *Offer*, *GeoCoordinates*), sitemap XML virtuel, permaliens géographiques canoniques (ville, quartier, région) et optimisation PageSpeed mobile cible 95-100/100.
 Conçu pour **Estatik 4.3.x**, avec intégration complète **Polylang** trilingue (FR / AR / EN) et support RTL natif.
 
-**Version : 6.20.7 (Release Finale)** · Licence GPL v3 ou ultérieure · Requiert WordPress 6.2+ et PHP 8.1 à 8.4+.
+**Version : 6.20.9** · Licence GPL v3 ou ultérieure · Requiert WordPress 6.2+ et PHP 8.1 ou supérieur.
 
 ---
 
@@ -18,10 +18,40 @@ Conçu pour **Estatik 4.3.x**, avec intégration complète **Polylang** trilingu
 - **Architecture Multilingue Trilingue & RTL (SE-025 / SE-027)** : Prise en charge intégrale du français, anglais et arabe littéraire avec inversion RTL native (`dir="rtl"` et `lang="ar"`), cluster hreflang 4 entrées (`fr`, `en`, `ar`, `x-default`), et règles de réécriture v5 sans double-préfixation (`/fr/annonces/`).
 - **Performance Front-Assets « Zéro jQuery » Public (DP-6 / SE-018)** : Élimination absolue de tout script jQuery ou composant lourd Estatik sur l'ensemble des pages publiques (`/`, `/annonces/`, `/location/casablanca/`, `/faq/`, `/contact/`, `/connexion/`).
 - **Sécurité d'Exécution Système (Lot E / SE-002)** : Zéro appel `exec()` direct hors de la passerelle unique `class-exec-whitelist.php` (vérifié par analyse lexicale sur 141 fichiers runtime).
+- **Passerelle d'Administration Optionnelle** : Masquage de la connexion native après configuration explicite d'une clé privée ; récupération de mot de passe préservée.
+- **Authentification Propriétaire par Numéro Mobile (Cas "Grand-mère")** : Dépôt sans e-mail possible, connexion directe par numéro de téléphone portable (`06...` ou `+212...`).
+- **Protection Anti-Énumération & Rate Limiting CGNAT** : Unification des messages d'erreur et protection anti-brute force composite sans blocage collatéral sur les réseaux 4G/5G marocains.
 
 ---
 
-## 2. Intégration CI & Tests Navigateurs Réels (WebKit / Chromium / Firefox)
+## 2. Accès Administrateur & Passerelle Secrète (Stealth Admin Gateway)
+
+La passerelle est désactivée par défaut. Une fois sa clé configurée, l'accès à `wp-login.php` sans autorisation redirige vers l'accueil ; WordPress conserve ses contrôles de capacités pour `/wp-admin/`.
+
+### Comment accéder à l'administration WordPress ?
+1. **URL de l'administrateur** : `https://votre-site/wp-login.php?pk_admin_key=<clé privée>`.
+2. **Fonctionnement du jeton** :
+   Dès la saisie de ce lien, un cookie sécurisé temporaire (`pk_admin_access`, durée 2h) est déposé sur votre navigateur. L'écran de connexion s'affiche et vous pouvez vous connecter avec vos identifiants administrateur.
+3. **Personnalisation de la clé secrète** :
+   Définissez une valeur aléatoire privée dans `wp-config.php` (aucune clé intégrée au code) :
+   ```php
+   define( 'PK_ADMIN_SECRET_KEY', 'votre_nouvelle_cle_secrete' );
+   ```
+4. **SSO hébergeur** : aucun paramètre fourni par le navigateur ne suffit. Un connecteur validant réellement son jeton peut autoriser l'accès via `partikulier_admin_gateway_bypass`.
+
+La 2FA est optionnelle et documentée dans [`docs/INSTALLATION.md`](../../docs/INSTALLATION.md). Les annonces de démo se créent uniquement depuis **Outils → Démo Partikulier**.
+
+---
+
+## 3. Authentification Propriétaire par Numéro de Téléphone (Cas "Grand-mère")
+
+Les propriétaires n'ont pas besoin de disposer ou de se souvenir d'une adresse e-mail :
+- **Au dépôt** : Le champ e-mail est facultatif. Le système associe le compte au numéro de téléphone portable (`pk_phone`) et configure son identifiant principal sur ce numéro.
+- **À la connexion (`/connexion/`)** : Le propriétaire saisit son numéro de téléphone (`06...`, `+212...`, ou formaté avec espaces) et son mot de passe. Le résolveur d'authentification normalise le numéro et connecte l'utilisateur instantanément.
+
+---
+
+## 4. Intégration CI & Tests Navigateurs Réels (WebKit / Chromium / Firefox)
 
 Pour la recette multi-navigateurs E2E Playwright et la conformité Safari / iOS, le runner CI doit installer les dépendances WebKit :
 
@@ -44,7 +74,7 @@ npm test
 
 ## 3. Installation & Déploiement
 
-1. Téléverser l'archive `THEME-PARTIKULIER-6.20.8.zip` dans **Apparence $\rightarrow$ Thèmes $\rightarrow$ Ajouter $\rightarrow$ Téléverser**.
+1. Téléverser l'archive `partikulier-theme-6.20.9.zip` dans **Apparence $\rightarrow$ Thèmes $\rightarrow$ Ajouter $\rightarrow$ Téléverser**.
 2. Activer le thème.
 3. Se rendre dans **Réglages $\rightarrow$ Permaliens** et cliquer sur **Enregistrer les modifications** pour régénérer la table de réécriture Polylang v5.
 4. Purger le cache LiteSpeed / Nginx.

@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 		exit;
 }
 
-define( 'PARTIKULIER_VERSION', '6.20.8' );
+define( 'PARTIKULIER_VERSION', '6.20.9' );
 
 add_filter(
 	'language_attributes',
@@ -93,8 +93,6 @@ function pk_localized_home_url( $language = '' ) {
 	if ( ! $language && function_exists( 'pll_current_language' ) ) {
 			$language = sanitize_key( (string) pll_current_language( 'slug' ) );
 	}
-		// Polylang peut ne pas encore exposer la langue pendant certains rendus
-		// froids. La route publique reste alors la source de vérité fonctionnelle.
 	if ( ! $language && isset( $_SERVER['REQUEST_URI'] ) ) {
 			$request_path  = sanitize_text_field( (string) wp_parse_url( wp_unslash( (string) $_SERVER['REQUEST_URI'] ), PHP_URL_PATH ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- REQUEST_URI is unslashed and sanitized for route detection
 			$first_segment = sanitize_key( (string) strtok( trim( $request_path, '/' ), '/' ) );
@@ -105,6 +103,7 @@ function pk_localized_home_url( $language = '' ) {
 	if ( ! $language && function_exists( 'determine_locale' ) ) {
 			$language = sanitize_key( substr( (string) determine_locale(), 0, 2 ) );
 	}
+
 	if ( ! $language ) {
 			return trailingslashit( home_url( '/' ) );
 	}
@@ -265,6 +264,7 @@ $partikulier_modules = array(
 		'/inc/class-listing-translations.php',
 		'/inc/class-upgrade-wizard.php',
 		'/inc/class-page-doctor.php',
+		'/inc/class-demo-installer.php',
 		'/inc/class-listing-approval.php',
 		'/inc/class-listing-urls.php',
 		'/inc/class-crypto.php',
@@ -308,3 +308,23 @@ $partikulier_diagnostic_load = ( defined( 'WP_CLI' ) && WP_CLI )
 if ( $partikulier_diagnostic_load && file_exists( $partikulier_diagnostic_file ) ) {
 		require_once $partikulier_diagnostic_file;
 }
+
+/**
+ * Preload de l'image hero visible sur l'accueil.
+ */
+add_action('wp_head', static function () {
+    if (!is_front_page()) return;
+    if (!class_exists('Partikulier_Customization')) return;
+    $url = Partikulier_Customization::hero_url();
+    if ($url) printf('<link rel="preload" as="image" href="%s" fetchpriority="high">' . "\n", esc_url($url));
+}, 1);
+
+/**
+ * Neutralise l'injection front-end du popup d'authentification brut d'Estatik
+ * (#es-authentication-popup) pour préserver l'expérience fluide sans mot de passe.
+ */
+add_action( 'wp_footer', function() {
+		if ( ! is_admin() ) {
+				echo '<style id="pk-suppress-es-auth-popup">#es-authentication-popup, .es-auth__popup { display: none !important; visibility: hidden !important; pointer-events: none !important; }</style>';
+		}
+}, 999 );

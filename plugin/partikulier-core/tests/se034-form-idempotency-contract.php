@@ -48,8 +48,14 @@ $assert = static function (string $id, bool $ok, string $detail = '') use (&$res
 };
 
 global $wpdb;
+$originalUser = get_current_user_id();
+$originalCookies = $_COOKIE;
 wp_set_current_user(1);
 $run = bin2hex(random_bytes(4));
+$fixtureEmail = 'se034-' . $run . '@example.test';
+$fixturePhone = '06' . random_int(10000000, 99999999);
+$cookie = '';
+$ownerId = 0;
 $rateKey = 'pk_listing_rate_' . hash_hmac('sha256', '127.0.0.1', wp_salt('nonce'));
 
 /* ── Préparation : WhatsApp configuré (piège docs/reprise/04-PIEGES.md), quota
@@ -67,13 +73,13 @@ $citySlug = 'se034ville-' . $run;
 $cityTerm = wp_insert_term('SE034ville ' . $run, 'es_location', ['slug' => $citySlug]);
 $cityId = is_wp_error($cityTerm) ? (int) get_term_by('slug', $citySlug, 'es_location')->term_id : (int) $cityTerm['term_id'];
 
-/* Le nonce doit être créé en contexte ANONYME : les requêtes curl de la
- * batterie ne portent aucun cookie — un nonce d'administrateur serait refusé
- * (403) par check_ajax_referer côté serveur. */
+/* Première inscription et rejeu anonymes ; les dépôts suivants utilisent
+ * la session du propriétaire créé, conformément à la protection des comptes. */
 wp_set_current_user(0);
 $nonce = wp_create_nonce('pk_submit_listing');
 
-$payloadOf = static fn(string $marker): array => [
+$payloadOf = static function (string $marker) use (&$nonce, $fixtureEmail, $fixturePhone, $typeId, $cityId): array {
+    return [
     'action' => 'pk_submit_listing',
     'nonce' => $nonce,
     'pk_form_action' => 'pk_submit_listing',
@@ -84,13 +90,14 @@ $payloadOf = static fn(string $marker): array => [
     'pk_type' => (string) $typeId,
     'pk_city' => (string) $cityId,
     'pk_name' => 'Test SE034',
-    'pk_email' => 'test@example.com',
-    'pk_phone' => '0600000000',
+    'pk_email' => $fixtureEmail,
+    'pk_phone' => $fixturePhone,
     'pk_role' => 'proprietaire',
 ];
+};
 
 /** POST admin-ajax avec la charge + la clé d'idempotence. */
-$postForm = static function (array $payload, string $key) use ($base): array {
+$postForm = static function (array $payload, string $key) use ($base, &$cookie): array {
     $payload['pk_idempotency_key'] = $key;
     $ch = curl_init(rtrim($base, '/') . '/wp-admin/admin-ajax.php');
     curl_setopt_array($ch, [
@@ -99,6 +106,7 @@ $postForm = static function (array $payload, string $key) use ($base): array {
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT => 20,
         CURLOPT_HTTPHEADER => ['X-Requested-With: XMLHttpRequest'],
+        CURLOPT_COOKIE => $cookie,
     ]);
     $body = curl_exec($ch);
     $code = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
@@ -115,9 +123,9 @@ $countListings = static function (string $marker) use ($wpdb): int {
 };
 
 $idemTable = $wpdb->prefix . 'pk_idempotency';
-$k1 = str_pad('a1', 32, '1');   // 32 hex — clé du rejeu
-$k2 = str_pad('b2', 32, '2');   // charge distincte
-$k3 = str_pad('c3', 32, '3');   // clé expirée
+$k1 = md5($run . '-replay');
+$k2 = md5($run . '-distinct');
+$k3 = md5($run . '-expired');
 
 try {
     // 1) Première soumission → création, replayed:false.
@@ -138,6 +146,15 @@ try {
     $assert('E34-002', $r2['status'] === 200 && ($r2['json']['data']['replayed'] ?? null) === true && $same && $c2 === 1,
         sprintf('rejeu identique : HTTP %d, replayed %s, réponse identique %s, annonces toujours %d (attendu 200/true/true/1)',
             $r2['status'], var_export($r2['json']['data']['replayed'] ?? null, true), $same ? 'oui' : 'NON', $c2));
+
+    $owner = get_user_by('email', $fixtureEmail);
+    if (!$owner) throw new RuntimeException('The first deposit must create its fixture owner');
+    $ownerId = (int) $owner->ID;
+    wp_set_current_user($ownerId);
+    $cookieValue = wp_generate_auth_cookie($ownerId, time() + HOUR_IN_SECONDS, 'logged_in');
+    $_COOKIE[LOGGED_IN_COOKIE] = $cookieValue;
+    $nonce = wp_create_nonce('pk_submit_listing');
+    $cookie = LOGGED_IN_COOKIE . '=' . $cookieValue;
 
     // 3) Charge distincte (clé distincte) → nouvelle annonce.
     $r3 = $postForm($payloadOf($run . '-beta'), $k2);
@@ -192,13 +209,21 @@ try {
             wp_delete_post((int) $p->ID, true);
         }
     }
-    $wpdb->query($wpdb->prepare("DELETE FROM {$idemTable} WHERE event_id LIKE %s", 'pkform:%'));
+    foreach ([$k1, $k2, $k3] as $key) $wpdb->delete($idemTable, ['event_id' => 'pkform:' . $key], ['%s']);
     wp_set_current_user(1);
     $term = get_term_by('slug', $citySlug, 'es_location');
     if ($term) { wp_delete_term((int) $term->term_id, 'es_location'); }
     update_option('pk_theme_options', $optsBackup);
     delete_transient($rateKey);
-    $left = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$idemTable} WHERE event_id LIKE %s", 'pkform:%'));
+    $left = 0;
+    foreach ([$k1, $k2, $k3] as $key) $left += (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$idemTable} WHERE event_id = %s", 'pkform:' . $key));
+    $owner = get_user_by('email', $fixtureEmail);
+    if ($owner) {
+        require_once $wpDir . '/wp-admin/includes/user.php';
+        wp_delete_user((int) $owner->ID);
+    }
+    wp_set_current_user($originalUser);
+    $_COOKIE = $originalCookies;
     if ($left > 0) {
         $assert('E34-EXCEPTION', false, "sortie propre : $left ligne(s) pkform: résiduelle(s)");
     }

@@ -24,8 +24,19 @@ final class HealthCheck
 	public function get(): array
 	{
 		global $wpdb;
+		try {
+			$ping = $wpdb->query('SELECT 1');
+			if ( false === $ping ) {
+				return $this->databaseFailure((string) $wpdb->last_error);
+			}
+		} catch ( \Throwable $e ) {
+			return $this->databaseFailure($e->getMessage());
+		}
 		$table  = $wpdb->prefix . 'pk_listings';
 		$exists = (bool) $wpdb->get_var($wpdb->prepare('SHOW TABLES LIKE %s', $table));
+		if ( '' !== $wpdb->last_error ) {
+			return $this->databaseFailure((string) $wpdb->last_error);
+		}
 
 		$integrity = ['orphans' => 0, 'missing' => 0, 'served' => 0, 'live_posts' => 0, 'status' => 'ok'];
 		if ( $exists ) {
@@ -42,6 +53,7 @@ final class HealthCheck
 			'core_version'   => PARTIKULIER_CORE_VERSION,
 			'schema_version' => ( new Migrator() )->currentVersion(),
 			'database'       => $exists ? 'ready' : 'missing',
+			'database_error' => null,
 			'integrity'      => $integrity,
 			'sync'           => [
 				'last_flush_at' => $sync['last_flush_at'] ?? null,
@@ -57,6 +69,24 @@ final class HealthCheck
 				'ghosts'  => \Partikulier\Core\Domain\TranslationVariants\TranslationVariantsService::count_ghost_variants(),
 			],
 			'locale'         => determine_locale(),
+		];
+	}
+
+	private function databaseFailure( string $error ): array
+	{
+		error_log('[Partikulier health] Database unavailable: ' . $error);
+		return [
+			'status' => 'critical',
+			'core_version' => PARTIKULIER_CORE_VERSION,
+			'schema_version' => null,
+			'database' => 'unreachable',
+			'database_error' => $error,
+			'integrity' => ['orphans' => null, 'missing' => null, 'served' => null, 'live_posts' => null, 'status' => 'unknown'],
+			'sync' => null,
+			'routes' => ['namespace' => RouteRegistry::NAMESPACE, 'collisions' => RouteRegistry::collisionCount()],
+			'domains' => [],
+			'translation_variants' => ['ghosts' => null],
+			'locale' => null,
 		];
 	}
 
