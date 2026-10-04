@@ -135,8 +135,6 @@ $is_type = $queried instanceof WP_Term && PARTIKULIER_ESTATIK_TYPE_TAXONOMY === 
 												<div class="pk-filters-panel<?php echo $pk_active_filters ? ' ' . 'is-open' : ''; ?>" id="pk-filters-panel" aria-hidden="<?php echo $pk_active_filters ? 'false' : 'true'; ?>">
 												<button type="button" class="pk-filter-close" data-pk-filter-close="true" aria-label="<?php echo esc_attr( Partikulier_Localization::translate_polylang_string( 'Fermer', 'Fermer', 'partikulier' ) ); ?>"><span aria-hidden="true">×</span><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Fermer', 'Fermer', 'partikulier' ) ); ?></button>
 <h2 class="screen-reader-text"><?php echo esc_html( $pk_filters_label ); ?></h2>
-														<?php $pk_reset_url = pk_properties_archive_url(); ?>
-														<a class="pk-filter-reset" href="<?php echo esc_url( $pk_reset_url ); ?>"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Réinitialiser', 'Réinitialiser', 'partikulier' ) ); ?></a>
 
 														<div class="pk-filter pk-filter-actions">
 														<h3 class="pk-filter-title"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Transaction', 'Transaction', 'partikulier' ) ); ?></h3>

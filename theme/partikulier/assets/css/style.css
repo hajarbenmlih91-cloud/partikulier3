@@ -3103,17 +3103,6 @@ html[dir="rtl"] .pk-archive-content .pk-card-price { left: auto; right: 12px; }
 }
 .pk-archive .pk-filter-city-form input::placeholder { color: #a8aca4; }
 .pk-archive .pk-filter-city-form .pk-filter-apply { display: none; }
-.pk-filter-reset {
-		display: inline-flex;
-		margin-top: 1rem;
-		padding: .62rem .8rem;
-		background: var(--pk-ink);
-		color: #fff;
-		font-size: .72rem;
-		font-weight: 700;
-		text-decoration: none;
-}
-.pk-filter-reset:hover { background: var(--pk-primary); color: #fff; }
 .pk-filter-close { display: none; }
 .pk-filters-backdrop { display: none; }
 
@@ -3271,10 +3260,9 @@ html[dir="rtl"] .pk-archive-content .pk-card-price { left: auto; right: 12px; }
 }
 
 
-/* Archive — ordre final du contrôle mobile et reset desktop toujours visible. */
+/* Archive — ordre final du contrôle mobile. */
 @media (min-width: 768px) {
 		.pk-archive-layout > .pk-filter-toggle { display: none !important; }
-		.pk-archive .pk-filter-reset { display: inline-flex !important; visibility: visible; }
 		.pk-archive .pk-filters-panel { display: block !important; }
 }
 @media (max-width: 767px) {
