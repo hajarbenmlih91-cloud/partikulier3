@@ -46,3 +46,4 @@ fi
 echo 'Artifact hygiene: PASS'
 
 bash scripts/check-catalogues.sh
+bash scripts/check-hardcoded.sh

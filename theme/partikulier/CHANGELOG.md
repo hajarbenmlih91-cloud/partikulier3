@@ -6,6 +6,18 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ---
 
+## [6.20.11] - 2026-10-03 22:58 (Hotfix sécurité — chiffrement `_pk_owner_phone`)
+
+### Sécurité
+- **`inc/class-form.php:557`** : `update_post_meta($post_id,'_pk_owner_phone', Partikulier_Crypto::encrypt_phone($phone))` — tout nouveau bien chiffré `gcm:v1:` (AES-256-GCM, `wp_salt('secure_auth')`). Lecture via `Partikulier_Crypto::read_phone()` zéro migration.
+- **`inc/class-crypto.php`** : `encrypt_phone()` / `decrypt_phone()` (GCM + fallback CBC) / `read_phone()` / `mask_phone()` (gate `manage_options`).
+- Bumps `style.css 6.20.10→6.20.11`, `functions.php`, `scripts/package.sh`.
+
+## [6.20.10] - 2026-10-03 (R3 — Messages & Limites éditables + prefill)
+
+### Ajouté
+- **`inc/class-buyer-qualification.php:22 l.`** : bouton WhatsApp pré-rempli via `LeadSettings::get_prefill($lang)` + `str_replace({reference},{lien})` + `urlencode`. Éditable WP sans toucher au thème.
+
 ## [6.20.9] - 2026-10-03 (Release Senior - Pack 1-4)
 
 ### Corrigé
