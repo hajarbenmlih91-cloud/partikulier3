@@ -62,6 +62,23 @@ Après initialisation : `docker compose up -d` pour redémarrer et
 jamais être committés. La vérification d'exemple n'est pas la campagne complète
 de contrats CI.
 
+Pour préparer le test WhatsApp réel, renseigner les champs `META_*`,
+`WHATSAPP_*` et `N8N_PUBLIC_WEBHOOK_URL` de `.env`. Le script importe les deux
+credentials dans n8n et crée **Partikulier WhatsApp - real phone test (WordPress)**
+en brouillon. Il ne publie pas ce workflow et ne contacte pas Meta.
+Publier manuellement dans n8n pour enregistrer le webhook Meta. Le test accepte
+uniquement `WHATSAPP_TEST_RECIPIENT` : `TEST` affiche l'aide, une référence
+`PK-...` demande un contact propriétaire et `STOP` enregistre l'opposition.
+Configurer aussi le numéro Business dans **Apparence > Personnaliser >
+Validation WhatsApp > Numéro WhatsApp Business des demandes acquéreurs**.
+Le bouton **Demander sur WhatsApp** d'une fiche ouvre ce numéro avec sa référence
+préremplie ; l'acquéreur doit envoyer le message pour déclencher n8n. Le test
+actuel répond directement avec le contact autorisé, sans étape supplémentaire
+de confirmation. Les liens `localhost` du site ne sont accessibles que sur le PC.
+L'URL ngrok est utilisée pour les webhooks publics ; le pont HTTPS privé des
+validations WordPress reste inchangé. Un workflow WhatsApp déjà publié doit être
+dépublié manuellement avant de réimporter son brouillon.
+
 ```bash
 make lint
 make package
