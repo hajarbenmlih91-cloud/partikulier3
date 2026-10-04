@@ -75,6 +75,7 @@ $originalUser = get_current_user_id();
 $originalIp = $_SERVER['REMOTE_ADDR'] ?? null;
 $originalPost = $_POST;
 $originalSettings = get_option('pk_n8n_settings', null);
+$originalLeadSettings = get_option(\Partikulier\Core\Domain\Leads\LeadSettings::OPTION, null);
 global $wpdb;
 $realDb = $wpdb;
 $admin = get_users(['role' => 'administrator', 'number' => 1])[0] ?? null;
@@ -234,6 +235,16 @@ try {
     $failedMsg = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$wpdb->prefix}pk_interest_events WHERE provider_message_id = %s", 'merge-failed-' . $run));
     $assert('MERGE-RETRY-ATOMIC', $failedMsg === 0, 'Failed contact leaves no interest row (R2: the lead row may exist after qualification COMMIT)');
 
+    // R3 plafonne à 2 contacts/24h → manuel. Ce contrat teste l'atomicité
+    // concurrente, pas la règle métier (couverte par leads-contract LEAD-006).
+    $leadOpt = is_array($originalLeadSettings) ? $originalLeadSettings : [];
+    $leadOpt['limits'] = array_merge((array) ($leadOpt['limits'] ?? []), [
+        'max_24h' => 50,
+        'max_7d' => 50,
+        'daily_limit' => 50,
+    ]);
+    update_option(\Partikulier\Core\Domain\Leads\LeadSettings::OPTION, $leadOpt, false);
+
     foreach (['same', 'distinct'] as $kind) {
         $jobs = [];
         $sharedPhone = '2126' . random_int(10000000, 99999999);
@@ -328,6 +339,11 @@ try {
     foreach ($users as $id) wp_delete_user($id);
     if ($originalSettings === null) delete_option('pk_n8n_settings');
     else update_option('pk_n8n_settings', $originalSettings, false);
+    if ($originalLeadSettings === null) {
+        delete_option(\Partikulier\Core\Domain\Leads\LeadSettings::OPTION);
+    } else {
+        update_option(\Partikulier\Core\Domain\Leads\LeadSettings::OPTION, $originalLeadSettings, false);
+    }
     $sync->flush();
     wp_set_current_user($originalUser);
     if ($originalIp === null) unset($_SERVER['REMOTE_ADDR']);
