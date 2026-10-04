@@ -1,0 +1,302 @@
+name: Déploiement Hostinger
+
+# Routage :
+#   push develop                     -> dev
+#   tag pre-release-<version>        -> uat (approbation requise : règle « Required reviewers » de l'environnement uat)
+#   tag release-<version>            -> prd (approbation requise : règle « Required reviewers » de l'environnement prd)
+#   workflow_dispatch                -> choix manuel ; uat/prd exigent d'être lancés sur un tag conforme
+# <version> = X.Y.Z (numérique), suivi optionnellement de -<texte libre>, ex. 2.10.8-6.20.7 ou 2.10.9-rc.1
+
+on:
+  push:
+    branches:
+      - develop
+    tags:
+      - 'pre-release-*'
+      - 'release-*'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Environnement cible (uat/prd uniquement depuis un tag pre-release-* / release-*)
+        required: true
+        default: dev
+        type: choice
+        options:
+          - dev
+          - uat
+          - prd
+
+permissions:
+  contents: read
+
+jobs:
+  resolve:
+    name: Résoudre l'environnement cible
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.target.outputs.environment }}
+      version: ${{ steps.target.outputs.version }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Déterminer et valider la cible
+        id: target
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_ENVIRONMENT: ${{ inputs.environment }}
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          uat_regex='^pre-release-([0-9]+\.[0-9]+\.[0-9]+(-.+)?)$'
+          prd_regex='^release-([0-9]+\.[0-9]+\.[0-9]+(-.+)?)$'
+          version=""
+          if [ "$REF_TYPE" = "tag" ] && [[ "$REF_NAME" =~ $uat_regex ]]; then
+            tag_env="uat"; version="${BASH_REMATCH[1]}"
+          elif [ "$REF_TYPE" = "tag" ] && [[ "$REF_NAME" =~ $prd_regex ]]; then
+            tag_env="prd"; version="${BASH_REMATCH[1]}"
+          elif [ "$REF_TYPE" = "tag" ]; then
+            echo "::error::Tag « $REF_NAME » non conforme. Attendu : pre-release-X.Y.Z[-texte libre] (uat) ou release-X.Y.Z[-texte libre] (prd)."
+            exit 1
+          else
+            tag_env=""
+          fi
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            environment="$INPUT_ENVIRONMENT"
+            if [ "$environment" != "dev" ] && [ "$environment" != "$tag_env" ]; then
+              echo "::error::Un déploiement manuel vers $environment doit être lancé sur un tag $([ "$environment" = uat ] && echo pre-release-* || echo release-*) (ref actuelle : $REF_NAME)."
+              exit 1
+            fi
+          else
+            environment="${tag_env:-dev}"
+          fi
+          echo "environment=$environment" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Cible : $environment${version:+ (version $version)} depuis $REF_TYPE $REF_NAME"
+          if [ "$environment" != "dev" ]; then
+            echo "::notice title=Approbation requise::Le déploiement vers $environment attend la validation d'un reviewer de l'environnement $environment."
+          fi
+
+  ci:
+    name: CI réutilisée
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    name: Déployer vers ${{ needs.resolve.outputs.environment }}
+    runs-on: ubuntu-latest
+    needs: [resolve, ci]
+    concurrency:
+      group: deploy-${{ needs.resolve.outputs.environment }}
+      cancel-in-progress: false
+    # Les règles de l'environnement (Required reviewers, tags autorisés) s'appliquent ici :
+    # le job attend l'approbation avant d'accéder aux secrets.
+    environment:
+      name: ${{ needs.resolve.outputs.environment }}
+      url: ${{ steps.site.outputs.url }}
+    env:
+      DEPLOY_ENVIRONMENT: ${{ needs.resolve.outputs.environment }}
+      DEPLOY_VERSION: ${{ needs.resolve.outputs.version }}
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+      SSH_PORT: ${{ secrets.SSH_PORT }}
+      SSH_USER: ${{ secrets.SSH_USER }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+      WP_PATH: ${{ secrets.WP_PATH }}
+      SITE_URL: ${{ vars.SITE_URL }}
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: URL du site cible
+        id: site
+        run: |
+          set -euo pipefail
+          if [ -z "${SITE_URL:-}" ]; then
+            echo "::error::Variable SITE_URL manquante pour l'environnement $DEPLOY_ENVIRONMENT."
+            exit 1
+          fi
+          site="${SITE_URL%/}"
+          echo "url=$site" >> "$GITHUB_OUTPUT"
+          echo "Déploiement $DEPLOY_ENVIRONMENT${DEPLOY_VERSION:+ v$DEPLOY_VERSION} vers $site (ref $GITHUB_REF_NAME, commit ${GITHUB_SHA:0:12})"
+
+      - name: Construire et préparer les artefacts
+        run: |
+          set -euo pipefail
+          bash scripts/package.sh dist
+          echo "Checksums SHA-256 :"
+          sha256sum dist/*.zip
+          rm -rf build/deploy-artifacts
+          mkdir -p build/deploy-artifacts
+          unzip -q dist/B-INSTALLER-PLUGIN-partikulier-core-*.zip -d build/deploy-artifacts
+          unzip -q dist/partikulier-theme-*.zip -d build/deploy-artifacts
+          test -d build/deploy-artifacts/partikulier-core
+          test -d build/deploy-artifacts/partikulier
+
+      - name: Configurer SSH strict
+        run: |
+          set -euo pipefail
+          : "${SSH_HOST:?secret SSH_HOST manquant}"
+          : "${SSH_PORT:?secret SSH_PORT manquant}"
+          : "${SSH_USER:?secret SSH_USER manquant}"
+          : "${SSH_PRIVATE_KEY:?secret SSH_PRIVATE_KEY manquant}"
+          : "${SSH_KNOWN_HOSTS:?secret SSH_KNOWN_HOSTS manquant}"
+          : "${WP_PATH:?secret WP_PATH manquant}"
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
+          chmod 600 "$HOME/.ssh/id_ed25519"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 644 "$HOME/.ssh/known_hosts"
+          {
+            echo "Host partikulier-hostinger"
+            echo "  HostName $SSH_HOST"
+            echo "  Port $SSH_PORT"
+            echo "  User $SSH_USER"
+            echo "  IdentityFile $HOME/.ssh/id_ed25519"
+            echo "  UserKnownHostsFile $HOME/.ssh/known_hosts"
+            echo "  StrictHostKeyChecking yes"
+            echo "  IdentitiesOnly yes"
+            echo "  BatchMode yes"
+          } > "$HOME/.ssh/config"
+          chmod 600 "$HOME/.ssh/config"
+
+      - name: Sauvegarde pré-déploiement
+        run: |
+          set -euo pipefail
+          ssh partikulier-hostinger 'bash -s' -- "$WP_PATH" "$GITHUB_SHA" "5" <<'REMOTE'
+          set -euo pipefail
+          WP_PATH="$1"
+          GITHUB_SHA="$2"
+          RETAIN_BACKUPS="$3"
+          timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
+          short_sha="${GITHUB_SHA:0:12}"
+          backup_root="$HOME/backups/partikulier"
+          backup_dir="$backup_root/${timestamp}-${short_sha}"
+          mkdir -p "$backup_dir"
+          test -d "$WP_PATH" || { echo "WP_PATH introuvable"; exit 1; }
+          if [ -d "$WP_PATH/wp-content/plugins/partikulier-core" ]; then
+            tar -czf "$backup_dir/partikulier-core.tar.gz" -C "$WP_PATH/wp-content/plugins" partikulier-core
+          fi
+          if [ -d "$WP_PATH/wp-content/themes/partikulier" ]; then
+            tar -czf "$backup_dir/partikulier.tar.gz" -C "$WP_PATH/wp-content/themes" partikulier
+          fi
+          if command -v wp >/dev/null 2>&1 && [ -f "$WP_PATH/wp-config.php" ]; then
+            # Hostinger disables proc_open(), which `wp db export` needs: call mysqldump directly.
+            cd "$WP_PATH"
+            db_name="$(wp config get DB_NAME)"
+            db_user="$(wp config get DB_USER)"
+            db_pass="$(wp config get DB_PASSWORD)"
+            db_host="$(wp config get DB_HOST)"
+            db_port=""
+            if [[ "$db_host" == *:* ]]; then
+              db_port="${db_host##*:}"
+              db_host="${db_host%%:*}"
+            fi
+            MYSQL_PWD="$db_pass" mysqldump --single-transaction --no-tablespaces \
+              -h "$db_host" ${db_port:+-P "$db_port"} -u "$db_user" "$db_name" \
+              | gzip > "$backup_dir/database.sql.gz"
+            echo "Base de données sauvegardée : $backup_dir/database.sql.gz"
+          else
+            echo "wp-cli indisponible ou wp-config.php absent : export DB ignoré"
+          fi
+          find "$backup_root" -mindepth 1 -maxdepth 1 -type d | sort -r | awk "NR>${RETAIN_BACKUPS}" | xargs -r rm -rf --
+          REMOTE
+
+      - name: Activer le mode maintenance
+        run: |
+          set -euo pipefail
+          ssh partikulier-hostinger 'bash -s' -- "$WP_PATH" <<'REMOTE'
+          set -euo pipefail
+          WP_PATH="$1"
+          if command -v wp >/dev/null 2>&1 && [ -f "$WP_PATH/wp-config.php" ]; then
+            cd "$WP_PATH"
+            wp maintenance-mode activate || true
+          fi
+          REMOTE
+
+      - name: Synchroniser plugin et thème
+        run: |
+          set -euo pipefail
+          ssh partikulier-hostinger 'bash -s' -- "$WP_PATH" <<'REMOTE'
+          set -euo pipefail
+          WP_PATH="$1"
+          mkdir -p "$WP_PATH/wp-content/plugins/partikulier-core" "$WP_PATH/wp-content/themes/partikulier"
+          REMOTE
+          rsync -az --delete -e "ssh -F $HOME/.ssh/config" \
+            build/deploy-artifacts/partikulier-core/ \
+            "partikulier-hostinger:$WP_PATH/wp-content/plugins/partikulier-core/"
+          rsync -az --delete -e "ssh -F $HOME/.ssh/config" \
+            build/deploy-artifacts/partikulier/ \
+            "partikulier-hostinger:$WP_PATH/wp-content/themes/partikulier/"
+
+      - name: Vérifications WordPress post-déploiement
+        run: |
+          set -euo pipefail
+          ssh partikulier-hostinger 'bash -s' -- "$WP_PATH" <<'REMOTE'
+          set -euo pipefail
+          WP_PATH="$1"
+          command -v wp >/dev/null 2>&1 || { echo "wp-cli introuvable"; exit 1; }
+          cd "$WP_PATH"
+          wp plugin activate partikulier-core
+          wp cache flush || true
+          wp rewrite flush || true
+          REMOTE
+
+      - name: Désactiver le mode maintenance
+        if: always()
+        run: |
+          set -euo pipefail
+          ssh partikulier-hostinger 'bash -s' -- "$WP_PATH" <<'REMOTE' || true
+          set -euo pipefail
+          WP_PATH="$1"
+          if command -v wp >/dev/null 2>&1 && [ -f "$WP_PATH/wp-config.php" ]; then
+            cd "$WP_PATH"
+            wp maintenance-mode deactivate || true
+          fi
+          REMOTE
+
+      - name: Smoke checks HTTP
+        run: |
+          set -euo pipefail
+          : "${SITE_URL:?variable SITE_URL manquante}"
+          site="${SITE_URL%/}"
+          code="$(curl -fsS -o /dev/null -w '%{http_code}' "$site")"
+          test "$code" = "200"
+          curl -fsS "$site/wp-json/partikulier/v1/health" > build/health.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          health = json.loads(Path("build/health.json").read_text(encoding="utf-8"))
+          assert health.get("status") == "ok", health
+          print("health endpoint: ok")
+          PY
+
+      - name: Déploiement terminé
+        env:
+          SITE: ${{ steps.site.outputs.url }}
+        run: |
+          set -euo pipefail
+          echo "::notice title=Déployé sur $DEPLOY_ENVIRONMENT::$SITE"
+          echo "Site déployé ($DEPLOY_ENVIRONMENT) : $SITE"
+          echo "Santé : $SITE/wp-json/partikulier/v1/health"
+          {
+            echo "## Déploiement $DEPLOY_ENVIRONMENT réussi"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Site | <$SITE> |"
+            echo "| Santé | <$SITE/wp-json/partikulier/v1/health> |"
+            echo "| Version | ${DEPLOY_VERSION:-—} |"
+            echo "| Ref | \`$GITHUB_REF_NAME\` |"
+            echo "| Commit | \`${GITHUB_SHA:0:12}\` |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Nettoyer la clé SSH
+        if: always()
+        run: |
+          set -euo pipefail
+          rm -f "$HOME/.ssh/id_ed25519" "$HOME/.ssh/known_hosts" "$HOME/.ssh/config"

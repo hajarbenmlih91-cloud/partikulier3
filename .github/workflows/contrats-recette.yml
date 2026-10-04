@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  PK_VERSION: '2.10.8'
+  PK_VERSION: '2.10.10'
 
 permissions:
   contents: read
@@ -106,10 +106,10 @@ jobs:
               exit 1
             fi
           done
-      - name: Dépendances WebKit Playwright pour tests cross-browser (SE-018)
+      - name: Dépendances Playwright Chromium, Firefox et WebKit
         run: |
-          # Traçabilité validation WebKit Safari (exigence 26/09)
-          npx playwright install --with-deps webkit || true
+          npm --prefix theme/partikulier ci --no-audit --no-fund
+          cd theme/partikulier && npx playwright install --with-deps chromium firefox webkit
       - name: Contrat front-assets HTTP (SE-018)
         run: |
           set -euo pipefail
@@ -457,6 +457,22 @@ jobs:
           done
           kill "$SRV" 2>/dev/null || true
           rm -f wp/wp-content/mu-plugins/dp9-injection-harness.php
+      - name: Contrats de fusion et navigateurs FR/EN/AR
+        run: |
+          mkdir -p preuves-run/integration
+          PK_WP_DIR=$PWD/wp PK_COMMIT=${{ github.sha }} PK_VERSION=2.10.10 \
+            php plugin/partikulier-core/tests/merge-v3-contract.php > preuves-run/integration/merge-v3.json
+          cleanup() {
+            PK_WP_DIR=$PWD/wp php theme/partikulier/tests/merge-v3-browser-fixture.php cleanup
+            if [[ -n "${SRV:-}" ]]; then kill "$SRV" 2>/dev/null || true; fi
+          }
+          trap cleanup EXIT
+          PK_WP_DIR=$PWD/wp php theme/partikulier/tests/merge-v3-browser-fixture.php setup > preuves-run/integration/browser-fixture.json
+          php -S 127.0.0.1:8099 -t wp theme/partikulier/tests/router-ci.php > /tmp/wp-merge-browser.log 2>&1 &
+          SRV=$!
+          curl --retry 5 --retry-connrefused --retry-delay 1 --fail --silent http://127.0.0.1:8099/fr/ > /dev/null
+          PK_BASE=http://127.0.0.1:8099 PK_MERGE_FIXTURE=$PWD/preuves-run/integration/browser-fixture.json \
+            node theme/partikulier/tests/merge-v3.mjs > preuves-run/integration/merge-browser.json
       - name: Vérifier l'oracle 454/454 (durci, 44 suites — schéma, cohérence, unicité, totaux épinglés, results exigé hors suites historiques ; reprise F3 + tests v3 §9.2)
         run: |
           # Validateur durci (reprise du 20/09/2026 F3, durci le 21/09/2026
