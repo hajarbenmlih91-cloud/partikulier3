@@ -105,9 +105,7 @@ function pk_2fa_authenticate($user, $username, $password){
     // Si on vient du formulaire 2FA, vérifie
     $code = isset($_POST['pk_2fa_code']) ? preg_replace('/\s+/','', (string) $_POST['pk_2fa_code']) : '';
     if ($code === '') {
-        // Intercepte le login : affiche le 2e écran
-        pk_2fa_render_second_step($user);
-        exit;
+        return new WP_Error('pk_2fa_required', 'Code 2FA requis.');
     }
     // Vérifie TOTP ±1 fenêtre
     if (pk_2fa_verify_totp($secret, $code)) return $user;
@@ -124,21 +122,12 @@ function pk_2fa_authenticate($user, $username, $password){
     return new WP_Error('pk_2fa_invalid', 'Code 2FA invalide.');
 }
 
-function pk_2fa_render_second_step($user){
-    $redirect = $_REQUEST['redirect_to'] ?? admin_url();
-    login_header('Double authentification', '', $user->user_login);
+add_action('login_form', 'pk_2fa_login_field');
+function pk_2fa_login_field(){
     ?>
-    <form method="post" action="<?php echo esc_url(site_url('wp-login.php','login_post')); ?>">
-        <p><label>Code à 6 chiffres (ou code de secours à 8 caractères)<br>
-        <input type="text" name="pk_2fa_code" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9a-fA-F ]{6,8}" autofocus required style="font-size:1.4em;letter-spacing:.15em"></label></p>
-        <input type="hidden" name="log" value="<?php echo esc_attr($user->user_login); ?>">
-        <input type="hidden" name="pwd" value="<?php echo esc_attr($_POST['pwd'] ?? ''); ?>">
-        <input type="hidden" name="redirect_to" value="<?php echo esc_attr($redirect); ?>">
-        <input type="hidden" name="rememberme" value="<?php echo esc_attr($_POST['rememberme'] ?? ''); ?>">
-        <?php wp_nonce_field('pk-2fa-'.$user->ID); ?>
-        <p class="submit"><button type="submit" class="button button-primary button-large">Vérifier</button></p>
-    </form>
-    <?php login_footer();
+    <p><label>Code à 6 chiffres (ou code de secours à 8 caractères)<br>
+    <input type="text" name="pk_2fa_code" autocomplete="one-time-code" pattern="[0-9a-fA-F ]{6,16}" style="font-size:1.4em;letter-spacing:.15em"></label></p>
+    <?php
 }
 
 // 4) TOTP RFC6238 — base32 + HMAC-SHA1

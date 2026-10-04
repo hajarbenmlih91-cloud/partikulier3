@@ -130,7 +130,7 @@ foreach ($apiMatrix as [$id, $class, $traits, $methods]) {
 /* DA-007 — VERBATIM : chaque méthode déplacée résout vers SON fichier de trait. */
 $movedMap = [
     LeadService::class => [
-        'LeadsContactTrait.php' => ['authorize_contact'],
+        'LeadsContactTrait.php' => ['authorize_contact', 'contact_database'],
         'LeadsIntakeTrait.php' => ['register_api_lead', 'seed_followup', 'detect_lang_for_lead', 'set_qualification', 'rest_set_qualification'],
         'LeadsRestTrait.php' => ['rest_contact_authorization', 'rest_preferences', 'rest_consent', 'rest_opt_out', 'rest_erase_request', 'handle_stop'],
         'LeadsPrivacyTrait.php' => ['retention_days', 'maybe_schedule_retention', 'lead_id_for_phone', 'erase_lead', 'purge_expired', 'has_active_consent', 'lead_id_for_wa_id', 'normalize_phone', 'encrypt_phone', 'decrypt_phone_for_admin'],

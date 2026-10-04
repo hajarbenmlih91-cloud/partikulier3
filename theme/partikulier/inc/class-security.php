@@ -33,6 +33,7 @@ class Partikulier_Security {
 
 		// 2. Rate Limiting à la connexion (Anti-Brute Force composite CGNAT)
 		add_filter( 'authenticate', array( __CLASS__, 'guard_login_brute_force' ), 5, 3 );
+		add_filter( 'authenticate', array( __CLASS__, 'finalize_login_verdict' ), 100, 3 );
 		add_action( 'wp_login_failed', array( __CLASS__, 'track_login_failure' ) );
 		add_action( 'wp_login', array( __CLASS__, 'reset_login_attempts' ), 10, 2 );
 
@@ -82,7 +83,6 @@ class Partikulier_Security {
 
 		$secret_key    = self::get_admin_secret_key();
 		$cookie_name   = 'pk_admin_access';
-		$expected_hash = hash_hmac( 'sha256', $secret_key, wp_salt( 'auth' ) );
 
 		$provided_key = isset( $_GET['pk_admin_key'] ) ? sanitize_text_field( wp_unslash( $_GET['pk_admin_key'] ) ) : '';
 		if ( '' === $provided_key && isset( $_GET['pk_direction'] ) ) {
@@ -90,21 +90,32 @@ class Partikulier_Security {
 		}
 
 		if ( '' !== $provided_key && hash_equals( $secret_key, $provided_key ) ) {
-			setcookie( $cookie_name, $expected_hash, time() + 7200, COOKIEPATH, COOKIE_DOMAIN, is_ssl(), true );
+			$expiry = time() + 7200;
+			$token  = $expiry . '.' . hash_hmac( 'sha256', $expiry . '|' . $secret_key, wp_salt( 'auth' ) );
+			setcookie( $cookie_name, $token, $expiry, COOKIEPATH, COOKIE_DOMAIN, is_ssl(), true );
 			return;
 		}
 
-		if ( isset( $_COOKIE[ $cookie_name ] ) && hash_equals( $expected_hash, (string) $_COOKIE[ $cookie_name ] ) ) {
-			return;
-		}
-
-		if ( 'POST' === ( $_SERVER['REQUEST_METHOD'] ?? '' ) && isset( $_COOKIE[ $cookie_name ] ) ) {
+		if ( isset( $_COOKIE[ $cookie_name ] ) && self::valid_admin_access_token( $_COOKIE[ $cookie_name ], $secret_key ) ) {
 			return;
 		}
 
 		// Non autorisé : masquage complet vers l'accueil du site
 		wp_safe_redirect( home_url( '/' ), 302 );
 		exit;
+	}
+
+	public static function valid_admin_access_token( $token, $secret_key ) {
+		if ( ! is_string( $token ) || ! preg_match( '/^([0-9]{10})\.([a-f0-9]{64})$/D', $token, $parts ) ) {
+			return false;
+		}
+		$expiry = (int) $parts[1];
+		$now    = time();
+		if ( $expiry <= $now || $expiry > $now + 7200 ) {
+			return false;
+		}
+		$expected = hash_hmac( 'sha256', $parts[1] . '|' . $secret_key, wp_salt( 'auth' ) );
+		return hash_equals( $expected, $parts[2] );
 	}
 
 	/**
@@ -124,8 +135,13 @@ class Partikulier_Security {
 	public static function get_login_rate_key( $username ) {
 		$ip      = isset( $_SERVER['REMOTE_ADDR'] ) ? (string) wp_unslash( $_SERVER['REMOTE_ADDR'] ) : 'unknown';
 		$digits  = preg_replace( '/\D+/', '', (string) $username );
-		$account = strlen( $digits ) >= 9 ? $digits : sanitize_user( (string) $username );
+		$account = self::normalize_login_phone( $username ) ?: ( strlen( $digits ) >= 9 ? $digits : sanitize_user( (string) $username ) );
 		return 'pk_auth_rl_' . hash_hmac( 'sha256', $ip . '|' . strtolower( $account ), wp_salt( 'auth' ) );
+	}
+
+	private static function normalize_login_phone( $username ) {
+		$digits = preg_replace( '/\D+/', '', (string) $username );
+		return preg_match( '/^(?:0|212|00212)([67][0-9]{8})$/D', $digits, $match ) ? '212' . $match[1] : '';
 	}
 
 	/**
@@ -146,6 +162,18 @@ class Partikulier_Security {
 		return $user;
 	}
 
+	public static function finalize_login_verdict( $user, $username, $password ) {
+		// WordPress password filters may replace the earlier rate-limit error.
+		$user = self::guard_login_brute_force( $user, $username, $password );
+		if ( is_wp_error( $user ) && array_intersect(
+			$user->get_error_codes(),
+			array( 'invalid_username', 'invalid_email', 'incorrect_password', 'authentication_failed' )
+		) ) {
+			return new WP_Error( 'pk_auth_failed', __( 'Identifiant ou mot de passe incorrect.', 'partikulier' ) );
+		}
+		return $user;
+	}
+
 	public static function track_login_failure( $username ) {
 		$key      = self::get_login_rate_key( $username );
 		$attempts = (int) get_transient( $key );
@@ -162,11 +190,12 @@ class Partikulier_Security {
 	 * son numéro de téléphone portable (+212..., 06..., 07...).
 	 */
 	public static function resolve_phone_login( $user, $username, $password ) {
-		if ( $user instanceof WP_User || empty( $username ) || empty( $password ) ) {
+		if ( $user instanceof WP_User || ( is_wp_error( $user ) && 'pk_auth_rate_limited' === $user->get_error_code() )
+			|| empty( $username ) || empty( $password ) ) {
 			return $user;
 		}
 
-		$digits = preg_replace( '/\D+/', '', (string) $username );
+		$digits = self::normalize_login_phone( $username ) ?: preg_replace( '/\D+/', '', (string) $username );
 		if ( strlen( $digits ) >= 9 ) {
 			$found = null;
 

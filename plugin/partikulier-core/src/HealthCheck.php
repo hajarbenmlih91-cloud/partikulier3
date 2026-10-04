@@ -38,6 +38,9 @@ final class HealthCheck
 			$db_reachable = false;
 			$db_error     = $e->getMessage();
 		}
+		if ( ! $db_reachable ) {
+			return $this->databaseFailure($db_error ?: 'Database ping failed');
+		}
 		$table  = $wpdb->prefix . 'pk_listings';
 		$exists = false;
 		if ( $db_reachable ) {
@@ -47,6 +50,9 @@ final class HealthCheck
 				$db_error     = (string) $wpdb->last_error;
 				$exists       = false;
 			}
+		}
+		if ( ! $db_reachable ) {
+			return $this->databaseFailure($db_error);
 		}
 
 		$integrity = ['orphans' => 0, 'missing' => 0, 'served' => 0, 'live_posts' => 0, 'status' => 'ok'];

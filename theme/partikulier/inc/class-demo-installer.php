@@ -477,7 +477,7 @@ class Partikulier_Demo_Installer {
 		for ( $i = 0; $i < 20; $i++ ) {
 			$c = $pool_cities[ $i % count( $pool_cities ) ];
 			$t = $pool_types[ $i % count( $pool_types ) ];
-			$is_rent = ( 1 === $i % 2 ); // alternance vente / location → 10 ventes + 10 locations sur ces 20
+			$is_rent = ( 1 === $i % 2 || in_array( $i, array( 0, 18 ), true ) ); // 3 locations fixes + 12 générées = 15.
 			$price = $is_rent ? ( $t[3] > 100000 ? intval( $t[3] / 200 ) : $t[3] ) : $t[3];
 			if ( $is_rent && $price < 3000 ) { $price = 3500 + ( $i * 137 ) % 4000; }
 			if ( ! $is_rent && $price < 100000 ) { $price = 600000 + ( $i * 99000 ) % 800000; }

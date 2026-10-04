@@ -114,11 +114,16 @@ try {
     $assert('MERGE-ACCOUNT-STAFF', $admin instanceof WP_User && !Partikulier_Listing_Approval::may_issue_credentials($admin), 'Approval never issues staff credentials');
     $expiry = time() + 600;
     $token = $expiry . '.' . hash_hmac('sha256', $expiry . '|fixture-key', wp_salt('auth'));
+    $expired = time() - 1;
+    $expiredToken = $expired . '.' . hash_hmac('sha256', $expired . '|fixture-key', wp_salt('auth'));
     $assert('MERGE-GATEWAY', Partikulier_Security::valid_admin_access_token($token, 'fixture-key')
         && !Partikulier_Security::valid_admin_access_token($token, 'wrong-key')
+        && !Partikulier_Security::valid_admin_access_token($expiredToken, 'fixture-key')
         && !Partikulier_Security::valid_admin_access_token('1.' . str_repeat('0', 64), 'fixture-key'), 'Gateway validates signature and server-side expiry');
 
-    require_once dirname(__DIR__) . '/mu-plugins/partikulier-2fa-light.php';
+    if (!function_exists('pk_2fa_authenticate')) {
+        require_once dirname(__DIR__) . '/mu-plugins/partikulier-2fa-light.php';
+    }
     $secret = 'GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ';
     $assert('MERGE-TOTP-RFC', pk_2fa_totp_at($secret, 1) === '287082', 'RFC 6238 test vector (six digits)');
     update_user_meta($owner, PK_2FA_META_SECRET, $secret);
@@ -168,6 +173,21 @@ try {
         if ($taxonomy !== null) $GLOBALS['wp_taxonomies']['es_status'] = $taxonomy;
     }
 
+    $qualify = static function (string $number) use ($pid): int {
+        $initial = LeadService::authorize_contact($number, $pid, 'merge-qualify-' . wp_generate_uuid4());
+        if (is_wp_error($initial) || ($initial->get_data()['reason'] ?? '') !== 'need_qualification'
+            || !empty($initial->get_data()['allowed']) || isset($initial->get_data()['owner'])) {
+            throw new RuntimeException('Cannot seed qualification without disclosing owner contact');
+        }
+        $request = new WP_REST_Request('POST', '/partikulier/v1/qualification');
+        $request->set_param('wa_id', $number);
+        $request->set_param('is_particulier', true);
+        $qualified = LeadService::rest_set_qualification($request);
+        if (!$qualified instanceof WP_REST_Response || ($qualified->get_data()['qualified'] ?? '') !== 'particulier') {
+            throw new RuntimeException('Cannot qualify transaction fixture');
+        }
+        return (int) $initial->get_data()['lead_id'];
+    };
     foreach ([
         ['get_var', 'phone_hash'],
         ['get_row', 'opt_out_at'],
@@ -182,9 +202,16 @@ try {
     ] as $i => [$method, $needle]) {
         $number = '2126' . random_int(10000000, 99999999);
         $phones[] = $number;
+        $creating = $method === 'insert' && $needle === 'pk_buyer_leads';
+        if (!$creating) $qualify($number);
         $wpdb = new MergeV3DatabaseProxy($realDb, $method, $needle, 1);
         $result = LeadService::authorize_contact($number, $pid, 'merge-fault-' . $run . '-' . $i);
-        $assert('MERGE-RETRY-' . $i, !is_wp_error($result) && $result->get_data()['allowed'] && $wpdb->failures === 1 && $wpdb->transactions === 2, 'One injected SQL deadlock rolls back and retries: ' . $needle);
+        $expectedOutcome = !is_wp_error($result) && ($creating
+            ? empty($result->get_data()['allowed']) && ($result->get_data()['reason'] ?? '') === 'need_qualification'
+                && !isset($result->get_data()['owner'])
+            : !empty($result->get_data()['allowed']));
+        $assert('MERGE-RETRY-' . $i, $expectedOutcome && $wpdb->failures === 1 && $wpdb->transactions === 2,
+            'One injected SQL deadlock rolls back and retries without bypassing qualification: ' . $needle);
         $wpdb = $realDb;
     }
     $number = '2126' . random_int(10000000, 99999999);
@@ -192,12 +219,23 @@ try {
     $wpdb = new MergeV3DatabaseProxy($realDb, 'get_var', 'phone_hash', 3);
     $exhausted = LeadService::authorize_contact($number, $pid, 'merge-exhausted-' . $run);
     $assert('MERGE-RETRY-BOUNDED', is_wp_error($exhausted) && $wpdb->transactions === 3 && $wpdb->failures === 3, 'Persistent deadlock stops after three attempts');
+    $wpdb = $realDb;
+    $qualifiedId = $qualify($number);
+    $leadBeforeFailure = $wpdb->get_row($wpdb->prepare(
+        "SELECT * FROM {$wpdb->prefix}pk_buyer_leads WHERE id = %d", $qualifiedId), ARRAY_A);
     $wpdb = new MergeV3DatabaseProxy($realDb, 'insert', 'pk_interest_events', 1, 'Fixture non-retryable insert error');
     $failure = LeadService::authorize_contact($number, $pid, 'merge-failed-' . $run);
     $assert('MERGE-RETRY-NONDEADLOCK', is_wp_error($failure) && $wpdb->transactions === 1, 'Non-deadlock failure is not returned as success or retried');
     $wpdb = $realDb;
-    $hash = hash_hmac('sha256', $number, wp_salt('auth'));
-    $assert('MERGE-RETRY-ATOMIC', !(int) $wpdb->get_var($wpdb->prepare("SELECT id FROM {$wpdb->prefix}pk_buyer_leads WHERE phone_hash = %s", $hash)), 'Failed contact leaves no partial lead');
+    $residue = 0;
+    foreach (['pk_whatsapp_messages', 'pk_interest_events', 'pk_contact_disclosures', 'pk_contact_limits'] as $table) {
+        $residue += (int) $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM {$wpdb->prefix}{$table} WHERE lead_id = %d", $qualifiedId));
+    }
+    $leadAfterFailure = $wpdb->get_row($wpdb->prepare(
+        "SELECT * FROM {$wpdb->prefix}pk_buyer_leads WHERE id = %d", $qualifiedId), ARRAY_A);
+    $assert('MERGE-RETRY-ATOMIC', $residue === 0 && $leadBeforeFailure === $leadAfterFailure,
+        'Failed contact leaves no partial message, interest, disclosure or quota; qualified lead is unchanged');
 
     foreach (['same', 'distinct'] as $kind) {
         $jobs = [];
@@ -205,19 +243,26 @@ try {
         for ($i = 0; $i < 10; $i++) {
             $number = $kind === 'same' ? $sharedPhone : '2126' . random_int(10000000, 99999999);
             $phones[] = $number;
+            if ($kind === 'distinct' || $i === 0) $qualify($number);
             $process = proc_open([PHP_BINARY, __FILE__, '--contact-worker', (string) $pid, $number], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
             if (!is_resource($process)) throw new RuntimeException('Cannot start concurrency worker');
             $jobs[] = [$process, $pipes];
         }
         $ids = [];
         $ok = true;
+        $allowedCount = 0;
+        $manualCount = 0;
         foreach ($jobs as [$process, $pipes]) {
             $out = stream_get_contents($pipes[1]);
             $err = stream_get_contents($pipes[2]);
             fclose($pipes[1]); fclose($pipes[2]);
             $code = proc_close($process);
             $data = json_decode($out, true);
-            $ok = $ok && $code === 0 && !empty($data['allowed']);
+            $allowed = !empty($data['allowed']);
+            $manual = ($data['reason'] ?? '') === 'manual_review';
+            $ok = $ok && $code === 0 && ($allowed || $manual);
+            $allowedCount += (int) $allowed;
+            $manualCount += (int) $manual;
             if (!$ok) fwrite(STDERR, $out . $err);
             $ids[] = $data['lead_id'] ?? 0;
         }
@@ -228,9 +273,11 @@ try {
         $messages = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}pk_whatsapp_messages WHERE lead_id IN ({$idList})");
         $interests = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}pk_interest_events WHERE lead_id IN ({$idList})");
         $quota = (int) $wpdb->get_var("SELECT SUM(contacts_count) FROM {$wpdb->prefix}pk_contact_limits WHERE lead_id IN ({$idList})");
+        $expectedAllowed = $kind === 'same' ? 2 : 10;
         $assert('MERGE-CONCURRENT-' . $kind, $ok && count($uniqueIds) === $expected
-            && $disclosures === $expected && $quota === $expected && $messages === 10 && $interests === 10,
-            'Ten parallel contacts preserve exact lead, disclosure, message, interest and quota counts: ' . $kind);
+            && $allowedCount === $expectedAllowed && $manualCount === 10 - $expectedAllowed
+            && $disclosures === $expected && $quota === $expected && $messages === $expectedAllowed && $interests === 10,
+            'Ten qualified parallel contacts preserve exact counts and third-contact manual review: ' . $kind);
     }
 
     $settings = is_array($originalSettings) ? $originalSettings : [];
@@ -238,8 +285,10 @@ try {
     $settings['active_key_id'] = 'N';
     update_option('pk_n8n_settings', $settings, false);
     $headers = AutomationService::outgoing_headers('POST', 'https://example.test/webhook', '{}');
-    $assert('MERGE-WEBHOOK', !is_wp_error($headers) && $headers['X-Partikulier-Automation'] === $settings['automation_api_secret']
-        && $headers['X-Partikulier-Algorithm'] === 'sha256' && preg_match('/^sha256=[a-f0-9]{64}$/', $headers['X-Partikulier-Signature']) === 1, 'Outgoing n8n secret and signed-header contracts are preserved');
+    $assert('MERGE-WEBHOOK', !is_wp_error($headers) && count($headers) === 5
+        && !array_key_exists('X-Partikulier-Automation', $headers)
+        && $headers['X-Partikulier-Algorithm'] === 'sha256' && preg_match('/^sha256=[a-f0-9]{64}$/', $headers['X-Partikulier-Signature']) === 1,
+        'Outgoing n8n preserves five signed headers without transmitting the shared secret');
 
     wp_set_current_user($admin->ID);
     $demos = get_posts(['post_type' => 'properties', 'post_status' => 'any', 'meta_key' => '_pk_seed_demo', 'meta_value' => '1', 'numberposts' => -1, 'fields' => 'ids', 'lang' => '', 'suppress_filters' => true]);

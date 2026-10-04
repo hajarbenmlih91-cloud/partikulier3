@@ -101,11 +101,13 @@ foreach ($e55Fixtures as $suffix => $row) {
         throw new RuntimeException('Cannot seed erase fixture: ' . $suffix . ' ' . $wpdb->last_error);
     }
 }
-$wpdb->insert($prefix . 'pk_search_events', [
+if (false === $wpdb->insert($prefix . 'pk_search_events', [
     'lead_id' => null, 'visitor_hash' => hash('sha256', 'e55-anonymous-' . $run),
     'filters_json' => '{}', 'filters_signature' => hash('sha256', 'e55-anonymous-filters-' . $run),
     'created_at' => $e55Now,
-]);
+])) {
+    throw new RuntimeException('Cannot seed anonymous search fixture: ' . $wpdb->last_error);
+}
 $e55AnonymousSearchId = (int) $wpdb->insert_id;
 /* Livraisons de l'alerte (pk_alert_deliveries, clé alert_id sans lead_id) :
    condition R6 du vérificateur croisé — purgées avec l'alerte. */

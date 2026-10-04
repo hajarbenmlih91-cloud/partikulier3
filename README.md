@@ -120,6 +120,17 @@ conservent les API publiques et les seuils de taille des modules. Les catalogues
 compilés sont régénérés depuis les sources canoniques (633 entrées AR, 581 EN)
 et vérifiés à l'octet près par `php scripts/build-catalogs.php --check`.
 
+Le contrat de fusion vérifie aussi les alias de téléphone dans un même compteur
+de connexion, le refus de connexion après cinq échecs, les cookies de passerelle
+signés avec expiration contrôlée côté serveur, et le 2FA via le formulaire
+WordPress standard (aucun mot de passe caché dans un second formulaire).
+Les anciens cookies de passerelle devront être renouvelés après déploiement.
+Chaque erreur SQL du contact provoque un rollback ; seuls les deadlocks sont
+réessayés, au maximum trois fois. Les sondes de santé cessent les lectures dès
+que le ping échoue. La concurrence conserve la qualification et la revue
+manuelle au troisième contact, et la démo installe exactement 15 ventes et
+15 locations sans toucher aux annonces réelles.
+
 ```bash
 make lint
 make package
