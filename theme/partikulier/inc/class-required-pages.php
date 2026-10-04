@@ -297,6 +297,20 @@ class Partikulier_Required_Pages {
 		if ( ! is_array( $langs ) || count( $langs ) < 2 ) {
 			return;
 		}
+		// CI (hide_default=0, home blog en /fr/) : ne pas voler la page d'accueil.
+		// UAT Hostinger (hide_default=1) : /fr/ et /en/ 404 — on répare.
+		$hide = 1;
+		if ( isset( $GLOBALS['polylang']->options ) ) {
+			$opt = $GLOBALS['polylang']->options;
+			if ( is_object( $opt ) && method_exists( $opt, 'get' ) ) {
+				$hide = (int) $opt->get( 'hide_default' );
+			} elseif ( is_array( $opt ) ) {
+				$hide = (int) ( $opt['hide_default'] ?? 1 );
+			}
+		}
+		if ( 0 === $hide ) {
+			return;
+		}
 		if ( isset( $GLOBALS['polylang']->options ) && method_exists( $GLOBALS['polylang']->options, 'merge' ) ) {
 			$GLOBALS['polylang']->options->merge(
 				array(

@@ -242,6 +242,7 @@ jobs:
           command -v wp >/dev/null 2>&1 || { echo "wp-cli introuvable"; exit 1; }
           cd "$WP_PATH"
           wp plugin activate partikulier-core
+          wp eval 'if ( class_exists( "Partikulier_Required_Pages" ) ) { delete_option( "pk_front_ensured" ); Partikulier_Required_Pages::ensure_front(); echo "front i18n ok\n"; }' || true
           wp cache flush || true
           wp rewrite flush || true
           REMOTE
@@ -264,8 +265,15 @@ jobs:
           set -euo pipefail
           : "${SITE_URL:?variable SITE_URL manquante}"
           site="${SITE_URL%/}"
-          code="$(curl -fsS -o /dev/null -w '%{http_code}' "$site")"
+          # hide_default=0 : / peut 301 vers /fr/ ou /en/. Les préfixes doivent 200.
+          code="$(curl -s -o /dev/null -w '%{http_code}' -L "$site")"
+          echo "smoke / (follow) $code"
           test "$code" = "200"
+          for p in /fr/ /en/ /ar/; do
+            c="$(curl -s -o /dev/null -w '%{http_code}' "$site$p" || true)"
+            echo "smoke $p $c"
+            test "$c" = "200"
+          done
           curl -fsS "$site/wp-json/partikulier/v1/health" > build/health.json
           python - <<'PY'
           import json
