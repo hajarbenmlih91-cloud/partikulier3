@@ -306,7 +306,13 @@ try {
     $demos = get_posts(['post_type' => 'properties', 'post_status' => 'publish', 'meta_key' => '_pk_seed_demo', 'meta_value' => '1', 'numberposts' => -1, 'fields' => 'ids', 'lang' => '', 'suppress_filters' => true]);
     $sources = array_filter($demos, static fn($id) => !get_post_meta($id, '_pk_translation_source', true));
     $galleryCount = count(array_filter($demos, static fn($id) => count((array) get_post_meta($id, 'es_property_gallery', true)) === 3));
-    $rentCount = count(array_filter($sources, static fn($id) => has_term(['a-louer', 'louer', 'for-rent', 'rent'], PARTIKULIER_ESTATIK_STATUS_TAXONOMY, $id)));
+    $rentCount = 0;
+    foreach ($sources as $id) {
+        $slugs = wp_get_object_terms((int) $id, PARTIKULIER_ESTATIK_STATUS_TAXONOMY, ['fields' => 'slugs']);
+        if (!is_wp_error($slugs) && array_intersect((array) $slugs, ['a-louer', 'louer', 'for-rent', 'rent'])) {
+            $rentCount++;
+        }
+    }
     $languageCount = class_exists('Partikulier_Listing_Translations') && Partikulier_Listing_Translations::available()
         ? count(Partikulier_Listing_Translations::active_languages()) : 1;
     $assert('MERGE-DEMO-INSTALL', count($sources) === 30 && count($demos) === 30 * $languageCount
