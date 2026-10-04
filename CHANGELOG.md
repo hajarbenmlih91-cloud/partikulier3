@@ -12,6 +12,27 @@ Releases ship as a **plugin-theme** pair. Up to 2.10.8-6.20.7 they were tagged `
 
 ## [Unreleased]
 
+## [2.10.10-6.20.9] - 2026-10-04
+
+### Added
+- Explicit demo installer with 30 listings, bundled images and optional Polylang variants.
+- Moroccan phone login, existing-account protection, configurable admin login gateway and opt-in TOTP 2FA.
+- Focused merge regression contracts for authentication, health, lead transactions, demo cleanup and responsive browser behavior.
+
+### Fixed
+- Bounded deadlock retries and checked SQL operations throughout contact authorization.
+- Taxonomy lookup errors no longer crash lead snapshots.
+- Health returns uncached HTTP 503 for degraded/critical states and stops DB-backed diagnostics when the database is unavailable; anonymous responses exclude operational details.
+- Existing n8n shared-secret webhook headers retained alongside HMAC signatures.
+- Language-specific navigation, localized form validation and scoped Estatik authentication-popup suppression.
+- Contact-card contrast, mobile gallery/card/deposit layout and above-the-fold image loading.
+
+### Changed
+- Integrated delivery commit `f502d43` into `fixes-v3`, retaining Docker, deployment approvals/tag rules, database backups, user documentation and existing contract fixes.
+- Plugin version raised to 2.10.10 to distinguish this functional release from the already published 2.10.9.
+- Optional admin gateway has no built-in access key; password recovery remains available. 2FA setup never sends seeds to an external QR provider.
+- Delivery performance reports remain historical evidence, not a production SLO certification of the merged source.
+
 ## [2.10.9-6.20.8] - 2026-10-03
 
 Tooling, CI/CD and documentation release. No functional change to the plugin or the theme: only the version numbers are bumped (plugin 2.10.9, theme 6.20.8) and the contract tests are aligned with them.
@@ -90,7 +111,8 @@ Isolated security batch.
 
 First versioned pair of the monorepo after the B1→B6 evidence campaign (tag `preuves-b1-b6`, 2026-09-10). See [`docs/RELEASE.md`](docs/RELEASE.md).
 
-[Unreleased]: https://github.com/hajarbenmlih91-cloud/partikulier3/compare/pre-release-2.10.9-6.20.8...HEAD
+[Unreleased]: https://github.com/hajarbenmlih91-cloud/partikulier3/compare/fixes-v3...HEAD
+[2.10.10-6.20.9]: https://github.com/hajarbenmlih91-cloud/partikulier3/compare/pre-release-2.10.9-6.20.8...fixes-v3
 [2.10.9-6.20.8]: https://github.com/hajarbenmlih91-cloud/partikulier3/compare/v2.10.8-6.20.7-final...pre-release-2.10.9-6.20.8
 [2.10.8-6.20.7-final]: https://github.com/hajarbenmlih91-cloud/partikulier3/compare/v2.10.8-6.20.7...v2.10.8-6.20.7-final
 [2.10.8-6.20.7]: https://github.com/hajarbenmlih91-cloud/partikulier3/compare/v2.10.7-6.20.6...v2.10.8-6.20.7

@@ -6,6 +6,18 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ---
 
+## [2.10.10] - 2026-10-04
+
+### Corrigé
+- Intégration du lot livré `f502d43` sans écraser l'infrastructure Docker, CI/CD et les guides du dépôt.
+- Contacts acheteurs : gestion des erreurs de taxonomie et reprise bornée des transactions en cas de deadlock.
+- Santé : réponse HTTP 503 en état dégradé ou critique, sans cache ; diagnostics détaillés réservés aux administrateurs.
+- Regroupement des identifiants numériques dans les clés du limiteur REST.
+- Webhooks sortants : conservation du contrat d'authentification partagé et ajout de l'identifiant d'algorithme.
+
+### Technique
+- Paire plugin 2.10.10 / thème 6.20.9 ; artefacts et SBOM reconstruits depuis la source fusionnée.
+
 ## [2.10.9] - 2026-10-03
 
 ### Modifié

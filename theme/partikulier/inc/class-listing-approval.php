@@ -394,6 +394,26 @@ class Partikulier_Listing_Approval {
 	}
 
 	/**
+	 * Verification de securite F-01 : refuse l'emission d'identifiants
+	 * pour les comptes d'administration, d'edition ou de privilege superieur.
+	 *
+	 * @param WP_User|null $user Utilisateur auteur.
+	 * @return bool
+	 */
+	public static function may_issue_credentials( $user ) {
+		if ( ! $user || ! ( $user instanceof WP_User ) ) {
+			return false;
+		}
+		if ( user_can( $user, 'edit_others_posts' ) || user_can( $user, 'list_users' ) || user_can( $user, 'manage_options' ) ) {
+			return false;
+		}
+		if ( array_diff( (array) $user->roles, array( 'contributor', 'subscriber' ) ) ) {
+			return false;
+		}
+		return true;
+	}
+
+	/**
 	 * Prepare identifiant et lien de definition du mot de passe.
 	 * Aucun mot de passe en clair n'est produit ni stocke.
 	 *
@@ -411,6 +431,21 @@ class Partikulier_Listing_Approval {
 				'email'    => '',
 				'phone'    => $resolved_phone,
 				'password' => '',
+			);
+		}
+
+		// Protection F-01 : Verrouillage strict contre le reset de comptes staff / administrateurs.
+		if ( ! self::may_issue_credentials( $user ) ) {
+			return array(
+				'user_id'      => $user->ID,
+				'login'        => $user->user_login,
+				'email'        => $user->user_email,
+				'display_name' => $user->display_name,
+				'phone'        => $resolved_phone,
+				'password'     => '',
+				'reused'       => true,
+				'blocked'      => 'not_a_deposit_account',
+				'login_url'    => pk_login_page_url(),
 			);
 		}
 

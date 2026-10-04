@@ -160,7 +160,23 @@ final class RestController
 
 		RouteRegistry::declare('/health', [
 			'methods'             => 'GET',
-			'callback'            => fn(): WP_REST_Response => new WP_REST_Response($this->health()->get(), 200),
+			'callback'            => function(): WP_REST_Response {
+				$raw  = $this->health()->get();
+				$code = $raw['status'] === 'ok' ? 200 : 503;
+				// Ne jamais cacher le health : sonde liveness/readiness pour orchestrator.
+				$headers = ['Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0'];
+				if ( ! current_user_can('manage_options') ) {
+					$resp = new WP_REST_Response([
+						'status'   => $raw['status'],
+						'database' => $raw['database'],
+					], $code);
+					$resp->header('Cache-Control', $headers['Cache-Control']);
+					return $resp;
+				}
+				$resp = new WP_REST_Response($raw, $code);
+				$resp->header('Cache-Control', $headers['Cache-Control']);
+				return $resp;
+			},
 			'permission_callback' => [$this, 'guardPublic'],
 		], 'plugin');
 	}

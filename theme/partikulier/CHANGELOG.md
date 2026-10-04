@@ -6,6 +6,21 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ---
 
+## [6.20.9] - 2026-10-04
+
+### Ajouté
+- Connexion propriétaire par téléphone, protection des comptes existants et des identifiants du personnel.
+- Passerelle de connexion administrateur configurable ; 2FA TOTP optionnelle.
+- Installateur de démonstration explicite : 30 annonces et photos, traductions Polylang et purge des données marquées uniquement.
+
+### Corrigé
+- Galerie, cartes, contraste de la carte contact et ergonomie mobile du dépôt.
+- Navigation trilingue, validation du formulaire et chargement prioritaire des images visibles.
+- Suppression du popup d'authentification Estatik limitée à ce popup, sans masquer les autres modales.
+
+### Technique
+- Alignement avec le plugin 2.10.10. Les mesures de performance du colis restent historiques et doivent être rejouées sur l'infrastructure cible.
+
 ## [6.20.8] - 2026-10-03
 
 ### Modifié

@@ -4,6 +4,39 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Language: ar\n"
 
+msgid "Veuillez vérifier les champs obligatoires."
+msgstr "يرجى التحقق من الحقول المطلوبة."
+
+msgid "Identifiant ou mot de passe incorrect."
+msgstr "اسم المستخدم أو كلمة المرور غير صحيحة."
+
+msgid "Mot de passe oublié ?"
+msgstr "هل نسيت كلمة المرور؟"
+
+msgid "Trop de tentatives échouées. Par mesure de sécurité, veuillez patienter 15 minutes avant de réessayer."
+msgstr "محاولات فاشلة كثيرة. حفاظاً على أمانك، يرجى الانتظار 15 دقيقة قبل المحاولة مجدداً."
+
+msgid "Cette adresse e-mail est déjà associée à un compte. Veuillez vous connecter pour déposer votre annonce."
+msgstr "هذا البريد الإلكتروني مرتبط بحساب بالفعل. يرجى تسجيل الدخول لنشر إعلانك."
+
+msgid "Ce numéro de téléphone est déjà associé à un compte. Veuillez vous connecter pour déposer votre annonce."
+msgstr "رقم الهاتف هذا مرتبط بحساب بالفعل. يرجى تسجيل الدخول لنشر إعلانك."
+
+msgid "Prenez des photos avec votre smartphone ou ajoutez vos fichiers (JPG, PNG, WebP · 1 à 8 photos)"
+msgstr "التقط صوراً بهاتفك أو أضف ملفاتك (JPG، PNG، WebP · من صورة إلى 8 صور)"
+
+msgid "Indifférent / Non précisé"
+msgstr "لا تفضيل / غير محدد"
+
+msgid "Code 2FA (si activé)"
+msgstr "رمز التحقق بخطوتين (إذا كان مفعلاً)"
+
+msgid "Code 2FA requis."
+msgstr "رمز التحقق بخطوتين مطلوب."
+
+msgid "Code 2FA invalide."
+msgstr "رمز التحقق بخطوتين غير صحيح."
+
 msgid " + salon"
 msgstr " + صالون"
 

@@ -8,7 +8,9 @@ Construire les archives depuis la racine du dépôt :
 ./scripts/package.sh dist
 ```
 
-Installer `dist/B-INSTALLER-PLUGIN-partikulier-core-2.8.0.zip` dans WordPress, puis installer `dist/partikulier-theme-6.18.9.zip`. Le plugin doit être activé avant le thème afin que les services métier soient disponibles dès le premier chargement.
+Le packaging produit aussi `dist/sbom.cyclonedx.json`, inventaire CycloneDX des deux ZIPs de première partie avec leurs SHA-256. Les runtimes et extensions externes installés ne sont pas inventoriés ; le SBOM ne constitue pas une certification d'absence de vulnérabilités.
+
+Installer `dist/B-INSTALLER-PLUGIN-partikulier-core-2.10.10.zip` dans WordPress, puis installer `dist/partikulier-theme-6.20.9.zip`. Le plugin doit être activé avant le thème afin que les services métier soient disponibles dès le premier chargement.
 
 ## Vérifications post-déploiement
 
@@ -19,6 +21,18 @@ curl -fsS https://example.test/wp-json/partikulier/v1/health
 ```
 
 La réponse attendue est un JSON dont `status` vaut `ok`. Contrôler également le front en français, anglais et arabe, le sens RTL, la recherche géographique, le dépôt d’annonce, les favoris et la génération JSON-LD.
+
+La sonde retourne HTTP 200 en état `ok`, HTTP 503 en état `degraded` ou `critical`, avec `Cache-Control: no-store`. Sans session administrateur, seuls `status` et `database` sont exposés. Une panne qui empêche WordPress lui-même de démarrer doit également être surveillée au niveau du serveur.
+
+## Connexion et 2FA optionnelle
+
+Les propriétaires peuvent utiliser leur téléphone marocain (`06`/`07`, `+212` ou `00212`) et leur mot de passe. Un dépôt anonyme ne réutilise jamais un compte existant : son propriétaire doit d'abord se connecter.
+
+La passerelle native `wp-login.php` reste disponible tant qu'aucune clé n'est configurée. Pour activer son masquage, définir `PK_ADMIN_SECRET_KEY` avec une valeur aléatoire privée dans `wp-config.php`, puis ouvrir `wp-login.php?pk_admin_key=<clé>`. Le cookie signé expire après deux heures côté serveur ; les actions de récupération de mot de passe restent accessibles. Aucun paramètre SSO arbitraire n'accorde l'accès ; un connecteur hébergeur peut utiliser le filtre `partikulier_admin_gateway_bypass` seulement après sa propre validation.
+
+Pour proposer la 2FA, définir `PARTIKULIER_ENABLE_2FA` à `true` dans `wp-config.php`. Le plugin charge le module fourni, sans copie manuelle dans `wp-content/mu-plugins`. Chaque utilisateur l'active dans son profil, saisit la clé localement dans son application TOTP et conserve les cinq codes de secours affichés une seule fois. Aucun secret n'est envoyé à un prestataire QR. Le champ TOTP est présent sur la connexion native et Estatik ; un compte protégé ne peut pas se connecter sans son code.
+
+La démonstration s'installe uniquement sur action explicite dans **Outils → Démo Partikulier**. Ne pas l'installer automatiquement en production ; la purge est limitée aux annonces et médias marqués `_pk_seed_demo=1`.
 
 ## Configuration Polylang de référence (SE-025, E-2503)
 
@@ -90,7 +104,7 @@ Ne jamais committer de secrets. Les secrets d’automatisation doivent être inj
 
 ## Catalogues i18n
 
-Le plugin `partikulier-core` est la source canonique du domaine gettext `partikulier`. Le thème conserve une copie synchronisée pour garantir un repli traduit lorsque le plugin est désactivé. Le packaging et la CI refusent toute divergence entre les cinq fichiers partagés (`partikulier.pot`, `ar.po`, `ar.mo`, `en_US.po`, `en_US.mo`).
+Le plugin `partikulier-core` est la source canonique du domaine gettext `partikulier`. Le thème n'embarque aucune copie de ce kit ; il conserve ses dictionnaires de repli et le catalogue Estatik. Le packaging et la CI contrôlent le kit canonique et l'absence de copies côté thème.
 
 Pour personnaliser une traduction sans modifier les livrables, placer le catalogue dans l’emplacement WordPress prioritaire :
 

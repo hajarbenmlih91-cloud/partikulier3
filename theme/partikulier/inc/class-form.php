@@ -423,11 +423,17 @@ class Partikulier_Form {
 					'post_excerpt' => wp_trim_words( $description, 30, '…' ), /* 6.17.30 : sans 3e arg, wp_trim_words colle l'entité littérale et celle-ci finissait en base + JSON-LD */
 			), true );
 		} else {
-			$user_email = $email_ok ? $email : ( $name ? sanitize_title( substr( $name, 0, 20 ) ) . wp_rand( 100, 999 ) . '@partikulier.local' : false );
-			if ( ! $user_email ) {
-					$user_email = 'contact-' . wp_rand( 10000, 99999 ) . '@partikulier.local';
+			$clean_phone = Partikulier_Security::normalize_phone( $phone ) ?: preg_replace( '/\D+/', '', (string) $phone );
+			if ( $email_ok ) {
+				$user_email = $email;
+			} elseif ( ! empty( $clean_phone ) ) {
+				$user_email = $clean_phone . '@partikulier.local';
+			} elseif ( $name ) {
+				$user_email = sanitize_title( substr( $name, 0, 20 ) ) . wp_rand( 100, 999 ) . '@partikulier.local';
+			} else {
+				$user_email = 'contact-' . wp_rand( 10000, 99999 ) . '@partikulier.local';
 			}
-			$user = self::ensure_user( $user_email, $name );
+			$user = self::ensure_user( $user_email, $name, $phone );
 			if ( is_wp_error( $user ) ) {
 					return $user;
 			}
@@ -680,15 +686,7 @@ class Partikulier_Form {
 		 * @return string
 		 */
 	public static function upload_hint() {
-			$max = size_format( wp_max_upload_size() );
-
-		if ( self::supports_heic() ) {
-				/* translators: %s: taille maximale. */
-				return sprintf( __( 'JPG, PNG, HEIC ou WebP · %s maximum par photo', 'partikulier' ), $max );
-		}
-
-			/* translators: %s: taille maximale. */
-			return sprintf( __( 'JPG, PNG ou WebP · %s maximum par photo', 'partikulier' ), $max );
+			return __( 'Prenez des photos avec votre smartphone ou ajoutez vos fichiers (JPG, PNG, WebP · 1 à 8 photos)', 'partikulier' );
 	}
 
 		/**
@@ -778,21 +776,67 @@ class Partikulier_Form {
 
 		/**
 		 * Cree ou recupere l'utilisateur annonceur (contributor).
+		 * Protection F-01 : interdire l'appropriation anonyme d'un compte existant.
+		 * Support téléphone : permet l'inscription/connexion directe par numéro mobile marocain.
 		 */
-	private static function ensure_user( $email, $name ) {
-			$user = get_user_by( 'email', $email );
-		if ( $user && false === strpos( $email, '@partikulier.local' ) ) {
-				return $user;
+	private static function ensure_user( $email, $name, $phone = '' ) {
+			$user        = get_user_by( 'email', $email );
+			$clean_phone = Partikulier_Security::normalize_phone( $phone ) ?: preg_replace( '/\D+/', '', (string) $phone );
+
+		if ( ! $user && ! empty( $clean_phone ) ) {
+			$user = Partikulier_Security::find_phone_user( $clean_phone );
+			if ( ! $user ) {
+				$meta_users = get_users( array(
+					'meta_key'   => '_pk_owner_phone_clean',
+					'meta_value' => $clean_phone,
+					'number'     => 1,
+				) );
+				if ( ! empty( $meta_users ) ) {
+					$user = $meta_users[0];
+				}
+			}
 		}
-			$login    = sanitize_user( strtok( $email, '@' ) . wp_rand( 1000, 9999 ) );
+
+		if ( $user && false === strpos( $email, '@partikulier.local' ) ) {
+			if ( is_user_logged_in() && get_current_user_id() === (int) $user->ID ) {
+				return $user;
+			}
+			return new WP_Error(
+				'pk_email_in_use',
+				__( 'Cette adresse e-mail est déjà associée à un compte. Veuillez vous connecter pour déposer votre annonce.', 'partikulier' )
+			);
+		}
+
+		if ( $user && false !== strpos( $email, '@partikulier.local' ) ) {
+			if ( is_user_logged_in() && get_current_user_id() === (int) $user->ID ) {
+				return $user;
+			}
+			return new WP_Error(
+				'pk_phone_in_use',
+				__( 'Ce numéro de téléphone est déjà associé à un compte. Veuillez vous connecter pour déposer votre annonce.', 'partikulier' )
+			);
+		}
+
+			// Priorité à un identifiant simple basé sur le téléphone ou le nom
+			if ( ! empty( $clean_phone ) ) {
+				$login = $clean_phone;
+			} else {
+				$login = sanitize_user( strtok( $email, '@' ) . wp_rand( 1000, 9999 ) );
+			}
+
 			$password = wp_generate_password( 16, true, false );
 			$user_id  = wp_create_user( $login, $password, $email );
 		if ( is_wp_error( $user_id ) ) {
 				return $user_id;
 		}
+			update_user_meta( $user_id, '_pk_deposit_account', 1 );
+		if ( ! empty( $clean_phone ) ) {
+			update_user_meta( $user_id, '_pk_owner_phone_clean', $clean_phone );
+			update_user_meta( $user_id, '_pk_owner_phone_raw', $phone );
+		}
 			$user = get_user_by( 'id', $user_id );
 			$user->set_role( 'contributor' );
-			wp_update_user( array( 'ID' => $user_id, 'display_name' => $name ?: strtok( $email, '@' ) ) );
+			wp_update_user( array( 'ID' => $user_id, 'display_name' => $name ?: ( ! empty( $clean_phone ) ? $clean_phone : strtok( $email, '@' ) ) ) );
 			return $user;
 	}
 

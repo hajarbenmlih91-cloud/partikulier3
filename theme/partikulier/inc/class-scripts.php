@@ -59,6 +59,7 @@ class Partikulier_Scripts {
 							'language' => function_exists( 'pll_current_language' ) ? pll_current_language( 'slug' ) : 'fr',
 							'i18n'     => array(
 									'publishing'    => __( 'Publication en cours…', 'partikulier' ),
+									'requiredFields' => __( 'Veuillez vérifier les champs obligatoires.', 'partikulier' ),
 									'serverError'   => __( 'Erreur serveur', 'partikulier' ),
 									'saved'         => __( 'Annonce enregistrée !', 'partikulier' ),
 									'retry'         => __( 'réessayez ou contactez-nous.', 'partikulier' ),

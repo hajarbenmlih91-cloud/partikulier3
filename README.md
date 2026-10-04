@@ -6,8 +6,8 @@ Monorepo de livraison du portail immobilier **Partikulier** : thème WordPress e
 
 | Chemin | Rôle | Version |
 |---|---|---:|
-| `plugin/partikulier-core` | Plugin cœur : domaines métier, REST, santé, migrations et contrats | 2.10.9 |
-| `theme/partikulier` | Thème immobilier : templates, front, i18n FR/EN/AR, Estatik et QA | 6.20.8 |
+| `plugin/partikulier-core` | Plugin cœur : domaines métier, REST, santé, migrations et contrats | 2.10.10 |
+| `theme/partikulier` | Thème immobilier : templates, front, i18n FR/EN/AR, Estatik et QA | 6.20.9 |
 | `scripts/package.sh` | Packaging reproductible des deux livrables | — |
 | `docs/` | Architecture, installation, release, user stories et cahier de tests ([`docs/user-stories/`](docs/user-stories/README.md)) | — |
 | `CHANGELOG.md` | Journal des versions conjointes plugin + thème | — |
@@ -17,7 +17,7 @@ Le thème délègue au plugin les domaines métier disponibles et conserve un mo
 ## Prérequis
 
 - WordPress 6.2 ou supérieur ;
-- PHP 8.0 ou supérieur ;
+- PHP 8.1 ou supérieur ;
 - Estatik ;
 - Polylang est optionnel pour les variantes multilingues ;
 - Node.js 18+ uniquement pour la QA Playwright du thème.

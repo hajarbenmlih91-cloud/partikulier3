@@ -34,8 +34,8 @@ if [[ "$OUT_INPUT" = /* ]]; then
 else
   OUT="$ROOT/$OUT_INPUT"
 fi
-PLUGIN_VERSION="2.10.9"
-THEME_VERSION="6.20.8"
+PLUGIN_VERSION="2.10.10"
+THEME_VERSION="6.20.9"
 
 rm -rf "$OUT"
 mkdir -p "$OUT"
@@ -106,5 +106,6 @@ while read -r hash name; do
     exit 1
   fi
 done < "$OUT/SHA256SUMS"
+php "$ROOT/scripts/build-sbom.php" "$OUT"
 printf 'Packages written to %s\n' "$OUT"
 cat "$OUT/SHA256SUMS"

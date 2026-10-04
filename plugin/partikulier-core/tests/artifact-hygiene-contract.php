@@ -27,7 +27,7 @@ $themeDir = getenv('PK_THEME_DIR') ?: '';
 $repoDir = getenv('PK_REPO_DIR') ?: '';
 $wpDir = getenv('PK_WP_DIR') ?: '';
 $commit = getenv('PK_COMMIT') ?: '';
-$version = getenv('PK_VERSION') ?: '2.10.9';
+$version = getenv('PK_VERSION') ?: '2.10.10';
 
 if ($themeDir === '' && $wpDir !== '' && is_file($wpDir . '/wp-load.php')) {
     require $wpDir . '/wp-load.php';

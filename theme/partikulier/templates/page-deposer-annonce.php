@@ -139,8 +139,30 @@ $types = get_terms( array(
 								<div data-pk-field="pk_type" class="pk-field">
 										<label class="pk-label" for="pk-type"><?php esc_html_e( 'Type de bien', 'partikulier' ); ?> <span class="pk-req">*</span></label>
 										<select id="pk-type" name="pk_type" required>
-												<?php foreach ( (array) $types as $term ) : ?>
-														<option value="<?php echo esc_attr( $term->term_id ); ?>" data-pk-slug="<?php echo esc_attr( $term->slug ); ?>"><?php echo esc_html( $term->name ); ?></option>
+												<?php
+												$pk_morocco_types = array(
+														'apartments'  => __( 'Appartement', 'partikulier' ),
+														'apartment'   => __( 'Appartement', 'partikulier' ),
+														'condos'      => __( 'Studio / Appartement', 'partikulier' ),
+														'condo'       => __( 'Studio / Appartement', 'partikulier' ),
+														'houses'      => __( 'Maison / Villa', 'partikulier' ),
+														'house'       => __( 'Maison / Villa', 'partikulier' ),
+														'land'        => __( 'Terrain', 'partikulier' ),
+														'multifamily' => __( 'Immeuble', 'partikulier' ),
+														'townhouses'  => __( 'Maison de ville / Riad', 'partikulier' ),
+														'townhouse'   => __( 'Maison de ville / Riad', 'partikulier' ),
+														'villa'       => __( 'Villa', 'partikulier' ),
+														'studio'      => __( 'Studio', 'partikulier' ),
+														'riad'        => __( 'Riad', 'partikulier' ),
+												);
+												foreach ( (array) $types as $term ) :
+														$slug_key = strtolower( (string) $term->slug );
+														$display_name = $pk_morocco_types[ $slug_key ] ?? $term->name;
+														if ( class_exists( 'Partikulier_Listing_I18n' ) && function_exists( 'pll_current_language' ) ) {
+																$display_name = Partikulier_Listing_I18n::localized_type( $display_name, pll_current_language( 'slug' ) );
+														}
+												?>
+														<option value="<?php echo esc_attr( $term->term_id ); ?>" data-pk-slug="<?php echo esc_attr( $term->slug ); ?>"><?php echo esc_html( $display_name ); ?></option>
 												<?php endforeach; ?>
 										</select>
 								</div>
@@ -301,9 +323,9 @@ $types = get_terms( array(
 								</div>
 
 								<div data-pk-field="pk_sunshine" class="pk-field">
-										<label class="pk-label" for="pk-sunshine"><?php esc_html_e( 'Ensoleillement', 'partikulier' ); ?> <span class="pk-req">*</span></label>
-										<select id="pk-sunshine" name="pk_sunshine" required>
-												<option value=""><?php esc_html_e( 'Choisissez l’exposition', 'partikulier' ); ?></option>
+										<label class="pk-label" for="pk-sunshine"><?php esc_html_e( 'Ensoleillement', 'partikulier' ); ?></label>
+										<select id="pk-sunshine" name="pk_sunshine">
+												<option value=""><?php esc_html_e( 'Indifférent / Non précisé', 'partikulier' ); ?></option>
 												<option value="Ensoleillé le matin"><?php esc_html_e( 'Ensoleillé le matin', 'partikulier' ); ?></option>
 												<option value="Ensoleillé l’après-midi"><?php esc_html_e( 'Ensoleillé l’après-midi', 'partikulier' ); ?></option>
 												<option value="Toute la journée"><?php esc_html_e( 'Toute la journée', 'partikulier' ); ?></option>
@@ -312,7 +334,7 @@ $types = get_terms( array(
 								</div>
 
 								<div data-pk-field="pk_terrace" class="pk-field">
-										<label class="pk-label"><?php esc_html_e( 'Terrasse', 'partikulier' ); ?> <span class="pk-req">*</span></label>
+										<label class="pk-label"><?php esc_html_e( 'Terrasse', 'partikulier' ); ?></label>
 										<div class="pk-toggle pk-toggle-half" data-toggle="pk_terrace">
 												<button type="button" class="pk-toggle-btn" data-value="Oui"><?php esc_html_e( 'Oui', 'partikulier' ); ?></button>
 												<button type="button" class="pk-toggle-btn is-on" data-value="Non"><?php esc_html_e( 'Non', 'partikulier' ); ?></button>
@@ -457,6 +479,14 @@ $types = get_terms( array(
 											liste.sort( function ( a, b ) { return a.ordre - b.ordre; } );
 											liste.forEach( function ( item ) { parent.appendChild( item.bloc ); } );
 										}
+
+										// Garantir que les boutons de navigation (Continuer) et mentions restent STRICTEMENT en bas de l'étape
+										form.querySelectorAll( '.pk-step' ).forEach( function ( step ) {
+											var actions = step.querySelector( '.pk-step-actions' );
+											var legal   = step.querySelector( '.pk-step-legal' );
+											if ( actions ) { step.appendChild( actions ); }
+											if ( legal ) { step.appendChild( legal ); }
+										} );
 									}
 
 									document.addEventListener( 'change', function ( e ) {

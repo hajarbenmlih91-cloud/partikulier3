@@ -66,14 +66,15 @@
 	function validateStep(step) {
 		var ok = true;
 		fieldsOf(step).forEach(function (field) {
-			if (field.type === "hidden" || field.disabled) {
+			if (field.type === "hidden" || field.disabled || field.closest("[hidden]")) {
 				return;
 			}
 			field.classList.remove("pk-invalid");
-			if (field.required && ! String(field.value).trim()) {
+			if (!field.checkValidity()) {
 				field.classList.add("pk-invalid");
 				if (ok) {
 					field.focus();
+					field.reportValidity();
 				}
 				ok = false;
 			}
