@@ -1,6 +1,6 @@
 const crypto = require('crypto');
 const input = $input.first().json.body;
-const allowed = ['contact-authorization', 'preferences', 'consent', 'opt-out'];
+const allowed = ['contact-authorization', 'qualification', 'preferences', 'consent', 'opt-out'];
 if (!input || !allowed.includes(input.operation) || !input.payload ||
     typeof input.payload !== 'object' || Array.isArray(input.payload)) {
   throw new Error('Expected an allowed operation and a JSON object payload');

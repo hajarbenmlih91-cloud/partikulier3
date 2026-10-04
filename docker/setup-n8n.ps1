@@ -1,11 +1,12 @@
 param(
     [Parameter(Mandatory)][hashtable]$Settings,
-    [switch]$WhatsAppOnly
+    [switch]$WhatsAppOnly,
+    [string]$BaseUrl = 'http://localhost:5678'
 )
 
 $ErrorActionPreference = 'Stop'
-$base = 'http://localhost:5678'
-$public = Invoke-RestMethod "$base/rest/settings"
+$base = $BaseUrl.TrimEnd('/')
+$public = Invoke-RestMethod "$base/rest/settings" -TimeoutSec 30
 if ($public.data.userManagement.showSetupOnFirstLoad) {
     $body = @{
         email = $Settings.N8N_EMAIL
@@ -13,16 +14,17 @@ if ($public.data.userManagement.showSetupOnFirstLoad) {
         firstName = 'Local'
         lastName = 'Partikulier'
     } | ConvertTo-Json
-    Invoke-RestMethod "$base/rest/owner/setup" -Method Post -ContentType application/json -Body $body | Out-Null
+    Invoke-RestMethod "$base/rest/owner/setup" -Method Post -ContentType application/json -Body $body -TimeoutSec 30 | Out-Null
 }
 $login = @{
     emailOrLdapLoginId = $Settings.N8N_EMAIL
     password = $Settings.N8N_PASSWORD
 } | ConvertTo-Json
-Invoke-RestMethod "$base/rest/login" -Method Post -ContentType application/json -Body $login -SessionVariable session | Out-Null
+Invoke-RestMethod "$base/rest/login" -Method Post -ContentType application/json -Body $login -SessionVariable session -TimeoutSec 30 | Out-Null
 
 function Invoke-N8n($Path, $Method = 'Get', $Body) {
-    $args = @{ Uri = "$base/rest/$Path"; Method = $Method; WebSession = $session }
+    Write-Verbose "n8n API: $Method $Path"
+    $args = @{ Uri = "$base/rest/$Path"; Method = $Method; WebSession = $session; TimeoutSec = 30 }
     if ($null -ne $Body) {
         $args.ContentType = 'application/json'
         $args.Body = $Body | ConvertTo-Json -Depth 30 -Compress
@@ -51,15 +53,16 @@ $smtp = Set-LocalCredential 'Partikulier local Mailpit' 'smtp' @{
 }
 
 function New-Webhook($Path, $Raw = $false) {
-    @{
+    $node = @{
         id = 'webhook'; name = 'Webhook'; type = 'n8n-nodes-base.webhook'; typeVersion = 2
         position = @(0, 0); webhookId = $Path
         parameters = @{
-            httpMethod = 'POST'; path = $Path; authentication = 'headerAuth'
+            httpMethod = 'POST'; path = $Path; authentication = $(if ($Raw) { 'none' } else { 'headerAuth' })
             responseMode = 'responseNode'; options = @{ rawBody = $Raw }
         }
-        credentials = @{ httpHeaderAuth = $header }
     }
+    if (-not $Raw) { $node.credentials = @{ httpHeaderAuth = $header } }
+    $node
 }
 
 function New-Respond($Expression) {
@@ -103,7 +106,7 @@ function Set-LocalWorkflow($Name, $Nodes, $Connections, [bool]$Draft = $false) {
     }
 }
 
-$approvalCode = Get-Content (Join-Path $PSScriptRoot 'n8n-approval.js') -Raw
+$approvalCode = [System.IO.File]::ReadAllText((Join-Path $PSScriptRoot 'n8n-approval.js'))
 $approvalNodes = @(
     (New-Webhook 'partikulier-listing-approved' $true),
     @{
@@ -131,7 +134,7 @@ Set-LocalWorkflow 'Partikulier local - approved listing (Mailpit)' $approvalNode
 }
 }
 
-$buyerCode = Get-Content (Join-Path $PSScriptRoot 'n8n-buyer.js') -Raw
+$buyerCode = [System.IO.File]::ReadAllText((Join-Path $PSScriptRoot 'n8n-buyer.js'))
 $headerParameters = @('X-Partikulier-Automation', 'X-Partikulier-Timestamp', 'X-Partikulier-Key-Id', 'X-Partikulier-Signature') |
     ForEach-Object { @{ name = $_; value = ('={{ $json.headers["' + $_ + '"] }}') } }
 $buyerNodes = @(
@@ -181,8 +184,8 @@ $outgoing = Set-LocalCredential 'Partikulier WhatsApp outgoing' 'whatsAppApi' @{
     accessToken = $Settings.WHATSAPP_ACCESS_TOKEN
     businessAccountId = $Settings.WHATSAPP_BUSINESS_ACCOUNT_ID
 }
-$parse = (Get-Content (Join-Path $PSScriptRoot 'n8n-whatsapp-parse.js') -Raw).Replace('__WHATSAPP_TEST_RECIPIENT__', $Settings.WHATSAPP_TEST_RECIPIENT)
-$reply = Get-Content (Join-Path $PSScriptRoot 'n8n-whatsapp-reply.js') -Raw
+$parse = [System.IO.File]::ReadAllText((Join-Path $PSScriptRoot 'n8n-whatsapp-parse.js')).Replace('__WHATSAPP_TEST_RECIPIENT__', $Settings.WHATSAPP_TEST_RECIPIENT)
+$reply = [System.IO.File]::ReadAllText((Join-Path $PSScriptRoot 'n8n-whatsapp-reply.js'))
 $whatsAppNodes = @(
     @{
         id = '731e041b-bf9a-4f0c-9f73-6d6b9ab7b9a2'; name = 'WhatsApp Trigger'
@@ -242,7 +245,7 @@ $whatsAppNodes = @(
         typeVersion = 1; position = @(0, 250)
         parameters = @{
             width = 650; height = 280
-            content = "## Real WhatsApp test (draft)`nPublish manually to register the Meta webhook using the public ngrok URL. Only the configured test recipient is accepted.`n`nSend TEST for help, a PK-reference to request an owner contact, or STOP to opt out. Delivery-status events and duplicate business messages do not produce replies.`n`nWordPress calls go through the existing HMAC-signed buyer workflow. No R3 qualification or Sheets export is included. Execution payloads are not saved."
+            content = "## Real WhatsApp test (draft)`nPublish manually to register the Meta webhook using the public ngrok URL. Only the configured test recipient is accepted.`n`nSend TEST for help, a PK-reference to request an owner contact, or STOP to opt out. Answer PARTICULIER or INTERMEDIAIRE when asked, then resend the reference. Delivery-status events and duplicate business messages do not produce replies.`n`nWordPress calls go through the existing HMAC-signed buyer workflow, including qualification and editable contact limits. Sheets export is not included. Execution payloads are not saved."
         }
     }
 )

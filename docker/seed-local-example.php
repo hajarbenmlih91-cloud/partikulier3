@@ -52,9 +52,13 @@ if ( ! $listing || ! get_post( $listing ) ) {
 	if ( is_wp_error( $listing ) ) {
 		WP_CLI::error( $listing->get_error_message() );
 	}
+	$owner_phone = Partikulier_Crypto::encrypt_phone( '212600000000' );
+	if ( '' === $owner_phone ) {
+		WP_CLI::error( 'Cannot encrypt the local example owner phone.' );
+	}
 	foreach ( array(
 		'_pk_local_example' => '1', '_pk_status' => 'pending',
-		'_pk_owner_phone' => '212600000000', '_pk_owner_name' => 'Docker Demo Owner',
+		'_pk_owner_phone' => $owner_phone, '_pk_owner_name' => 'Docker Demo Owner',
 		'_pk_city_name' => 'Casablanca', '_pk_district_name' => 'Maarif',
 		'es_property_price' => 1200000, 'es_property_area' => 90,
 		'es_property_bedrooms' => 2, 'es_property_total_rooms' => 3,

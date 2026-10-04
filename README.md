@@ -55,7 +55,11 @@ conservés ; un jeu de démo déjà présent n'est pas réimporté.
 
 Le proxy Caddy fournit un HTTPS privé entre WordPress et n8n. La confiance dans
 son certificat est installée au démarrage du conteneur et limitée au proxy dans
-le client HTTP WordPress. Le mode HMAC reste `enforce`. L'accès aux variables
+le client HTTP WordPress. Le mode HMAC reste `enforce`. Le workflow de validation
+vérifie la signature HMAC du corps brut avant tout envoi Mailpit ; il ne demande
+pas l'ancien en-tête contenant le secret, retiré des appels sortants upstream.
+Le webhook acquéreur conserve son authentification par en-tête.
+L'accès aux variables
 d'environnement et au module `crypto` des nœuds Code n8n est activé pour signer
 les requêtes de cet exemple **local uniquement** ; les données d'exécution ne
 sont pas conservées. Les messages contenant les accès du propriétaire restent
@@ -79,11 +83,28 @@ Configurer aussi le numéro Business dans **Apparence > Personnaliser >
 Validation WhatsApp > Numéro WhatsApp Business des demandes acquéreurs**.
 Le bouton **Demander sur WhatsApp** d'une fiche ouvre ce numéro avec sa référence
 préremplie ; l'acquéreur doit envoyer le message pour déclencher n8n. Le test
-actuel répond directement avec le contact autorisé, sans étape supplémentaire
-de confirmation. Les liens `localhost` du site ne sont accessibles que sur le PC.
+demande d'abord la qualification du nouvel acquéreur. Répondre `PARTICULIER`
+ou `INTERMEDIAIRE`, puis renvoyer la référence ; WordPress décide du contact,
+du refus ou de la revue manuelle selon ses limites configurées.
+Les liens `localhost` du site ne sont accessibles que sur le PC.
 L'URL ngrok est utilisée pour les webhooks publics ; le pont HTTPS privé des
 validations WordPress reste inchangé. Un workflow WhatsApp déjà publié doit être
 dépublié manuellement avant de réimporter son brouillon.
+
+Pour vérifier une intégration dans un autre worktree, utiliser des volumes,
+ports, projet Compose et image WordPress distincts. Le seul changement de nom
+du projet ne suffit pas : `PK_N8N_VOLUME` est un volume externe partagé.
+Ne pas lancer `setup-local.ps1` sur une pile isolée : ses noms de conteneurs et
+volumes ciblent la pile locale `partikulier`. `setup-n8n.ps1` accepte `-BaseUrl` ;
+`verify-local.ps1` accepte `-EnvFile`, `-SiteUrl`, `-N8nUrl`, `-MailpitUrl` et
+`-ComposeProject` pour viser explicitement la pile de test.
+
+**Blocage d'intégration sur `origin/main` (`e1fdcb8`)** : le contact automatisé
+d'un propriétaire dont le numéro est chiffré retourne `owner_unavailable`.
+La lecture utilise le déchiffrement réservé à `manage_options`, alors que
+l'appel HMAC n'est pas une session administrateur. Ne pas contourner cette
+garde ni remplacer le stockage chiffré par du texte clair. Cette intégration
+ne doit pas être publiée ou déployée avant correction et rejeu du parcours.
 
 ```bash
 make lint
