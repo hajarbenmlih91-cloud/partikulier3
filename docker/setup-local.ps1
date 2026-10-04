@@ -19,8 +19,21 @@ $settings = @{}
 foreach ($line in $lines) {
     if ($line -match '^([^#=]+)=(.*)$') { $settings[$matches[1]] = $matches[2] }
 }
+$originalSettings = $settings.Clone()
 
 $legacy = @(docker ps -a --filter 'name=^/partikulier-n8n$' --format '{{.Names}}')
+if ($legacy.Count -gt 0) {
+    $legacyContainer = (docker inspect partikulier-n8n | ConvertFrom-Json)[0]
+    if ($LASTEXITCODE -ne 0) { throw 'Cannot inspect the existing n8n container.' }
+    $dataMount = @($legacyContainer.Mounts | Where-Object Destination -eq '/home/node/.n8n')
+    if ($dataMount.Count -ne 1 -or $dataMount[0].Type -ne 'volume') {
+        throw 'Existing n8n data must use a named volume. Migrate its data manually before setup.'
+    }
+    if ($settings.PK_N8N_VOLUME -and $settings.PK_N8N_VOLUME -ne $dataMount[0].Name) {
+        throw 'PK_N8N_VOLUME differs from the existing n8n data volume. Reconcile the volumes before setup.'
+    }
+    $settings.PK_N8N_VOLUME = $dataMount[0].Name
+}
 if ($legacy.Count -gt 0 -and (-not $settings.N8N_ENCRYPTION_KEY -or -not $settings.N8N_EMAIL)) {
     $running = (docker inspect partikulier-n8n | ConvertFrom-Json)[0].State.Running
     if (-not $running) { Invoke-Docker start partikulier-n8n | Out-Null }
@@ -53,7 +66,7 @@ foreach ($name in @('PK_DB_PASSWORD', 'PK_DB_ROOT_PASSWORD', 'PK_ADMIN_PASSWORD'
 if (-not $settings.N8N_ENCRYPTION_KEY) { $settings.N8N_ENCRYPTION_KEY = New-LocalSecret }
 if (-not $settings.PARTIKULIER_N8N_SECRET) { $settings.PARTIKULIER_N8N_SECRET = New-LocalSecret }
 $settings.PARTIKULIER_N8N_WEBHOOK_URL = 'https://n8n-proxy/webhook/partikulier-listing-approved'
-$settings.PK_N8N_VOLUME = 'partikulier_n8n_data'
+if (-not $settings.PK_N8N_VOLUME) { $settings.PK_N8N_VOLUME = 'partikulier_n8n_data' }
 $settings.PK_WITH_POLYLANG = '1'
 $settings.PK_WITH_AVIF_TOOLS = '1'
 
@@ -78,10 +91,32 @@ Invoke-Docker volume create $settings.PK_N8N_VOLUME | Out-Null
 Invoke-Docker compose config --quiet
 Invoke-Docker compose build wordpress
 
-$db = @(docker ps --filter 'name=^/partikulier-db-1$' --format '{{.Names}}')
-if ($db.Count -gt 0 -and ($rotations.PK_DB_PASSWORD -or $rotations.PK_DB_ROOT_PASSWORD)) {
+$db = @(docker ps -a --filter 'name=^/partikulier-db-1$' --format '{{.Names}}')
+$rotatingDatabase = $rotations.PK_DB_PASSWORD -or $rotations.PK_DB_ROOT_PASSWORD
+if ($db.Count -eq 0 -and $rotatingDatabase) {
+    $volumes = @(Invoke-Docker volume ls --filter 'name=^partikulier_db_data$' --format '{{.Name}}')
+    if ($volumes.Count -gt 0) {
+        if (-not $originalSettings.PK_DB_ROOT_PASSWORD -or -not $originalSettings.PK_DB_PASSWORD) {
+            throw 'Existing database volume requires its original passwords in .env before rotation.'
+        }
+        try {
+            foreach ($name in @('PK_DB_PASSWORD', 'PK_DB_ROOT_PASSWORD')) {
+                [Environment]::SetEnvironmentVariable($name, $originalSettings[$name], 'Process')
+            }
+            Invoke-Docker compose up -d db | Out-Null
+        } finally {
+            foreach ($name in @('PK_DB_PASSWORD', 'PK_DB_ROOT_PASSWORD')) {
+                [Environment]::SetEnvironmentVariable($name, $settings[$name], 'Process')
+            }
+        }
+        $db = @('partikulier-db-1')
+    }
+}
+if ($db.Count -gt 0 -and $rotatingDatabase) {
     if ($settings.PK_DB_USER -notmatch '^[a-zA-Z0-9_]+$') { throw 'Unsupported local database username.' }
-    Invoke-Docker stop partikulier-wordpress-1 | Out-Null
+    Invoke-Docker start partikulier-db-1 | Out-Null
+    Invoke-Docker exec partikulier-db-1 sh -c 'for i in $(seq 1 60); do MYSQL_PWD="$MYSQL_ROOT_PASSWORD" mysql -uroot -e "SELECT 1" >/dev/null 2>&1 && exit 0; sleep 2; done; echo "Database not ready with its original root password" >&2; exit 1'
+    Invoke-Docker compose stop wordpress | Out-Null
     $sql = New-Object 'System.Collections.Generic.List[string]'
     if ($rotations.PK_DB_PASSWORD) {
         $sql.Add("ALTER USER '$($settings.PK_DB_USER)'@'%' IDENTIFIED BY '$($settings.PK_DB_PASSWORD)';")

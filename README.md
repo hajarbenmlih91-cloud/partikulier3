@@ -37,6 +37,12 @@ migre l'instance n8n autonome `partikulier-n8n` vers Compose sans changer sa cl�
 chiffrement ni son compte propriétaire. Sauvegarder les données avant une première
 migration. Pour une instance n8n déjà initialisée, `N8N_EMAIL` et `N8N_PASSWORD`
 doivent correspondre au compte existant.
+Le volume `PK_N8N_VOLUME` est conservé ; une migration réutilise le volume nommé
+du conteneur autonome et refuse un montage incompatible. La rotation MySQL
+redémarre aussi une base arrêtée avec ses anciens identifiants avant de
+modifier `.env`. Si seul le volume subsiste, les anciens mots de passe doivent
+être présents dans `.env`. Les secrets et sauvegardes sont exclus du contexte
+de construction Docker par `.dockerignore`.
 
 Le site est accessible sur `http://localhost:8099`, n8n sur
 `http://localhost:5678` et les emails capturés sur `http://localhost:8025`.
