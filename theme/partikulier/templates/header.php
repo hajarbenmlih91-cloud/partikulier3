@@ -125,7 +125,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 								'ar' => 'العربية',
 								'en' => 'English',
 						);
-						$pk_current_url = ( is_ssl() ? 'https://' : 'http://' ) . ( $_SERVER['HTTP_HOST'] ?? '' ) . ( $_SERVER['REQUEST_URI'] ?? '' );
 						?>
 						<div class="pk-lang" data-pk-lang>
 								<button type="button" class="pk-lang-toggle" aria-expanded="false" aria-haspopup="true" aria-label="<?php esc_attr_e( 'Choisir la langue', 'partikulier' ); ?>">
@@ -134,13 +133,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 								</button>
 								<ul class="pk-lang-menu" hidden>
 										<?php
+										$pk_raw_langs = function_exists( 'pll_the_languages' ) ? pll_the_languages( array( 'raw' => 1 ) ) : array();
+										$pk_is_listings = defined( 'PARTIKULIER_ESTATIK_POST_TYPE' ) && is_post_type_archive( PARTIKULIER_ESTATIK_POST_TYPE );
 										foreach ( array( 'fr', 'ar', 'en' ) as $pk_slug ) :
-												$pk_target_url = add_query_arg( 'lang', $pk_slug, $pk_current_url );
-												if ( function_exists( 'pll_the_languages' ) ) {
-														$raw_langs = pll_the_languages( array( 'raw' => 1 ) );
-														if ( ! empty( $raw_langs[ $pk_slug ]['url'] ) ) {
-																$pk_target_url = $raw_langs[ $pk_slug ]['url'];
-														}
+												$pk_target_url = function_exists( 'pk_localized_home_url' ) ? pk_localized_home_url( $pk_slug ) : home_url( '/' . $pk_slug . '/' );
+												if ( $pk_is_listings ) {
+														$pk_target_url = trailingslashit( $pk_target_url ) . 'annonces/';
+												} elseif ( ! empty( $pk_raw_langs[ $pk_slug ]['url'] ) && false === strpos( (string) $pk_raw_langs[ $pk_slug ]['url'], '/accueil-' ) ) {
+														$pk_target_url = $pk_raw_langs[ $pk_slug ]['url'];
 												}
 										?>
 												<li<?php echo ( $pk_slug === $pk_current_lang ) ? ' class="is-current"' : ''; ?>>
