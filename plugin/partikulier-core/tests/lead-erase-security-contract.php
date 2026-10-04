@@ -143,11 +143,11 @@ $e55AuditRow = $wpdb->get_row($wpdb->prepare(
     "SELECT metadata_json FROM {$auditTable} WHERE action = 'lead_erased' AND object_id = %d ORDER BY id DESC LIMIT 1",
     $e55LeadId), ARRAY_A);
 $e55AuditMeta = is_array($e55AuditRow) ? json_decode((string) $e55AuditRow['metadata_json'], true) : null;
-/* NB : « tables = 9 » = les 9 tables portant lead_id (invariant E-5502).
- * La 10e table touchée par erase, pk_alert_deliveries, est purgée par
- * sous-requête alert_id et validée séparément par E55-005 ci-dessous. */
-$assert('E55-004', is_array($e55AuditMeta) && (int) ($e55AuditMeta['tables'] ?? 0) === 9,
-    'E-5501 : l\'audit lead_erased est écrit avec le nouveau compte de la cascade (tables = 9, tables lead_id)');
+/* NB : « tables = 11 » = les 11 tables portant lead_id (invariant E-5502,
+ * + pk_search_events + pk_buyer_profiles depuis R1 2.10.16).
+ * pk_alert_deliveries est purgée par sous-requête alert_id (E55-005). */
+$assert('E55-004', is_array($e55AuditMeta) && (int) ($e55AuditMeta['tables'] ?? 0) === 11,
+    'E-5501 : l\'audit lead_erased est écrit avec le nouveau compte de la cascade (tables = 11, tables lead_id)');
 $e55DelivLeft = (int) $wpdb->get_var($wpdb->prepare(
     "SELECT COUNT(*) FROM {$prefix}pk_alert_deliveries WHERE alert_id = %d", $e55AlertId));
 $assert('E55-005', $e55DelivLeft === 0,

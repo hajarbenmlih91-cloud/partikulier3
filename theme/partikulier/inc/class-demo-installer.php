@@ -193,6 +193,7 @@ class Partikulier_Demo_Installer {
 			'meta_key'         => self::MARK,
 			'meta_value'       => '1',
 			'suppress_filters' => true,
+			'lang'             => '',
 		) );
 		$media = get_posts( array(
 			'post_type'        => 'attachment',
@@ -202,6 +203,7 @@ class Partikulier_Demo_Installer {
 			'meta_key'         => self::MARK,
 			'meta_value'       => '1',
 			'suppress_filters' => true,
+			'lang'             => '',
 		) );
 		foreach ( $posts as $id ) {
 			wp_delete_post( (int) $id, true );
@@ -494,7 +496,34 @@ class Partikulier_Demo_Installer {
 				'vis_a_vis' => ( 0 === $i % 3 ? 'Oui' : 'Non' ), 'lat' => $c[3] + ( $i * 0.001 ), 'lng' => $c[4] + ( $i * 0.001 ),
 			);
 		}
-		return $base; // 30 au total
+		$rent = [];
+		$sale = [];
+		foreach ( $base as $row ) {
+			if ( ( $row['action'] ?? '' ) === 'louer' ) {
+				$rent[] = $row;
+			} else {
+				$sale[] = $row;
+			}
+		}
+		// Les 10 premières sont 3 locations / 7 ventes ; les 20 suivantes 10/10 → 13/17.
+		// Le contrat MERGE-DEMO-INSTALL et le copy exigent 15/15.
+		while ( count( $rent ) < 15 && $sale ) {
+			$row = array_pop( $sale );
+			$row['action'] = 'louer';
+			if ( (int) $row['price'] > 100000 ) {
+				$row['price'] = max( 3500, (int) ( $row['price'] / 200 ) );
+			}
+			$rent[] = $row;
+		}
+		while ( count( $rent ) > 15 && $rent ) {
+			$row = array_pop( $rent );
+			$row['action'] = 'vendre';
+			if ( (int) $row['price'] < 100000 ) {
+				$row['price'] = 600000 + ( (int) $row['surface'] * 1000 );
+			}
+			$sale[] = $row;
+		}
+		return array_merge( $sale, $rent );
 	}
 
 	// --- Helpers : termes + photos ---

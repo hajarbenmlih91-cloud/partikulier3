@@ -226,7 +226,7 @@ try {
     $manifest = \Partikulier\Core\Database\Schema::domainTables();
     $themeOwned = array_filter($manifest, static fn(array $d) => ($d['owner'] ?? '') === 'theme');
     $b6Entry = $manifest['pk_property_variants'] ?? [];
-    $assert('B6A-016', count($manifest) === 21 && $themeOwned === []
+    $assert('B6A-016', count($manifest) === 23 && $themeOwned === []
         && ($b6Entry['owner'] ?? '') === 'plugin' && ($b6Entry['lot'] ?? '') === 'B6',
         'manifeste : 21/21 tables pk_ suivies, 0 restée côté thème, pk_property_variants owner=plugin lot=B6 (pk_slug_redirects : micro-lot ML, pas B)');
 } catch (Throwable $error) {

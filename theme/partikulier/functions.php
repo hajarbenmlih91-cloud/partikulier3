@@ -326,6 +326,6 @@ add_action('wp_head', static function () {
  */
 add_action( 'wp_footer', function() {
 		if ( ! is_admin() ) {
-				echo '<style id="pk-suppress-es-auth-popup">#es-authentication-popup, .es-auth__popup, .mfp-bg, .mfp-wrap { display: none !important; visibility: hidden !important; pointer-events: none !important; }</style>';
+				echo '<style id="pk-suppress-es-auth-popup">#es-authentication-popup,.es-auth__popup,.mfp-wrap:has(#es-authentication-popup),.mfp-wrap:has(.es-auth__popup),.mfp-bg:has(+ .mfp-wrap #es-authentication-popup),.mfp-bg:has(+ .mfp-wrap .es-auth__popup){display:none!important;visibility:hidden!important;pointer-events:none!important}</style>';
 		}
 }, 999 );

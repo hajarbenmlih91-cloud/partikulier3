@@ -324,14 +324,14 @@ try {
     // 14) Santé : aucune migration C1, 8/8 domaines plugin, 0 collision.
     $health = (new HealthCheck())->get();
     $pluginDomains = count(array_filter($health['domains'] ?? [], static fn($d) => ($d['owner'] ?? '') === 'plugin'));
-    $assert('C1A-014', Schema::VERSION === '2.7.0' && $pluginDomains === 8
+    $assert('C1A-014', Schema::VERSION === '2.9.0' && $pluginDomains === 8
         && (int) ($health['routes']['collisions'] ?? -1) === 0,
         sprintf('santé : schéma %s (zéro migration lot C1 — le bump 2.7.0 vient du micro-lot pré-prod, E-4303), 8/8 domaines plugin, 0 collision REST', Schema::VERSION));
 
     // 15) Manifeste : 21 tables pk_ suivies, aucune revenue côté thème.
     $manifest = Schema::domainTables();
     $themeOwned = array_filter($manifest, static fn(array $d) => ($d['owner'] ?? '') === 'theme');
-    $assert('C1A-015', count($manifest) === 21 && $themeOwned === [],
+    $assert('C1A-015', count($manifest) === 23 && $themeOwned === [],
         'manifeste : 21/21 tables pk_ suivies, 0 côté thème (le lot C1 n\'ajoute aucune table — couche contenu pure ; pk_slug_redirects : micro-lot ML)');
 } catch (Throwable $error) {
     $assert('C1A-EXCEPTION', false, $error->getMessage());
