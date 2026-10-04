@@ -77,10 +77,11 @@ foreach ($pluginFiles as $file) {
 $assert('DA-001', $oversizedPlugin === [],
     $oversizedPlugin === [] ? 'plugin src/ : zéro fichier PHP >400 lignes (métrique CA-4 satisfaite côté plugin)' : 'fichiers >400 l. : ' . implode(', ', $oversizedPlugin));
 
-/* DA-002 — modules du lot D + SE-016 : 4 shells + 12 traits, chacun ≤300 lignes. */
+/* DA-002 — modules du lot D + SE-016 + intake, chacun ≤300 lignes. */
 $lotDModules = [
     'src/Domain/Leads/LeadService.php',
     'src/Domain/Leads/LeadsContactTrait.php',
+    'src/Domain/Leads/LeadsIntakeTrait.php',
     'src/Domain/Leads/LeadsRestTrait.php',
     'src/Domain/Leads/LeadsPrivacyTrait.php',
     'src/Domain/Leads/LeadsAdminTrait.php',
@@ -107,8 +108,8 @@ $assert('DA-002', $modulesOk, 'modules lot D ≤300 l. : ' . implode(', ', $modu
 
 /* DA-003..006 — shells : traits composés + API publique intégrale. */
 $apiMatrix = [
-    ['DA-003', LeadService::class, ['LeadsContactTrait', 'LeadsRestTrait', 'LeadsPrivacyTrait', 'LeadsAdminTrait', 'LeadsEraseGuardTrait'],
-        ['table', 'leads_table', 'daily_limit', 'reference_for', 'authorize_contact', 'register_api_lead', 'rest_contact_authorization', 'rest_preferences', 'rest_consent', 'rest_opt_out', 'rest_erase_request', 'handle_stop', 'retention_days', 'maybe_schedule_retention', 'lead_id_for_phone', 'erase_lead', 'purge_expired', 'has_active_consent', 'admin_summary', 'admin_rows', 'followup_status_values', 'update_followup', 'lead_id_for_wa_id', 'decrypt_phone_for_admin', 'check_erase_secret']],
+    ['DA-003', LeadService::class, ['LeadsContactTrait', 'LeadsIntakeTrait', 'LeadsRestTrait', 'LeadsPrivacyTrait', 'LeadsAdminTrait', 'LeadsEraseGuardTrait'],
+        ['table', 'leads_table', 'daily_limit', 'reference_for', 'authorize_contact', 'register_api_lead', 'rest_contact_authorization', 'rest_preferences', 'rest_consent', 'rest_opt_out', 'rest_erase_request', 'handle_stop', 'retention_days', 'maybe_schedule_retention', 'lead_id_for_phone', 'erase_lead', 'purge_expired', 'has_active_consent', 'admin_summary', 'admin_rows', 'followup_status_values', 'update_followup', 'lead_id_for_wa_id', 'decrypt_phone_for_admin', 'check_erase_secret', 'set_qualification', 'rest_set_qualification']],
     ['DA-004', PaymentService::class, ['PaymentsOrdersTrait', 'PaymentsSubscriptionsTrait'],
         ['orders_table', 'subscriptions_table', 'is_gateway_enabled', 'create_order', 'record_order', 'get_order', 'update_order', 'mark_order_failed', 'mark_order_paid', 'delete_order', 'create_subscription', 'get_subscription', 'update_subscription', 'activate_subscription', 'revoke_subscription', 'delete_subscription']],
     ['DA-005', AutomationService::class, ['AutomationPolicyTrait', 'AutomationHmacTrait'],
@@ -129,7 +130,8 @@ foreach ($apiMatrix as [$id, $class, $traits, $methods]) {
 /* DA-007 — VERBATIM : chaque méthode déplacée résout vers SON fichier de trait. */
 $movedMap = [
     LeadService::class => [
-        'LeadsContactTrait.php' => ['authorize_contact', 'register_api_lead', 'seed_followup'],
+        'LeadsContactTrait.php' => ['authorize_contact'],
+        'LeadsIntakeTrait.php' => ['register_api_lead', 'seed_followup', 'detect_lang_for_lead', 'set_qualification', 'rest_set_qualification'],
         'LeadsRestTrait.php' => ['rest_contact_authorization', 'rest_preferences', 'rest_consent', 'rest_opt_out', 'rest_erase_request', 'handle_stop'],
         'LeadsPrivacyTrait.php' => ['retention_days', 'maybe_schedule_retention', 'lead_id_for_phone', 'erase_lead', 'purge_expired', 'has_active_consent', 'lead_id_for_wa_id', 'normalize_phone', 'encrypt_phone', 'decrypt_phone_for_admin'],
         'LeadsAdminTrait.php' => ['admin_summary', 'admin_rows', 'followup_status_values', 'update_followup'],
@@ -147,6 +149,9 @@ $movedMap = [
         'SynchronizerHooksTrait.php' => ['register', 'onSavePost', 'onTransitionStatus', 'onDeletePost', 'onMetaChange', 'enqueueUpsert', 'enqueueDelete'],
         'SynchronizerProjectionTrait.php' => ['flush', 'belowLoopCap', 'project', 'projectedStatus', 'upsertProjected'],
         'SynchronizerMaintenanceTrait.php' => ['rebuild', 'reconcile', 'invalidateSearchCache', 'recordStats', 'stats', 'unscheduleLegacyCron'],
+    ],
+    \Partikulier\Core\Domain\Recommendation\RecommendationService::class => [
+        'RecommendationSearchTrait.php' => ['log_search_event', 'visitor_hash_for'],
     ],
 ];
 $verbatimErrors = [];
@@ -177,12 +182,14 @@ $orderPairs = [
     ['PaymentsOrdersTrait.php', 'PaymentService.php'],
     ['PaymentsSubscriptionsTrait.php', 'PaymentService.php'],
     ['LeadsContactTrait.php', 'LeadService.php'],
+    ['LeadsIntakeTrait.php', 'LeadService.php'],
     ['LeadsRestTrait.php', 'LeadService.php'],
     ['LeadsPrivacyTrait.php', 'LeadService.php'],
     ['LeadsAdminTrait.php', 'LeadService.php'],
     ['LeadsEraseGuardTrait.php', 'LeadService.php'],
     ['AutomationPolicyTrait.php', 'AutomationService.php'],
     ['AutomationHmacTrait.php', 'AutomationService.php'],
+    ['RecommendationSearchTrait.php', 'RecommendationService.php'],
 ];
 $orderErrors = [];
 foreach ($orderPairs as [$traitFile, $classFile]) {
@@ -193,7 +200,7 @@ foreach ($orderPairs as [$traitFile, $classFile]) {
     }
 }
 $assert('DA-008', $orderErrors === [],
-    $orderErrors === [] ? 'bootstrap : les 12 require_once de traits précèdent leurs 4 classes shells' : 'ordre incorrect : ' . implode(' ; ', $orderErrors));
+    $orderErrors === [] ? 'bootstrap : les 14 require_once de traits précèdent leurs classes shells' : 'ordre incorrect : ' . implode(' ; ', $orderErrors));
 
 /* DA-009 — baseline gelée, actualisée pour le module démo explicite en 6.20.9 :
 exactement 15 fichiers ; les huit domaines métier restent propriété du plugin. */
@@ -236,12 +243,12 @@ $assert('DA-009', $themeOversized === $frozenBaseline,
         ? sprintf('baseline thème gelée (actualisée lot F) : %d fichiers préexistants >400 l. (extinction des 8 vestiges — buyer-qualification et n8n-security sous le seuil) — exclusions documentées : %s', count($frozenBaseline), implode(', ', $documentedExclusions))
         : 'écart à la baseline : +' . implode(', ', array_diff($themeOversized, $frozenBaseline)) . ' / -' . implode(', ', array_diff($frozenBaseline, $themeOversized)));
 
-/* DA-010 — santé : plugin 2.10.4 (lot F), thème 6.20.3, schéma 2.7.0 (bump micro-lot pré-prod, postérieur), 8/8, 0 collision. */
+/* DA-010 — santé de la livraison intégrée, 8/8 domaines, 0 collision. */
 $themeVersion = wp_get_theme()->get('Version');
 $health = (new HealthCheck())->get();
 $pluginDomains = count(array_filter($health['domains'] ?? [], static fn($d): bool => ($d['owner'] ?? '') === 'plugin'));
-$assert('DA-010', PARTIKULIER_CORE_VERSION === '2.10.9' && $themeVersion === '6.20.9'
-    && \Partikulier\Core\Database\Schema::VERSION === '2.7.0' && ($health['status'] ?? '') === 'ok'
+$assert('DA-010', PARTIKULIER_CORE_VERSION === '2.10.16' && $themeVersion === '6.20.11'
+    && \Partikulier\Core\Database\Schema::VERSION === '2.9.0' && ($health['status'] ?? '') === 'ok'
     && $pluginDomains === 8 && (int) ($health['routes']['collisions'] ?? -1) === 0,
     sprintf('santé : %s, plugin %s, thème %s (lot F — extinction finale), schéma %s (zéro migration au lot D — bump micro-lot pré-prod, postérieur), %d/8 domaines, 0 collision',
         ($health['status'] ?? '?'), PARTIKULIER_CORE_VERSION, $themeVersion, \Partikulier\Core\Database\Schema::VERSION, $pluginDomains));

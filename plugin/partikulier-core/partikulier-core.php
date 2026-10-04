@@ -69,6 +69,7 @@ require_once __DIR__ . '/src/Domain/Payments/PaymentsOrdersTrait.php';
 require_once __DIR__ . '/src/Domain/Payments/PaymentsSubscriptionsTrait.php';
 require_once __DIR__ . '/src/Domain/Payments/PaymentService.php';
 require_once __DIR__ . '/src/Domain/Leads/LeadsContactTrait.php';
+require_once __DIR__ . '/src/Domain/Leads/LeadsIntakeTrait.php';
 require_once __DIR__ . '/src/Domain/Leads/LeadsRestTrait.php';
 require_once __DIR__ . '/src/Domain/Leads/LeadsPrivacyTrait.php';
 require_once __DIR__ . '/src/Domain/Leads/LeadsAdminTrait.php';
@@ -83,6 +84,7 @@ require_once __DIR__ . '/src/Domain/OwnerStats/OwnerStatsService.php';
 require_once __DIR__ . '/src/Domain/TranslationVariants/VariantTransitionsTrait.php';
 require_once __DIR__ . '/src/Domain/TranslationVariants/TranslationVariantsService.php';
 require_once __DIR__ . '/src/Domain/SlugRedirects/SlugRedirectsService.php';
+require_once __DIR__ . '/src/Domain/Recommendation/RecommendationSearchTrait.php';
 require_once __DIR__ . '/src/Domain/Recommendation/RecommendationService.php';
 require_once __DIR__ . '/src/Domain/Export/SheetsExportService.php';
 

@@ -73,6 +73,8 @@ trait LeadsPrivacyTrait
 			'pk_whatsapp_messages',
 			'pk_buyer_preferences',
 			'pk_lead_followups',
+			'pk_search_events',
+			'pk_buyer_profiles',
 			/* E-5501 (F-T16-4, lot sécurité 2.10.7) : les alertes sauvegardées
 			 * portent un lead_id et doivent suivre l'effacement du lead — sans
 			 * quoi critères + preuve de consentement survivent, orphelins
@@ -102,10 +104,10 @@ trait LeadsPrivacyTrait
 			}
 		}
 		$wpdb->query('COMMIT');
-		/* Invariant E-5502 (lot sécurité 2.10.7) : erase touche 10 tables au
-		 * total = les 9 tables portant lead_id (comptées ici) +
+		/* Invariant E-5502 : erase touche 12 tables au
+		 * total = les 11 tables du lead (comptées ici) +
 		 * pk_alert_deliveries purgée par sous-requête alert_id ci-dessus
-		 * (validée séparément par E55-005). Le « tables = 9 » de l'audit est
+		 * (validée séparément par E55-005). Le « tables = 11 » de l'audit est
 		 * donc le compte des tables lead_id, pas le nombre total de tables. */
 		self::audit('lead_erased', 'lead', $lead_id, ['tables' => count($tables)]);
 		return true;

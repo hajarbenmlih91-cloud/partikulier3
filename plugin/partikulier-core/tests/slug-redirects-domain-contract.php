@@ -68,14 +68,14 @@ try {
     global $wpdb;
     $table = SlugRedirectsService::redirects_table();
 
-    // 1) Versions : schéma 2.7.0 (constante, option, health), versions d'artefact figées hors bump.
+    // 1) Versions : schéma 2.9.0 (constante, option, health), livraison intégrée.
     $health = (new HealthCheck())->get();
     $pluginDomains = count(array_filter($health['domains'] ?? [], static fn($d) => ($d['owner'] ?? '') === 'plugin'));
-    $assert('E43-001', Schema::VERSION === '2.7.0'
-        && (new Migrator())->currentVersion() === '2.7.0'
-        && ($health['schema_version'] ?? '') === '2.7.0'
-        && PARTIKULIER_CORE_VERSION === '2.10.9'
-        && wp_get_theme()->get('Version') === '6.20.9',
+    $assert('E43-001', Schema::VERSION === '2.9.0'
+        && (new Migrator())->currentVersion() === '2.9.0'
+        && ($health['schema_version'] ?? '') === '2.9.0'
+        && PARTIKULIER_CORE_VERSION === '2.10.16'
+        && wp_get_theme()->get('Version') === '6.20.11',
         sprintf('versions : schéma %s (constante), %s installée, %s au health, plugin %s, thème %s (bump de fin de train appliqué)',
             Schema::VERSION, (new Migrator())->currentVersion(), $health['schema_version'] ?? '?',
             PARTIKULIER_CORE_VERSION, wp_get_theme()->get('Version')));
@@ -102,16 +102,16 @@ try {
             $table, $exists ? 'présente' : 'ABSENTE', $columnsOk ? 'ok' : 'incomplètes',
             $uniqueSlug ? 'ok' : 'absent', $keyProperty ? 'ok' : 'absent'));
 
-    // 3) Manifeste : 21 tables, pk_slug_redirects plugin/listings/ML, 0 thème, 8/8 domaines.
+    // 3) Manifeste : 23 tables, pk_slug_redirects plugin/listings/ML, 0 thème, 8/8 domaines.
     $manifest = Schema::domainTables();
     $themeOwned = array_filter($manifest, static fn(array $d) => ($d['owner'] ?? '') === 'theme');
     $entry = $manifest['pk_slug_redirects'] ?? [];
     $listingsHealth = $health['domains']['listings']['tables'] ?? [];
     $slugTableHealthy = ($listingsHealth['pk_slug_redirects'] ?? false) === true;
-    $assert('E43-003', count($manifest) === 21 && $themeOwned === []
+    $assert('E43-003', count($manifest) === 23 && $themeOwned === []
         && ($entry['owner'] ?? '') === 'plugin' && ($entry['domain'] ?? '') === 'listings' && ($entry['lot'] ?? '') === 'ML'
         && $pluginDomains === 8 && $slugTableHealthy,
-        sprintf('manifeste : %d/21 tables pk_, 0 côté thème, pk_slug_redirects owner=%s domain=%s lot=%s, %d/8 domaines plugin, health listings %s',
+        sprintf('manifeste : %d/23 tables pk_, 0 côté thème, pk_slug_redirects owner=%s domain=%s lot=%s, %d/8 domaines plugin, health listings %s',
             count($manifest), $entry['owner'] ?? '?', $entry['domain'] ?? '?', $entry['lot'] ?? '?',
             $pluginDomains, $slugTableHealthy ? '4/4 tables' : 'slug_redirects manquante'));
 
@@ -125,7 +125,7 @@ try {
     $hashBefore = $structureHash($table);
     $replay = (new Migrator())->migrate();
     $hashAfter = $structureHash($table);
-    $assert('E43-004', $auditOk && ($replay['schema'] ?? '') === '2.7.0' && ($replay['steps'] ?? null) === []
+    $assert('E43-004', $auditOk && ($replay['schema'] ?? '') === '2.9.0' && ($replay['steps'] ?? null) === []
         && $hashBefore !== 'unavailable' && $hashBefore === $hashAfter,
         sprintf('migration : audit slug_redirects_table_created %s, rejeu migrate() → schéma %s, %d étape(s), empreinte de structure %s',
             $auditOk ? 'présent (lot ML)' : 'ABSENT', $replay['schema'] ?? '?', count($replay['steps'] ?? []),

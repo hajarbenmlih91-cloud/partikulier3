@@ -66,10 +66,13 @@ try {
         'GET /approved-listings',
         'GET /owner/dashboard',
         'POST /owner/listings/(?P<id>\d+)/action',
+        'GET /export/interests',
+        'POST /lead/status',
+        'POST /qualification',
     ];
-    $missing = array_diff($expected, $flat);
-    $assert('ROUTE-001', count($flat) === 16 && $missing === [],
-        'inventaire partikulier/v1 : 16 routes attendues, ' . count($flat) . ' déclarées (7 plugin + 9 thème — /automation-event côté plugin depuis B4 ; les 2 routes /owner/* restent côté thème depuis B5 : écran d\'intégration, primitives de table déléguées au service)');
+    sort($expected);
+    $assert('ROUTE-001', $flat === $expected,
+        'inventaire partikulier/v1 : 19 routes attendues, ' . count($flat) . ' déclarées, qualification et export inclus');
 
     // 2) Aucune collision : ni refus en mémoire, ni persisté.
     $assert('ROUTE-002', RouteRegistry::collisionCount() === 0 && RouteRegistry::refusedDeclarations() === [],

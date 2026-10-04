@@ -112,6 +112,14 @@ manuelle au troisième contact en 24 heures. Le contrat d'automatisation vérifi
 les cinq en-têtes signés, sans transmission du secret brut. Ces ajustements du
 banc ne corrigent pas le blocage des numéros propriétaire chiffrés.
 
+La recette de cette intégration conserve l'oracle **454/454 sur 44 suites** :
+inventaire exact de 19 routes, schéma 2.9.0 et manifeste de 23 tables. L'effacement
+supprime également les recherches et profils rattachés au lead, sans supprimer
+les recherches anonymes. Les traits d'entrée/qualification et de recherche
+conservent les API publiques et les seuils de taille des modules. Les catalogues
+compilés sont régénérés depuis les sources canoniques (633 entrées AR, 581 EN)
+et vérifiés à l'octet près par `php scripts/build-catalogs.php --check`.
+
 ```bash
 make lint
 make package

@@ -86,6 +86,11 @@ try {
     // 3) Lead consentant via le dispositif B2 (voie webhook du service).
     $reference = LeadService::reference_for($propertyId);
     $result = LeadService::authorize_contact($phone, $propertyId, 'b3a-wa-' . $run);
+    $qualification = new WP_REST_Request('POST', '/partikulier/v1/qualification');
+    $qualification->set_param('wa_id', $phone);
+    $qualification->set_param('is_particulier', true);
+    $qualified = LeadService::rest_set_qualification($qualification);
+    $result = LeadService::authorize_contact($phone, $propertyId, 'b3a-wa-' . $run);
     $resultData = $result instanceof WP_REST_Response ? (array) $result->get_data() : (array) $result;
     $leadId = (int) ($resultData['lead_id'] ?? 0);
     $consentRequest = new WP_REST_Request('POST', '/partikulier/v1/consent');
@@ -94,7 +99,7 @@ try {
     $consentRequest->set_param('granted', true);
     $consentRequest->set_param('provider_message_id', 'b3a-consent-' . $run);
     $granted = LeadService::rest_consent($consentRequest);
-    $assert('B3A-003', $leadId > 0 && !empty($resultData['allowed'])
+    $assert('B3A-003', $qualified instanceof WP_REST_Response && $leadId > 0 && !empty($resultData['allowed'])
         && $granted instanceof WP_REST_Response && ($granted->get_data()['consent'] ?? '') === 'granted',
         "fixture : lead {$leadId} créé via authorize_contact + consentement similar_listings accordé (voie REST B2)");
 
@@ -102,7 +107,7 @@ try {
     $freshPhone = '2126' . str_pad((string) random_int(10000000, 99999999), 8, '0', STR_PAD_LEFT);
     $fresh = LeadService::authorize_contact($freshPhone, $propertyId, 'b3a-wa2-' . $run);
     $freshData = $fresh instanceof WP_REST_Response ? (array) $fresh->get_data() : (array) $fresh;
-    $freshLeadId = (int) ($freshData['lead_id'] ?? 0);
+    $freshLeadId = LeadService::lead_id_for_wa_id($freshPhone);
     $refused = AlertService::save_alert($freshLeadId, $criteria, 'fr', 'daily', 'b3a-proof-' . $run);
     $rowsFresh = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$prefix}pk_saved_alerts WHERE lead_id = %d", $freshLeadId));
     $assert('B3A-004', is_wp_error($refused) && $refused->get_error_code() === 'pk_alert_consent' && $rowsFresh === 0,

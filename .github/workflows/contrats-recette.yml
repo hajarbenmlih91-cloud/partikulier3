@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  PK_VERSION: '2.10.10'
+  PK_VERSION: '2.10.16'
 
 permissions:
   contents: read
@@ -460,7 +460,7 @@ jobs:
       - name: Contrats de fusion et navigateurs FR/EN/AR
         run: |
           mkdir -p preuves-run/integration
-          PK_WP_DIR=$PWD/wp PK_COMMIT=${{ github.sha }} PK_VERSION=2.10.10 \
+          PK_WP_DIR=$PWD/wp PK_COMMIT=${{ github.sha }} PK_VERSION=${{ env.PK_VERSION }} \
             php plugin/partikulier-core/tests/merge-v3-contract.php > preuves-run/integration/merge-v3.json
           cleanup() {
             PK_WP_DIR=$PWD/wp php theme/partikulier/tests/merge-v3-browser-fixture.php cleanup
