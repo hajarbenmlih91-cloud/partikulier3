@@ -50,26 +50,29 @@ try {
     }
     sort($flat);
     $expected = [
-        'GET /listings',
-        'POST /listings',
-        'GET /listings/(?P<id>[0-9]+)',
-        'POST /leads',
-        'POST /favorites',
-        'GET /health',
-        'POST /automation-event',
-        'POST /contact-authorization',
-        'POST /preferences',
-        'POST /consent',
-        'POST /opt-out',
-        'POST /erase-lead',
-        'POST /credentials-resend-accepted',
         'GET /approved-listings',
+        'GET /export/interests',
+        'GET /health',
+        'GET /listings',
+        'GET /listings/(?P<id>[0-9]+)',
         'GET /owner/dashboard',
+        'POST /automation-event',
+        'POST /consent',
+        'POST /contact-authorization',
+        'POST /credentials-resend-accepted',
+        'POST /erase-lead',
+        'POST /favorites',
+        'POST /lead/status',
+        'POST /leads',
+        'POST /listings',
+        'POST /opt-out',
         'POST /owner/listings/(?P<id>\d+)/action',
+        'POST /preferences',
+        'POST /qualification',
     ];
     $missing = array_diff($expected, $flat);
-    $assert('ROUTE-001', count($flat) === 16 && $missing === [],
-        'inventaire partikulier/v1 : 16 routes attendues, ' . count($flat) . ' déclarées (7 plugin + 9 thème — /automation-event côté plugin depuis B4 ; les 2 routes /owner/* restent côté thème depuis B5 : écran d\'intégration, primitives de table déléguées au service)');
+    $assert('ROUTE-001', count($flat) === 19 && $missing === [],
+        'inventaire partikulier/v1 : 19 routes attendues, ' . count($flat) . ' déclarées (10 plugin + 9 thème — /export/interests + /lead/status + /qualification depuis R1/R3 ; /automation-event côté plugin depuis B4 ; les 2 routes /owner/* restent côté thème)');
 
     // 2) Aucune collision : ni refus en mémoire, ni persisté.
     $assert('ROUTE-002', RouteRegistry::collisionCount() === 0 && RouteRegistry::refusedDeclarations() === [],

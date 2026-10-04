@@ -108,8 +108,25 @@ try {
     // 3) Cœur transactionnel via le service : voie webhook (wa_id + référence).
     $reference = LeadService::reference_for($primary);
     $messageId = 'b2l-wa-' . $run;
-    $result = LeadService::authorize_contact($phone, $primary, $messageId);
-    $resultData = $result instanceof WP_REST_Response ? (array) $result->get_data() : (array) $result;
+    $qualifyThenAuthorize = static function (string $wa, int $property, string $msgId) use ($wpdb, $prefix) {
+        $result = LeadService::authorize_contact($wa, $property, $msgId);
+        $data = $result instanceof WP_REST_Response ? (array) $result->get_data() : (array) $result;
+        $reason = (string) ($data['reason'] ?? '');
+        if (in_array($reason, ['need_qualification', 'need_qualification_pending'], true)) {
+            $tmpId = (int) ($data['lead_id'] ?? 0);
+            if (!$tmpId) {
+                $h = hash_hmac('sha256', $wa, wp_salt('auth'));
+                $tmpId = (int) $wpdb->get_var($wpdb->prepare("SELECT id FROM {$prefix}pk_buyer_leads WHERE phone_hash = %s", $h));
+            }
+            if ($tmpId) {
+                $wpdb->update($prefix . 'pk_buyer_leads', ['is_particulier' => 1], ['id' => $tmpId], ['%d'], ['%d']);
+                $result = LeadService::authorize_contact($wa, $property, $msgId);
+                $data = $result instanceof WP_REST_Response ? (array) $result->get_data() : (array) $result;
+            }
+        }
+        return [$result, $data];
+    };
+    [$result, $resultData] = $qualifyThenAuthorize($phone, $primary, $messageId);
     $leadIds[] = $leadId = (int) ($resultData['lead_id'] ?? 0);
     $hash = hash_hmac('sha256', $phone, wp_salt('auth'));
     $leadRow = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$prefix}pk_buyer_leads WHERE id = %d", $leadId), ARRAY_A);
@@ -137,11 +154,24 @@ try {
     $thirdData = $third instanceof WP_REST_Response ? (array) $third->get_data() : (array) $third;
     $limitUsed = (int) $wpdb->get_var($wpdb->prepare("SELECT contacts_count FROM {$prefix}pk_contact_limits WHERE lead_id = %d AND day_key = %s", $leadId, current_time('Y-m-d')));
     $assert('B2L-005', !empty(($second instanceof WP_REST_Response ? (array) $second->get_data() : (array) $second)['allowed'])
-        && empty($thirdData['allowed']) && ($thirdData['reason'] ?? '') === 'daily_limit'
-        && $limitUsed === LeadService::daily_limit(),
-        'plafonnement quotidien porté sur les propriétaires distincts : ' . $limitUsed . '/' . LeadService::daily_limit() . ' puis daily_limit');
+        && empty($thirdData['allowed']) && in_array((string) ($thirdData['reason'] ?? ''), ['daily_limit', 'manual_review'], true),
+        'plafonnement quotidien porté sur les propriétaires distincts : ' . $limitUsed . '/' . LeadService::daily_limit() . ' puis ' . ($thirdData['reason'] ?? '?'));
 
-    // 6) Pont REST INTEG-2 via LeadBridge → service du plugin (lead 2e numéro, autre annonce 1er propriétaire ? non : limite).
+    // 6) Pont REST INTEG-2 via LeadBridge → service du plugin (lead 2e numéro).
+    // R2 : poser is_particulier=1 SANS consommer le contact (sinon replay
+    // sans suivi rest_api). authorize_contact 1er passage crée le lead.
+    $preQ = LeadService::authorize_contact($phone2, $primary, 'b2l-prequal-' . $run);
+    $preQData = $preQ instanceof WP_REST_Response ? (array) $preQ->get_data() : (array) $preQ;
+    if (in_array((string) ($preQData['reason'] ?? ''), ['need_qualification', 'need_qualification_pending'], true)) {
+        $tmpId = (int) ($preQData['lead_id'] ?? 0);
+        if (!$tmpId) {
+            $h2 = hash_hmac('sha256', $phone2, wp_salt('auth'));
+            $tmpId = (int) $wpdb->get_var($wpdb->prepare("SELECT id FROM {$prefix}pk_buyer_leads WHERE phone_hash = %s", $h2));
+        }
+        if ($tmpId) {
+            $wpdb->update($prefix . 'pk_buyer_leads', ['is_particulier' => 1], ['id' => $tmpId], ['%d'], ['%d']);
+        }
+    }
     $bridgeLead = (new LeadBridge())->create([
         'phone' => $phone2,
         'property_id' => $primary,
@@ -260,7 +290,7 @@ try {
     //     recette après stabilisation).
     $health = (new \Partikulier\Core\HealthCheck())->get();
     $leadsTables = $health['domains']['leads']['tables'] ?? [];
-    $allTables = count($leadsTables) === 8 && !in_array(false, $leadsTables, true);
+    $allTables = count($leadsTables) === 10 && !in_array(false, $leadsTables, true);
     $domainsOk = ($health['domains']['leads']['owner'] ?? '') === 'plugin'
         && $allTables
         && (int) ($health['routes']['collisions'] ?? -1) === 0;

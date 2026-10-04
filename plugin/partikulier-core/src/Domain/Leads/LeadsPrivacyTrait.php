@@ -54,7 +54,7 @@ trait LeadsPrivacyTrait
 
 
 	/**
-	 * Effacement complet d'un lead : les neuf tables du domaine portant
+	 * Effacement complet d'un lead : les 11 tables du domaine portant
 	 * lead_id + les livraisons d'alertes (via alert_id), en transaction,
 	 * journalisé. Retourne false si une table refuse.
 	 */
@@ -80,6 +80,11 @@ trait LeadsPrivacyTrait
 			 * Invariant E-5502 : toute table pk_* portant lead_id doit figurer
 			 * dans cette liste (contrat lead-erase-security-contract, E55-003). */
 			'pk_saved_alerts',
+			/* R1 2.10.16 : pk_search_events + pk_buyer_profiles portent lead_id
+			 * (recherches HMAC + profil agrégé). Les omettre = PII orpheline
+			 * après /erase-lead — trou GDPR attrapé par E55-003. */
+			'pk_search_events',
+			'pk_buyer_profiles',
 			'pk_buyer_leads',
 		];
 		$wpdb->query('START TRANSACTION');
@@ -102,11 +107,11 @@ trait LeadsPrivacyTrait
 			}
 		}
 		$wpdb->query('COMMIT');
-		/* Invariant E-5502 (lot sécurité 2.10.7) : erase touche 10 tables au
-		 * total = les 9 tables portant lead_id (comptées ici) +
-		 * pk_alert_deliveries purgée par sous-requête alert_id ci-dessus
-		 * (validée séparément par E55-005). Le « tables = 9 » de l'audit est
-		 * donc le compte des tables lead_id, pas le nombre total de tables. */
+		/* Invariant E-5502 : erase touche 12 tables au total = les 11 tables
+		 * portant lead_id (comptées ici, + pk_search_events + pk_buyer_profiles
+		 * depuis R1) + pk_alert_deliveries purgée par sous-requête alert_id
+		 * (validée séparément par E55-005). Le « tables = N » de l'audit est
+		 * le compte des tables lead_id, pas le nombre total de tables. */
 		self::audit('lead_erased', 'lead', $lead_id, ['tables' => count($tables)]);
 		return true;
 	}

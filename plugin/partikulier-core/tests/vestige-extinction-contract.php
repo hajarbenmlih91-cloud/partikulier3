@@ -281,8 +281,8 @@ try {
     $themeVersion = wp_get_theme()->get('Version');
     $health = (new HealthCheck())->get();
     $pluginDomains = count(array_filter($health['domains'] ?? [], static fn($d): bool => ($d['owner'] ?? '') === 'plugin'));
-    $assert('FE-011', PARTIKULIER_CORE_VERSION === '2.10.9' && $themeVersion === '6.20.9'
-        && \Partikulier\Core\Database\Schema::VERSION === '2.7.0' && ($health['status'] ?? '') === 'ok'
+    $assert('FE-011', PARTIKULIER_CORE_VERSION === '2.10.16' && $themeVersion === '6.20.11'
+        && \Partikulier\Core\Database\Schema::VERSION === '2.9.0' && ($health['status'] ?? '') === 'ok'
         && $pluginDomains === 8 && (int) ($health['routes']['collisions'] ?? -1) === 0,
         sprintf('santé : %s, plugin %s, thème %s (lot F — extinction finale), schéma %s (zéro migration au lot F — bump micro-lot pré-prod, postérieur), %d/8 domaines, 0 collision',
             ($health['status'] ?? '?'), PARTIKULIER_CORE_VERSION, $themeVersion, \Partikulier\Core\Database\Schema::VERSION, $pluginDomains));

@@ -162,8 +162,8 @@ try {
     $themeVersion = wp_get_theme()->get('Version');
     $health = (new HealthCheck())->get();
     $pluginDomains = count(array_filter($health['domains'] ?? [], static fn($d) => ($d['owner'] ?? '') === 'plugin'));
-    $assert('C2A-010', PARTIKULIER_CORE_VERSION === '2.10.9' && $themeVersion === '6.20.9'
-        && Schema::VERSION === '2.7.0' && $pluginDomains === 8
+    $assert('C2A-010', PARTIKULIER_CORE_VERSION === '2.10.16' && $themeVersion === '6.20.11'
+        && Schema::VERSION === '2.9.0' && $pluginDomains === 8
         && (int) ($health['routes']['collisions'] ?? -1) === 0,
         sprintf('versions : plugin %s, thème %s, schéma %s (zéro migration C2 — le bump 2.7.0 vient du micro-lot pré-prod, E-4303), %d/8 domaines, 0 collision',
             PARTIKULIER_CORE_VERSION, $themeVersion, Schema::VERSION, $pluginDomains));
@@ -209,7 +209,7 @@ try {
     //     la 21e, pk_slug_redirects, vient du micro-lot pré-prod, lot ML).
     $manifest = Schema::domainTables();
     $themeOwned = array_filter($manifest, static fn(array $d) => ($d['owner'] ?? '') === 'theme');
-    $assert('C2A-013', count($manifest) === 21 && $themeOwned === [],
+    $assert('C2A-013', count($manifest) === 23 && $themeOwned === [],
         'manifeste : 21/21 tables pk_ suivies, 0 côté thème — la couche chrome est une bibliothèque de résolution sans stockage (pk_slug_redirects : micro-lot ML, pas C2)');
 } catch (Throwable $error) {
     $assert('C2A-EXCEPTION', false, $error->getMessage());

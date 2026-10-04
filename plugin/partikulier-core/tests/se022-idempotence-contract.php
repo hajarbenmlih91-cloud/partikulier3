@@ -286,20 +286,25 @@ try {
                 continue;
             }
             $expr = $m[1];
+            // Classer aussi le corps du chunk : /qualification est un callback
+            // multi-ligne (HMAC n8n OU manage_options), /export et /lead/status
+            // sont capability manage_options (R1 Sheets).
             if (strpos($expr, 'guardPublic') !== false || strpos($expr, 'guardWrite') !== false
                 || strpos($expr, 'guardLead') !== false || strpos($expr, 'guardPrivate') !== false) {
                 $pluginGuards[] = 'rate-limiter';
-            } elseif (strpos($expr, 'check_erase_secret') !== false) {
+            } elseif (strpos($expr, 'check_erase_secret') !== false || strpos($chunk, 'check_erase_secret') !== false) {
                 $pluginGuards[] = 'request-cycle';
-            } elseif (strpos($expr, 'check_automation_secret') !== false) {
+            } elseif (strpos($expr, 'check_automation_secret') !== false || strpos($chunk, 'check_automation_secret') !== false) {
                 $pluginGuards[] = 'request-cycle';
+            } elseif (strpos($chunk, "current_user_can('manage_options')") !== false) {
+                $pluginGuards[] = 'capability';
             } else {
                 $pluginGuards[] = 'NON-CLASSÉE : ' . trim($expr);
                 $ok = false;
             }
         }
-        if (count($pluginGuards) !== 8) {
-            $findings[] = sprintf('plugin : %d déclarations (attendu 8)', count($pluginGuards));
+        if (count($pluginGuards) !== 11) {
+            $findings[] = sprintf('plugin : %d déclarations (attendu 11)', count($pluginGuards));
             $ok = false;
         }
 

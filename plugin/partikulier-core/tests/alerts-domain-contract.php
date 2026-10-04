@@ -87,6 +87,18 @@ try {
     $reference = LeadService::reference_for($propertyId);
     $result = LeadService::authorize_contact($phone, $propertyId, 'b3a-wa-' . $run);
     $resultData = $result instanceof WP_REST_Response ? (array) $result->get_data() : (array) $result;
+    if (in_array((string) ($resultData['reason'] ?? ''), ['need_qualification', 'need_qualification_pending'], true)) {
+        $tmpId = (int) ($resultData['lead_id'] ?? 0);
+        if (!$tmpId) {
+            $h = hash_hmac('sha256', $phone, wp_salt('auth'));
+            $tmpId = (int) $wpdb->get_var($wpdb->prepare("SELECT id FROM {$prefix}pk_buyer_leads WHERE phone_hash = %s", $h));
+        }
+        if ($tmpId) {
+            $wpdb->update($prefix . 'pk_buyer_leads', ['is_particulier' => 1], ['id' => $tmpId], ['%d'], ['%d']);
+            $result = LeadService::authorize_contact($phone, $propertyId, 'b3a-wa-' . $run);
+            $resultData = $result instanceof WP_REST_Response ? (array) $result->get_data() : (array) $result;
+        }
+    }
     $leadId = (int) ($resultData['lead_id'] ?? 0);
     $consentRequest = new WP_REST_Request('POST', '/partikulier/v1/consent');
     $consentRequest->set_param('wa_id', $phone);
