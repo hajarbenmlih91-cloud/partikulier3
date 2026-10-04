@@ -24,6 +24,44 @@ Le thème délègue au plugin les domaines métier disponibles et conserve un mo
 
 ## Développement local
 
+### Exemple Docker complet (PowerShell)
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\docker\setup-local.ps1
+powershell -ExecutionPolicy Bypass -File .\docker\verify-local.ps1
+```
+
+Le premier script initialise les secrets manquants dans `.env` (ignoré par Git),
+remplace les mots de passe locaux `change-me`, conserve les volumes existants et
+migre l'instance n8n autonome `partikulier-n8n` vers Compose sans changer sa clé de
+chiffrement ni son compte propriétaire. Sauvegarder les données avant une première
+migration. Pour une instance n8n déjà initialisée, `N8N_EMAIL` et `N8N_PASSWORD`
+doivent correspondre au compte existant.
+
+Le site est accessible sur `http://localhost:8099`, n8n sur
+`http://localhost:5678` et les emails capturés sur `http://localhost:8025`.
+Les identifiants administrateur WordPress sont dans `PK_ADMIN_USER` /
+`PK_ADMIN_PASSWORD`, ceux de n8n dans `N8N_EMAIL` / `N8N_PASSWORD`.
+Le script configure Polylang FR/EN/AR, les outils AVIF, le jeu de démo avec photos,
+une annonce d'exemple et deux workflows n8n publiés : validation d'annonce vers
+Mailpit et appels acquéreur signés vers WordPress. Les contenus existants sont
+conservés ; un jeu de démo déjà présent n'est pas réimporté.
+
+Le proxy Caddy fournit un HTTPS privé entre WordPress et n8n. La confiance dans
+son certificat est installée au démarrage du conteneur et limitée au proxy dans
+le client HTTP WordPress. Le mode HMAC reste `enforce`. L'accès aux variables
+d'environnement et au module `crypto` des nœuds Code n8n est activé pour signer
+les requêtes de cet exemple **local uniquement** ; les données d'exécution ne
+sont pas conservées. Les messages contenant les accès du propriétaire restent
+dans Mailpit. Aucun message WhatsApp réel n'est envoyé : Meta et un webhook
+HTTPS public doivent être configurés séparément.
+
+Après initialisation : `docker compose up -d` pour redémarrer et
+`docker compose stop` pour arrêter sans perdre les données. Ne pas utiliser
+`down -v` pour un simple redémarrage. Les mots de passe et la clé n8n ne doivent
+jamais être committés. La vérification d'exemple n'est pas la campagne complète
+de contrats CI.
+
 ```bash
 make lint
 make package
