@@ -131,11 +131,13 @@ que le ping échoue. La concurrence conserve la qualification et la revue
 manuelle au troisième contact, et la démo installe exactement 15 ventes et
 15 locations sans toucher aux annonces réelles.
 
-L'intégration reprend aussi `origin/main` au commit `13ba6dd`, notamment le
+L'intégration reprend aussi `origin/main` au commit `c3b4b0c`, notamment le
 retrait du contrôle « Réinitialiser » et la passerelle d'administration à
 cookie `SameSite=Lax`. Le téléphone, ses alias et l'adresse e-mail d'un même
 compte partagent le compteur de connexion. Les contrôles de taille restent
 stricts grâce aux traits extraits : aucune exemption de module surdimensionné.
+Les scripts CLI et le bootstrap de l'accueil FR/EN/AR ajoutés upstream sont
+également conservés, sans exécuter le workflow de déploiement.
 Les compteurs, réinstallations et purges de démo couvrent toutes les langues
 Polylang, et ne sélectionnent que les annonces et médias marqués comme démo.
 La recette navigateur FR/EN/AR conserve les modales autres que l'authentification

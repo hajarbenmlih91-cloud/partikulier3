@@ -136,6 +136,12 @@ jobs:
           unzip -q dist/partikulier-theme-*.zip -d build/deploy-artifacts
           test -d build/deploy-artifacts/partikulier-core
           test -d build/deploy-artifacts/partikulier
+          # Polylang 3.8.7 (docs/INSTALLATION.md, SE-025) : UAT n'avait pas
+          # l'extension → /fr/ /en/ /ar/ 404, sélecteur mort. On le pose
+          # depuis le runner, pas depuis Hostinger (wordpress.org).
+          curl -fsSL -o build/polylang.zip "https://downloads.wordpress.org/plugin/polylang.3.8.7.zip"
+          unzip -q build/polylang.zip -d build/deploy-artifacts
+          test -d build/deploy-artifacts/polylang
 
       - name: Configurer SSH strict
         run: |
@@ -232,6 +238,10 @@ jobs:
           rsync -az --delete -e "ssh -F $HOME/.ssh/config" \
             build/deploy-artifacts/partikulier/ \
             "partikulier-hostinger:$WP_PATH/wp-content/themes/partikulier/"
+          ssh partikulier-hostinger "mkdir -p \"$WP_PATH/wp-content/plugins/polylang\""
+          rsync -az --delete -e "ssh -F $HOME/.ssh/config" \
+            build/deploy-artifacts/polylang/ \
+            "partikulier-hostinger:$WP_PATH/wp-content/plugins/polylang/"
 
       - name: Vérifications WordPress post-déploiement
         run: |
@@ -242,6 +252,10 @@ jobs:
           command -v wp >/dev/null 2>&1 || { echo "wp-cli introuvable"; exit 1; }
           cd "$WP_PATH"
           wp plugin activate partikulier-core
+          wp plugin activate polylang
+          wp eval-file wp-content/themes/partikulier/cli/pll-langues.php
+          wp eval-file wp-content/themes/partikulier/cli/pll-masse.php
+          wp eval 'if(class_exists("Partikulier_Required_Pages")){delete_option("pk_front_ensured"); Partikulier_Required_Pages::ensure_front();}'
           wp cache flush || true
           wp rewrite flush || true
           REMOTE
@@ -264,8 +278,15 @@ jobs:
           set -euo pipefail
           : "${SITE_URL:?variable SITE_URL manquante}"
           site="${SITE_URL%/}"
-          code="$(curl -fsS -o /dev/null -w '%{http_code}' "$site")"
+          # hide_default=0 : / peut 301 vers /fr/ ou /en/. Les préfixes doivent 200.
+          code="$(curl -s -o /dev/null -w '%{http_code}' -L "$site")"
+          echo "smoke / (follow) $code"
           test "$code" = "200"
+          for p in /fr/ /en/ /ar/; do
+            c="$(curl -s -o /dev/null -w '%{http_code}' "$site$p" || true)"
+            echo "smoke $p $c"
+            test "$c" = "200"
+          done
           curl -fsS "$site/wp-json/partikulier/v1/health" > build/health.json
           python - <<'PY'
           import json
