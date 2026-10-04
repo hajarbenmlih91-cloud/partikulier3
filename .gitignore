@@ -20,3 +20,7 @@ vendor/
 *.sqlite
 *.sqlite-shm
 *.sqlite-wal
+DOSSIER-2026-10-03-*/
+dist/
+wp/
+wp-real/

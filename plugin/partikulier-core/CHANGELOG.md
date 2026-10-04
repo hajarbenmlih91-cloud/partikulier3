@@ -6,6 +6,14 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ---
 
+## [2.10.16-p1] - 2026-10-04 13:40 (fix merge idempotent — 6d28152)
+
+### Corrigé
+- **Merge auto-theirs 2ae4c97 : 93 fichiers divergents, 0 conflit ouvert** : `git ls-files -u = 0`, `grep -r "<<<<<<" = 0`. Stratégie `ort -X theirs` (prend `fix/security-hardening-nano` 2.10.16 sur `c5949ff` 2.10.10). 4 régressions silencieuses corrigées : `LeadsContactTrait.php:204-213` (brace + `COMMIT` manquants → Fatal `MERGE-RETRY`), `class-security.php` (restaure c5949ff : `102,3` + `valid_admin_access_token` + `normalize_phone`/`find_phone_user` + `unify_authentication_error` → `MERGE-AUTH` 7/7 PASS), `partikulier-2fa-light.php` (`const`→`define` idempotent + `login_header`→`WP_Error pk_2fa_required` → `MERGE-TOTP` PASS), `merge-v3-contract.php` (`PK_2FA_WINDOW`).
+- **Validation `wp-real` (MariaDB 11.8.6 / PHP 8.4 / WP 6.6 fr_FR)** : 18/36 PASS dont `MERGE-AUTH` 7/7, `MERGE-TOTP-RFC/BACKUP`, `MERGE-HEALTH-PUBLIC/ADMIN`. Reste 18/36 FAIL attendus hors Estatik (`es_status` absent → rentals 0, `health-down`/`retry`/`concurrent` nécessitent Estatik+Polylang 3.8.7 du CI `contrats-recette.yml`).
+
+---
+
 ## [2.10.16] - 2026-10-03 22:58 (Hotfix sécurité — chiffrement `_pk_owner_phone`)
 
 ### Sécurité

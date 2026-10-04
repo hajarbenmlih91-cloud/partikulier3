@@ -130,6 +130,12 @@ réessayés, au maximum trois fois. Les sondes de santé cessent les lectures d�
 que le ping échoue. La concurrence conserve la qualification et la revue
 manuelle au troisième contact, et la démo installe exactement 15 ventes et
 15 locations sans toucher aux annonces réelles.
+
+L'intégration reprend aussi `origin/main` au commit `13ba6dd`, notamment le
+retrait du contrôle « Réinitialiser » et la passerelle d'administration à
+cookie `SameSite=Lax`. Le téléphone, ses alias et l'adresse e-mail d'un même
+compte partagent le compteur de connexion. Les contrôles de taille restent
+stricts grâce aux traits extraits : aucune exemption de module surdimensionné.
 Les compteurs, réinstallations et purges de démo couvrent toutes les langues
 Polylang, et ne sélectionnent que les annonces et médias marqués comme démo.
 La recette navigateur FR/EN/AR conserve les modales autres que l'authentification
@@ -173,7 +179,7 @@ L’historique des versions est tenu dans [`CHANGELOG.md`](CHANGELOG.md) (vue pr
 
 Les versions, les checksums et le détail du périmètre des lots C à F sont documentés dans [`docs/RELEASE.md`](docs/RELEASE.md) et les rapports de [`preuves/rapports/`](preuves/rapports/). Pour l’exploitation, consulter [`docs/INSTALLATION.md`](docs/INSTALLATION.md).
 
-> **Dossier 03/10/2026 — v2.10.16 / v6.20.11** : la livraison consolidée (zips `e3a0f243` / `3bc7bee6`, Sheets A/B, n8n, HSTS/2FA, PDF sécurisation) est dans [`DOSSIER-2026-10-03-PARTIKULIER-v2.10.16-6.20.11/`](../DOSSIER-2026-10-03-PARTIKULIER-v2.10.16-6.20.11/README.md) avec son [`CHANGELOG.md`](../DOSSIER-2026-10-03-PARTIKULIER-v2.10.16-6.20.11/CHANGELOG.md) et le [`PDF-SHEETS-SECURISATION-2026-10-03.pdf`](../DOSSIER-2026-10-03-PARTIKULIER-v2.10.16-6.20.11/PDF-SHEETS-SECURISATION-2026-10-03.pdf) (pourquoi 2 Sheets, méthode de sécurisation). Voir aussi `plugin/partikulier-core/CHANGELOG.md` et `theme/partikulier/CHANGELOG.md` pour le détail dev par fichier:ligne.
+> **Dossier 03/10/2026 — v2.10.16 / v6.20.11 — fix merge 6d28152** : la livraison consolidée (zips `4b428e98` / `7218e3ea`, Sheets A/B, n8n, HSTS/2FA, PDF sécurisation) est dans [`DOSSIER-2026-10-03-PARTIKULIER-v2.10.16-6.20.11/`](./DOSSIER-2026-10-03-PARTIKULIER-v2.10.16-6.20.11/README.md) avec son [`CHANGELOG.md`](./DOSSIER-2026-10-03-PARTIKULIER-v2.10.16-6.20.11/CHANGELOG.md) et le [`PDF-SHEETS-SECURISATION-2026-10-03.pdf`](./DOSSIER-2026-10-03-PARTIKULIER-v2.10.16-6.20.11/PDF-SHEETS-SECURISATION-2026-10-03.pdf) (pourquoi 2 Sheets, méthode de sécurisation). Voir aussi `plugin/partikulier-core/CHANGELOG.md` et `theme/partikulier/CHANGELOG.md` pour le détail dev par fichier:ligne. Merge `2ae4c97` (auto-theirs, 93 fichiers, 0 conflit ouvert) + patch `6d28152` (4 fichiers : LeadsContactTrait COMMIT, class-security c5949ff, 2FA idempotent) — `git ls-files -u = 0`, `MERGE-AUTH` 7/7 PASS.
 
 ## Licence
 

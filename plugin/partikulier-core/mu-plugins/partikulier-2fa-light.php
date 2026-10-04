@@ -13,15 +13,16 @@
  */
 
 if (!defined('ABSPATH')) exit;
+if (function_exists('pk_2fa_profile_field')) return; // déjà chargé via wp-real (évite Cannot redeclare en test merge-v3)
 
 // Ne charge rien sur le front (annonces, catalogue) — perf 0
 if (!is_admin() && !in_array($GLOBALS['pagenow'] ?? '', ['wp-login.php'], true) && !(defined('DOING_AJAX') && DOING_AJAX)) {
     // On reste quand même chargé pour le hook authenticate, mais on ne fait rien de lourd
 }
 
-const PK_2FA_META_SECRET  = '_pk_2fa_secret';
-const PK_2FA_META_BACKUPS = '_pk_2fa_backups';
-const PK_2FA_WINDOW       = 1; // ±30 sec
+if (!defined('PK_2FA_META_SECRET')) define('PK_2FA_META_SECRET', '_pk_2fa_secret');
+if (!defined('PK_2FA_META_BACKUPS')) define('PK_2FA_META_BACKUPS', '_pk_2fa_backups');
+if (!defined('PK_2FA_WINDOW')) define('PK_2FA_WINDOW', 1); // ±30 sec
 
 // 1) Ajoute la section dans Profil
 add_action('show_user_profile', 'pk_2fa_profile_field');

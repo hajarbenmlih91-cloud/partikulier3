@@ -54,7 +54,7 @@ trait LeadsPrivacyTrait
 
 
 	/**
-	 * Effacement complet d'un lead : les neuf tables du domaine portant
+	 * Effacement complet d'un lead : les 11 tables du domaine portant
 	 * lead_id + les livraisons d'alertes (via alert_id), en transaction,
 	 * journalisé. Retourne false si une table refuse.
 	 */
@@ -73,8 +73,6 @@ trait LeadsPrivacyTrait
 			'pk_whatsapp_messages',
 			'pk_buyer_preferences',
 			'pk_lead_followups',
-			'pk_search_events',
-			'pk_buyer_profiles',
 			/* E-5501 (F-T16-4, lot sécurité 2.10.7) : les alertes sauvegardées
 			 * portent un lead_id et doivent suivre l'effacement du lead — sans
 			 * quoi critères + preuve de consentement survivent, orphelins
@@ -82,6 +80,11 @@ trait LeadsPrivacyTrait
 			 * Invariant E-5502 : toute table pk_* portant lead_id doit figurer
 			 * dans cette liste (contrat lead-erase-security-contract, E55-003). */
 			'pk_saved_alerts',
+			/* R1 2.10.16 : pk_search_events + pk_buyer_profiles portent lead_id
+			 * (recherches HMAC + profil agrégé). Les omettre = PII orpheline
+			 * après /erase-lead — trou GDPR attrapé par E55-003. */
+			'pk_search_events',
+			'pk_buyer_profiles',
 			'pk_buyer_leads',
 		];
 		$wpdb->query('START TRANSACTION');

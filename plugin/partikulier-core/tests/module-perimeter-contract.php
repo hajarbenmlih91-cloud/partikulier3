@@ -72,7 +72,9 @@ $pluginFiles = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($plu
 foreach ($pluginFiles as $file) {
     $path = (string) $file;
     if (substr($path, -4) !== '.php') { continue; }
-    if ($lineCount($path) > 400) { $oversizedPlugin[] = basename($path) . ' (' . $lineCount($path) . ' l.)'; }
+    if ($lineCount($path) > 400) {
+        $oversizedPlugin[] = basename($path) . ' (' . $lineCount($path) . ' l.)';
+    }
 }
 $assert('DA-001', $oversizedPlugin === [],
     $oversizedPlugin === [] ? 'plugin src/ : zéro fichier PHP >400 lignes (métrique CA-4 satisfaite côté plugin)' : 'fichiers >400 l. : ' . implode(', ', $oversizedPlugin));

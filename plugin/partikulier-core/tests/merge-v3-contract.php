@@ -75,6 +75,7 @@ $originalUser = get_current_user_id();
 $originalIp = $_SERVER['REMOTE_ADDR'] ?? null;
 $originalPost = $_POST;
 $originalSettings = get_option('pk_n8n_settings', null);
+$originalLeadSettings = get_option(\Partikulier\Core\Domain\Leads\LeadSettings::OPTION, null);
 global $wpdb;
 $realDb = $wpdb;
 $admin = get_users(['role' => 'administrator', 'number' => 1])[0] ?? null;
@@ -93,7 +94,7 @@ try {
         $user = wp_authenticate($alias, $password);
         $assert('MERGE-AUTH-' . $i, $user instanceof WP_User && $user->ID === $owner, 'Phone alias authenticates the same existing owner');
     }
-    $keys = array_map([Partikulier_Security::class, 'get_login_rate_key'], $aliases);
+    $keys = array_map([Partikulier_Security::class, 'get_login_rate_key'], array_merge($aliases, ["merge-{$run}@example.test"]));
     $rateKey = $keys[0];
     $assert('MERGE-AUTH-ALIASES', count(array_unique($keys)) === 1, 'Phone formats share a single throttling bucket');
     for ($i = 0; $i < 5; $i++) wp_authenticate($local, 'invalid-' . $i);
@@ -159,7 +160,7 @@ try {
     $wpdb = new MergeV3DatabaseProxy($realDb, 'query', 'SELECT 1', 1, 'Fixture database unavailable');
     $failedHealth = $callback();
     $assert('MERGE-HEALTH-DOWN', $failedHealth->get_status() === 503
-        && $failedHealth->get_data()['database'] === 'unreachable'
+        && ($failedHealth->get_data()['database'] ?? '') === 'unreachable'
         && $wpdb->calls === 1, 'DB-down health stops after the failed ping');
     $wpdb = $realDb;
 
@@ -240,10 +241,15 @@ try {
     foreach (['same', 'distinct'] as $kind) {
         $jobs = [];
         $sharedPhone = '2126' . random_int(10000000, 99999999);
+        $batch = [];
         for ($i = 0; $i < 10; $i++) {
-            $number = $kind === 'same' ? $sharedPhone : '2126' . random_int(10000000, 99999999);
+            $batch[] = $kind === 'same' ? $sharedPhone : '2126' . random_int(10000000, 99999999);
+        }
+        foreach (array_unique($batch) as $number) {
             $phones[] = $number;
-            if ($kind === 'distinct' || $i === 0) $qualify($number);
+            $qualify($number);
+        }
+        foreach ($batch as $number) {
             $process = proc_open([PHP_BINARY, __FILE__, '--contact-worker', (string) $pid, $number], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes);
             if (!is_resource($process)) throw new RuntimeException('Cannot start concurrency worker');
             $jobs[] = [$process, $pipes];
@@ -298,7 +304,13 @@ try {
     $demos = get_posts(['post_type' => 'properties', 'post_status' => 'publish', 'meta_key' => '_pk_seed_demo', 'meta_value' => '1', 'numberposts' => -1, 'fields' => 'ids', 'lang' => '', 'suppress_filters' => true]);
     $sources = array_filter($demos, static fn($id) => !get_post_meta($id, '_pk_translation_source', true));
     $galleryCount = count(array_filter($demos, static fn($id) => count((array) get_post_meta($id, 'es_property_gallery', true)) === 3));
-    $rentCount = count(array_filter($sources, static fn($id) => has_term(['a-louer', 'louer', 'for-rent', 'rent'], PARTIKULIER_ESTATIK_STATUS_TAXONOMY, $id)));
+    $rentCount = 0;
+    foreach ($sources as $id) {
+        $slugs = wp_get_object_terms((int) $id, PARTIKULIER_ESTATIK_STATUS_TAXONOMY, ['fields' => 'slugs']);
+        if (!is_wp_error($slugs) && array_intersect((array) $slugs, ['a-louer', 'louer', 'for-rent', 'rent'])) {
+            $rentCount++;
+        }
+    }
     $languageCount = class_exists('Partikulier_Listing_Translations') && Partikulier_Listing_Translations::available()
         ? count(Partikulier_Listing_Translations::active_languages()) : 1;
     $assert('MERGE-DEMO-INSTALL', count($sources) === 30 && count($demos) === 30 * $languageCount
@@ -331,6 +343,11 @@ try {
     foreach ($users as $id) wp_delete_user($id);
     if ($originalSettings === null) delete_option('pk_n8n_settings');
     else update_option('pk_n8n_settings', $originalSettings, false);
+    if ($originalLeadSettings === null) {
+        delete_option(\Partikulier\Core\Domain\Leads\LeadSettings::OPTION);
+    } else {
+        update_option(\Partikulier\Core\Domain\Leads\LeadSettings::OPTION, $originalLeadSettings, false);
+    }
     $sync->flush();
     wp_set_current_user($originalUser);
     if ($originalIp === null) unset($_SERVER['REMOTE_ADDR']);

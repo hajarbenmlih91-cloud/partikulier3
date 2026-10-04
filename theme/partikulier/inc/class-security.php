@@ -70,7 +70,12 @@ class Partikulier_Security {
 		}
 
 		$action = isset( $_REQUEST['action'] ) ? sanitize_key( wp_unslash( $_REQUEST['action'] ) ) : '';
-		if ( 'logout' === $action || 'postpass' === $action ) {
+		if ( in_array( $action, array( 'logout', 'postpass', 'lostpassword', 'retrievepassword', 'resetpass', 'rp' ), true ) ) {
+			return;
+		}
+
+		$secret_key = self::get_admin_secret_key();
+		if ( '' === $secret_key || apply_filters( 'partikulier_admin_gateway_bypass', false ) ) {
 			return;
 		}
 
@@ -81,18 +86,24 @@ class Partikulier_Security {
 			}
 		}
 
-		$secret_key    = self::get_admin_secret_key();
 		$cookie_name   = 'pk_admin_access';
 
-		$provided_key = isset( $_GET['pk_admin_key'] ) ? sanitize_text_field( wp_unslash( $_GET['pk_admin_key'] ) ) : '';
-		if ( '' === $provided_key && isset( $_GET['pk_direction'] ) ) {
+		$provided_key = isset( $_GET['pk_admin_key'] ) && is_string( $_GET['pk_admin_key'] ) ? sanitize_text_field( wp_unslash( $_GET['pk_admin_key'] ) ) : '';
+		if ( '' === $provided_key && isset( $_GET['pk_direction'] ) && is_string( $_GET['pk_direction'] ) ) {
 			$provided_key = sanitize_text_field( wp_unslash( $_GET['pk_direction'] ) );
 		}
 
 		if ( '' !== $provided_key && hash_equals( $secret_key, $provided_key ) ) {
 			$expiry = time() + 7200;
 			$token  = $expiry . '.' . hash_hmac( 'sha256', $expiry . '|' . $secret_key, wp_salt( 'auth' ) );
-			setcookie( $cookie_name, $token, $expiry, COOKIEPATH, COOKIE_DOMAIN, is_ssl(), true );
+			setcookie( $cookie_name, $token, array(
+				'expires' => $expiry,
+				'path' => COOKIEPATH ?: '/',
+				'domain' => COOKIE_DOMAIN ?: '',
+				'secure' => is_ssl(),
+				'httponly' => true,
+				'samesite' => 'Lax',
+			) );
 			return;
 		}
 
@@ -100,7 +111,8 @@ class Partikulier_Security {
 			return;
 		}
 
-		// Non autorisé : masquage complet vers l'accueil du site
+		error_log( '[Partikulier auth] Admin gateway access denied.' );
+
 		wp_safe_redirect( home_url( '/' ), 302 );
 		exit;
 	}
@@ -122,10 +134,18 @@ class Partikulier_Security {
 	 * Unification des messages d'erreur de connexion : neutralise l'énumération d'adresses e-mails.
 	 */
 	public static function unify_login_errors( $error ) {
-		if ( false !== strpos( (string) $error, 'pk_auth_rate_limited' ) || false !== strpos( (string) $error, 'patienter 15 minutes' ) ) {
+		global $errors;
+		if ( $errors instanceof WP_Error && array_intersect( $errors->get_error_codes(), array( 'pk_auth_rate_limited', 'pk_2fa_required', 'pk_2fa_invalid' ) ) ) {
 			return $error;
 		}
 		return __( 'Identifiant ou mot de passe incorrect.', 'partikulier' ) . ' <a href="' . esc_url( wp_lostpassword_url() ) . '">' . __( 'Mot de passe oublié ?', 'partikulier' ) . '</a>';
+	}
+
+	public static function unify_authentication_error( $user, $username = null, $password = null ) {
+		if ( $user instanceof WP_Error && array_intersect( $user->get_error_codes(), array( 'invalid_username', 'invalid_email', 'incorrect_password', 'authentication_failed' ) ) ) {
+			return new WP_Error( 'pk_auth_invalid', __( 'Identifiant ou mot de passe incorrect.', 'partikulier' ) );
+		}
+		return $user;
 	}
 
 	/**
@@ -134,14 +154,13 @@ class Partikulier_Security {
 	 */
 	public static function get_login_rate_key( $username ) {
 		$ip      = isset( $_SERVER['REMOTE_ADDR'] ) ? (string) wp_unslash( $_SERVER['REMOTE_ADDR'] ) : 'unknown';
-		$digits  = preg_replace( '/\D+/', '', (string) $username );
-		$account = self::normalize_login_phone( $username ) ?: ( strlen( $digits ) >= 9 ? $digits : sanitize_user( (string) $username ) );
+		$phone   = self::normalize_phone( (string) $username );
+		$user    = get_user_by( is_email( (string) $username ) ? 'email' : 'login', (string) $username );
+		if ( ! $user && $phone ) {
+			$user = self::find_phone_user( $phone );
+		}
+		$account = $user instanceof WP_User ? 'user:' . $user->ID : ( $phone ?: sanitize_user( (string) $username ) );
 		return 'pk_auth_rl_' . hash_hmac( 'sha256', $ip . '|' . strtolower( $account ), wp_salt( 'auth' ) );
-	}
-
-	private static function normalize_login_phone( $username ) {
-		$digits = preg_replace( '/\D+/', '', (string) $username );
-		return preg_match( '/^(?:0|212|00212)([67][0-9]{8})$/D', $digits, $match ) ? '212' . $match[1] : '';
 	}
 
 	/**
@@ -165,13 +184,7 @@ class Partikulier_Security {
 	public static function finalize_login_verdict( $user, $username, $password ) {
 		// WordPress password filters may replace the earlier rate-limit error.
 		$user = self::guard_login_brute_force( $user, $username, $password );
-		if ( is_wp_error( $user ) && array_intersect(
-			$user->get_error_codes(),
-			array( 'invalid_username', 'invalid_email', 'incorrect_password', 'authentication_failed' )
-		) ) {
-			return new WP_Error( 'pk_auth_failed', __( 'Identifiant ou mot de passe incorrect.', 'partikulier' ) );
-		}
-		return $user;
+		return self::unify_authentication_error( $user, $username, $password );
 	}
 
 	public static function track_login_failure( $username ) {
@@ -185,78 +198,49 @@ class Partikulier_Security {
 		delete_transient( $key );
 	}
 
+	public static function normalize_phone( $phone ) {
+		$digits = preg_replace( '/\D+/', '', (string) $phone );
+		if ( 0 === strpos( $digits, '00212' ) ) {
+			$digits = substr( $digits, 2 );
+		} elseif ( preg_match( '/^0[67][0-9]{8}$/', $digits ) ) {
+			$digits = '212' . substr( $digits, 1 );
+		}
+		return preg_match( '/^212[67][0-9]{8}$/', $digits ) ? $digits : '';
+	}
+
+	public static function find_phone_user( $phone ) {
+		$phone = self::normalize_phone( $phone );
+		if ( ! $phone ) {
+			return false;
+		}
+		foreach ( array( $phone, '0' . substr( $phone, 3 ) ) as $alias ) {
+			$user = get_user_by( 'login', $alias );
+			if ( ! $user ) {
+				$users = get_users( array( 'meta_key' => '_pk_owner_phone_clean', 'meta_value' => $alias, 'number' => 1 ) );
+				$user = $users[0] ?? false;
+			}
+			if ( ! $user ) {
+				$user = get_user_by( 'email', $alias . '@partikulier.local' );
+			}
+			if ( $user instanceof WP_User ) {
+				return $user;
+			}
+		}
+		return false;
+	}
+
 	/**
 	 * Permet à un propriétaire marocain de se connecter en saisissant directement
 	 * son numéro de téléphone portable (+212..., 06..., 07...).
 	 */
 	public static function resolve_phone_login( $user, $username, $password ) {
-		if ( $user instanceof WP_User || ( is_wp_error( $user ) && 'pk_auth_rate_limited' === $user->get_error_code() )
-			|| empty( $username ) || empty( $password ) ) {
+		if ( is_wp_error( $user ) || $user instanceof WP_User || empty( $username ) || empty( $password ) ) {
 			return $user;
 		}
-
-		$digits = self::normalize_login_phone( $username ) ?: preg_replace( '/\D+/', '', (string) $username );
-		if ( strlen( $digits ) >= 9 ) {
-			$found = null;
-
-			// 1. Recherche par login direct
-			$candidate = get_user_by( 'login', $digits );
-			if ( $candidate instanceof WP_User ) {
-				$found = $candidate;
-			}
-
-			// 2. Conversion format local 06... <-> international 2126...
-			if ( ! $found && 0 === strpos( $digits, '212' ) ) {
-				$local     = '0' . substr( $digits, 3 );
-				$candidate = get_user_by( 'login', $local );
-				if ( $candidate instanceof WP_User ) {
-					$found = $candidate;
-				}
-			} elseif ( ! $found && 0 === strpos( $digits, '0' ) ) {
-				$intl      = '212' . substr( $digits, 1 );
-				$candidate = get_user_by( 'login', $intl );
-				if ( $candidate instanceof WP_User ) {
-					$found = $candidate;
-				}
-			}
-
-			// 3. Recherche par user_meta _pk_owner_phone_clean
-			if ( ! $found ) {
-				$meta_users = get_users( array(
-					'meta_key'   => '_pk_owner_phone_clean',
-					'meta_value' => $digits,
-					'number'     => 1,
-				) );
-				if ( ! empty( $meta_users ) && $meta_users[0] instanceof WP_User ) {
-					$found = $meta_users[0];
-				}
-			}
-
-			if ( ! $found && 0 === strpos( $digits, '212' ) ) {
-				$local      = '0' . substr( $digits, 3 );
-				$meta_users = get_users( array(
-					'meta_key'   => '_pk_owner_phone_clean',
-					'meta_value' => $local,
-					'number'     => 1,
-				) );
-				if ( ! empty( $meta_users ) && $meta_users[0] instanceof WP_User ) {
-					$found = $meta_users[0];
-				}
-			}
-
-			// 4. Recherche par e-mail généré {digits}@partikulier.local
-			if ( ! $found ) {
-				$candidate = get_user_by( 'email', $digits . '@partikulier.local' );
-				if ( $candidate instanceof WP_User ) {
-					$found = $candidate;
-				}
-			}
-
-			if ( $found instanceof WP_User ) {
-				return wp_authenticate_username_password( null, $found->user_login, $password );
-			}
+		$found = self::find_phone_user( $username );
+		if ( $found instanceof WP_User ) {
+			return wp_authenticate_username_password( null, $found->user_login, $password );
 		}
-
 		return $user;
 	}
 

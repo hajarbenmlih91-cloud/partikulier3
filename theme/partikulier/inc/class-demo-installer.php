@@ -483,7 +483,7 @@ class Partikulier_Demo_Installer {
 		for ( $i = 0; $i < 20; $i++ ) {
 			$c = $pool_cities[ $i % count( $pool_cities ) ];
 			$t = $pool_types[ $i % count( $pool_types ) ];
-			$is_rent = ( 1 === $i % 2 || in_array( $i, array( 0, 18 ), true ) ); // 3 locations fixes + 12 générées = 15.
+			$is_rent = ( 1 === $i % 2 );
 			$price = $is_rent ? ( $t[3] > 100000 ? intval( $t[3] / 200 ) : $t[3] ) : $t[3];
 			if ( $is_rent && $price < 3000 ) { $price = 3500 + ( $i * 137 ) % 4000; }
 			if ( ! $is_rent && $price < 100000 ) { $price = 600000 + ( $i * 99000 ) % 800000; }
@@ -500,7 +500,34 @@ class Partikulier_Demo_Installer {
 				'vis_a_vis' => ( 0 === $i % 3 ? 'Oui' : 'Non' ), 'lat' => $c[3] + ( $i * 0.001 ), 'lng' => $c[4] + ( $i * 0.001 ),
 			);
 		}
-		return $base; // 30 au total
+		$rent = [];
+		$sale = [];
+		foreach ( $base as $row ) {
+			if ( ( $row['action'] ?? '' ) === 'louer' ) {
+				$rent[] = $row;
+			} else {
+				$sale[] = $row;
+			}
+		}
+		// Les 10 premières sont 3 locations / 7 ventes ; les 20 suivantes 10/10 → 13/17.
+		// Le contrat MERGE-DEMO-INSTALL et le copy exigent 15/15.
+		while ( count( $rent ) < 15 && $sale ) {
+			$row = array_pop( $sale );
+			$row['action'] = 'louer';
+			if ( (int) $row['price'] > 100000 ) {
+				$row['price'] = max( 3500, (int) ( $row['price'] / 200 ) );
+			}
+			$rent[] = $row;
+		}
+		while ( count( $rent ) > 15 && $rent ) {
+			$row = array_pop( $rent );
+			$row['action'] = 'vendre';
+			if ( (int) $row['price'] < 100000 ) {
+				$row['price'] = 600000 + ( (int) $row['surface'] * 1000 );
+			}
+			$sale[] = $row;
+		}
+		return array_merge( $sale, $rent );
 	}
 
 	// --- Helpers : termes + photos ---
