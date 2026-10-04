@@ -83,6 +83,9 @@ $location = Partikulier_Geo::location_string( $post->ID );
 	$actions = get_the_terms( $post->ID, PARTIKULIER_ESTATIK_STATUS_TAXONOMY );
 	$type    = ( ! is_wp_error( $types ) && $types ) ? $types[0]->name : __( 'Bien', 'partikulier' );
 	$action  = ( ! is_wp_error( $actions ) && $actions ) ? $actions[0]->name : '';
+	if ( $action && class_exists( 'Partikulier_Localization' ) ) {
+		$action = Partikulier_Localization::translate_taxonomy_label( $action );
+	}
 
 // Statut proprietaire : vendu / loue / archive / indisponible / actif.
         // SE-044 / DP-9 : « indisponible » (changement d'avis / autre) ferme la fiche
@@ -214,37 +217,99 @@ $gallery_ids = array();
 							<span class="pk-carousel-count" aria-live="polite">1 / <?php echo (int) count( $gallery_ids ); ?></span>
 							<button class="pk-carousel-button pk-carousel-next" type="button" aria-controls="<?php echo esc_attr( $gallery_id ); ?>" aria-label="<?php esc_attr_e( 'Photo suivante', 'partikulier' ); ?>">›</button>
 						</nav>
-						<div class="pk-carousel-dots" role="tablist" aria-label="<?php esc_attr_e( 'Choisir une photo', 'partikulier' ); ?>">
-							<?php foreach ( $gallery_ids as $i => $id ) : ?>
-								<button type="button" role="tab" class="pk-carousel-dot<?php echo 0 === $i ? ' is-active' : ''; ?>" aria-selected="<?php echo 0 === $i ? 'true' : 'false'; ?>" aria-label="<?php echo esc_attr( sprintf( __( 'Afficher la photo %d', 'partikulier' ), $i + 1 ) ); ?>" data-pk-slide="<?php echo (int) $i; ?>"></button>
-							<?php endforeach; ?>
-						</div>
 					<?php endif; ?>
+					<ul class="pk-gallery-thumbs">
+						<?php foreach ( $gallery_ids as $i => $id ) : ?>
+							<?php $thumb = wp_get_attachment_image_url( $id, 'pk-card' ) ?: wp_get_attachment_image_url( $id, 'thumbnail' ); ?>
+							<?php if ( $thumb ) : ?>
+								<li>
+									<button type="button" class="pk-gallery-thumb<?php echo 0 === $i ? ' is-active' : ''; ?>" data-pk-slide="<?php echo (int) $i; ?>" aria-label="<?php echo esc_attr( sprintf( __( 'Afficher la photo %d', 'partikulier' ), $i + 1 ) ); ?>">
+										<img src="<?php echo esc_url( $thumb ); ?>" alt="" width="120" height="90">
+									</button>
+								</li>
+							<?php endif; ?>
+						<?php endforeach; ?>
+					</ul>
 				</section>
-				<?php if ( count( $gallery_ids ) > 1 ) : ?>
+				<div class="pk-gallery-lightbox" hidden>
+					<button type="button" class="pk-gallery-lightbox-close" aria-label="<?php esc_attr_e( 'Fermer', 'partikulier' ); ?>">×</button>
+					<button type="button" class="pk-gallery-lightbox-prev" aria-label="<?php esc_attr_e( 'Photo précédente', 'partikulier' ); ?>">‹</button>
+					<img alt="">
+					<button type="button" class="pk-gallery-lightbox-next" aria-label="<?php esc_attr_e( 'Photo suivante', 'partikulier' ); ?>">›</button>
+					<p class="pk-gallery-lightbox-count" aria-live="polite"></p>
+				</div>
 					<script>
 					(function () {
 						var gallery = document.querySelector('[data-pk-carousel]');
 						if (!gallery) return;
 						var track = gallery.querySelector('.pk-carousel-track');
 						var slides = gallery.querySelectorAll('.pk-carousel-slide');
-						var dots = gallery.querySelectorAll('.pk-carousel-dot');
+						var thumbs = gallery.querySelectorAll('.pk-gallery-thumb');
 						var count = gallery.querySelector('.pk-carousel-count');
+						var lb = document.querySelector('.pk-gallery-lightbox');
+						var lbImg = lb ? lb.querySelector('img') : null;
+						var lbCount = lb ? lb.querySelector('.pk-gallery-lightbox-count') : null;
 						var current = 0;
+						var urls = [];
+						slides.forEach(function (slide) {
+							var img = slide.querySelector('img');
+							urls.push(img ? img.currentSrc || img.src : '');
+						});
 						function setCurrent(index, move) {
 							current = Math.max(0, Math.min(index, slides.length - 1));
-							if (move) track.scrollTo({ left: track.clientWidth * current, behavior: 'smooth' });
+							if (move && track && track.scrollTo) track.scrollTo({ left: track.clientWidth * current, behavior: 'smooth' });
 							if (count) count.textContent = (current + 1) + ' / ' + slides.length;
-							dots.forEach(function (dot, i) { dot.classList.toggle('is-active', i === current); dot.setAttribute('aria-selected', i === current ? 'true' : 'false'); });
+							thumbs.forEach(function (thumb, i) { thumb.classList.toggle('is-active', i === current); });
+							if (lb && !lb.hidden && lbImg) {
+								lbImg.src = urls[current] || '';
+								if (lbCount) lbCount.textContent = (current + 1) + ' / ' + slides.length;
+							}
 						}
-						gallery.querySelector('.pk-carousel-prev').addEventListener('click', function () { setCurrent(current - 1, true); });
-						gallery.querySelector('.pk-carousel-next').addEventListener('click', function () { setCurrent(current + 1, true); });
-						dots.forEach(function (dot) { dot.addEventListener('click', function () { setCurrent(parseInt(dot.getAttribute('data-pk-slide'), 10), true); }); });
-						track.addEventListener('scroll', function () { window.requestAnimationFrame(function () { setCurrent(Math.round(track.scrollLeft / Math.max(track.clientWidth, 1)), false); }); }, { passive: true });
-						track.addEventListener('keydown', function (event) { if (event.key === 'ArrowLeft') { event.preventDefault(); setCurrent(current - 1, true); } if (event.key === 'ArrowRight') { event.preventDefault(); setCurrent(current + 1, true); } });
+						function openLb(index) {
+							if (!lb || !lbImg) return;
+							setCurrent(index, true);
+							lbImg.src = urls[current] || '';
+							if (lbCount) lbCount.textContent = (current + 1) + ' / ' + slides.length;
+							lb.hidden = false;
+							document.body.classList.add('pk-lightbox-open');
+						}
+						function closeLb() {
+							if (!lb) return;
+							lb.hidden = true;
+							document.body.classList.remove('pk-lightbox-open');
+						}
+						var prev = gallery.querySelector('.pk-carousel-prev');
+						var next = gallery.querySelector('.pk-carousel-next');
+						if (prev) prev.addEventListener('click', function (event) { event.stopPropagation(); setCurrent(current - 1, true); });
+						if (next) next.addEventListener('click', function (event) { event.stopPropagation(); setCurrent(current + 1, true); });
+						thumbs.forEach(function (thumb) {
+							thumb.addEventListener('click', function () { setCurrent(parseInt(thumb.getAttribute('data-pk-slide'), 10), true); });
+						});
+						slides.forEach(function (slide, i) {
+							slide.style.cursor = 'zoom-in';
+							slide.addEventListener('click', function () { openLb(i); });
+						});
+						if (track) {
+							track.addEventListener('scroll', function () { window.requestAnimationFrame(function () { setCurrent(Math.round(track.scrollLeft / Math.max(track.clientWidth, 1)), false); }); }, { passive: true });
+							track.addEventListener('keydown', function (event) { if (event.key === 'ArrowLeft') { event.preventDefault(); setCurrent(current - 1, true); } if (event.key === 'ArrowRight') { event.preventDefault(); setCurrent(current + 1, true); } });
+						}
+						if (lb) {
+							var closeBtn = lb.querySelector('.pk-gallery-lightbox-close');
+							var lbPrev = lb.querySelector('.pk-gallery-lightbox-prev');
+							var lbNext = lb.querySelector('.pk-gallery-lightbox-next');
+							if (closeBtn) closeBtn.addEventListener('click', closeLb);
+							if (lbPrev) lbPrev.addEventListener('click', function () { setCurrent(current - 1, true); });
+							if (lbNext) lbNext.addEventListener('click', function () { setCurrent(current + 1, true); });
+							lb.addEventListener('click', function (event) { if (event.target === lb) closeLb(); });
+							document.addEventListener('keydown', function (event) {
+								if (lb.hidden) return;
+								if (event.key === 'Escape') closeLb();
+								if (event.key === 'ArrowLeft') setCurrent(current - 1, true);
+								if (event.key === 'ArrowRight') setCurrent(current + 1, true);
+							});
+						}
 					}());
 					</script>
-				<?php endif; ?>
 			<?php endif; ?>
 
 		<div class="pk-single-grid">

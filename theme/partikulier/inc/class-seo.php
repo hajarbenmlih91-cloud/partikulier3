@@ -109,9 +109,12 @@ class Partikulier_SEO {
 		 */
 	private static function localized_status( $status, $locale ) {
 			$key = trim( (string) $status );
+			$fold = array( 'for sale' => 'A vendre', 'for-sale' => 'A vendre', 'à vendre' => 'A vendre', 'for rent' => 'A louer', 'for-rent' => 'A louer', 'à louer' => 'A louer' );
+			$low  = function_exists( 'mb_strtolower' ) ? mb_strtolower( $key, 'UTF-8' ) : strtolower( $key );
+			if ( isset( $fold[ $low ] ) ) { $key = $fold[ $low ]; }
 			$map = array(
-					'A vendre' => array( 'en' => 'For sale', 'ar' => 'للبيع' ),
-					'A louer'  => array( 'en' => 'For rent', 'ar' => 'للإيجار' ),
+					'A vendre' => array( 'fr' => 'À vendre', 'en' => 'For sale', 'ar' => 'للبيع' ),
+					'A louer'  => array( 'fr' => 'À louer', 'en' => 'For rent', 'ar' => 'للإيجار' ),
 					'Vente'    => array( 'en' => 'Sale', 'ar' => 'للبيع' ),
 					'Location' => array( 'en' => 'Rental', 'ar' => 'للإيجار' ),
 			);

@@ -181,9 +181,13 @@ trait Partikulier_Localization_Strings {
 		 * valeur d’origine. Cela protège les textes libres et les réglages personnalisés.
 		 */
 	public static function translate_taxonomy_label( $label ) {
+		$label = trim( (string) $label );
+		$fold  = array( 'for sale' => 'A vendre', 'for-sale' => 'A vendre', 'à vendre' => 'A vendre', 'for rent' => 'A louer', 'for-rent' => 'A louer', 'à louer' => 'A louer' );
+		$low   = function_exists( 'mb_strtolower' ) ? mb_strtolower( $label, 'UTF-8' ) : strtolower( $label );
+		if ( isset( $fold[ $low ] ) ) { $label = $fold[ $low ]; }
 		$map                          = array(
-					'A louer'      => array( 'fr' => 'A louer', 'en' => 'For rent', 'ar' => 'للإيجار' ),
-					'A vendre'     => array( 'fr' => 'A vendre', 'en' => 'For sale', 'ar' => 'للبيع' ),
+					'A louer'      => array( 'fr' => 'À louer', 'en' => 'For rent', 'ar' => 'للإيجار' ),
+					'A vendre'     => array( 'fr' => 'À vendre', 'en' => 'For sale', 'ar' => 'للبيع' ),
 					'Appartement'  => array( 'fr' => 'Appartement', 'en' => 'Apartment', 'ar' => 'شقة' ),
 					'Appartements' => array( 'fr' => 'Appartements', 'en' => 'Apartments', 'ar' => 'شقق' ),
 					'Maison'       => array( 'fr' => 'Maison', 'en' => 'House', 'ar' => 'منزل' ),
