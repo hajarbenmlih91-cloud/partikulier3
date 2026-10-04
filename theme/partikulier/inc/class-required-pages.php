@@ -300,14 +300,6 @@ class Partikulier_Required_Pages {
 		if ( ! is_array( $langs ) || count( $langs ) < 2 ) {
 			$langs = array( 'fr', 'en', 'ar' );
 		}
-		$pll = get_option( 'polylang' );
-		if ( is_array( $pll ) ) {
-			$pll['force_lang']    = 1;
-			$pll['hide_default']  = 0;
-			$pll['redirect_lang'] = 0;
-			$pll['browser']       = 0;
-			update_option( 'polylang', $pll );
-		}
 		if ( isset( $GLOBALS['polylang']->options ) && is_object( $GLOBALS['polylang']->options ) && method_exists( $GLOBALS['polylang']->options, 'merge' ) ) {
 			$GLOBALS['polylang']->options->merge(
 				array(

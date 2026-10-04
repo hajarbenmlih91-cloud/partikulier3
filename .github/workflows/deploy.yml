@@ -136,6 +136,12 @@ jobs:
           unzip -q dist/partikulier-theme-*.zip -d build/deploy-artifacts
           test -d build/deploy-artifacts/partikulier-core
           test -d build/deploy-artifacts/partikulier
+          # Polylang 3.8.7 (docs/INSTALLATION.md, SE-025) : UAT n'avait pas
+          # l'extension → /fr/ /en/ /ar/ 404, sélecteur mort. On le pose
+          # depuis le runner, pas depuis Hostinger (wordpress.org).
+          curl -fsSL -o build/polylang.zip "https://downloads.wordpress.org/plugin/polylang.3.8.7.zip"
+          unzip -q build/polylang.zip -d build/deploy-artifacts
+          test -d build/deploy-artifacts/polylang
 
       - name: Configurer SSH strict
         run: |
@@ -232,6 +238,10 @@ jobs:
           rsync -az --delete -e "ssh -F $HOME/.ssh/config" \
             build/deploy-artifacts/partikulier/ \
             "partikulier-hostinger:$WP_PATH/wp-content/themes/partikulier/"
+          ssh partikulier-hostinger "mkdir -p \"$WP_PATH/wp-content/plugins/polylang\""
+          rsync -az --delete -e "ssh -F $HOME/.ssh/config" \
+            build/deploy-artifacts/polylang/ \
+            "partikulier-hostinger:$WP_PATH/wp-content/plugins/polylang/"
 
       - name: Vérifications WordPress post-déploiement
         run: |
@@ -242,8 +252,10 @@ jobs:
           command -v wp >/dev/null 2>&1 || { echo "wp-cli introuvable"; exit 1; }
           cd "$WP_PATH"
           wp plugin activate partikulier-core
-          wp plugin activate polylang || true
-          wp eval 'echo "pll_fn=".(function_exists("pll_languages_list")?"yes":"no")."\n"; if(function_exists("pll_languages_list")){echo "langs=".implode(",",(array)pll_languages_list(array("fields"=>"slug")))."\n";} echo "show=".get_option("show_on_front")." front=".get_option("page_on_front")."\n"; $p=get_option("polylang"); echo "hide=".(is_array($p)?(int)($p["hide_default"]??-1):"na")."\n"; if(class_exists("Partikulier_Required_Pages")){delete_option("pk_front_ensured"); Partikulier_Required_Pages::ensure_front();} echo "after show=".get_option("show_on_front")." front=".get_option("page_on_front")."\n";' || true
+          wp plugin activate polylang
+          wp eval-file wp-content/themes/partikulier/cli/pll-langues.php
+          wp eval-file wp-content/themes/partikulier/cli/pll-masse.php
+          wp eval 'if(class_exists("Partikulier_Required_Pages")){delete_option("pk_front_ensured"); Partikulier_Required_Pages::ensure_front();}'
           wp cache flush || true
           wp rewrite flush || true
           REMOTE
