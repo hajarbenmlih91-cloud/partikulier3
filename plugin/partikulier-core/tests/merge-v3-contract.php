@@ -118,7 +118,12 @@ try {
         && !Partikulier_Security::valid_admin_access_token($token, 'wrong-key')
         && !Partikulier_Security::valid_admin_access_token('1.' . str_repeat('0', 64), 'fixture-key'), 'Gateway validates signature and server-side expiry');
 
-    require_once dirname(__DIR__) . '/mu-plugins/partikulier-2fa-light.php';
+    if (!function_exists('pk_2fa_profile_field')) {
+        require_once dirname(__DIR__) . '/mu-plugins/partikulier-2fa-light.php';
+    }
+    if (!defined('PK_2FA_META_SECRET')) define('PK_2FA_META_SECRET', '_pk_2fa_secret');
+    if (!defined('PK_2FA_META_BACKUPS')) define('PK_2FA_META_BACKUPS', '_pk_2fa_backups');
+    if (!defined('PK_2FA_WINDOW')) define('PK_2FA_WINDOW', 1);
     $secret = 'GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ';
     $assert('MERGE-TOTP-RFC', pk_2fa_totp_at($secret, 1) === '287082', 'RFC 6238 test vector (six digits)');
     update_user_meta($owner, PK_2FA_META_SECRET, $secret);

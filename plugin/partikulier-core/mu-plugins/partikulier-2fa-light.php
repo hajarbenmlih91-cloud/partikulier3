@@ -13,15 +13,16 @@
  */
 
 if (!defined('ABSPATH')) exit;
+if (function_exists('pk_2fa_profile_field')) return; // déjà chargé via wp-real (évite Cannot redeclare en test merge-v3)
 
 // Ne charge rien sur le front (annonces, catalogue) — perf 0
 if (!is_admin() && !in_array($GLOBALS['pagenow'] ?? '', ['wp-login.php'], true) && !(defined('DOING_AJAX') && DOING_AJAX)) {
     // On reste quand même chargé pour le hook authenticate, mais on ne fait rien de lourd
 }
 
-const PK_2FA_META_SECRET  = '_pk_2fa_secret';
-const PK_2FA_META_BACKUPS = '_pk_2fa_backups';
-const PK_2FA_WINDOW       = 1; // ±30 sec
+if (!defined('PK_2FA_META_SECRET')) define('PK_2FA_META_SECRET', '_pk_2fa_secret');
+if (!defined('PK_2FA_META_BACKUPS')) define('PK_2FA_META_BACKUPS', '_pk_2fa_backups');
+if (!defined('PK_2FA_WINDOW')) define('PK_2FA_WINDOW', 1); // ±30 sec
 
 // 1) Ajoute la section dans Profil
 add_action('show_user_profile', 'pk_2fa_profile_field');
@@ -105,6 +106,9 @@ function pk_2fa_authenticate($user, $username, $password){
     // Si on vient du formulaire 2FA, vérifie
     $code = isset($_POST['pk_2fa_code']) ? preg_replace('/\s+/','', (string) $_POST['pk_2fa_code']) : '';
     if ($code === '') {
+        if (!function_exists('login_header')) {
+            return new WP_Error('pk_2fa_required', '2FA code required');
+        }
         // Intercepte le login : affiche le 2e écran
         pk_2fa_render_second_step($user);
         exit;

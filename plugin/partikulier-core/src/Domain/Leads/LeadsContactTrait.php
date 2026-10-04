@@ -204,6 +204,7 @@ trait LeadsContactTrait
 					$wpdb->query('COMMIT');
 					return new \WP_REST_Response(['allowed' => false, 'reason' => 'daily_limit', 'limit' => self::daily_limit()], 200);
 				}
+			}
 
 			$resDisc = $wpdb->insert($disclosures, ['lead_id' => $lead_id, 'property_id' => $property_id, 'owner_id' => $owner_id, 'day_key' => $day, 'sent_at' => $now]);
 			if ( false === $resDisc && str_contains((string) $wpdb->last_error, 'Deadlock') ) {
@@ -212,6 +213,7 @@ trait LeadsContactTrait
 			if ( ! $known_owner ) {
 				$wpdb->query($wpdb->prepare("UPDATE {$limits} SET contacts_count = contacts_count + 1 WHERE lead_id = %d AND day_key = %s", $lead_id, $day));
 			}
+			$wpdb->query('COMMIT');
 			self::audit('lead_authorized', 'lead', $lead_id, [
 				'property_id' => $property_id,
 				'owner_id'    => $owner_id,
