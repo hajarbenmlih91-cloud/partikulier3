@@ -66,11 +66,12 @@ class Partikulier_Setup {
 		 * le CSS est charge via le filtre de Partikulier_Scripts pour controler l'ordre).
 		 */
 	public static function register_styles() {
+			$css = PARTIKULIER_DIR . '/assets/css/style.css';
 			wp_register_style(
 					'partikulier-style',
 					PARTIKULIER_URI . '/assets/css/style.css',
 					array(),
-					PARTIKULIER_VERSION
+					is_readable( $css ) ? (string) filemtime( $css ) : PARTIKULIER_VERSION
 			);
 	}
 

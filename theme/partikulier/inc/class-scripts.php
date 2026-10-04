@@ -23,11 +23,12 @@ class Partikulier_Scripts {
 	public static function enqueue() {
 			wp_enqueue_style( 'partikulier-style' );
 
+			$main_js = PARTIKULIER_DIR . '/assets/js/main.js';
 			wp_enqueue_script(
 					'partikulier-main',
 					PARTIKULIER_URI . '/assets/js/main.js',
 					array(),
-					PARTIKULIER_VERSION,
+					is_readable( $main_js ) ? (string) filemtime( $main_js ) : PARTIKULIER_VERSION,
 					array(
 							'in_footer' => true,
 							'strategy'  => 'defer',
@@ -36,11 +37,12 @@ class Partikulier_Scripts {
 
 			// Parcours de depot en 3 etapes : charge uniquement sur la page concernee.
 		if ( is_page_template( 'templates/page-deposer-annonce.php' ) || is_page( array( 'deposer-une-annonce', 'deposer-annonce', 'deposer', 'publier-une-annonce' ) ) ) {
+				$steps_js = PARTIKULIER_DIR . '/assets/js/submit-steps.js';
 				wp_enqueue_script(
 						'partikulier-submit-steps',
 						PARTIKULIER_URI . '/assets/js/submit-steps.js',
 						array( 'partikulier-main' ),
-						PARTIKULIER_VERSION,
+						is_readable( $steps_js ) ? (string) filemtime( $steps_js ) : PARTIKULIER_VERSION,
 						array(
 								'in_footer' => true,
 								'strategy'  => 'defer',

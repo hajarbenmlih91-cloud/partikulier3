@@ -182,7 +182,7 @@ trait Partikulier_Localization_Strings {
 		 */
 	public static function translate_taxonomy_label( $label ) {
 		$label = trim( (string) $label );
-		$fold  = array( 'for sale' => 'A vendre', 'for-sale' => 'A vendre', 'à vendre' => 'A vendre', 'for rent' => 'A louer', 'for-rent' => 'A louer', 'à louer' => 'A louer' );
+		$fold  = array( 'for sale' => 'A vendre', 'for-sale' => 'A vendre', 'à vendre' => 'A vendre', 'for rent' => 'A louer', 'for-rent' => 'A louer', 'à louer' => 'A louer', 'apartment' => 'Appartement', 'apartments' => 'Appartement', 'house' => 'Maison', 'houses' => 'Maison', 'land' => 'Terrain', 'building' => 'Immeuble' );
 		$low   = function_exists( 'mb_strtolower' ) ? mb_strtolower( $label, 'UTF-8' ) : strtolower( $label );
 		if ( isset( $fold[ $low ] ) ) { $label = $fold[ $low ]; }
 		$map                          = array(

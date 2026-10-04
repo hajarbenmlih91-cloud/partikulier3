@@ -3287,10 +3287,13 @@ html[dir="rtl"] .pk-archive-content .pk-card-price { left: auto; right: 12px; }
 }
 
 
-/* Archive — ordre final du contrôle mobile. */
+/* Archive — ordre final du contrôle mobile.
+ * display:flex (pas block) : l'order Ville / Transaction / Types
+ * du rail desktop dépend du contexte flex. Un block !important
+ * plus bas écrasait la règle flex et renvoyait Ville en bas. */
 @media (min-width: 768px) {
 		.pk-archive-layout > .pk-filter-toggle { display: none !important; }
-		.pk-archive .pk-filters-panel { display: block !important; }
+		.pk-archive .pk-filters-panel { display: flex !important; flex-direction: column; }
 }
 @media (max-width: 767px) {
 		.pk-archive-layout { display: flex; flex-direction: column; }
