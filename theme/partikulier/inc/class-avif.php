@@ -32,6 +32,17 @@ class Partikulier_AVIF {
 		// Balise <picture> avec <source type="image/avif">.
 		add_filter( 'wp_content_img_tag', array( __CLASS__, 'picture_tag' ), 10, 3 );
 		add_filter( 'post_thumbnail_html', array( __CLASS__, 'thumbnail_picture' ), 10, 5 );
+		self::ensure_uploads_mime();
+	}
+
+	/** Hostinger sert sinon les .avif en text/plain. Idempotent. */
+	public static function ensure_uploads_mime() {
+		$d = wp_get_upload_dir();
+		$p = ! empty( $d['basedir'] ) ? trailingslashit( (string) $d['basedir'] ) . '.htaccess' : '';
+		if ( '' === $p || ! is_dir( dirname( $p ) ) ) { return; }
+		$h = is_readable( $p ) ? (string) file_get_contents( $p ) : '';
+		if ( false !== strpos( $h, 'AddType image/avif' ) ) { return; }
+		@file_put_contents( $p, $h . "\n<IfModule mod_mime.c>\nAddType image/avif .avif\nAddType image/webp .webp\n</IfModule>\n", LOCK_EX ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents,WordPress.PHP.NoSilencedErrors.Discouraged
 	}
 
 	/**

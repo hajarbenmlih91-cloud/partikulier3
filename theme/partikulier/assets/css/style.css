@@ -991,7 +991,7 @@ html[dir="rtl"] .pk-card-price {
 .pk-editorial-region-list a { display: flex; justify-content: space-between; gap: 1rem; padding: .75rem 0; color: rgba(255,255,255,.8); border-bottom: 1px solid rgba(255,255,255,.16); }
 .pk-editorial-region-list a:hover { color: #fff; }
 @media (max-width: 900px) { .pk-editorial-types { grid-template-columns: repeat(3, 1fr); } .pk-editorial-cards { grid-template-columns: repeat(2, 1fr); } .pk-editorial-rental, .pk-editorial-places, .pk-editorial-region-band__inner { grid-template-columns: 1fr; } }
-@media (max-width: 640px) { .pk-editorial-hero, .pk-editorial-hero__inner { min-height: 720px; } .pk-editorial-hero h1 { font-size: clamp(2.4rem, 13vw, 4rem); } .pk-editorial-heading--row { display: block; } .pk-editorial-heading--row .pk-editorial-link { display: inline-block; margin-top: .8rem; } .pk-editorial-cards, .pk-editorial-types { grid-template-columns: 1fr 1fr; } .pk-editorial-feature { min-height: 340px; } .pk-editorial-empty--compact { display: block; } .pk-editorial-empty--compact .pk-editorial-link { display: inline-block; margin-top: 1rem; } .pk-editorial-region-list { grid-template-columns: 1fr; } }
+@media (max-width: 640px) { .pk-editorial-hero, .pk-editorial-hero__inner { min-height: 0; } .pk-editorial-hero__inner { padding-top: 4.25rem; padding-bottom: 2rem; } .pk-editorial-hero h1 { font-size: clamp(2.1rem, 11vw, 3.2rem); } .pk-editorial-heading--row { display: block; } .pk-editorial-heading--row .pk-editorial-link { display: inline-block; margin-top: .8rem; } .pk-editorial-cards, .pk-editorial-types { grid-template-columns: 1fr 1fr; } .pk-editorial-feature { min-height: 340px; } .pk-editorial-empty--compact { display: block; } .pk-editorial-empty--compact .pk-editorial-link { display: inline-block; margin-top: 1rem; } .pk-editorial-region-list { grid-template-columns: 1fr; } }
 
 /* ============================================================
 	Classes de mise en page manquantes.
@@ -2826,7 +2826,7 @@ html[dir='rtl'] .pk-editorial-hero__intro {
 @media (max-width: 640px) {
 		html[dir='rtl'] .pk-editorial-hero,
 		html[dir='rtl'] .pk-editorial-hero__inner {
-				min-height: 680px;
+				min-height: 0;
 		}
 		html[dir='rtl'] .pk-editorial-hero__inner {
 				gap: 1.35rem;
@@ -3144,7 +3144,8 @@ html[dir="rtl"] .pk-archive-content .pk-card-price { left: auto; right: 12px; }
 		}
 		.pk-archive .pk-filters-backdrop[hidden] { display: none; }
 		.pk-archive .pk-filters-panel {
-				display: block !important;
+				display: flex !important;
+				flex-direction: column;
 				position: fixed;
 				inset-block: 0;
 				inset-inline-end: 0;
@@ -3152,7 +3153,7 @@ html[dir="rtl"] .pk-archive-content .pk-card-price { left: auto; right: 12px; }
 				width: min(88vw, 360px);
 				max-width: 100%;
 				margin: 0;
-				padding: 1.25rem 1rem 2rem;
+				padding: 1.25rem 1rem calc(2.5rem + env(safe-area-inset-bottom));
 				background: #fff;
 				box-shadow: -18px 0 42px rgba(16,18,16,.18);
 				overflow-y: auto;
@@ -3160,6 +3161,10 @@ html[dir="rtl"] .pk-archive-content .pk-card-price { left: auto; right: 12px; }
 				transform: translateX(105%);
 				transition: transform .22s ease;
 		}
+		.pk-archive .pk-filters-panel > .pk-filter-close { order: 0; }
+		.pk-archive .pk-filters-panel > .pk-filter-city { order: 1; }
+		.pk-archive .pk-filters-panel > .pk-filter-actions { order: 2; }
+		.pk-archive .pk-filters-panel > .pk-filter-types { order: 3; }
 		.pk-archive .pk-filters-panel.is-open { transform: translateX(0); }
 		.pk-archive .pk-filter-close {
 				display: flex;
@@ -3256,7 +3261,19 @@ html[dir="rtl"] .pk-archive-content .pk-card-price { left: auto; right: 12px; }
 .pk-filter-city-form .pk-place-input { border-radius: 0; color: var(--pk-ink) !important; }
 @media (max-width: 767px) {
 		.pk-place-suggestions { max-height: 12rem; }
-		.pk-filter-city-form .pk-place-suggestions { position: static; width: 100%; margin-top: .35rem; box-shadow: none; }
+		.pk-filter-city-form .pk-place-suggestions {
+				position: static;
+				width: 100%;
+				max-height: min(40vh, 16rem);
+				margin-top: .35rem;
+				box-shadow: none;
+				z-index: 3;
+		}
+		.pk-archive .pk-filters-panel .pk-filter-city {
+				background: #fff;
+				padding-bottom: .35rem;
+		}
+		.pk-archive .pk-filters-panel .pk-place-autocomplete-wrap { z-index: 4; }
 }
 
 

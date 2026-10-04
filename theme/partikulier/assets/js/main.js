@@ -835,6 +835,9 @@
 							list.appendChild(option);
 					});
 					list.hidden = false;
+					if (input.closest(".pk-filters-panel") && input.scrollIntoView) {
+						try { input.scrollIntoView({ block: "nearest", inline: "nearest" }); } catch (err) {}
+					}
 			}
 				var suggest = debounce(function () {
 						hidden.value = "";
