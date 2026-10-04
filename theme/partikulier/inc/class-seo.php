@@ -72,11 +72,11 @@ class Partikulier_SEO {
 			$type     = self::term_name( $post, PARTIKULIER_ESTATIK_TYPE_TAXONOMY );
 
 			$locale = function_exists( 'pll_current_language' ) ? pll_current_language( 'slug' ) : 'fr';
+		if ( $category ) {
+				$category = self::localized_status( $category, $locale ? $locale : 'fr' );
+		}
 		if ( 'ar' === $locale || 'en' === $locale ) {
 			if ( class_exists( 'Partikulier_Listing_I18n' ) ) {
-				if ( $category ) {
-						$category = self::localized_status( $category, $locale );
-				}
 				if ( $type ) {
 						$type = Partikulier_Listing_I18n::localized_type( $type, $locale );
 				}
