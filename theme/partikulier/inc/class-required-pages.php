@@ -69,9 +69,9 @@ class Partikulier_Required_Pages {
 
 	public static function init() {
 			add_action( 'init', array( __CLASS__, 'maybe_migrate_legacy_slugs' ), 1 );
-			add_action( 'init', array( __CLASS__, 'ensure_front' ), 20 );
 			add_action( 'init', array( __CLASS__, 'sync_estatik_login_page' ), 99 );
 			add_action( 'after_switch_theme', array( __CLASS__, 'create_missing' ) );
+			add_action( 'after_switch_theme', array( __CLASS__, 'ensure_front' ), 20 );
 			add_action( 'admin_notices', array( __CLASS__, 'notice' ) );
 			add_action( 'admin_post_' . self::ACTION, array( __CLASS__, 'handle_repair' ) );
 	}
@@ -287,31 +287,28 @@ class Partikulier_Required_Pages {
 	 * Idempotent. Polylang hide_default=0 comme le banc CI.
 	 */
 	public static function ensure_front() {
-		if ( '2.10.16' === get_option( 'pk_front_ensured' ) ) {
-			return;
-		}
-		if ( ! function_exists( 'pll_languages_list' ) || ! function_exists( 'pll_set_post_language' ) ) {
-			return;
-		}
-		$langs = pll_languages_list( array( 'fields' => 'slug' ) );
-		if ( ! is_array( $langs ) || count( $langs ) < 2 ) {
-			return;
-		}
-		// CI (hide_default=0, home blog en /fr/) : ne pas voler la page d'accueil.
-		// UAT Hostinger (hide_default=1) : /fr/ et /en/ 404 — on répare.
-		$hide = 1;
-		if ( isset( $GLOBALS['polylang']->options ) ) {
-			$opt = $GLOBALS['polylang']->options;
-			if ( is_object( $opt ) && method_exists( $opt, 'get' ) ) {
-				$hide = (int) $opt->get( 'hide_default' );
-			} elseif ( is_array( $opt ) ) {
-				$hide = (int) ( $opt['hide_default'] ?? 1 );
+		$log = static function ( $msg ) {
+			if ( defined( 'WP_CLI' ) && WP_CLI ) {
+				\WP_CLI::log( '[ensure_front] ' . $msg );
 			}
-		}
-		if ( 0 === $hide ) {
+		};
+		if ( ! function_exists( 'pll_set_post_language' ) ) {
+			$log( 'pll absent' );
 			return;
 		}
-		if ( isset( $GLOBALS['polylang']->options ) && method_exists( $GLOBALS['polylang']->options, 'merge' ) ) {
+		$langs = function_exists( 'pll_languages_list' ) ? pll_languages_list( array( 'fields' => 'slug' ) ) : array();
+		if ( ! is_array( $langs ) || count( $langs ) < 2 ) {
+			$langs = array( 'fr', 'en', 'ar' );
+		}
+		$pll = get_option( 'polylang' );
+		if ( is_array( $pll ) ) {
+			$pll['force_lang']    = 1;
+			$pll['hide_default']  = 0;
+			$pll['redirect_lang'] = 0;
+			$pll['browser']       = 0;
+			update_option( 'polylang', $pll );
+		}
+		if ( isset( $GLOBALS['polylang']->options ) && is_object( $GLOBALS['polylang']->options ) && method_exists( $GLOBALS['polylang']->options, 'merge' ) ) {
 			$GLOBALS['polylang']->options->merge(
 				array(
 					'force_lang'    => 1,
@@ -324,14 +321,17 @@ class Partikulier_Required_Pages {
 		$titles = array( 'fr' => 'Accueil', 'en' => 'Home', 'ar' => 'الرئيسية' );
 		$map    = array();
 		foreach ( $langs as $lang ) {
+			$lang  = is_object( $lang ) ? $lang->slug : (string) $lang;
 			$found = get_posts(
 				array(
-					'post_type'      => 'page',
-					'name'           => 'accueil',
-					'post_status'    => 'publish',
-					'posts_per_page' => 1,
-					'fields'         => 'ids',
-					'lang'           => $lang,
+					'post_type'        => 'page',
+					'post_status'      => 'publish',
+					'posts_per_page'   => 1,
+					'fields'           => 'ids',
+					'lang'             => $lang,
+					'suppress_filters' => false,
+					'meta_key'         => '_pk_front',
+					'meta_value'       => '1',
 				)
 			);
 			if ( $found ) {
@@ -343,15 +343,17 @@ class Partikulier_Required_Pages {
 					'post_type'    => 'page',
 					'post_status'  => 'publish',
 					'post_title'   => $titles[ $lang ] ?? 'Accueil',
-					'post_name'    => 'accueil',
+					'post_name'    => 'accueil-' . $lang,
 					'post_content' => '',
 				),
 				true
 			);
 			if ( is_wp_error( $id ) || ! $id ) {
+				$log( 'insert ' . $lang . ' fail' );
 				continue;
 			}
 			pll_set_post_language( (int) $id, $lang );
+			update_post_meta( (int) $id, '_pk_front', '1' );
 			$map[ $lang ] = (int) $id;
 		}
 		if ( function_exists( 'pll_save_post_translations' ) && count( $map ) > 1 ) {
@@ -367,6 +369,7 @@ class Partikulier_Required_Pages {
 		if ( class_exists( 'Partikulier_Cache' ) && method_exists( 'Partikulier_Cache', 'purge_all' ) ) {
 			Partikulier_Cache::purge_all();
 		}
+		$log( 'langs=' . implode( ',', array_keys( $map ) ) . ' front=' . (int) $front . ' default=' . $default );
 		update_option( 'pk_front_ensured', '2.10.16', false );
 	}
 
