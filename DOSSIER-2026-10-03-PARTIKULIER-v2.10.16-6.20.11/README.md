@@ -4,7 +4,7 @@
 **Plugin Partikulier Core : `2.10.16` · Thème Partikulier : `6.20.11`**  
 **Git : `main → 6d28152` (merge 2ae4c97 auto-theirs + patch 6d28152 idempotent 2FA/class-security) (`a034dfe` = R3, `55a09c8` = hotfix chiffrement)**  
 **Packaging : `scripts/package.sh` déterministe (TZ=UTC `zip -X`, mtimes figés 1980-01-01)**  
-**Checksums :** `B-INSTALLER-PLUGIN-partikulier-core-2.10.16.zip` `4b428e985ee4342cc4f2d26dc702cc9314da47b75e29ef65da73c01f339373e3` · `partikulier-theme-6.20.11.zip` `c658b8392090a2c014ed885e492227d95fe0d74559f47d17228e638822698952`
+**Checksums :** `B-INSTALLER-PLUGIN-partikulier-core-2.10.16.zip` `1c8d8b2d13a766e0d0c37912fa6bd5b1c0921146e64ad75ffb49212b58332869` · `partikulier-theme-6.20.11.zip` `c658b8392090a2c014ed885e492227d95fe0d74559f47d17228e638822698952`
 
 > Monorepo livré = `plugin/partikulier-core/` (cœur métier, REST, leads) + `theme/partikulier/` (front, Estatik 4.3.x, Polylang 3.8.7). Le thème délègue au plugin ; il garde un fallback si le plugin est inactif. Les deux zips doivent être déployés en paire.
 
