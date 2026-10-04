@@ -246,9 +246,10 @@ jobs:
       - name: Vérifications WordPress post-déploiement
         run: |
           set -euo pipefail
-          ssh partikulier-hostinger 'bash -s' -- "$WP_PATH" <<'REMOTE'
+          ssh partikulier-hostinger 'bash -s' -- "$WP_PATH" "$DEPLOY_ENVIRONMENT" <<'REMOTE'
           set -euo pipefail
           WP_PATH="$1"
+          DEPLOY_ENV="$2"
           command -v wp >/dev/null 2>&1 || { echo "wp-cli introuvable"; exit 1; }
           cd "$WP_PATH"
           wp plugin activate partikulier-core
@@ -256,6 +257,9 @@ jobs:
           wp eval-file wp-content/themes/partikulier/cli/pll-langues.php
           wp eval-file wp-content/themes/partikulier/cli/pll-masse.php
           wp eval 'if(class_exists("Partikulier_Required_Pages")){delete_option("pk_front_ensured"); Partikulier_Required_Pages::ensure_front();}'
+          if [ "$DEPLOY_ENV" = "uat" ]; then
+            wp eval-file wp-content/themes/partikulier/cli/demo-seed.php
+          fi
           wp cache flush || true
           wp rewrite flush || true
           REMOTE
