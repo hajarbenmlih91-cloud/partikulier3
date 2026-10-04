@@ -136,6 +136,31 @@ $is_type = $queried instanceof WP_Term && PARTIKULIER_ESTATIK_TYPE_TAXONOMY === 
 												<button type="button" class="pk-filter-close" data-pk-filter-close="true" aria-label="<?php echo esc_attr( Partikulier_Localization::translate_polylang_string( 'Fermer', 'Fermer', 'partikulier' ) ); ?>"><span aria-hidden="true">×</span><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Fermer', 'Fermer', 'partikulier' ) ); ?></button>
 <h2 class="screen-reader-text"><?php echo esc_html( $pk_filters_label ); ?></h2>
 
+														<?php
+														/* E-5105 (F-T17-2, lot sécurité 6.20.6) : garde scalaire. */
+					$pk_filter_city_slug  = isset( $_GET['es_city'] ) && is_scalar( $_GET['es_city'] ) ? sanitize_title( wp_unslash( $_GET['es_city'] ) ) : '';
+														$pk_filter_city_term  = $pk_filter_city_slug ? get_term_by( 'slug', $pk_filter_city_slug, PARTIKULIER_ESTATIK_LOCATION_TAXONOMY ) : false;
+														$pk_filter_city_label = ( $pk_filter_city_term && ! is_wp_error( $pk_filter_city_term ) ) ? $pk_filter_city_term->name : '';
+														?>
+														<div class="pk-filter pk-filter-city">
+																<h3 class="pk-filter-title"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Ville', 'Ville', 'partikulier' ) ); ?></h3>
+														<form action="<?php echo esc_url( pk_properties_archive_url() ); ?>" method="get" class="pk-filter-city-form pk-place-autocomplete">
+																<label class="screen-reader-text" for="pk-filter-city-input"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Toutes les villes', 'Toutes les villes', 'partikulier' ) ); ?></label>
+																<?php foreach ( array( 'es_action', 'es_type', 'es_price_max', 'pk_order' ) as $pk_preserve_key ) : ?>
+																		<?php if ( isset( $_GET[ $pk_preserve_key ] ) && ! is_array( $_GET[ $pk_preserve_key ] ) ) : ?>
+																				<input type="hidden" name="<?php echo esc_attr( $pk_preserve_key ); ?>" value="<?php echo esc_attr( sanitize_text_field( wp_unslash( $_GET[ $pk_preserve_key ] ) ) ); ?>">
+																		<?php endif; ?>
+																<?php endforeach; ?>
+																<div class="pk-place-autocomplete-wrap">
+																		<?php /* name="s" : secours sans JavaScript, desactive par le JS quand es_city est fixe. */ ?>
+																		<input id="pk-filter-city-input" name="s" class="pk-place-input" type="search" data-pk-place-input="true" data-pk-place-value="pk-filter-city-value" autocomplete="off" aria-controls="pk-filter-city-suggestions" aria-autocomplete="list" placeholder="<?php echo esc_attr( Partikulier_Localization::translate_polylang_string( 'Toutes les villes', 'Toutes les villes', 'partikulier' ) ); ?>" value="<?php echo esc_attr( $pk_filter_city_label ); ?>">
+																				<input type="hidden" name="es_city" id="pk-filter-city-value" value="<?php echo esc_attr( $pk_filter_city_slug ); ?>">
+																		<ul id="pk-filter-city-suggestions" class="pk-suggest pk-place-suggestions" role="listbox" hidden></ul>
+																</div>
+																<button type="submit" class="pk-filter-apply"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Appliquer', 'Appliquer', 'partikulier' ) ); ?></button>
+														</form>
+														</div>
+
 														<div class="pk-filter pk-filter-actions">
 														<h3 class="pk-filter-title"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Transaction', 'Transaction', 'partikulier' ) ); ?></h3>
 														<ul class="pk-filter-list pk-filter-action-list">
@@ -192,30 +217,6 @@ $is_type = $queried instanceof WP_Term && PARTIKULIER_ESTATIK_TYPE_TAXONOMY === 
 										?>
 								</div>
 
-														<?php
-														/* E-5105 (F-T17-2, lot sécurité 6.20.6) : garde scalaire. */
-					$pk_filter_city_slug  = isset( $_GET['es_city'] ) && is_scalar( $_GET['es_city'] ) ? sanitize_title( wp_unslash( $_GET['es_city'] ) ) : '';
-														$pk_filter_city_term  = $pk_filter_city_slug ? get_term_by( 'slug', $pk_filter_city_slug, PARTIKULIER_ESTATIK_LOCATION_TAXONOMY ) : false;
-														$pk_filter_city_label = ( $pk_filter_city_term && ! is_wp_error( $pk_filter_city_term ) ) ? $pk_filter_city_term->name : '';
-														?>
-														<div class="pk-filter pk-filter-city">
-																<h3 class="pk-filter-title"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Ville', 'Ville', 'partikulier' ) ); ?></h3>
-														<form action="<?php echo esc_url( pk_properties_archive_url() ); ?>" method="get" class="pk-filter-city-form pk-place-autocomplete">
-																<label class="screen-reader-text" for="pk-filter-city-input"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Toutes les villes', 'Toutes les villes', 'partikulier' ) ); ?></label>
-																<?php foreach ( array( 'es_action', 'es_type', 'es_price_max', 'pk_order' ) as $pk_preserve_key ) : ?>
-																		<?php if ( isset( $_GET[ $pk_preserve_key ] ) && ! is_array( $_GET[ $pk_preserve_key ] ) ) : ?>
-																				<input type="hidden" name="<?php echo esc_attr( $pk_preserve_key ); ?>" value="<?php echo esc_attr( sanitize_text_field( wp_unslash( $_GET[ $pk_preserve_key ] ) ) ); ?>">
-																		<?php endif; ?>
-																<?php endforeach; ?>
-																<div class="pk-place-autocomplete-wrap">
-																		<?php /* name="s" : secours sans JavaScript, desactive par le JS quand es_city est fixe. */ ?>
-																		<input id="pk-filter-city-input" name="s" class="pk-place-input" type="search" data-pk-place-input="true" data-pk-place-value="pk-filter-city-value" autocomplete="off" aria-controls="pk-filter-city-suggestions" aria-autocomplete="list" placeholder="<?php echo esc_attr( Partikulier_Localization::translate_polylang_string( 'Toutes les villes', 'Toutes les villes', 'partikulier' ) ); ?>" value="<?php echo esc_attr( $pk_filter_city_label ); ?>">
-																				<input type="hidden" name="es_city" id="pk-filter-city-value" value="<?php echo esc_attr( $pk_filter_city_slug ); ?>">
-																		<ul id="pk-filter-city-suggestions" class="pk-suggest pk-place-suggestions" role="listbox" hidden></ul>
-																</div>
-																<button type="submit" class="pk-filter-apply"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Appliquer', 'Appliquer', 'partikulier' ) ); ?></button>
-														</form>
-														</div>
 														<script>
 														(function () {
 																var toggle = document.querySelector('.pk-filter-toggle');

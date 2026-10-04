@@ -252,7 +252,7 @@ $types = get_terms( array(
 
 								<div data-pk-field="pk_price" class="pk-field">
 										<label class="pk-label" for="pk-price"><?php esc_html_e( 'Prix demandé', 'partikulier' ); ?> <span class="pk-req">*</span></label>
-										<input type="text" id="pk-price" name="pk_price" inputmode="numeric" required placeholder="<?php esc_attr_e( 'Ex. 389000', 'partikulier' ); ?>">
+										<input type="text" id="pk-price" name="pk_price" inputmode="numeric" required pattern="[0-9][0-9\s.,]*" title="<?php esc_attr_e( 'Le prix ne peut contenir que des chiffres.', 'partikulier' ); ?>" placeholder="<?php esc_attr_e( 'Ex. 389000', 'partikulier' ); ?>">
 								</div>
 
 								<div class="pk-grid-2">

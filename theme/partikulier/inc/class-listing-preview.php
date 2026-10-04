@@ -47,6 +47,11 @@ class Partikulier_Listing_Preview {
 		if ( '' === $type ) {
 			$type = $get( 'pk_type_label', __( 'Bien', 'partikulier' ) );
 		}
+		// Estatik stocke parfois le nom anglais du terme (Apartments) :
+		// l'aperçu FR doit afficher Appartement, pas apartments.
+		if ( class_exists( 'Partikulier_Localization' ) ) {
+			$type = Partikulier_Localization::translate_taxonomy_label( $type );
+		}
 
 		// Un lieu propose (en attente de validation) alimente aussi l'apercu :
 		// l'annonceur doit voir le texte exact que produira son annonce.

@@ -70,6 +70,10 @@
 				return;
 			}
 			field.classList.remove("pk-invalid");
+			if (field.id === "pk-price") {
+				var raw = (field.value || "").trim();
+				field.setCustomValidity(raw && !/^\d[\d\s.,]*$/.test(raw) ? "Le prix ne peut contenir que des chiffres." : "");
+			}
 			if (!field.checkValidity()) {
 				field.classList.add("pk-invalid");
 				if (ok) {
@@ -358,64 +362,72 @@
 	var MAX_PHOTOS   = 15;
 
 	if (photoInput && photoPreview) {
-		// On garde notre propre liste : un <input multiple> ne permet pas de
-		// retirer un fichier, il faut reconstruire son contenu.
-		var chosen = [];
+		// Liste en mémoire, comme main.js : chaque sélection s'ajoute.
+		var chosen    = [];
+		var syncing   = false;
+		var dropLabel = dropzone ? dropzone.querySelector("strong") : null;
 
-		function renderPhotos() {
-			photoPreview.innerHTML = "";
-			chosen.forEach(function (file, index) {
-				var li     = document.createElement("li");
-				var img    = document.createElement("img");
-				img.alt    = file.name;
-				img.src    = URL.createObjectURL(file);
-				img.onload = function () { URL.revokeObjectURL(img.src); };
-				li.appendChild(img);
-				li.title        = "Retirer " + file.name;
-				li.style.cursor = "pointer";
-				li.addEventListener("click", function () {
-					chosen.splice(index, 1);
-					syncInput();
-					renderPhotos();
-				});
-				photoPreview.appendChild(li);
-			});
+		function liveCount() {
+			return chosen.filter(Boolean).length;
+		}
+
+		function updateDropLabel() {
+			if ( ! dropLabel) return;
+			var n = liveCount();
+			dropLabel.textContent = n
+				? (n + " photo" + (n > 1 ? "s" : "") + " sélectionnée" + (n > 1 ? "s" : ""))
+				: "Ajoutez vos photos";
 		}
 
 		function syncInput() {
-			// DataTransfer permet de reecrire la selection du champ.
 			try {
 				var dt = new DataTransfer();
-				chosen.forEach(function (f) { dt.items.add(f); });
+				chosen.forEach(function (f) { if (f) dt.items.add(f); });
+				syncing = true;
 				photoInput.files = dt.files;
 			} catch (e) {
 				// Navigateur trop ancien : on laisse la selection native.
 			}
+			syncing = false;
 		}
 
-		function addFiles(list) {
-			var files = Array.prototype.slice.call(list).filter(function (f) {
-				// On accepte tout fichier image, y compris HEIC dont le type
-				// MIME est parfois vide sur iPhone.
+		function addFiles(files) {
+			files = Array.prototype.slice.call(files || []).filter(function (f) {
 				return ! f.type || f.type.indexOf("image/") === 0 || /\.(jpe?g|png|webp|avif|heic|heif)$/i.test(f.name);
 			});
-
-			var room = MAX_PHOTOS - chosen.length;
-			if (files.length > room) {
-				files = files.slice(0, Math.max(0, room));
+			var total = liveCount() + files.length;
+			files     = files.slice(0, Math.max(0, MAX_PHOTOS - liveCount()));
+			files.forEach(function (f) {
+				chosen.push(f);
+				var li  = document.createElement("li");
+				var img = document.createElement("img");
+				img.src     = URL.createObjectURL(f);
+				img.alt     = f.name;
+				img.loading = "lazy";
+				li.appendChild(img);
+				li.title        = "Retirer " + f.name;
+				li.style.cursor = "pointer";
+				var idx = chosen.length - 1;
+				li.addEventListener("click", function () {
+					chosen[idx] = null;
+					li.remove();
+					syncInput();
+					updateDropLabel();
+				});
+				photoPreview.appendChild(li);
+			});
+			if (total > MAX_PHOTOS) {
 				setStatus("15 photos maximum. Les fichiers en trop ont été ignorés.");
 			}
-			files.forEach(function (f) { chosen.push(f); });
 			syncInput();
-			renderPhotos();
+			updateDropLabel();
 		}
 
 		photoInput.addEventListener("change", function () {
-			// Selection native : on la reprend sans jamais vider le champ.
-			if (photoInput.files && photoInput.files.length && photoInput.files.length !== chosen.length) {
-				chosen = Array.prototype.slice.call(photoInput.files).slice(0, MAX_PHOTOS);
-				renderPhotos();
-			}
+			if (syncing) return;
+			var incoming = Array.prototype.slice.call(photoInput.files || []);
+			photoInput.value = "";
+			addFiles(incoming);
 		});
 
 		if (dropzone) {
