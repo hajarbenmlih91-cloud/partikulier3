@@ -132,6 +132,10 @@ manuelle au troisième contact, et la démo installe exactement 15 ventes et
 15 locations sans toucher aux annonces réelles.
 Les compteurs, réinstallations et purges de démo couvrent toutes les langues
 Polylang, et ne sélectionnent que les annonces et médias marqués comme démo.
+La recette navigateur FR/EN/AR conserve les modales autres que l'authentification
+Estatik. La validation du dépôt contrôle les contraintes HTML des champs visibles
+(notamment longueur minimale et e-mail), affiche le message localisé et restaure
+le bouton après un refus applicatif.
 
 ```bash
 make lint
