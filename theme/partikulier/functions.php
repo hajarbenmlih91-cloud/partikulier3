@@ -104,12 +104,11 @@ function pk_localized_home_url( $language = '' ) {
 			$language = sanitize_key( substr( (string) determine_locale(), 0, 2 ) );
 	}
 
-	if ( $language && in_array( $language, array( 'fr', 'en', 'ar' ), true ) ) {
-		if ( function_exists( 'pll_home_url' ) ) {
-			$pll_path = (string) wp_parse_url( (string) pll_home_url( $language ), PHP_URL_PATH );
-			if ( $pll_path && ! preg_match( '#accueil-#', $pll_path ) && preg_match( '#^/' . preg_quote( $language, '#' ) . '/?$#', $pll_path ) ) {
-				return trailingslashit( pll_home_url( $language ) );
-			}
+	if ( $language && in_array( $language, array( 'fr', 'en', 'ar' ), true ) && function_exists( 'pll_home_url' ) ) {
+		$pll_url  = (string) pll_home_url( $language );
+		$pll_path = (string) wp_parse_url( $pll_url, PHP_URL_PATH );
+		if ( $pll_url && ! preg_match( '#accueil-#', $pll_path ) ) {
+			return trailingslashit( $pll_url );
 		}
 		return trailingslashit( home_url( '/' . $language . '/' ) );
 	}
@@ -138,16 +137,12 @@ add_filter( 'register_post_type_args', 'pk_properties_post_type_args', 20, 2 );
 add_action(
 	'template_redirect',
 	static function () {
-		if ( is_admin() || wp_doing_ajax() ) {
+		if ( is_admin() || wp_doing_ajax() || ! defined( 'POLYLANG_VERSION' ) ) {
 			return;
 		}
 		$path = (string) wp_parse_url( wp_unslash( $_SERVER['REQUEST_URI'] ?? '/' ), PHP_URL_PATH ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
 		if ( preg_match( '#^/(fr|en|ar)/accueil-(?:fr|en|ar)/?$#', $path, $m ) ) {
 			wp_safe_redirect( pk_localized_home_url( $m[1] ), 301 );
-			exit;
-		}
-		if ( preg_match( '#^/annonces(/page/[0-9]+)?/?$#', $path ) ) {
-			wp_safe_redirect( pk_properties_archive_url(), 301 );
 			exit;
 		}
 	},
