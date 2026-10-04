@@ -197,7 +197,7 @@ $gallery_ids = array();
 							$alt  = get_post_meta( $id, '_wp_attachment_image_alt', true ) ?: get_the_title( $post );
 							?>
 							<?php if ( $img ) : ?>
-								<figure class="pk-single-gallery-item pk-carousel-slide" aria-label="<?php echo esc_attr( sprintf( __( 'Photo %1$d sur %2$d', 'partikulier' ), $i + 1, count( $gallery_ids ) ) ); ?>">
+								<figure class="pk-single-gallery-item pk-carousel-slide<?php echo 0 === $i ? ' is-active' : ''; ?>" aria-label="<?php echo esc_attr( sprintf( __( 'Photo %1$d sur %2$d', 'partikulier' ), $i + 1, count( $gallery_ids ) ) ); ?>">
 									<picture>
 										<?php if ( $avif ) : ?>
 											<source type="image/avif" srcset="<?php echo esc_attr( $avif ); ?>">
@@ -250,16 +250,18 @@ $gallery_ids = array();
 						var lbImg = lb ? lb.querySelector('img') : null;
 						var lbCount = lb ? lb.querySelector('.pk-gallery-lightbox-count') : null;
 						var current = 0;
+						var swiped = false;
 						var urls = [];
 						slides.forEach(function (slide) {
 							var img = slide.querySelector('img');
 							urls.push(img ? img.currentSrc || img.src : '');
 						});
-						function setCurrent(index, move) {
-							current = Math.max(0, Math.min(index, slides.length - 1));
-							if (move && track && track.scrollTo) track.scrollTo({ left: track.clientWidth * current, behavior: 'smooth' });
-							if (count) count.textContent = (current + 1) + ' / ' + slides.length;
+						function setCurrent(index) {
+							if (!slides.length) return;
+							current = (index + slides.length) % slides.length;
+							slides.forEach(function (slide, i) { slide.classList.toggle('is-active', i === current); });
 							thumbs.forEach(function (thumb, i) { thumb.classList.toggle('is-active', i === current); });
+							if (count) count.textContent = (current + 1) + ' / ' + slides.length;
 							if (lb && !lb.hidden && lbImg) {
 								lbImg.src = urls[current] || '';
 								if (lbCount) lbCount.textContent = (current + 1) + ' / ' + slides.length;
@@ -267,7 +269,7 @@ $gallery_ids = array();
 						}
 						function openLb(index) {
 							if (!lb || !lbImg) return;
-							setCurrent(index, true);
+							setCurrent(index);
 							lbImg.src = urls[current] || '';
 							if (lbCount) lbCount.textContent = (current + 1) + ' / ' + slides.length;
 							lb.hidden = false;
@@ -280,32 +282,37 @@ $gallery_ids = array();
 						}
 						var prev = gallery.querySelector('.pk-carousel-prev');
 						var next = gallery.querySelector('.pk-carousel-next');
-						if (prev) prev.addEventListener('click', function (event) { event.stopPropagation(); setCurrent(current - 1, true); });
-						if (next) next.addEventListener('click', function (event) { event.stopPropagation(); setCurrent(current + 1, true); });
+						if (prev) prev.addEventListener('click', function (event) { event.stopPropagation(); setCurrent(current - 1); });
+						if (next) next.addEventListener('click', function (event) { event.stopPropagation(); setCurrent(current + 1); });
 						thumbs.forEach(function (thumb) {
-							thumb.addEventListener('click', function () { setCurrent(parseInt(thumb.getAttribute('data-pk-slide'), 10), true); });
+							thumb.addEventListener('click', function () { setCurrent(parseInt(thumb.getAttribute('data-pk-slide'), 10) || 0); });
 						});
 						slides.forEach(function (slide, i) {
 							slide.style.cursor = 'zoom-in';
-							slide.addEventListener('click', function () { openLb(i); });
+							slide.addEventListener('click', function () { if (swiped) { swiped = false; return; } openLb(i); });
 						});
 						if (track) {
-							track.addEventListener('scroll', function () { window.requestAnimationFrame(function () { setCurrent(Math.round(track.scrollLeft / Math.max(track.clientWidth, 1)), false); }); }, { passive: true });
-							track.addEventListener('keydown', function (event) { if (event.key === 'ArrowLeft') { event.preventDefault(); setCurrent(current - 1, true); } if (event.key === 'ArrowRight') { event.preventDefault(); setCurrent(current + 1, true); } });
+							var startX = 0;
+							track.addEventListener('touchstart', function (event) { startX = event.changedTouches[0].clientX; swiped = false; }, { passive: true });
+							track.addEventListener('touchend', function (event) {
+								var dx = event.changedTouches[0].clientX - startX;
+								if (Math.abs(dx) > 40) { swiped = true; setCurrent(dx > 0 ? current - 1 : current + 1); }
+							}, { passive: true });
+							track.addEventListener('keydown', function (event) { if (event.key === 'ArrowLeft') { event.preventDefault(); setCurrent(current - 1); } if (event.key === 'ArrowRight') { event.preventDefault(); setCurrent(current + 1); } });
 						}
 						if (lb) {
 							var closeBtn = lb.querySelector('.pk-gallery-lightbox-close');
 							var lbPrev = lb.querySelector('.pk-gallery-lightbox-prev');
 							var lbNext = lb.querySelector('.pk-gallery-lightbox-next');
 							if (closeBtn) closeBtn.addEventListener('click', closeLb);
-							if (lbPrev) lbPrev.addEventListener('click', function () { setCurrent(current - 1, true); });
-							if (lbNext) lbNext.addEventListener('click', function () { setCurrent(current + 1, true); });
+							if (lbPrev) lbPrev.addEventListener('click', function () { setCurrent(current - 1); });
+							if (lbNext) lbNext.addEventListener('click', function () { setCurrent(current + 1); });
 							lb.addEventListener('click', function (event) { if (event.target === lb) closeLb(); });
 							document.addEventListener('keydown', function (event) {
 								if (lb.hidden) return;
 								if (event.key === 'Escape') closeLb();
-								if (event.key === 'ArrowLeft') setCurrent(current - 1, true);
-								if (event.key === 'ArrowRight') setCurrent(current + 1, true);
+								if (event.key === 'ArrowLeft') setCurrent(current - 1);
+								if (event.key === 'ArrowRight') setCurrent(current + 1);
 							});
 						}
 					}());

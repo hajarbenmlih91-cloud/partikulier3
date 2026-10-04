@@ -3416,7 +3416,7 @@ html[dir="rtl"] .pk-archive-content .pk-card-price { left: auto; right: 12px; }
 		pointer-events: none !important;
 }
 
-/* Galerie fiche : carrousel + miniatures cliquables + agrandissement, desktop et mobile. */
+/* Galerie fiche : une photo visible, flèches / swipe / miniatures changent l’index. */
 .pk-single .pk-single-gallery[data-pk-carousel] {
 		display: block;
 		position: relative;
@@ -3425,27 +3425,24 @@ html[dir="rtl"] .pk-archive-content .pk-card-price { left: auto; right: 12px; }
 		margin: 1.2rem 0 2rem;
 }
 .pk-single .pk-single-gallery[data-pk-carousel] .pk-carousel-track {
-		display: flex;
-		gap: 0;
-		overflow-x: auto;
-		overscroll-behavior-x: contain;
-		scroll-snap-type: x mandatory;
-		scroll-behavior: smooth;
-		scrollbar-width: none;
+		display: block;
+		overflow: hidden;
 		border-radius: var(--pk-radius);
 		background: #161715;
 }
-.pk-single .pk-single-gallery[data-pk-carousel] .pk-carousel-track::-webkit-scrollbar { display: none; }
 .pk-single .pk-single-gallery[data-pk-carousel] .pk-single-gallery-item,
 .pk-single .pk-single-gallery[data-pk-carousel] .pk-single-gallery-item:first-child,
 .pk-single .pk-single-gallery[data-pk-carousel] .pk-single-gallery-item:nth-child(n+4) {
-		display: block;
-		flex: 0 0 100%;
+		display: none;
+		width: 100%;
 		grid-row: auto;
 		aspect-ratio: 16 / 10;
-		scroll-snap-align: center;
 		margin: 0;
+		min-width: 0;
 		cursor: zoom-in;
+}
+.pk-single .pk-single-gallery[data-pk-carousel] .pk-single-gallery-item.is-active {
+		display: block;
 }
 .pk-single .pk-single-gallery[data-pk-carousel] .pk-carousel-controls {
 		display: flex;
