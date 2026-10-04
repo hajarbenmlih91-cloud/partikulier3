@@ -26,7 +26,11 @@ RUN set -eux; \
 
 COPY docker/php.ini /usr/local/etc/php/conf.d/zz-partikulier.ini
 COPY docker/wp-init.sh /usr/local/bin/pk-wp-init
-RUN sed -i 's/\r$//' /usr/local/bin/pk-wp-init && chmod +x /usr/local/bin/pk-wp-init
+COPY docker/local-entrypoint.sh /usr/local/bin/pk-local-entrypoint
+RUN sed -i 's/\r$//' /usr/local/bin/pk-wp-init /usr/local/bin/pk-local-entrypoint \
+    && chmod +x /usr/local/bin/pk-wp-init /usr/local/bin/pk-local-entrypoint
+
+ENTRYPOINT ["pk-local-entrypoint"]
 
 # Serve on 8099 INSIDE the container too, so home_url() (http://localhost:8099)
 # is reachable both from the host and from the HTTP contract suites run in the
@@ -36,3 +40,4 @@ RUN set -eux; \
     sed -ri 's/<VirtualHost \*:80>/<VirtualHost *:8099>/' /etc/apache2/sites-available/000-default.conf
 
 EXPOSE 8099
+CMD ["apache2-foreground"]

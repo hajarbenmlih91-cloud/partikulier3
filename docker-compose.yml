@@ -1,7 +1,5 @@
 # Local test stack for Partikulier — mirrors .github/workflows/contrats-recette.yml
-#   cp .env.example .env   (then set real local passwords)
-#   docker compose up -d --build
-#   docker compose exec -u www-data wordpress pk-wp-init
+#   powershell -ExecutionPolicy Bypass -File .\docker\setup-local.ps1
 name: partikulier
 
 services:
@@ -33,6 +31,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      n8n-proxy:
+        condition: service_started
     ports:
       - "127.0.0.1:8099:8099"   # loopback only: never expose the test site on the LAN
     environment:
@@ -55,6 +55,7 @@ services:
       # Optional n8n bridge (leave empty to keep automation routes closed).
       PARTIKULIER_N8N_SECRET: ${PARTIKULIER_N8N_SECRET:-}
       PARTIKULIER_N8N_WEBHOOK_URL: ${PARTIKULIER_N8N_WEBHOOK_URL:-}
+      PK_LOCAL_N8N_CA_FILE: /local-caddy/caddy/pki/authorities/local/root.crt
       # Contract suites (php wp-content/plugins/partikulier-core/tests/*.php)
       PK_WP_DIR: /var/www/html
       PK_REPO_DIR: /repo
@@ -66,6 +67,8 @@ services:
       - ./plugin/partikulier-core:/var/www/html/wp-content/plugins/partikulier-core
       - ./theme/partikulier:/var/www/html/wp-content/themes/partikulier
       - ./docker/mu-plugins/pk-dev-mailpit.php:/var/www/html/wp-content/mu-plugins/pk-dev-mailpit.php:ro
+      - ./docker/mu-plugins/pk-dev-n8n.php:/var/www/html/wp-content/mu-plugins/pk-dev-n8n.php:ro
+      - caddy_data:/local-caddy:ro
       - .:/repo:ro
 
   mailpit:
@@ -74,6 +77,51 @@ services:
     ports:
       - "127.0.0.1:8025:8025"   # web UI for captured e-mails
 
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:2.41.6
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5678:5678"
+    environment:
+      TZ: Africa/Casablanca
+      GENERIC_TIMEZONE: Africa/Casablanca
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:?run docker/setup-local.ps1 first}
+      N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: "true"
+      N8N_SECURE_COOKIE: "false"
+      N8N_EDITOR_BASE_URL: http://localhost:5678/
+      WEBHOOK_URL: ${N8N_PUBLIC_WEBHOOK_URL:-https://n8n-proxy/}
+      N8N_PROXY_HOPS: "1"
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
+      NODE_FUNCTION_ALLOW_BUILTIN: crypto
+      PARTIKULIER_N8N_SECRET: ${PARTIKULIER_N8N_SECRET:?run docker/setup-local.ps1 first}
+      EXECUTIONS_DATA_SAVE_ON_SUCCESS: "none"
+      EXECUTIONS_DATA_SAVE_ON_ERROR: "none"
+      EXECUTIONS_DATA_SAVE_MANUAL_EXECUTIONS: "false"
+    volumes:
+      - n8n_data:/home/node/.n8n
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5678/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  n8n-proxy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on:
+      n8n:
+        condition: service_healthy
+    volumes:
+      - ./docker/Caddyfile.local:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
 volumes:
   db_data:
   wp_core:
+  n8n_data:
+    external: true
+    name: ${PK_N8N_VOLUME:-partikulier_n8n_data}
+  caddy_data:
+  caddy_config:
