@@ -104,15 +104,16 @@ function pk_localized_home_url( $language = '' ) {
 			$language = sanitize_key( substr( (string) determine_locale(), 0, 2 ) );
 	}
 
-		// Si Polylang est actif, utiliser son URL d'accueil localisée
-	if ( function_exists( 'pll_home_url' ) && $language ) {
-			$pll_url = pll_home_url( $language );
-			if ( ! empty( $pll_url ) ) {
-					return trailingslashit( $pll_url );
+	if ( $language && in_array( $language, array( 'fr', 'en', 'ar' ), true ) ) {
+		if ( function_exists( 'pll_home_url' ) ) {
+			$pll_path = (string) wp_parse_url( (string) pll_home_url( $language ), PHP_URL_PATH );
+			if ( $pll_path && ! preg_match( '#accueil-#', $pll_path ) && preg_match( '#^/' . preg_quote( $language, '#' ) . '/?$#', $pll_path ) ) {
+				return trailingslashit( pll_home_url( $language ) );
 			}
+		}
+		return trailingslashit( home_url( '/' . $language . '/' ) );
 	}
 
-		// Repli sûr et universel : accueil racine du site (évite les 404 sur /en/ ou /fr/ inexistants)
 		return trailingslashit( home_url( '/' ) );
 }
 
@@ -130,6 +131,28 @@ function pk_properties_post_type_args( $args, $post_type ) {
 		return $args;
 }
 add_filter( 'register_post_type_args', 'pk_properties_post_type_args', 20, 2 );
+
+/**
+ * /fr/accueil-fr/ → /fr/ ; /annonces/ → /fr/annonces/.
+ */
+add_action(
+	'template_redirect',
+	static function () {
+		if ( is_admin() || wp_doing_ajax() ) {
+			return;
+		}
+		$path = (string) wp_parse_url( wp_unslash( $_SERVER['REQUEST_URI'] ?? '/' ), PHP_URL_PATH ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+		if ( preg_match( '#^/(fr|en|ar)/accueil-(?:fr|en|ar)/?$#', $path, $m ) ) {
+			wp_safe_redirect( pk_localized_home_url( $m[1] ), 301 );
+			exit;
+		}
+		if ( preg_match( '#^/annonces(/page/[0-9]+)?/?$#', $path ) ) {
+			wp_safe_redirect( pk_properties_archive_url(), 301 );
+			exit;
+		}
+	},
+	2
+);
 
 /**
  * Résout l’URL d’une page structurelle dans la langue courante.
