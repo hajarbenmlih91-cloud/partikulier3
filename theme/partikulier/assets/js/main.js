@@ -345,16 +345,19 @@
 		var statusEl  = document.getElementById("pk-form-status");
 	if (form && submitBtn) {
 			form.addEventListener("submit", function (e) {
-					e.preventDefault();
+					e.preventDefault(); // Toujours intercepter pour éviter le rechargement brut ou le blocage silencieux
 
 					if (titleInput && ! titleInput.value.trim() && typeof generateListingTitle === "function") {
 							generateListingTitle();
 					}
 
+					// Vérification des champs obligatoires visibles
 					var missing = [];
 					form.querySelectorAll("input, select, textarea").forEach(function (inp) {
-							if (inp.disabled || inp.type === "hidden" || inp.closest("[hidden]")) return;
-							if (!inp.checkValidity()) {
+							if (inp.disabled || inp.type === "hidden") return;
+							var step = inp.closest(".pk-step");
+							if (step && step.hidden) return; // Les étapes masquées ont déjà été vérifiées par le stepper
+							if (inp.required && ! String(inp.value).trim()) {
 									missing.push(inp);
 									inp.classList.add("pk-invalid");
 							} else {
@@ -364,8 +367,7 @@
 
 					if (missing.length > 0) {
 							missing[0].focus();
-							missing[0].reportValidity();
-							setStatus("✘ " + pkConfig.i18n.requiredFields);
+							setStatus("✘ Veuillez renseigner tous les champs obligatoires (*) avant de valider.");
 							if (statusEl) statusEl.style.color = "#c0392b";
 							return;
 					}
@@ -373,7 +375,7 @@
 					submitBtn.disabled    = true;
 					var originalText      = submitBtn.textContent;
 					submitBtn.textContent = (pkConfig.i18n && pkConfig.i18n.publishing) || "Publication en cours…";
-					setStatus(pkConfig.i18n.publishing);
+					setStatus("⏳ Enregistrement de votre annonce…");
 					if (statusEl) statusEl.style.color = "var(--pk-primary)";
 
 					var fd = new FormData(form);
@@ -395,7 +397,7 @@
 										return;
 								}
 									setStatus("✔ " + (payload.message || ((pkConfig.i18n && pkConfig.i18n.saved) || "Annonce enregistrée !")));
-									if (statusEl) statusEl.style.color = "#176b3a";
+									if (statusEl) statusEl.style.color = "#27ae60";
 									window.location.href = payload.url || pkConfig.homeUrl;
 							})
 							.catch(function (err) {

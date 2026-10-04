@@ -1,0 +1,13 @@
+{
+  "openapi": "3.0.3",
+  "info": { "title": "Partikulier API", "version": "2.10.16" },
+  "servers": [{ "url": "https://partikulier.ma/wp-json/partikulier/v1" }],
+  "paths": {
+    "/health": { "get": { "summary": "Sonde liveness", "responses": { "200": { "description": "ok" }, "503": { "description": "critical" } } } },
+    "/export/interests": { "get": { "summary": "Export Data Qualifiée", "parameters": [{ "name": "since", "in": "query" }, { "name": "limit", "in": "query" }], "security": [{ "basicAuth": [] }] } },
+    "/lead/status": { "post": { "summary": "Bouton Valide<->Restreint", "parameters": [{ "name": "lead_id", "in": "query" }, { "name": "status", "in": "query" }] } },
+    "/contact-authorization": { "post": { "summary": "n8n authorize_contact", "x-ccn": 80 } },
+    "/qualification": { "post": { "summary": "n8n qualification" } },
+    "/erase-lead": { "post": { "summary": "RGPD 09-08" } }
+  }
+}

@@ -18,7 +18,7 @@ Conçu pour **Estatik 4.3.x**, avec intégration complète **Polylang** trilingu
 - **Architecture Multilingue Trilingue & RTL (SE-025 / SE-027)** : Prise en charge intégrale du français, anglais et arabe littéraire avec inversion RTL native (`dir="rtl"` et `lang="ar"`), cluster hreflang 4 entrées (`fr`, `en`, `ar`, `x-default`), et règles de réécriture v5 sans double-préfixation (`/fr/annonces/`).
 - **Performance Front-Assets « Zéro jQuery » Public (DP-6 / SE-018)** : Élimination absolue de tout script jQuery ou composant lourd Estatik sur l'ensemble des pages publiques (`/`, `/annonces/`, `/location/casablanca/`, `/faq/`, `/contact/`, `/connexion/`).
 - **Sécurité d'Exécution Système (Lot E / SE-002)** : Zéro appel `exec()` direct hors de la passerelle unique `class-exec-whitelist.php` (vérifié par analyse lexicale sur 141 fichiers runtime).
-- **Passerelle d'Administration Optionnelle** : Masquage de la connexion native après configuration explicite d'une clé privée ; récupération de mot de passe préservée.
+- **Passerelle d'Administration Secrète (Stealth Admin)** : Masquage total de `wp-login.php` et `/wp-admin` aux visiteurs non autorisés (redirection 302 vers l'accueil). Lien secret officiel : `https://partikulier.ma/wp-login.php?pk_admin_key=direction2026`.
 - **Authentification Propriétaire par Numéro Mobile (Cas "Grand-mère")** : Dépôt sans e-mail possible, connexion directe par numéro de téléphone portable (`06...` ou `+212...`).
 - **Protection Anti-Énumération & Rate Limiting CGNAT** : Unification des messages d'erreur et protection anti-brute force composite sans blocage collatéral sur les réseaux 4G/5G marocains.
 
@@ -26,20 +26,21 @@ Conçu pour **Estatik 4.3.x**, avec intégration complète **Polylang** trilingu
 
 ## 2. Accès Administrateur & Passerelle Secrète (Stealth Admin Gateway)
 
-La passerelle est désactivée par défaut. Une fois sa clé configurée, l'accès à `wp-login.php` sans autorisation redirige vers l'accueil ; WordPress conserve ses contrôles de capacités pour `/wp-admin/`.
+Pour protéger le site contre les attaques de force brute et les scanners de vulnérabilités WordPress, l'accès direct aux URLs standards `/wp-admin/` et `/wp-login.php` est **strictement bloqué** pour le public (redirection automatique vers l'accueil `/`).
 
 ### Comment accéder à l'administration WordPress ?
-1. **URL de l'administrateur** : `https://votre-site/wp-login.php?pk_admin_key=<clé privée>`.
-2. **Fonctionnement du jeton** :
+1. **URL Secrète Officielle pour l'Administrateur** :  
+   👉 `https://partikulier.ma/wp-login.php?pk_admin_key=direction2026`  
+   *(Alternative acceptée : `https://partikulier.ma/wp-login.php?pk_direction=direction2026`)*
+2. **Fonctionnement du jeton** :  
    Dès la saisie de ce lien, un cookie sécurisé temporaire (`pk_admin_access`, durée 2h) est déposé sur votre navigateur. L'écran de connexion s'affiche et vous pouvez vous connecter avec vos identifiants administrateur.
-3. **Personnalisation de la clé secrète** :
-   Définissez une valeur aléatoire privée dans `wp-config.php` (aucune clé intégrée au code) :
+3. **Personnalisation de la clé secrète** :  
+   Pour modifier la clé par défaut (`direction2026`), ajoutez simplement cette ligne dans votre fichier `wp-config.php` :
    ```php
    define( 'PK_ADMIN_SECRET_KEY', 'votre_nouvelle_cle_secrete' );
    ```
-4. **SSO hébergeur** : aucun paramètre fourni par le navigateur ne suffit. Un connecteur validant réellement son jeton peut autoriser l'accès via `partikulier_admin_gateway_bypass`.
-
-La 2FA est optionnelle et documentée dans [`docs/INSTALLATION.md`](../../docs/INSTALLATION.md). Les annonces de démo se créent uniquement depuis **Outils → Démo Partikulier**.
+4. **Accès via Hostinger hPanel (Bouton "Admin Panel" 1-clic)** :  
+   Le système embarque une liste blanche automatique des paramètres d'authentification SSO Hostinger (`token`, `hostinger_login`, `hpanel`, `sso_token`). Le bouton d'accès direct depuis votre espace client Hostinger reste **100% fonctionnel** et n'est pas bloqué.
 
 ---
 

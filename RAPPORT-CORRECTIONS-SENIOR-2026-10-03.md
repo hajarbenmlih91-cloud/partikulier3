@@ -1,7 +1,5 @@
 # Rapport Corrections Senior — Pack 1→4 — Release 2.10.9 / 6.20.9 — 03/10/2026
 
-> Rapport historique du colis `f502d43`, conservé sans requalifier ses mesures. La fusion du dépôt est versionnée 2.10.10 / 6.20.9 ; ses artefacts, checksums et contrôles sont distincts. Les résultats, attentes de performance et affirmations de compatibilité ci-dessous ne certifient pas la source fusionnée.
-
 **Thème** 6.20.8 → **6.20.9** · **Plugin** 2.10.8 → **2.10.9** · **SBOM** `2.10.9-6.20.9`
 **Environnement de validation** : WordPress 6.6 fr_FR / PHP 8.4.26 / MariaDB 11.8.6 / `php -S` + `wp eval` + `rest_do_request` — VM 2 vCPU / 1.9 Go
 **Build** : `dist/B-INSTALLER-PLUGIN-partikulier-core-2.10.9.zip` `b64dd7e058cd66f8c50f4d2b628e0d3fa37171ec8e7627c5a380d5e73090962b` / `dist/partikulier-theme-6.20.9.zip` `974e195a596093f5e0fc8e59483311f0c4f8fa8fd957c10cff6d711bf4003019` (via `scripts/package.sh` déterministe TZ=UTC zip -X)

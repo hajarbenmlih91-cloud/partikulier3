@@ -58,6 +58,19 @@
  * domaine listings (slugs d'annonces) dans le manifeste, qui passe à 21
  * tables. Prérequis du lot SE-043 côté thème (resolve_geo_request : 301
  * vers le permalink courant, 410 pour une annonce corbeillée).
+ *
+ * Version 2.8.0 (lot R1 — recommandation data qualifiée, 03/10/2026) :
+ * création des tables pk_search_events et pk_buyer_profiles — deux tables
+ * neuves, vides au départ, aucune migration de données. Le manifeste passe
+ * à 23 tables. pk_search_events journalise chaque recherche filtrée
+ * (même anonyme, HMAC pseudonymisé) ; pk_buyer_profiles agrège 1 ligne /
+ * lead les combinaisons qui se répètent (ville/quartier/type/etage/budget).
+ *
+ * Version 2.9.0 (lot R2 — filtre particulier/intermédiaire + 3e en 10min manuel, 03/10/2026) :
+ * ajout de 2 colonnes à pk_buyer_leads (is_particulier + qualification_asked_at)
+ * pour ne demander qu'une fois "particulier ou intermédiaire ?" et pour le mode
+ * "3e demande en 10min → envoi manuel". Aucune donnée déplacée, valeur NULL
+ * par défaut (unknown) pour les leads existants.
  */
 
 declare(strict_types=1);
@@ -66,7 +79,7 @@ namespace Partikulier\Core\Database;
 
 final class Schema
 {
-	public const VERSION = '2.7.0';
+	public const VERSION = '2.9.0';
 
 	use SchemaStatementsTrait;
 
@@ -118,6 +131,13 @@ final class Schema
 			// SE-043 du thème. Le manifeste passe à 21 tables ; le décompte
 			// des domaines reste 8/8 (aucun nouveau domaine).
 			'pk_slug_redirects'        => ['domain' => 'listings', 'label' => 'Annonces', 'owner' => 'plugin', 'lot' => 'ML'],
+
+			// Recommandation data qualifiée — lot R1 (03/10/2026), 2 tables
+			// neuves, rattachées au domaine leads (qualification). Le manifeste
+			// passe à 23 tables ; le décompte des domaines reste 8/8 (extension
+			// du domaine leads, pas de nouveau domaine).
+			'pk_search_events'         => ['domain' => 'leads', 'label' => 'Leads et qualification', 'owner' => 'plugin', 'lot' => 'R1'],
+			'pk_buyer_profiles'        => ['domain' => 'leads', 'label' => 'Leads et qualification', 'owner' => 'plugin', 'lot' => 'R1'],
 		];
 	}
 }

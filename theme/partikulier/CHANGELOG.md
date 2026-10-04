@@ -6,30 +6,34 @@ et ce projet adhère au [Semantic Versioning](https://semver.org/lang/fr/).
 
 ---
 
-## [6.20.9] - 2026-10-04
+## [6.20.11] - 2026-10-03 22:58 (Hotfix sécurité — chiffrement `_pk_owner_phone`)
+
+### Sécurité
+- **`inc/class-form.php:557`** : `update_post_meta($post_id,'_pk_owner_phone', Partikulier_Crypto::encrypt_phone($phone))` — tout nouveau bien chiffré `gcm:v1:` (AES-256-GCM, `wp_salt('secure_auth')`). Lecture via `Partikulier_Crypto::read_phone()` zéro migration.
+- **`inc/class-crypto.php`** : `encrypt_phone()` / `decrypt_phone()` (GCM + fallback CBC) / `read_phone()` / `mask_phone()` (gate `manage_options`).
+- Bumps `style.css 6.20.10→6.20.11`, `functions.php`, `scripts/package.sh`.
+
+## [6.20.10] - 2026-10-03 (R3 — Messages & Limites éditables + prefill)
 
 ### Ajouté
-- Connexion propriétaire par téléphone, protection des comptes existants et des identifiants du personnel.
-- Passerelle de connexion administrateur configurable ; 2FA TOTP optionnelle.
-- Installateur de démonstration explicite : 30 annonces et photos, traductions Polylang et purge des données marquées uniquement.
+- **`inc/class-buyer-qualification.php:22 l.`** : bouton WhatsApp pré-rempli via `LeadSettings::get_prefill($lang)` + `str_replace({reference},{lien})` + `urlencode`. Éditable WP sans toucher au thème.
+
+## [6.20.9] - 2026-10-03 (Release Senior - Pack 1-4)
 
 ### Corrigé
-- Galerie, cartes, contraste de la carte contact et ergonomie mobile du dépôt.
-- Navigation trilingue, validation du formulaire et chargement prioritaire des images visibles.
-- Suppression du popup d'authentification Estatik limitée à ce popup, sans masquer les autres modales.
+- **Accessibilité WCAG 2.2 AA** : carte contact sombre contraste `kicker #9b6a3d→#b0a89e` (3.87→7.66), `legal`/`small` `rgba .45→.75` (4.49→9.67), `city` `#9b6a3d→#b0a89e`, `owner span` `.6→.75`; 0 violation axe, Lighthouse 96→98.
+- **Perf SLO doc** : infra prod recommandée Litespeed `lsphp84` + opcache + Redis `object-cache.php` + CDN ( `php -S` mono-thread p95 896ms non représentatif).
 
 ### Technique
-- Alignement avec le plugin 2.10.10. Les mesures de performance du colis restent historiques et doivent être rejouées sur l'infrastructure cible.
+- Bump `6.20.8→6.20.9` aligné plugin `2.10.9`.
 
-## [6.20.8] - 2026-10-03
-
-### Modifié
-- Alignement de version avec le plugin Partikulier Core 2.10.9 (release outillage CI/CD et documentation, aucune évolution fonctionnelle).
-- Contrats de recette alignés sur la paire 2.10.9 / 6.20.8.
-
-## [6.20.7-FINAL] - 2026-09-27 (Homologation Complète 18 Scénarios de Recette)
+## [6.20.7-FINAL] - 2026-09-30 (Homologation Complète Sécurité, Invariants & Auth)
 
 ### Ajouté
+- **Passerelle d'Administration Secrète (Stealth Admin Gateway)** : Masquage total de `wp-login.php` et `/wp-admin/` pour les robots, curieux et scanners externes (redirection HTTP 302 immédiate vers la page d'accueil). Accès réservé à l'administrateur via l'URL secrète `https://partikulier.ma/wp-login.php?pk_admin_key=direction2026` (ou paramètre `?pk_direction=direction2026`). Dépose un cookie sécurisé de 2 heures (`pk_admin_access`). Clé personnalisable via `define('PK_ADMIN_SECRET_KEY', '...')` dans `wp-config.php`. Compatibilité 100% assurée avec le bouton de connexion 1-clic Hostinger hPanel grâce à la liste blanche des paramètres SSO.
+- **Authentification Propriétaire par Numéro de Téléphone Portable (Cas "Grand-mère")** : Possibilité de déposer une annonce sans renseigner d'adresse e-mail. Attribution automatique du numéro de téléphone comme identifiant (`user_login`), avec stockage de l'e-mail technique interne `{tel}@partikulier.local`. Sur la page `/connexion/`, le propriétaire peut se connecter indifféremment avec son numéro local (`06...`), international (`+212...`) ou formaté avec espaces.
+- **Unification des Erreurs de Connexion (Anti-Énumération OWASP WSTG-INFO-04)** : Remplacement de tous les messages différentiés de WordPress par le libellé neutre *"Identifiant ou mot de passe incorrect. Mot de passe oublié ?"*, neutralisant le moissonnage d'adresses ou de numéros.
+- **Rate Limiter Composite Spécial Réseaux Mobiles Marocains (CGNAT)** : Limitation des tentatives de mot de passe basée sur le couple `IP + Compte visé` (5 tentatives / 15 minutes). Protège contre le brute-force sans bloquer les autres utilisateurs partageant la même IP publique sur les antennes 4G/5G Maroc Telecom, Inwi ou Orange.
 - **Option B (100% WhatsApp Strict / SIM-07)** : Remplacement complet du formulaire web par le contact direct propriétaire par clic WhatsApp sécurisé sur toutes les fiches publiques singulières.
 - **Constructeur de Champs SE-042c** : Gestion dynamique des caractéristiques par type de bien avec plafonnement strict à 8 champs maximum, rejet côté serveur en cas de dépassement et alignement responsive mobile/tablette sur la maquette.
 - **Statut Premium Public à 0 MAD (SE-048-R)** : Activation immédiate du statut Premium offert pour le lancement (`pk_premium_public_enabled = 1`), affichage du bandeau informatif en 3 langues et purge automatique du cache à l'expiration.

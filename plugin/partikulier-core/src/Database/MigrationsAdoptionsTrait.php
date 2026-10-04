@@ -205,6 +205,52 @@ trait MigrationsAdoptionsTrait
 	}
 
 	/**
+	 * Lot R1 — recommandation data qualifiée (03/10/2026) :
+	 * pk_search_events + pk_buyer_profiles sont deux tables neuves,
+	 * vides au départ, aucune donnée reprise. dbDelta vient de les
+	 * créer si besoin ; la sonde constate existence/comptage/empreinte
+	 * et consigne la création — même discipline que E-4303.
+	 *
+	 * @return array<string, array{exists: bool, rows: int, structure: string}>
+	 */
+	public function createRecommendationTables(): array
+	{
+		$probed = [];
+		foreach ( self::RECOMMENDATION_TABLES as $table ) {
+			$probed[ $table ] = $this->adoptTable($table);
+		}
+		$this->audit()->record('recommendation_tables_created', 'schema', null, [
+			'lot'    => 'R1',
+			'domain' => 'leads',
+			'tables' => array_keys($probed),
+			'counts' => array_map(static fn( array $t ): int => (int) $t['rows'], $probed),
+		]);
+		return $probed;
+	}
+
+	/**
+	 * Lot R2 — filtre particulier/intermédiaire (03/10/2026) : 2 colonnes
+	 * neuves sur pk_buyer_leads, ajoutées par dbDelta. On se contente de
+	 * sonder et logger (même discipline que R1).
+	 *
+	 * @return array<string, array{exists: bool, rows: int, structure: string}>
+	 */
+	public function addQualificationColumns(): array
+	{
+		$probed = [];
+		foreach ( ['pk_buyer_leads'] as $table ) {
+			$probed[ $table ] = $this->adoptTable($table);
+		}
+		$this->audit()->record('qualification_columns_added', 'schema', null, [
+			'lot'    => 'R2',
+			'domain' => 'leads',
+			'tables' => array_keys($probed),
+			'counts' => array_map(static fn( array $t ): int => (int) $t['rows'], $probed),
+		]);
+		return $probed;
+	}
+
+	/**
 	 * Sonde d'adoption d'une table : existence, comptage, empreinte de
 	 * structure (SHOW CREATE TABLE — supporté par MySQL et par le
 	 * traducteur SQLite du banc, cf. incident B1). Facteur commun des

@@ -65,7 +65,6 @@ trait AutomationHmacTrait
 		$canonical = strtoupper( (string) $method) . "\n" . $path . "\n" . $timestamp . "\n" . (string) $body;
 		return [
 			'Content-Type'             => 'application/json',
-			'X-Partikulier-Automation' => $secret,
 			'X-Partikulier-Algorithm'  => 'sha256',
 			'X-Partikulier-Timestamp'  => $timestamp,
 			'X-Partikulier-Key-Id'     => $key_id,

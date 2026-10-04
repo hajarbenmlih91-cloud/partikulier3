@@ -134,8 +134,11 @@ trait SchemaStatementsTrait
                 first_seen_at datetime NOT NULL,
                 last_seen_at datetime NOT NULL,
                 opt_out_at datetime NULL,
+                is_particulier tinyint(1) NULL DEFAULT NULL,
+                qualification_asked_at datetime NULL,
                 PRIMARY KEY  (id),
-                UNIQUE KEY phone_hash (phone_hash)
+                UNIQUE KEY phone_hash (phone_hash),
+                KEY is_particulier (is_particulier)
             ) {$GLOBALS['wpdb']->get_charset_collate()};",
 			'interest_events'       => "CREATE TABLE {$prefix}pk_interest_events (
                 id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -322,6 +325,46 @@ trait SchemaStatementsTrait
                 PRIMARY KEY (id),
                 UNIQUE KEY slug (slug),
                 KEY property_id (property_id)
+            ) {$GLOBALS['wpdb']->get_charset_collate()};",
+
+			// Domaine recommandation (lot R1 — data qualifiée, 03/10/2026)
+			// Deux tables neuves, vides au départ, créées par dbDelta :
+			//  - pk_search_events : chaque recherche filtrée (même anonyme),
+			//    visitor_hash HMAC pseudonymisé, filters_json canonique.
+			//  - pk_buyer_profiles : agrégat quotidien 1 ligne / lead,
+			//    top combinaisons qui se répètent (ville/quartier/type/etage/budget).
+			'search_events'         => "CREATE TABLE {$prefix}pk_search_events (
+                id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+                lead_id bigint(20) unsigned NULL,
+                visitor_hash char(64) NOT NULL,
+                filters_json longtext NOT NULL,
+                filters_signature char(64) NOT NULL,
+                created_at datetime NOT NULL,
+                PRIMARY KEY (id),
+                KEY lead_created (lead_id, created_at),
+                KEY visitor_created (visitor_hash, created_at),
+                KEY signature (filters_signature),
+                KEY created_at (created_at)
+            ) {$GLOBALS['wpdb']->get_charset_collate()};",
+			'buyer_profiles'        => "CREATE TABLE {$prefix}pk_buyer_profiles (
+                lead_id bigint(20) unsigned NOT NULL,
+                budget_min bigint(20) unsigned NULL,
+                budget_max bigint(20) unsigned NULL,
+                budget_median bigint(20) unsigned NULL,
+                villes longtext NOT NULL,
+                quartiers longtext NOT NULL,
+                types longtext NOT NULL,
+                etages longtext NOT NULL,
+                ensoleillements longtext NOT NULL,
+                areas longtext NOT NULL,
+                top_criteria longtext NOT NULL,
+                repetitions_count int unsigned NOT NULL DEFAULT 0,
+                score_fidelite tinyint unsigned NOT NULL DEFAULT 0,
+                last_interest_at datetime NULL,
+                updated_at datetime NOT NULL,
+                PRIMARY KEY (lead_id),
+                KEY updated_at (updated_at),
+                KEY score_fidelite (score_fidelite)
             ) {$GLOBALS['wpdb']->get_charset_collate()};",
 		];
 	}

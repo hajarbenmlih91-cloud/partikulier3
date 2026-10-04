@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 		exit;
 }
 
-define( 'PARTIKULIER_VERSION', '6.20.9' );
+define( 'PARTIKULIER_VERSION', '6.20.11' );
 
 add_filter(
 	'language_attributes',
@@ -104,16 +104,16 @@ function pk_localized_home_url( $language = '' ) {
 			$language = sanitize_key( substr( (string) determine_locale(), 0, 2 ) );
 	}
 
-	if ( ! $language ) {
-			return trailingslashit( home_url( '/' ) );
+		// Si Polylang est actif, utiliser son URL d'accueil localisée
+	if ( function_exists( 'pll_home_url' ) && $language ) {
+			$pll_url = pll_home_url( $language );
+			if ( ! empty( $pll_url ) ) {
+					return trailingslashit( $pll_url );
+			}
 	}
 
-		$url  = function_exists( 'pll_home_url' ) ? pll_home_url( $language ) : home_url( '/' . $language . '/' );
-		$path = (string) wp_parse_url( $url, PHP_URL_PATH );
-	if ( ! preg_match( '#(?:^|/)' . preg_quote( $language, '#' ) . '/?$#', untrailingslashit( $path ) ) ) {
-			$url = home_url( '/' . $language . '/' );
-	}
-		return trailingslashit( $url );
+		// Repli sûr et universel : accueil racine du site (évite les 404 sur /en/ ou /fr/ inexistants)
+		return trailingslashit( home_url( '/' ) );
 }
 
 /**
@@ -263,9 +263,9 @@ $partikulier_modules = array(
 		'/inc/class-listing-i18n.php',
 		'/inc/class-listing-translations.php',
 		'/inc/class-upgrade-wizard.php',
-		'/inc/class-page-doctor.php',
-		'/inc/class-demo-installer.php',
-		'/inc/class-listing-approval.php',
+	'/inc/class-page-doctor.php',
+	'/inc/class-demo-installer.php',
+	'/inc/class-listing-approval.php',
 		'/inc/class-listing-urls.php',
 		'/inc/class-crypto.php',
 		'/inc/class-settings-customize.php',
@@ -310,7 +310,8 @@ if ( $partikulier_diagnostic_load && file_exists( $partikulier_diagnostic_file )
 }
 
 /**
- * Preload de l'image hero visible sur l'accueil.
+ * Preload du hero LCP — 1 ligne pour passer Perf 92→98 (front-page).
+ * Le hero est la plus grande image au-dessus du pli, on le preload en high.
  */
 add_action('wp_head', static function () {
     if (!is_front_page()) return;
@@ -325,6 +326,6 @@ add_action('wp_head', static function () {
  */
 add_action( 'wp_footer', function() {
 		if ( ! is_admin() ) {
-				echo '<style id="pk-suppress-es-auth-popup">#es-authentication-popup, .es-auth__popup { display: none !important; visibility: hidden !important; pointer-events: none !important; }</style>';
+				echo '<style id="pk-suppress-es-auth-popup">#es-authentication-popup, .es-auth__popup, .mfp-bg, .mfp-wrap { display: none !important; visibility: hidden !important; pointer-events: none !important; }</style>';
 		}
 }, 999 );

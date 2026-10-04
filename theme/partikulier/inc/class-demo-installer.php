@@ -13,8 +13,8 @@
  * class-form.php) mais avec de VRAIES photos du dossier demo/images/ et une
  * UI 1-clic dans l'admin (Outils > Démo Partikulier).
  *
- * - 30 annonces : 6 villes — 8 types — 15 ventes / 15 locations
- * - 3 photos par annonce, piochées dans demo/images/ (30 AVIF fournis)
+ * - 30 annonces : 10 Casa, 10 Rabat, 10 Marrakech — 7 types — 15 ventes / 15 locations
+ * - 3 photos par annonce, piochées dans demo/images/ (9 JPG fournis, dupliqués)
  * - Titres/descriptions générés par Partikulier_Listing_I18n (comme un vrai dépôt)
  * - _pk_status = actif + Polylang + permaliens purgés → visibles dès l'install
  * - Marque _pk_seed_demo = 1 sur chaque post + attachment → purge propre en 1 clic
@@ -85,7 +85,6 @@ class Partikulier_Demo_Installer {
 			'fields'           => 'ids',
 			'meta_key'         => self::MARK,
 			'meta_value'       => '1',
-			'lang'            => '',
 			'suppress_filters' => true,
 		) ) );
 		$media_count = count( get_posts( array(
@@ -95,7 +94,6 @@ class Partikulier_Demo_Installer {
 			'fields'           => 'ids',
 			'meta_key'         => self::MARK,
 			'meta_value'       => '1',
-			'lang'            => '',
 			'suppress_filters' => true,
 		) ) );
 		$has_estatik = class_exists( 'Estatik' ) || class_exists( 'Es_Main_Class' ) || defined( 'ES_VERSION' ) || function_exists( 'es_get_properties' );
@@ -115,7 +113,7 @@ class Partikulier_Demo_Installer {
 				<h2 style="margin:0 0 8px"><?php esc_html_e( 'État actuel', 'partikulier' ); ?></h2>
 				<p style="margin:0">
 					<?php printf( esc_html__( 'Annonces de démo : %d — Photos de démo : %d', 'partikulier' ), (int) $demo_count, (int) $media_count ); ?><br>
-					<?php esc_html_e( 'Dossier demo/images :', 'partikulier' ); ?> <?php echo (int) $demo_images; ?> AVIF / JPG / WebP<br>
+					<?php esc_html_e( 'Dossier demo/images :', 'partikulier' ); ?> <?php echo (int) $demo_images; ?> JPG<br>
 					Estatik : <?php echo $has_estatik ? '✅ actif' : '❌ manquant — installez/activiez Estatik d’abord'; ?><br>
 					Moteur Partikulier : <?php echo $has_i18n ? '✅' : '❌ thème incomplet'; ?><br>
 					Polylang : <?php echo $has_translations ? '✅ ' . esc_html( implode( '/', $languages ) ) . ' — chaque annonce sera traduite en ' . esc_html( implode( ' + ', $languages ) ) : '⚠️ FR seul (sans Polylang, pas de traductions EN/AR)'; ?>
@@ -153,7 +151,7 @@ class Partikulier_Demo_Installer {
 				<li><a href="<?php echo esc_url( pk_properties_archive_url() ); ?>" target="_blank"><?php esc_html_e( 'Catalogue /annonces/', 'partikulier' ); ?></a> — filtres : <code>?es_city=casablanca</code> · <code>?es_type=villa</code> · <code>?es_action=a-louer</code> (location) vs <code>?es_action=a-vendre</code> (vente)</li>
 				<li><?php esc_html_e( 'Fiches bien : cliquez une carte → galerie (flèches + compteur), métriques, bloc WhatsApp', 'partikulier' ); ?></li>
 			</ul>
-			<p><strong>Contenu installé :</strong> 30 annonces — 6 villes — 8 types (appartement, villa, studio, maison, duplex, riad, terrain, immeuble) — 15 ventes / 15 locations — chaque annonce a 3 photos du dossier demo.</p>
+			<p><strong>Contenu installé :</strong> 30 annonces — 10 Casablanca, 10 Rabat, 10 Marrakech — 7 types (appartement, villa, studio, maison, duplex, riad, terrain) — 15 ventes / 15 locations — chaque annonce a 3 photos du dossier demo.</p>
 			<?php endif; ?>
 
 			<details style="margin-top:20px;background:#f6f7f7;padding:12px 16px;border:1px solid #dcdcde">
@@ -194,7 +192,6 @@ class Partikulier_Demo_Installer {
 			'fields'           => 'ids',
 			'meta_key'         => self::MARK,
 			'meta_value'       => '1',
-			'lang'            => '',
 			'suppress_filters' => true,
 		) );
 		$media = get_posts( array(
@@ -204,7 +201,6 @@ class Partikulier_Demo_Installer {
 			'fields'           => 'ids',
 			'meta_key'         => self::MARK,
 			'meta_value'       => '1',
-			'lang'            => '',
 			'suppress_filters' => true,
 		) );
 		foreach ( $posts as $id ) {
@@ -243,7 +239,6 @@ class Partikulier_Demo_Installer {
 			'fields'           => 'ids',
 			'meta_key'         => self::MARK,
 			'meta_value'       => '1',
-			'lang'            => '',
 			'suppress_filters' => true,
 		) );
 		$old_media = get_posts( array(
@@ -253,7 +248,6 @@ class Partikulier_Demo_Installer {
 			'fields'           => 'ids',
 			'meta_key'         => self::MARK,
 			'meta_value'       => '1',
-			'lang'            => '',
 			'suppress_filters' => true,
 		) );
 		foreach ( $old_posts as $id ) { wp_delete_post( (int) $id, true ); }
@@ -262,10 +256,10 @@ class Partikulier_Demo_Installer {
 		// 2) Pool de photos depuis demo/images/
 		$pool = self::build_photo_pool();
 		if ( ! $pool ) {
-			return 'ERREUR : aucune photo disponible. Vérifiez les images AVIF/JPG/WebP dans demo/images/ et les droits du dossier uploads.';
+			return 'ERREUR : aucune photo disponible. Vérifiez que le dossier demo/images/ contient des JPG et que le dossier uploads est inscriptible.';
 		}
 
-		// 3) Génération des 30 annonces dans six villes.
+		// 3) Génération des 30 annonces — 10 Casa / 10 Rabat / 10 Marrakech — 15 ventes / 15 locations
 		$listings = self::generate_30_listings();
 
 		// Prépare les termes canoniques (langue fr + liaisons Polylang si disponible)
@@ -373,7 +367,7 @@ class Partikulier_Demo_Installer {
 			if ( $p['type_id'] ) { wp_set_object_terms( $post_id, (int) $p['type_id'], PARTIKULIER_ESTATIK_TYPE_TAXONOMY ); }
 			if ( $p['status_id'] ) { wp_set_object_terms( $post_id, (int) $p['status_id'], PARTIKULIER_ESTATIK_STATUS_TAXONOMY ); }
 			if ( $p['city_id'] ) { wp_set_object_terms( $post_id, (int) $p['city_id'], PARTIKULIER_ESTATIK_LOCATION_TAXONOMY ); }
-			if ( defined( 'Partikulier_Listing_Translations::META_SOURCE_LANG' ) ) {
+			if ( class_exists( 'Partikulier_Listing_Translations' ) && method_exists( 'Partikulier_Listing_Translations', 'META_SOURCE_LANG' ) ) {
 				update_post_meta( $post_id, Partikulier_Listing_Translations::META_SOURCE_LANG, $default );
 			}
 
@@ -430,7 +424,7 @@ class Partikulier_Demo_Installer {
 	}
 
 	/**
-	 * Génère les 30 annonces dans six villes : 15 ventes / 15 locations.
+	 * Génère les 30 annonces : 10 Casa / 10 Rabat / 10 Marrakech — 15 ventes / 15 locations.
 	 * Distribution équilibrée pour tester tous les filtres et cas d'affichage.
 	 */
 	private static function generate_30_listings() {
@@ -483,7 +477,7 @@ class Partikulier_Demo_Installer {
 		for ( $i = 0; $i < 20; $i++ ) {
 			$c = $pool_cities[ $i % count( $pool_cities ) ];
 			$t = $pool_types[ $i % count( $pool_types ) ];
-			$is_rent = ( 1 === $i % 2 || 0 === $i || 2 === $i );
+			$is_rent = ( 1 === $i % 2 ); // alternance vente / location → 10 ventes + 10 locations sur ces 20
 			$price = $is_rent ? ( $t[3] > 100000 ? intval( $t[3] / 200 ) : $t[3] ) : $t[3];
 			if ( $is_rent && $price < 3000 ) { $price = 3500 + ( $i * 137 ) % 4000; }
 			if ( ! $is_rent && $price < 100000 ) { $price = 600000 + ( $i * 99000 ) % 800000; }

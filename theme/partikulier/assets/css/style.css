@@ -3385,7 +3385,9 @@ html[dir="rtl"] .pk-archive-content .pk-card-price { left: auto; right: 12px; }
 
 /* --- Neutralisation définitive de la modal brute d'authentification Estatik --- */
 #es-authentication-popup,
-.es-auth__popup {
+.es-auth__popup,
+.mfp-bg,
+.mfp-wrap {
 		display: none !important;
 		visibility: hidden !important;
 		pointer-events: none !important;

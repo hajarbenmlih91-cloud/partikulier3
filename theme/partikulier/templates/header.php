@@ -101,6 +101,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 						$pk_current_lang = 'fr';
 						if ( function_exists( 'pll_current_language' ) && pll_current_language() ) {
 								$pk_current_lang = sanitize_key( (string) pll_current_language() );
+						} elseif ( isset( $_GET['lang'] ) && in_array( $_GET['lang'], array( 'fr', 'ar', 'en' ), true ) ) {
+								$pk_current_lang = sanitize_key( $_GET['lang'] );
 						} elseif ( strpos( (string) get_locale(), 'ar' ) === 0 ) {
 								$pk_current_lang = 'ar';
 						} elseif ( strpos( (string) get_locale(), 'en' ) === 0 ) {
@@ -123,33 +125,29 @@ if ( ! defined( 'ABSPATH' ) ) {
 								'ar' => 'العربية',
 								'en' => 'English',
 						);
-						$pk_langs = array();
-						if ( function_exists( 'pll_the_languages' ) ) {
-								foreach ( (array) pll_the_languages( array( 'raw' => 1, 'hide_if_empty' => 0 ) ) as $pk_lang ) {
-										if ( ! empty( $pk_lang['slug'] ) && ! empty( $pk_lang['url'] ) ) {
-												$pk_langs[ $pk_lang['slug'] ] = $pk_lang;
-										}
-								}
-						}
-						if ( empty( $pk_langs ) ) {
-								$pk_langs[ $pk_current_lang ] = array( 'url' => home_url( '/' ) );
-						}
+						$pk_current_url = ( is_ssl() ? 'https://' : 'http://' ) . ( $_SERVER['HTTP_HOST'] ?? '' ) . ( $_SERVER['REQUEST_URI'] ?? '' );
 						?>
 						<div class="pk-lang" data-pk-lang>
-								<button type="button" class="pk-lang-toggle" aria-expanded="false" aria-haspopup="true" aria-label="<?php esc_attr_e( 'Choisir la langue', 'partikulier' ); ?>"<?php disabled( count( $pk_langs ) < 2 ); ?>>
+								<button type="button" class="pk-lang-toggle" aria-expanded="false" aria-haspopup="true" aria-label="<?php esc_attr_e( 'Choisir la langue', 'partikulier' ); ?>">
 										<?php echo $pk_flag_svg( $pk_current_lang ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 										<span class="pk-lang-code"><?php echo esc_html( strtoupper( $pk_current_lang ) ); ?></span>
 								</button>
 								<ul class="pk-lang-menu" hidden>
 										<?php
-										foreach ( $pk_langs as $pk_slug => $pk_lang ) :
-												$pk_target_url = $pk_lang['url'];
+										foreach ( array( 'fr', 'ar', 'en' ) as $pk_slug ) :
+												$pk_target_url = add_query_arg( 'lang', $pk_slug, $pk_current_url );
+												if ( function_exists( 'pll_the_languages' ) ) {
+														$raw_langs = pll_the_languages( array( 'raw' => 1 ) );
+														if ( ! empty( $raw_langs[ $pk_slug ]['url'] ) ) {
+																$pk_target_url = $raw_langs[ $pk_slug ]['url'];
+														}
+												}
 										?>
 												<li<?php echo ( $pk_slug === $pk_current_lang ) ? ' class="is-current"' : ''; ?>>
 														<a href="<?php echo esc_url( $pk_target_url ); ?>" lang="<?php echo esc_attr( $pk_slug ); ?>" hreflang="<?php echo esc_attr( $pk_slug ); ?>">
 																<?php echo $pk_flag_svg( $pk_slug ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 																<span class="pk-lang-abbr"><?php echo esc_html( strtoupper( $pk_slug ) ); ?></span>
-																<span class="pk-lang-name"><?php echo esc_html( $pk_lang_names[ $pk_slug ] ?? $pk_lang['name'] ?? $pk_slug ); ?></span>
+																<span class="pk-lang-name"><?php echo esc_html( $pk_lang_names[ $pk_slug ] ); ?></span>
 														</a>
 												</li>
 										<?php endforeach; ?>

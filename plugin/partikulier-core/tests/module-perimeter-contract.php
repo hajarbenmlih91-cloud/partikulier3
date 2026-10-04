@@ -240,7 +240,7 @@ $assert('DA-009', $themeOversized === $frozenBaseline,
 $themeVersion = wp_get_theme()->get('Version');
 $health = (new HealthCheck())->get();
 $pluginDomains = count(array_filter($health['domains'] ?? [], static fn($d): bool => ($d['owner'] ?? '') === 'plugin'));
-$assert('DA-010', PARTIKULIER_CORE_VERSION === '2.10.10' && $themeVersion === '6.20.9'
+$assert('DA-010', PARTIKULIER_CORE_VERSION === '2.10.9' && $themeVersion === '6.20.9'
     && \Partikulier\Core\Database\Schema::VERSION === '2.7.0' && ($health['status'] ?? '') === 'ok'
     && $pluginDomains === 8 && (int) ($health['routes']['collisions'] ?? -1) === 0,
     sprintf('santé : %s, plugin %s, thème %s (lot F — extinction finale), schéma %s (zéro migration au lot D — bump micro-lot pré-prod, postérieur), %d/8 domaines, 0 collision',

@@ -423,7 +423,7 @@ class Partikulier_Form {
 					'post_excerpt' => wp_trim_words( $description, 30, '…' ), /* 6.17.30 : sans 3e arg, wp_trim_words colle l'entité littérale et celle-ci finissait en base + JSON-LD */
 			), true );
 		} else {
-			$clean_phone = Partikulier_Security::normalize_phone( $phone ) ?: preg_replace( '/\D+/', '', (string) $phone );
+			$clean_phone = preg_replace( '/\D+/', '', (string) $phone );
 			if ( $email_ok ) {
 				$user_email = $email;
 			} elseif ( ! empty( $clean_phone ) ) {
@@ -554,8 +554,8 @@ class Partikulier_Form {
 				update_post_meta( $post_id, '_pk_owner_email', $email );
 		}
 		if ( $phone_ok ) {
-				update_post_meta( $post_id, '_pk_owner_phone', $phone );
-		}
+				update_post_meta( $post_id, '_pk_owner_phone', class_exists( 'Partikulier_Crypto' ) ? Partikulier_Crypto::encrypt_phone( $phone ) : $phone );
+			}
 							update_post_meta( $post_id, '_pk_owner_role', 'proprietaire' );
 							update_post_meta( $post_id, '_pk_status', Partikulier_WhatsApp_Verification::STATUS_PENDING );
 		if ( ! $is_edit ) {
@@ -781,10 +781,15 @@ class Partikulier_Form {
 		 */
 	private static function ensure_user( $email, $name, $phone = '' ) {
 			$user        = get_user_by( 'email', $email );
-			$clean_phone = Partikulier_Security::normalize_phone( $phone ) ?: preg_replace( '/\D+/', '', (string) $phone );
+			$clean_phone = preg_replace( '/\D+/', '', (string) $phone );
 
 		if ( ! $user && ! empty( $clean_phone ) ) {
-			$user = Partikulier_Security::find_phone_user( $clean_phone );
+			$user = get_user_by( 'login', $clean_phone );
+			if ( ! $user && 0 === strpos( $clean_phone, '212' ) ) {
+				$user = get_user_by( 'login', '0' . substr( $clean_phone, 3 ) );
+			} elseif ( ! $user && 0 === strpos( $clean_phone, '0' ) ) {
+				$user = get_user_by( 'login', '212' . substr( $clean_phone, 1 ) );
+			}
 			if ( ! $user ) {
 				$meta_users = get_users( array(
 					'meta_key'   => '_pk_owner_phone_clean',

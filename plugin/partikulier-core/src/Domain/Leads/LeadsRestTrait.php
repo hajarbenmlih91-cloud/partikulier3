@@ -48,7 +48,11 @@ trait LeadsRestTrait
 			return new \WP_REST_Response(['allowed' => false, 'reason' => 'property_unavailable'], 200);
 		}
 
-		return self::authorize_contact($wa_id, $property_id, $message_id);
+		// R2 : texte du message pour détection langue ar (regex [\x{0600}-\x{06FF}])
+		$text = (string) $request->get_param('text');
+		if ( '' === $text ) $text = (string) $request->get_param('message');
+		if ( '' === $text ) $text = (string) $request->get_param('body');
+		return self::authorize_contact($wa_id, $property_id, $message_id, $text);
 	}
 
 

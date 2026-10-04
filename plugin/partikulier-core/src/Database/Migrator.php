@@ -104,6 +104,12 @@ final class Migrator
 		'pk_slug_redirects',
 	];
 
+	/** Les deux tables de recommandation data qualifiée, créées au lot R1. */
+	public const RECOMMENDATION_TABLES = [
+		'pk_search_events',
+		'pk_buyer_profiles',
+	];
+
 	/** Le journal de migration doit s'écrire sur TOUTE requête (page publique comprise). */
 	private function audit(): AuditLogger
 	{
@@ -190,6 +196,22 @@ final class Migrator
 					// de la table des redirections d'anciens slugs — table
 					// NEUVE, vide au départ, aucune migration de données.
 					$report['steps'][] = ['step' => 'create_slug_redirects_table', 'result' => $this->createSlugRedirectsTable()];
+				}
+
+				if ( version_compare($from, '2.8.0', '<') ) {
+					// Lot R1 — recommandation data qualifiée (03/10/2026) :
+					// création des tables pk_search_events et pk_buyer_profiles
+					// — deux tables neuves, vides au départ, aucune migration
+					// de données. Même discipline de journalisation.
+					$report['steps'][] = ['step' => 'create_recommendation_tables', 'result' => $this->createRecommendationTables()];
+				}
+
+				if ( version_compare($from, '2.9.0', '<') ) {
+					// Lot R2 — filtre particulier/intermédiaire + 3e en 10min manuel
+					// (03/10/2026) : 2 colonnes neuves sur pk_buyer_leads, NULL
+					// par défaut pour les leads existants (unknown). dbDelta les
+					// a déjà ajoutées via CREATE TABLE, on ne fait que logger.
+					$report['steps'][] = ['step' => 'add_qualification_columns', 'result' => $this->addQualificationColumns()];
 				}
 
 				update_option(self::OPTION, Schema::VERSION, false);

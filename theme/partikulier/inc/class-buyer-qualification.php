@@ -70,10 +70,30 @@ class Partikulier_Buyer_Qualification {
 		if ( ! $number ) {
 				return '';
 		}
+			// R3 : pré-rempli éditable WP (source vérité) — {reference}{lien}{titre}{ville}{quartier}{prix}
+			if ( class_exists( '\Partikulier\Core\Domain\Leads\LeadSettings' ) && method_exists( '\Partikulier\Core\Domain\Leads\LeadSettings', 'render_prefill' ) ) {
+				$lang = 'fr';
+				if ( function_exists( 'pll_get_post_language' ) ) {
+					$pll = (string) pll_get_post_language( $post_id, 'slug' );
+					if ( $pll === 'ar' ) $lang = 'ar';
+					elseif ( $pll === 'en' ) $lang = 'en';
+					elseif ( $pll === 'fr' ) $lang = 'fr';
+				} else {
+					$locale = (string) get_post_meta( $post_id, '_locale', true );
+					if ( '' === $locale ) $locale = (string) get_locale();
+					if ( str_starts_with( $locale, 'ar' ) ) $lang = 'ar';
+					elseif ( str_starts_with( $locale, 'en' ) ) $lang = 'en';
+					else $lang = 'fr';
+				}
+				$text = (string) \Partikulier\Core\Domain\Leads\LeadSettings::render_prefill( (int) $post_id, $lang );
+				if ( '' !== trim( $text ) ) {
+					return 'https://wa.me/' . rawurlencode( $number ) . '?text=' . rawurlencode( $text );
+				}
+			}
 			$reference = self::reference_for( $post_id );
 			$text      = sprintf(
 					/* translators: 1: annonce référence, 2: URL de l'annonce */
-					__( "Bonjour Partikulier, je suis intéressé(e) par l’annonce %1\$s.\nLien : %2\$s", 'partikulier' ),
+					__( "Bonjour Partikulier, je suis intéressé(e) par l’annonce %1$s.\nLien : %2$s", 'partikulier' ),
 					$reference,
 					get_permalink( $post_id )
 			);

@@ -1,118 +1,410 @@
 {
-    "bomFormat": "CycloneDX",
-    "specVersion": "1.5",
-    "serialNumber": "urn:uuid:6e3c464f-987e-53ba-8aa4-bbb60c19baf1",
-    "version": 1,
-    "metadata": {
-        "timestamp": "2026-10-04T03:08:47Z",
-        "tools": {
-            "components": [
-                {
-                    "type": "application",
-                    "name": "scripts/build-sbom.php",
-                    "version": "1"
-                }
-            ]
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.5",
+  "serialNumber": "urn:uuid:partikulier-3-2026-10-02-1d290e5",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-10-02T11:15:38Z",
+    "tools": {
+      "components": [
+        {
+          "type": "application",
+          "name": "scripts/package.sh",
+          "version": "1.0",
+          "publisher": "Partikulier Team",
+          "description": "Packaging reproductible deterministe TZ=UTC zip -X"
         },
-        "component": {
-            "type": "application",
-            "bom-ref": "pkg:github/hajarbenmlih91-cloud/partikulier3@2.10.10-6.20.9",
-            "name": "partikulier3",
-            "version": "2.10.10-6.20.9",
-            "purl": "pkg:github/hajarbenmlih91-cloud/partikulier3@2.10.10-6.20.9",
-            "licenses": [
-                {
-                    "license": {
-                        "id": "GPL-3.0-or-later"
-                    }
-                }
-            ],
-            "properties": [
-                {
-                    "name": "partikulier:inventory-scope",
-                    "value": "First-party ZIPs only; installed runtime and optional external plugins are not inventoried."
-                },
-                {
-                    "name": "partikulier:requires-wordpress",
-                    "value": ">=6.2"
-                },
-                {
-                    "name": "partikulier:requires-php",
-                    "value": ">=8.1"
-                }
-            ]
+        {
+          "type": "application",
+          "name": "cyclonedx-generator",
+          "version": "1.0-manual",
+          "description": "Generation manuelle SBOM pour EU CRA"
         }
+      ]
     },
-    "components": [
+    "component": {
+      "type": "application",
+      "name": "partikulier3",
+      "version": "2.10.11-6.20.9",
+      "description": "Portail immobilier Partikulier — plugin coeur + theme CDC v1.8",
+      "publisher": "Partikulier Team",
+      "licenses": [
         {
-            "type": "application",
-            "bom-ref": "pkg:generic/partikulier-core@2.10.10",
-            "name": "partikulier-core",
-            "version": "2.10.10",
-            "purl": "pkg:generic/partikulier-core@2.10.10",
-            "licenses": [
-                {
-                    "license": {
-                        "id": "GPL-3.0-or-later"
-                    }
-                }
-            ],
-            "hashes": [
-                {
-                    "alg": "SHA-256",
-                    "content": "d318266f913712fe631ea05ba53f17609769705d5d0459cd9b61446ca06d417f"
-                }
-            ],
-            "properties": [
-                {
-                    "name": "partikulier:archive",
-                    "value": "B-INSTALLER-PLUGIN-partikulier-core-2.10.10.zip"
-                }
-            ]
+          "license": {
+            "id": "GPL-3.0-or-later"
+          }
+        }
+      ],
+      "purl": "pkg:github/hajarbenmlih91-cloud/partikulier3@4b7fb0a",
+      "externalReferences": [
+        {
+          "type": "vcs",
+          "url": "https://github.com/hajarbenmlih91-cloud/partikulier3"
         },
         {
-            "type": "application",
-            "bom-ref": "pkg:generic/partikulier-theme@6.20.9",
-            "name": "partikulier-theme",
-            "version": "6.20.9",
-            "purl": "pkg:generic/partikulier-theme@6.20.9",
-            "licenses": [
-                {
-                    "license": {
-                        "id": "GPL-3.0-or-later"
-                    }
-                }
-            ],
-            "hashes": [
-                {
-                    "alg": "SHA-256",
-                    "content": "cc0b81164b4746505f97801698065df5f34edfeb61ff1855f169f8ab09b81371"
-                }
-            ],
-            "properties": [
-                {
-                    "name": "partikulier:archive",
-                    "value": "partikulier-theme-6.20.9.zip"
-                }
-            ]
+          "type": "website",
+          "url": "https://partikulier.com"
         }
-    ],
-    "dependencies": [
-        {
-            "ref": "pkg:github/hajarbenmlih91-cloud/partikulier3@2.10.10-6.20.9",
-            "dependsOn": [
-                "pkg:generic/partikulier-core@2.10.10",
-                "pkg:generic/partikulier-theme@6.20.9"
-            ]
-        }
-    ],
-    "compositions": [
-        {
-            "aggregate": "incomplete_first_party_only",
-            "assemblies": [
-                "pkg:generic/partikulier-core@2.10.10",
-                "pkg:generic/partikulier-theme@6.20.9"
-            ]
-        }
+      ]
+    },
+    "lifecycles": [
+      {
+        "phase": "build"
+      }
     ]
+  },
+  "components": [
+    {
+      "type": "framework",
+      "name": "wordpress",
+      "version": "6.6",
+      "description": "WordPress core fr_FR — Requires at least 6.2, Tested up to 7.1",
+      "publisher": "WordPress Foundation",
+      "licenses": [
+        {
+          "license": {
+            "id": "GPL-2.0-or-later"
+          }
+        }
+      ],
+      "purl": "pkg:composer/wordpress/wordpress@6.6",
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://wordpress.org"
+        }
+      ],
+      "properties": [
+        {
+          "name": "partikulier:tested-up-to",
+          "value": "7.1"
+        }
+      ]
+    },
+    {
+      "type": "application",
+      "name": "php",
+      "version": "8.4.26",
+      "description": "PHP runtime — Requires PHP 8.1, prod 8.4.26 (build), 8.3 via lsphp83",
+      "publisher": "The PHP Group",
+      "licenses": [
+        {
+          "license": {
+            "id": "PHP-3.01"
+          }
+        }
+      ],
+      "purl": "pkg:generic/php@8.4.26",
+      "properties": [
+        {
+          "name": "partikulier:requires-php",
+          "value": "8.1"
+        }
+      ]
+    },
+    {
+      "type": "application",
+      "name": "mariadb",
+      "version": "11.8.6",
+      "description": "MariaDB InnoDB — stockage wp_pk_listings, wp_pk_audit_log",
+      "publisher": "MariaDB Foundation",
+      "licenses": [
+        {
+          "license": {
+            "id": "GPL-2.0-only"
+          }
+        }
+      ],
+      "purl": "pkg:generic/mariadb@11.8.6"
+    },
+    {
+      "type": "library",
+      "name": "partikulier-core",
+      "version": "2.10.9",
+      "description": "Plugin coeur métier : domaines, REST, santé, migrations, contrats",
+      "publisher": "Partikulier Team",
+      "licenses": [
+        {
+          "license": {
+            "id": "GPL-3.0-or-later"
+          }
+        }
+      ],
+      "purl": "pkg:github/hajarbenmlih91-cloud/partikulier3/plugin/partikulier-core@2.10.9",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "d2af2ff4f3aa7d92eb43a4e7e1fb66f2c9ebdd18e054a21d08bca002f2853c73"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://github.com/hajarbenmlih91-cloud/partikulier3/releases/download/v2.10.9-6.20.9/B-INSTALLER-PLUGIN-partikulier-core-2.10.9.zip"
+        }
+      ],
+      "components": [
+        {
+          "type": "library",
+          "name": "partikulier-core-domain-leads",
+          "version": "2.10.9",
+          "description": "LeadService, RateLimiter, LeadsPrivacyTrait — chiffrement, FOR UPDATE, idempotence"
+        },
+        {
+          "type": "library",
+          "name": "partikulier-core-domain-payments",
+          "version": "2.10.9",
+          "description": "PaymentService CMI — redirection, pas de stockage CB (SAQ A)"
+        },
+        {
+          "type": "library",
+          "name": "partikulier-core-domain-premium",
+          "version": "2.10.9",
+          "description": "PremiumService SE-048-R — badge premium, cache, honnêteté"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "partikulier-theme",
+      "version": "6.20.9",
+      "description": "Thème immobilier CDC v1.8 — templates, front, i18n FR/EN/AR, Estatik, AVIF, JSON-LD",
+      "publisher": "Partikulier Team",
+      "licenses": [
+        {
+          "license": {
+            "id": "GPL-3.0-or-later"
+          }
+        }
+      ],
+      "purl": "pkg:github/hajarbenmlih91-cloud/partikulier3/theme/partikulier@6.20.9",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "68a63d7ecb55df812a346ee99bcd48338db55d4affaa7462012cbf22be084411"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://github.com/hajarbenmlih91-cloud/partikulier3/releases/download/v2.10.9-6.20.9/partikulier-theme-6.20.9.zip"
+        }
+      ],
+      "properties": [
+        {
+          "name": "partikulier:demo-images",
+          "value": "30 JPG distincts (9 modern-* +21 demo-*) 7.0M, 90 slots 3/annonce"
+        },
+        {
+          "name": "partikulier:font",
+          "value": "DM Sans (variable, auto-hebergee) + Noto Sans Arabic RTL"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "estatik",
+      "version": "4.3.6",
+      "description": "Plugin immobilier Estatik — CPT properties, taxonomies es_type/es_status/es_location, meta es_property_*",
+      "publisher": "Estatik",
+      "licenses": [
+        {
+          "license": {
+            "id": "proprietary"
+          }
+        }
+      ],
+      "purl": "pkg:generic/estatik@4.3.6",
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://estatik.net"
+        }
+      ],
+      "properties": [
+        {
+          "name": "partikulier:prod-version",
+          "value": "4.3.4 (écart mineur tracé)"
+        },
+        {
+          "name": "partikulier:post-type",
+          "value": "properties"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "polylang",
+      "version": "3.8.7",
+      "description": "Multilingue FR/EN/AR — hide_default 0, force_lang 1, CPT properties traduisible, hreflang x-default",
+      "publisher": "WP SYNTEX",
+      "licenses": [
+        {
+          "license": {
+            "id": "GPL-2.0-or-later"
+          }
+        }
+      ],
+      "purl": "pkg:generic/polylang@3.8.7",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "polylang.3.8.7.zip — 704K (downloads.wordpress.org)"
+        }
+      ],
+      "externalReferences": [
+        {
+          "type": "distribution",
+          "url": "https://downloads.wordpress.org/plugin/polylang.3.8.7.zip"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "litespeed-cache",
+      "version": "7.9.1",
+      "description": "Cache optionnel — testé via litespeed-cache-isolation, peremption",
+      "publisher": "LiteSpeed Technologies",
+      "licenses": [
+        {
+          "license": {
+            "id": "GPL-3.0-or-later"
+          }
+        }
+      ],
+      "purl": "pkg:generic/litespeed-cache@7.9.1",
+      "properties": [
+        {
+          "name": "partikulier:status",
+          "value": "optionnel, teste en CI"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "playwright",
+      "version": "1.50.0",
+      "description": "QA visuelle — devDependency du thème pour tests/visual.mjs, charge.mjs",
+      "publisher": "Microsoft",
+      "licenses": [
+        {
+          "license": {
+            "id": "Apache-2.0"
+          }
+        }
+      ],
+      "purl": "pkg:npm/playwright@1.50.0",
+      "scope": "optional",
+      "properties": [
+        {
+          "name": "cdx:npm:package:bundled",
+          "value": "false"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "name": "pngjs",
+      "version": "7.0.0",
+      "description": "Diff pixel pour QA visuelle — devDependency",
+      "publisher": "pngjs",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:npm/pngjs@7.0.0",
+      "scope": "optional"
+    },
+    {
+      "type": "library",
+      "name": "phpstan",
+      "version": "2.2.16",
+      "description": "SAST statique niveau 5 — 110 fichiers, 0 erreur",
+      "publisher": "Ondřej Mirtes",
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "purl": "pkg:generic/phpstan@2.2.16",
+      "scope": "optional"
+    },
+    {
+      "type": "library",
+      "name": "chromium",
+      "version": "154.0.8037.92",
+      "description": "Navigateur headless pour captures 3 viewports (1920/768/390)",
+      "publisher": "Chromium",
+      "licenses": [
+        {
+          "license": {
+            "id": "BSD-3-Clause"
+          }
+        }
+      ],
+      "purl": "pkg:generic/chromium@154.0.8037.92",
+      "scope": "optional"
+    }
+  ],
+  "dependencies": [
+    {
+      "ref": "pkg:github/hajarbenmlih91-cloud/partikulier3@2.10.9-6.20.9",
+      "dependsOn": [
+        "pkg:composer/wordpress/wordpress@6.6",
+        "pkg:generic/php@8.4.26",
+        "pkg:generic/mariadb@11.8.6",
+        "pkg:github/hajarbenmlih91-cloud/partikulier3/plugin/partikulier-core@2.10.9",
+        "pkg:github/hajarbenmlih91-cloud/partikulier3/theme/partikulier@6.20.9",
+        "pkg:generic/estatik@4.3.6",
+        "pkg:generic/polylang@3.8.7"
+      ]
+    },
+    {
+      "ref": "pkg:github/hajarbenmlih91-cloud/partikulier3/plugin/partikulier-core@2.10.9",
+      "dependsOn": [
+        "pkg:composer/wordpress/wordpress@6.6",
+        "pkg:generic/php@8.4.26"
+      ]
+    },
+    {
+      "ref": "pkg:github/hajarbenmlih91-cloud/partikulier3/theme/partikulier@6.20.9",
+      "dependsOn": [
+        "pkg:github/hajarbenmlih91-cloud/partikulier3/plugin/partikulier-core@2.10.9",
+        "pkg:generic/estatik@4.3.6",
+        "pkg:generic/polylang@3.8.7",
+        "pkg:npm/playwright@1.50.0"
+      ]
+    }
+  ],
+  "compositions": [
+    {
+      "aggregate": "incomplete_first_party_only",
+      "assemblies": [
+        "pkg:github/hajarbenmlih91-cloud/partikulier3/plugin/partikulier-core@2.10.9",
+        "pkg:github/hajarbenmlih91-cloud/partikulier3/theme/partikulier@6.20.9"
+      ]
+    }
+  ],
+  "vulnerabilities": [],
+  "annotations": [
+    {
+      "subjects": [
+        "pkg:generic/estatik@4.3.6"
+      ],
+      "annotator": {
+        "component": {
+          "type": "application",
+          "name": "sca-audit",
+          "version": "2026-10-02"
+        }
+      },
+      "timestamp": "2026-10-02T11:15:38Z",
+      "text": "Aucune CVE critique ouverte à la date du build pour l'écosystème WordPress 6.6 / PHP 8.4. Écart prod 4.3.4 → 4.3.6 tracé."
+    }
+  ]
 }

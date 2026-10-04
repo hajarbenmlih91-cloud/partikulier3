@@ -162,13 +162,13 @@ final class RestController
 			'methods'             => 'GET',
 			'callback'            => function(): WP_REST_Response {
 				$raw  = $this->health()->get();
-				$code = $raw['status'] === 'ok' ? 200 : 503;
+				$code = ( $raw['status'] ?? 'ok' ) === 'ok' ? 200 : 503;
 				// Ne jamais cacher le health : sonde liveness/readiness pour orchestrator.
 				$headers = ['Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0'];
 				if ( ! current_user_can('manage_options') ) {
 					$resp = new WP_REST_Response([
-						'status'   => $raw['status'],
-						'database' => $raw['database'],
+						'status'   => $raw['status'] ?? 'ok',
+						'database' => $raw['database'] ?? 'ready',
 					], $code);
 					$resp->header('Cache-Control', $headers['Cache-Control']);
 					return $resp;
@@ -178,6 +178,33 @@ final class RestController
 				return $resp;
 			},
 			'permission_callback' => [$this, 'guardPublic'],
+		], 'plugin');
+
+		// Lot R1 — export Data Qualifiée pour n8n → Google Sheets
+		// GET /export/interests?since=…&limit=500 -> tableau 1 ligne = 1 intention
+		RouteRegistry::declare('/export/interests', [
+			'methods'             => 'GET',
+			'callback'            => static fn( \WP_REST_Request $r ) => \Partikulier\Core\Domain\Export\SheetsExportService::handle_rest_export($r),
+			'permission_callback' => static fn() => current_user_can('manage_options'),
+		], 'plugin');
+
+		// POST /lead/status {lead_id, status: valid/restricted/blocked/stop, note} -> bouton Sheets Valide<->Restreint
+		RouteRegistry::declare('/lead/status', [
+			'methods'             => 'POST',
+			'callback'            => static fn( \WP_REST_Request $r ) => \Partikulier\Core\Domain\Export\SheetsExportService::handle_rest_status($r),
+			'permission_callback' => static fn() => current_user_can('manage_options'),
+		], 'plugin');
+
+		// R2 : qualification particulier / intermédiaire — n8n appelle après la question
+		RouteRegistry::declare('/qualification', [
+			'methods'             => 'POST',
+			'callback'            => static fn( \WP_REST_Request $r ) => \Partikulier\Core\Domain\Leads\LeadService::rest_set_qualification($r),
+			'permission_callback' => static function( \WP_REST_Request $r ) {
+				$auth = \Partikulier\Core\Domain\Automation\AutomationService::check_automation_secret($r);
+				if ( true === $auth ) return true;
+				if ( current_user_can('manage_options') ) return true;
+				return $auth;
+			},
 		], 'plugin');
 	}
 
