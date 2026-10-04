@@ -24,6 +24,127 @@ Le thème délègue au plugin les domaines métier disponibles et conserve un mo
 
 ## Développement local
 
+### Exemple Docker complet (PowerShell)
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\docker\setup-local.ps1
+powershell -ExecutionPolicy Bypass -File .\docker\verify-local.ps1
+```
+
+Le premier script initialise les secrets manquants dans `.env` (ignoré par Git),
+remplace les mots de passe locaux `change-me`, conserve les volumes existants et
+migre l'instance n8n autonome `partikulier-n8n` vers Compose sans changer sa clé de
+chiffrement ni son compte propriétaire. Sauvegarder les données avant une première
+migration. Pour une instance n8n déjà initialisée, `N8N_EMAIL` et `N8N_PASSWORD`
+doivent correspondre au compte existant.
+Le volume `PK_N8N_VOLUME` est conservé ; une migration réutilise le volume nommé
+du conteneur autonome et refuse un montage incompatible. La rotation MySQL
+redémarre aussi une base arrêtée avec ses anciens identifiants avant de
+modifier `.env`. Si seul le volume subsiste, les anciens mots de passe doivent
+être présents dans `.env`. Les secrets et sauvegardes sont exclus du contexte
+de construction Docker par `.dockerignore`.
+
+Le site est accessible sur `http://localhost:8099`, n8n sur
+`http://localhost:5678` et les emails capturés sur `http://localhost:8025`.
+Les identifiants administrateur WordPress sont dans `PK_ADMIN_USER` /
+`PK_ADMIN_PASSWORD`, ceux de n8n dans `N8N_EMAIL` / `N8N_PASSWORD`.
+Le script configure Polylang FR/EN/AR, les outils AVIF, le jeu de démo avec photos,
+une annonce d'exemple et deux workflows n8n publiés : validation d'annonce vers
+Mailpit et appels acquéreur signés vers WordPress. Les contenus existants sont
+conservés ; un jeu de démo déjà présent n'est pas réimporté.
+
+Le proxy Caddy fournit un HTTPS privé entre WordPress et n8n. La confiance dans
+son certificat est installée au démarrage du conteneur et limitée au proxy dans
+le client HTTP WordPress. Le mode HMAC reste `enforce`. Le workflow de validation
+vérifie la signature HMAC du corps brut avant tout envoi Mailpit ; il ne demande
+pas l'ancien en-tête contenant le secret, retiré des appels sortants upstream.
+Le webhook acquéreur conserve son authentification par en-tête.
+L'accès aux variables
+d'environnement et au module `crypto` des nœuds Code n8n est activé pour signer
+les requêtes de cet exemple **local uniquement** ; les données d'exécution ne
+sont pas conservées. Les messages contenant les accès du propriétaire restent
+dans Mailpit. Aucun message WhatsApp réel n'est envoyé : Meta et un webhook
+HTTPS public doivent être configurés séparément.
+
+Après initialisation : `docker compose up -d` pour redémarrer et
+`docker compose stop` pour arrêter sans perdre les données. Ne pas utiliser
+`down -v` pour un simple redémarrage. Les mots de passe et la clé n8n ne doivent
+jamais être committés. La vérification d'exemple n'est pas la campagne complète
+de contrats CI.
+
+Pour préparer le test WhatsApp réel, renseigner les champs `META_*`,
+`WHATSAPP_*` et `N8N_PUBLIC_WEBHOOK_URL` de `.env`. Le script importe les deux
+credentials dans n8n et crée **Partikulier WhatsApp - real phone test (WordPress)**
+en brouillon. Il ne publie pas ce workflow et ne contacte pas Meta.
+Publier manuellement dans n8n pour enregistrer le webhook Meta. Le test accepte
+uniquement `WHATSAPP_TEST_RECIPIENT` : `TEST` affiche l'aide, une référence
+`PK-...` demande un contact propriétaire et `STOP` enregistre l'opposition.
+Configurer aussi le numéro Business dans **Apparence > Personnaliser >
+Validation WhatsApp > Numéro WhatsApp Business des demandes acquéreurs**.
+Le bouton **Demander sur WhatsApp** d'une fiche ouvre ce numéro avec sa référence
+préremplie ; l'acquéreur doit envoyer le message pour déclencher n8n. Le test
+demande d'abord la qualification du nouvel acquéreur. Répondre `PARTICULIER`
+ou `INTERMEDIAIRE`, puis renvoyer la référence ; WordPress décide du contact,
+du refus ou de la revue manuelle selon ses limites configurées.
+Les liens `localhost` du site ne sont accessibles que sur le PC.
+L'URL ngrok est utilisée pour les webhooks publics ; le pont HTTPS privé des
+validations WordPress reste inchangé. Un workflow WhatsApp déjà publié doit être
+dépublié manuellement avant de réimporter son brouillon.
+
+Pour vérifier une intégration dans un autre worktree, utiliser des volumes,
+ports, projet Compose et image WordPress distincts. Le seul changement de nom
+du projet ne suffit pas : `PK_N8N_VOLUME` est un volume externe partagé.
+Ne pas lancer `setup-local.ps1` sur une pile isolée : ses noms de conteneurs et
+volumes ciblent la pile locale `partikulier`. `setup-n8n.ps1` accepte `-BaseUrl` ;
+`verify-local.ps1` accepte `-EnvFile`, `-SiteUrl`, `-N8nUrl`, `-MailpitUrl` et
+`-ComposeProject` pour viser explicitement la pile de test.
+
+**Blocage d'intégration sur `origin/main` (`e1fdcb8`)** : le contact automatisé
+d'un propriétaire dont le numéro est chiffré retourne `owner_unavailable`.
+La lecture utilise le déchiffrement réservé à `manage_options`, alors que
+l'appel HMAC n'est pas une session administrateur. Ne pas contourner cette
+garde ni remplacer le stockage chiffré par du texte clair. Cette intégration
+ne doit pas être publiée ou déployée avant correction et rejeu du parcours.
+
+Les contrats `core-contract`, `leads-contract` et `leads-domain-contract`
+vérifient désormais la qualification explicite avant acceptation et la revue
+manuelle au troisième contact en 24 heures. Le contrat d'automatisation vérifie
+les cinq en-têtes signés, sans transmission du secret brut. Ces ajustements du
+banc ne corrigent pas le blocage des numéros propriétaire chiffrés.
+
+La recette de cette intégration conserve l'oracle **454/454 sur 44 suites** :
+inventaire exact de 19 routes, schéma 2.9.0 et manifeste de 23 tables. L'effacement
+supprime également les recherches et profils rattachés au lead, sans supprimer
+les recherches anonymes. Les traits d'entrée/qualification et de recherche
+conservent les API publiques et les seuils de taille des modules. Les catalogues
+compilés sont régénérés depuis les sources canoniques (633 entrées AR, 581 EN)
+et vérifiés à l'octet près par `php scripts/build-catalogs.php --check`.
+
+Le contrat de fusion vérifie aussi les alias de téléphone dans un même compteur
+de connexion, le refus de connexion après cinq échecs, les cookies de passerelle
+signés avec expiration contrôlée côté serveur, et le 2FA via le formulaire
+WordPress standard (aucun mot de passe caché dans un second formulaire).
+Les anciens cookies de passerelle devront être renouvelés après déploiement.
+Chaque erreur SQL du contact provoque un rollback ; seuls les deadlocks sont
+réessayés, au maximum trois fois. Les sondes de santé cessent les lectures dès
+que le ping échoue. La concurrence conserve la qualification et la revue
+manuelle au troisième contact, et la démo installe exactement 15 ventes et
+15 locations sans toucher aux annonces réelles.
+
+L'intégration reprend aussi `origin/main` au commit `c3b4b0c`, notamment le
+retrait du contrôle « Réinitialiser » et la passerelle d'administration à
+cookie `SameSite=Lax`. Le téléphone, ses alias et l'adresse e-mail d'un même
+compte partagent le compteur de connexion. Les contrôles de taille restent
+stricts grâce aux traits extraits : aucune exemption de module surdimensionné.
+Les scripts CLI et le bootstrap de l'accueil FR/EN/AR ajoutés upstream sont
+également conservés, sans exécuter le workflow de déploiement.
+Les compteurs, réinstallations et purges de démo couvrent toutes les langues
+Polylang, et ne sélectionnent que les annonces et médias marqués comme démo.
+La recette navigateur FR/EN/AR conserve les modales autres que l'authentification
+Estatik. La validation du dépôt contrôle les contraintes HTML des champs visibles
+(notamment longueur minimale et e-mail), affiche le message localisé et restaure
+le bouton après un refus applicatif.
+
 ```bash
 make lint
 make package

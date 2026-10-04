@@ -89,10 +89,26 @@ $e55Fixtures = [
     'pk_saved_alerts' => ['lead_id' => $e55LeadId, 'criteria' => '{"city":"e55"}',
         'criteria_signature' => hash('sha256', 'e55-' . $run), 'consent_message_id' => 'e55-' . $run,
         'created_at' => $e55Now, 'updated_at' => $e55Now],
+    'pk_search_events' => ['lead_id' => $e55LeadId, 'visitor_hash' => hash('sha256', 'e55-' . $run),
+        'filters_json' => '{"city":"e55"}', 'filters_signature' => hash('sha256', 'e55-filters-' . $run),
+        'created_at' => $e55Now],
+    'pk_buyer_profiles' => ['lead_id' => $e55LeadId, 'villes' => '[]', 'quartiers' => '[]',
+        'types' => '[]', 'etages' => '[]', 'ensoleillements' => '[]', 'areas' => '[]',
+        'top_criteria' => '[]', 'updated_at' => $e55Now],
 ];
 foreach ($e55Fixtures as $suffix => $row) {
-    $wpdb->insert($prefix . $suffix, $row);
+    if (false === $wpdb->insert($prefix . $suffix, $row)) {
+        throw new RuntimeException('Cannot seed erase fixture: ' . $suffix . ' ' . $wpdb->last_error);
+    }
 }
+if (false === $wpdb->insert($prefix . 'pk_search_events', [
+    'lead_id' => null, 'visitor_hash' => hash('sha256', 'e55-anonymous-' . $run),
+    'filters_json' => '{}', 'filters_signature' => hash('sha256', 'e55-anonymous-filters-' . $run),
+    'created_at' => $e55Now,
+])) {
+    throw new RuntimeException('Cannot seed anonymous search fixture: ' . $wpdb->last_error);
+}
+$e55AnonymousSearchId = (int) $wpdb->insert_id;
 /* Livraisons de l'alerte (pk_alert_deliveries, clé alert_id sans lead_id) :
    condition R6 du vérificateur croisé — purgées avec l'alerte. */
 $e55AlertId = (int) $wpdb->get_var($wpdb->prepare(
@@ -118,8 +134,12 @@ $e55LeadRowLeft = (int) $wpdb->get_var($wpdb->prepare(
 if ($e55LeadRowLeft > 0) {
     $e55Residue[] = 'pk_buyer_leads=' . $e55LeadRowLeft;
 }
-$assert('E55-002', $e55Residue === [],
-    'E-5501 : zéro rémanence sur les 9 tables portant lead_id' . ($e55Residue ? ' (résidus : ' . implode(', ', $e55Residue) . ')' : ''));
+$e55AnonymousLeft = (int) $wpdb->get_var($wpdb->prepare(
+    "SELECT COUNT(*) FROM {$prefix}pk_search_events WHERE id = %d AND lead_id IS NULL", $e55AnonymousSearchId));
+$assert('E55-002', $e55Residue === [] && $e55AnonymousSearchId > 0 && $e55AnonymousLeft === 1,
+    'E-5501 : zéro rémanence sur les 11 tables du lead ; recherche anonyme conservée'
+    . ($e55Residue ? ' (résidus : ' . implode(', ', $e55Residue) . ')' : ''));
+$wpdb->delete($prefix . 'pk_search_events', ['id' => $e55AnonymousSearchId], ['%d']);
 /* Invariant E-5502 (structurel) : toute table pk_* du schéma portant une
    colonne lead_id figure dans la liste codée en dur de erase_lead() — le
    test échouera pour toute table domaine future non couverte. */
@@ -143,11 +163,11 @@ $e55AuditRow = $wpdb->get_row($wpdb->prepare(
     "SELECT metadata_json FROM {$auditTable} WHERE action = 'lead_erased' AND object_id = %d ORDER BY id DESC LIMIT 1",
     $e55LeadId), ARRAY_A);
 $e55AuditMeta = is_array($e55AuditRow) ? json_decode((string) $e55AuditRow['metadata_json'], true) : null;
-/* NB : « tables = 11 » = les 11 tables portant lead_id (invariant E-5502,
- * + pk_search_events + pk_buyer_profiles depuis R1 2.10.16).
- * pk_alert_deliveries est purgée par sous-requête alert_id (E55-005). */
+/* NB : « tables = 9 » = les 9 tables portant lead_id (invariant E-5502).
+ * La 10e table touchée par erase, pk_alert_deliveries, est purgée par
+ * sous-requête alert_id et validée séparément par E55-005 ci-dessous. */
 $assert('E55-004', is_array($e55AuditMeta) && (int) ($e55AuditMeta['tables'] ?? 0) === 11,
-    'E-5501 : l\'audit lead_erased est écrit avec le nouveau compte de la cascade (tables = 11, tables lead_id)');
+    'E-5501 : audit lead_erased avec le compte exact de la cascade (tables = 11)');
 $e55DelivLeft = (int) $wpdb->get_var($wpdb->prepare(
     "SELECT COUNT(*) FROM {$prefix}pk_alert_deliveries WHERE alert_id = %d", $e55AlertId));
 $assert('E55-005', $e55DelivLeft === 0,

@@ -264,7 +264,7 @@ try {
         sprintf('HMC enforce : verdict %s/%d identique sur les deux passes, zéro écriture d\'audit',
             $e2['code'], $e2['status']));
 
-    /* (9) Balayage statique des 18 déclarations (Annexe A) — classification
+    /* (9) Balayage statique des 21 déclarations (Annexe A + R1/R2) — classification
      *     des gardes + marqueurs structurels. Toute garde non classée
      *     échoue (règle E-1610 : toute future garde à effet de bord est
      *     soumise à la même exigence). */
@@ -274,7 +274,7 @@ try {
         $findings = [];
         $ok = true;
 
-        /* (9a) Plugin : 8 déclarations RouteRegistry::declare, chaque
+        /* (9a) Plugin : 11 déclarations RouteRegistry::declare, chaque
          *      permission_callback classée. */
         $controller = (string) file_get_contents($pluginSrc . '/RestController.php');
         $chunks = array_slice(explode('RouteRegistry::declare(', $controller), 1);
@@ -286,20 +286,28 @@ try {
                 continue;
             }
             $expr = $m[1];
-            // Classer aussi le corps du chunk : /qualification est un callback
-            // multi-ligne (HMAC n8n OU manage_options), /export et /lead/status
-            // sont capability manage_options (R1 Sheets).
             if (strpos($expr, 'guardPublic') !== false || strpos($expr, 'guardWrite') !== false
                 || strpos($expr, 'guardLead') !== false || strpos($expr, 'guardPrivate') !== false) {
                 $pluginGuards[] = 'rate-limiter';
-            } elseif (strpos($expr, 'check_erase_secret') !== false || strpos($chunk, 'check_erase_secret') !== false) {
+            } elseif (strpos($expr, 'check_erase_secret') !== false) {
                 $pluginGuards[] = 'request-cycle';
-            } elseif (strpos($expr, 'check_automation_secret') !== false || strpos($chunk, 'check_automation_secret') !== false) {
+            } elseif (strpos($expr, 'check_automation_secret') !== false) {
                 $pluginGuards[] = 'request-cycle';
-            } elseif (strpos($chunk, "current_user_can('manage_options')") !== false) {
-                $pluginGuards[] = 'capability';
+            } elseif (preg_match("/^static fn\\(\\)\\s*=>\\s*current_user_can\\('manage_options'\\),?$/", trim($expr))) {
+                $pluginGuards[] = 'pure-capability';
+            } elseif (preg_match('/^\s*\'\/qualification\'/', $chunk)
+                && preg_match('/\'permission_callback\'\s*=>\s*static function\(\s*\\\\WP_REST_Request\s+\$r\s*\)\s*\{(.*?)\n\s*\},/s', $chunk, $guard)) {
+                $body = preg_replace('/\s+/', ' ', trim($guard[1]));
+                $expectedBody = '$auth = \Partikulier\Core\Domain\Automation\AutomationService::check_automation_secret($r);'
+                    . ' if ( true === $auth ) return true; if ( current_user_can(\'manage_options\') ) return true; return $auth;';
+                $pluginGuards[] = 'request-cycle';
+                if ($body !== $expectedBody) {
+                    $findings[] = 'qualification : garde HMAC par cycle + repli administrateur modifiée';
+                    $ok = false;
+                }
             } else {
                 $pluginGuards[] = 'NON-CLASSÉE : ' . trim($expr);
+                $findings[] = 'garde plugin non classée : ' . trim($expr);
                 $ok = false;
             }
         }
@@ -366,10 +374,11 @@ try {
         }
 
         return [$ok, array_merge([
-            sprintf('18 déclarations : plugin %d (rate-limiter %d, request-cycle %d), thème register_route %d (garde forcée par le pont), /owner/* %d (pure)',
+            sprintf('21 déclarations : plugin %d (rate-limiter %d, request-cycle %d, capability pure %d), thème register_route %d (garde forcée par le pont), /owner/* %d (pure)',
                 count($pluginGuards),
                 count(array_keys($pluginGuards, 'rate-limiter', true)),
                 count(array_keys($pluginGuards, 'request-cycle', true)),
+                count(array_keys($pluginGuards, 'pure-capability', true)),
                 $themeRuntime, $ownerDeclares),
         ], $findings)];
     };

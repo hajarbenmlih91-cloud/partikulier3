@@ -70,9 +70,9 @@ try {
         'POST /preferences',
         'POST /qualification',
     ];
-    $missing = array_diff($expected, $flat);
-    $assert('ROUTE-001', count($flat) === 19 && $missing === [],
-        'inventaire partikulier/v1 : 19 routes attendues, ' . count($flat) . ' déclarées (10 plugin + 9 thème — /export/interests + /lead/status + /qualification depuis R1/R3 ; /automation-event côté plugin depuis B4 ; les 2 routes /owner/* restent côté thème)');
+    sort($expected);
+    $assert('ROUTE-001', $flat === $expected,
+        'inventaire partikulier/v1 : 19 routes attendues, ' . count($flat) . ' déclarées, qualification et export inclus');
 
     // 2) Aucune collision : ni refus en mémoire, ni persisté.
     $assert('ROUTE-002', RouteRegistry::collisionCount() === 0 && RouteRegistry::refusedDeclarations() === [],

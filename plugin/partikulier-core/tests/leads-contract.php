@@ -19,6 +19,7 @@ if (!preg_match('/^[0-9a-f]{40}$/', $commit)) { fwrite(STDERR, "PK_COMMIT doit �
 require $wpDir . '/wp-load.php';
 
 use Partikulier\Core\Integration\LeadBridge;
+use Partikulier\Core\Domain\Leads\LeadService;
 
 $started = gmdate('c');
 $results = [];
@@ -72,33 +73,25 @@ try {
         'name' => 'Test Contract',
         'email' => 'contract@example.test',
     ]));
+    $unqualified = rest_do_request($request);
+    $qualificationRequired = $unqualified->get_status() === 409
+        && ($unqualified->get_data()['data']['reason'] ?? '') === 'need_qualification';
+    $leadIds[] = LeadService::lead_id_for_phone($phone);
+    $qualified = LeadService::set_qualification($phone, true);
     $response = rest_do_request($request);
-    $data = (array) ($response->get_data()['data'] ?? $response->get_data());
-    // R2/R3 : premier contact → need_qualification (409/200). On auto-qualifie pour le contrat.
-    $reason = $data['reason'] ?? $data['data']['reason'] ?? '';
-    if (in_array($response->get_status(), [200, 409], true) && $reason === 'need_qualification') {
-        $tmpId = (int) ($data['lead_id'] ?? $data['data']['lead_id'] ?? 0);
-        if (!$tmpId) {
-            $hashTmp = hash_hmac('sha256', $phone, wp_salt('auth'));
-            $tmpId = (int) $wpdb->get_var($wpdb->prepare("SELECT id FROM {$prefix}pk_buyer_leads WHERE phone_hash = %s", $hashTmp));
-        }
-        if ($tmpId) {
-            $wpdb->update($prefix . 'pk_buyer_leads', ['is_particulier' => 1], ['id' => $tmpId], ['%d'], ['%d']);
-            $response = rest_do_request($request);
-            $data = (array) ($response->get_data()['data'] ?? $response->get_data());
-        }
-    }
-    $leadIds[] = (int) ($data['lead_id'] ?? $data['data']['lead_id'] ?? 0);
+    $data = (array) ($response->get_data()['data'] ?? []);
+    $leadIds[] = (int) ($data['lead_id'] ?? 0);
     $hash = hash_hmac('sha256', $phone, wp_salt('auth'));
     $leadRow = $wpdb->get_row($wpdb->prepare("SELECT id, phone_hash FROM {$prefix}pk_buyer_leads WHERE phone_hash = %s", $hash), ARRAY_A);
-    $interest = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$prefix}pk_interest_events WHERE lead_id = %d AND property_id = %d", (int) ($data['lead_id'] ?? $data['data']['lead_id'] ?? 0), $primary));
-    $disclosure = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$prefix}pk_contact_disclosures WHERE lead_id = %d AND property_id = %d", (int) ($data['lead_id'] ?? $data['data']['lead_id'] ?? 0), $primary));
-    $followup = $wpdb->get_row($wpdb->prepare("SELECT note FROM {$prefix}pk_lead_followups WHERE lead_id = %d", (int) ($data['lead_id'] ?? $data['data']['lead_id'] ?? 0)), ARRAY_A);
+    $interest = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$prefix}pk_interest_events WHERE lead_id = %d AND property_id = %d", (int) ($data['lead_id'] ?? 0), $primary));
+    $disclosure = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$prefix}pk_contact_disclosures WHERE lead_id = %d AND property_id = %d", (int) ($data['lead_id'] ?? 0), $primary));
+    $followup = $wpdb->get_row($wpdb->prepare("SELECT note FROM {$prefix}pk_lead_followups WHERE lead_id = %d", (int) ($data['lead_id'] ?? 0)), ARRAY_A);
     $note = $followup ? (array) json_decode((string) $followup['note'], true) : null;
-    $assert('LEAD-001', $response->get_status() === 201 && (int) ($data['lead_id'] ?? $data['data']['lead_id'] ?? 0) > 0
+    $assert('LEAD-001', $qualificationRequired && $qualified
+        && $response->get_status() === 201 && (int) ($data['lead_id'] ?? 0) > 0
         && is_array($leadRow) && (int) $interest === 1 && (int) $disclosure === 1
         && is_array($note) && ($note['source'] ?? '') === 'rest_api' && ($note['email'] ?? '') === 'contract@example.test',
-        'lead accepté → dispositif complet : buyer_leads + interest + disclosure + suivi contextuel');
+        'qualification explicite puis lead accepté : buyer_leads + interest + disclosure + suivi contextuel');
 
     // 2) Contact avec le courriel initial absent de toute zone de stockage parallèle.
     $commentRows = (int) $wpdb->get_var($wpdb->prepare(
@@ -129,7 +122,7 @@ try {
     $unknownResult = rest_do_request($unknown);
     $assert('LEAD-005', $unknownResult->get_status() === 404, 'annonce inconnue → 404');
 
-    // 6) Plafonnement quotidien : deux propriétaires distincts puis refus.
+    // 6) R3 : le troisième contact en 24 heures requiert une revue manuelle.
     $second = rest_do_request((static function () use ($phone, $propertyIds): WP_REST_Request {
         $r = new WP_REST_Request('POST', '/partikulier/v1/leads');
         $r->set_header('Content-Type', 'application/json');
@@ -142,11 +135,11 @@ try {
         $r->set_body(wp_json_encode(['phone' => $phone, 'property_id' => $propertyIds[2]]));
         return $r;
     })());
-    $thirdData = (array) ($third->get_data()['data'] ?? $third->get_data());
-    $thirdReason = $thirdData['reason'] ?? $thirdData['code'] ?? '';
-    $assert('LEAD-006', $second->get_status() === 201 && in_array($third->get_status(), [409, 429], true)
-        && in_array($thirdReason, ['manual_review', 'daily_limit', 'lead_daily_limit'], true),
-        'plafonnement quotidien identique au parcours site : 2 contacts puis 429/409 (R3 manual_review)');
+    $thirdData = (array) $third->get_data();
+    $assert('LEAD-006', $second->get_status() === 201 && $third->get_status() === 409
+        && ($thirdData['code'] ?? '') === 'lead_refused'
+        && ($thirdData['data']['reason'] ?? '') === 'manual_review',
+        'plafonnement R3 identique au parcours site : 2 contacts puis revue manuelle, sans divulgation');
 
     // 7) Migration des leads-commentaires : idempotente et journalisée.
     $commentId = wp_insert_comment([

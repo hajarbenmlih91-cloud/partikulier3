@@ -76,15 +76,35 @@ for (const [engineName, engine] of Object.entries({ chromium, firefox, webkit })
             assert.ok(listingState.colors.length >= 2, 'Contact-card contrast elements are present');
             for (const colors of listingState.colors) assert.ok(ratio(colors.color, colors.background) >= 4.5, `WCAG text contrast: ${JSON.stringify(colors)}`);
             const modal = await page.evaluate(() => {
-              const node = document.createElement('div');
-              node.className = 'mfp-wrap';
-              node.style.display = 'block';
-              document.body.append(node);
-              const visible = getComputedStyle(node).display !== 'none';
-              node.remove();
-              return visible;
+              const nodes = [];
+              const authHidden = [];
+              for (const selector of ['id', 'class']) {
+                const backdrop = document.createElement('div');
+                backdrop.className = 'mfp-bg';
+                const wrapper = document.createElement('div');
+                wrapper.className = 'mfp-wrap';
+                const popup = document.createElement('div');
+                if (selector === 'id') popup.id = 'es-authentication-popup';
+                else popup.className = 'es-auth__popup';
+                wrapper.append(popup);
+                document.body.append(backdrop, wrapper);
+                nodes.push(backdrop, wrapper);
+                authHidden.push(getComputedStyle(wrapper).display === 'none'
+                  && getComputedStyle(backdrop).display === 'none');
+              }
+              const backdrop = document.createElement('div');
+              backdrop.className = 'mfp-bg';
+              const wrapper = document.createElement('div');
+              wrapper.className = 'mfp-wrap';
+              document.body.append(backdrop, wrapper);
+              nodes.push(backdrop, wrapper);
+              const unrelatedVisible = getComputedStyle(wrapper).display !== 'none'
+                && getComputedStyle(backdrop).display !== 'none';
+              nodes.forEach(node => node.remove());
+              return { unrelatedVisible, authHidden };
             });
-            assert.ok(modal, 'Unrelated Magnific Popup wrappers are not globally suppressed');
+            assert.ok(modal.unrelatedVisible, 'Unrelated Magnific Popup wrappers/backdrops are not globally suppressed');
+            assert.ok(modal.authHidden.every(Boolean), 'Only Estatik authentication wrappers and their paired backdrops are suppressed');
             results.push({ engine: engineName, width, language, check: 'gallery/contrast/modal', status: 'PASS' });
 
             await page.goto(fixture.deposits[language], { waitUntil: 'domcontentloaded' });
@@ -106,6 +126,11 @@ for (const [engineName, engine] of Object.entries({ chromium, firefox, webkit })
             await page.waitForFunction(text => document.querySelector('#pk-form-status').textContent.includes(text), required[language]);
             const original = await page.locator('#pk-submit-btn').textContent();
             await page.locator('#pk-name').fill('Fixture Owner');
+            await page.locator('#pk-email').fill('invalid-email');
+            await page.locator('#pk-submit-btn').click();
+            assert.equal(submits, 0, 'Invalid optional email cannot submit');
+            await page.waitForFunction(text => document.querySelector('#pk-form-status').textContent.includes(text), required[language]);
+            await page.locator('#pk-email').fill('');
             await page.locator('#pk-submit-btn').click();
             await page.waitForFunction(() => document.querySelector('#pk-form-status').textContent.includes('Fixture rejection'));
             assert.equal(submits, 1, 'Valid visible fields submit once');

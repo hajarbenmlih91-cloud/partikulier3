@@ -266,17 +266,14 @@ try {
         if (is_array($outgoing)) {
             $expectedCanonical = "POST\n/hook/abc?x=1\n" . $outgoing['X-Partikulier-Timestamp'] . "\n" . $body;
             $expectedSig = 'sha256=' . hash_hmac('sha256', $expectedCanonical, AutomationProbe::hmac_key((string) $keys[$keyId]));
-            // R3 : le secret partagé NE circule plus en clair dans les en-têtes
-            // sortants (5 headers, plus de X-Partikulier-Automation). La
-            // signature HMAC suffit. Le contrat historique (6 headers + secret)
-            // documentait une fuite — on verrouille le comportement durci.
             $outgoingOk = count($outgoing) === 5
                 && ($outgoing['Content-Type'] ?? '') === 'application/json'
                 && ($outgoing['X-Partikulier-Key-Id'] ?? '') === $keyId
                 && ($outgoing['X-Partikulier-Algorithm'] ?? '') === 'sha256'
-                && !isset($outgoing['X-Partikulier-Automation'])
+                && !array_key_exists('X-Partikulier-Automation', $outgoing)
+                && !in_array($secret, $outgoing, true)
                 && hash_equals($expectedSig, (string) ($outgoing['X-Partikulier-Signature'] ?? ''));
-            $outgoingDetail = '5 en-têtes (sans secret en clair), algorithme sha256, clé ' . $keyId . ', signature re-calculable (chemin + requête entrant dans le canonique)';
+            $outgoingDetail = '5 en-têtes, secret partagé absent, algorithme sha256, clé ' . $keyId . ', signature re-calculable (chemin + requête entrant dans le canonique)';
         }
         $assert('B4A-013', $outgoingOk, $outgoingDetail);
 

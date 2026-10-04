@@ -33,8 +33,7 @@ class Partikulier_Security {
 
 		// 2. Rate Limiting à la connexion (Anti-Brute Force composite CGNAT)
 		add_filter( 'authenticate', array( __CLASS__, 'guard_login_brute_force' ), 5, 3 );
-		add_filter( 'authenticate', array( __CLASS__, 'guard_login_brute_force' ), 101, 3 );
-		add_filter( 'authenticate', array( __CLASS__, 'unify_authentication_error' ), 102, 3 );
+		add_filter( 'authenticate', array( __CLASS__, 'finalize_login_verdict' ), 100, 3 );
 		add_action( 'wp_login_failed', array( __CLASS__, 'track_login_failure' ) );
 		add_action( 'wp_login', array( __CLASS__, 'reset_login_attempts' ), 10, 2 );
 
@@ -88,16 +87,17 @@ class Partikulier_Security {
 		}
 
 		$cookie_name   = 'pk_admin_access';
+
 		$provided_key = isset( $_GET['pk_admin_key'] ) && is_string( $_GET['pk_admin_key'] ) ? sanitize_text_field( wp_unslash( $_GET['pk_admin_key'] ) ) : '';
 		if ( '' === $provided_key && isset( $_GET['pk_direction'] ) && is_string( $_GET['pk_direction'] ) ) {
 			$provided_key = sanitize_text_field( wp_unslash( $_GET['pk_direction'] ) );
 		}
 
 		if ( '' !== $provided_key && hash_equals( $secret_key, $provided_key ) ) {
-			$expires = time() + 7200;
-			$token = $expires . '.' . hash_hmac( 'sha256', $expires . '|' . $secret_key, wp_salt( 'auth' ) );
+			$expiry = time() + 7200;
+			$token  = $expiry . '.' . hash_hmac( 'sha256', $expiry . '|' . $secret_key, wp_salt( 'auth' ) );
 			setcookie( $cookie_name, $token, array(
-				'expires' => $expires,
+				'expires' => $expiry,
 				'path' => COOKIEPATH ?: '/',
 				'domain' => COOKIE_DOMAIN ?: '',
 				'secure' => is_ssl(),
@@ -107,11 +107,7 @@ class Partikulier_Security {
 			return;
 		}
 
-		if ( isset( $_COOKIE[ $cookie_name ] ) && is_string( $_COOKIE[ $cookie_name ] ) && self::valid_admin_access_token( $_COOKIE[ $cookie_name ], $secret_key ) ) {
-			return;
-		}
-
-		if ( 'POST' === ( $_SERVER['REQUEST_METHOD'] ?? '' ) && isset( $_COOKIE[ $cookie_name ] ) ) {
+		if ( isset( $_COOKIE[ $cookie_name ] ) && self::valid_admin_access_token( $_COOKIE[ $cookie_name ], $secret_key ) ) {
 			return;
 		}
 
@@ -122,11 +118,16 @@ class Partikulier_Security {
 	}
 
 	public static function valid_admin_access_token( $token, $secret_key ) {
-		$parts = explode( '.', (string) $token, 2 );
-		if ( count( $parts ) !== 2 || ! ctype_digit( $parts[0] ) || (int) $parts[0] <= time() || (int) $parts[0] > time() + 7200 ) {
+		if ( ! is_string( $token ) || ! preg_match( '/^([0-9]{10})\.([a-f0-9]{64})$/D', $token, $parts ) ) {
 			return false;
 		}
-		return hash_equals( hash_hmac( 'sha256', $parts[0] . '|' . $secret_key, wp_salt( 'auth' ) ), $parts[1] );
+		$expiry = (int) $parts[1];
+		$now    = time();
+		if ( $expiry <= $now || $expiry > $now + 7200 ) {
+			return false;
+		}
+		$expected = hash_hmac( 'sha256', $parts[1] . '|' . $secret_key, wp_salt( 'auth' ) );
+		return hash_equals( $expected, $parts[2] );
 	}
 
 	/**
@@ -141,7 +142,7 @@ class Partikulier_Security {
 	}
 
 	public static function unify_authentication_error( $user, $username = null, $password = null ) {
-		if ( $user instanceof WP_Error && array_intersect( $user->get_error_codes(), array( 'invalid_username', 'invalid_email', 'incorrect_password' ) ) ) {
+		if ( $user instanceof WP_Error && array_intersect( $user->get_error_codes(), array( 'invalid_username', 'invalid_email', 'incorrect_password', 'authentication_failed' ) ) ) {
 			return new WP_Error( 'pk_auth_invalid', __( 'Identifiant ou mot de passe incorrect.', 'partikulier' ) );
 		}
 		return $user;
@@ -178,6 +179,12 @@ class Partikulier_Security {
 			);
 		}
 		return $user;
+	}
+
+	public static function finalize_login_verdict( $user, $username, $password ) {
+		// WordPress password filters may replace the earlier rate-limit error.
+		$user = self::guard_login_brute_force( $user, $username, $password );
+		return self::unify_authentication_error( $user, $username, $password );
 	}
 
 	public static function track_login_failure( $username ) {

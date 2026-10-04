@@ -107,11 +107,11 @@ trait LeadsPrivacyTrait
 			}
 		}
 		$wpdb->query('COMMIT');
-		/* Invariant E-5502 : erase touche 12 tables au total = les 11 tables
-		 * portant lead_id (comptées ici, + pk_search_events + pk_buyer_profiles
-		 * depuis R1) + pk_alert_deliveries purgée par sous-requête alert_id
-		 * (validée séparément par E55-005). Le « tables = N » de l'audit est
-		 * le compte des tables lead_id, pas le nombre total de tables. */
+		/* Invariant E-5502 : erase touche 12 tables au
+		 * total = les 11 tables du lead (comptées ici) +
+		 * pk_alert_deliveries purgée par sous-requête alert_id ci-dessus
+		 * (validée séparément par E55-005). Le « tables = 11 » de l'audit est
+		 * donc le compte des tables lead_id, pas le nombre total de tables. */
 		self::audit('lead_erased', 'lead', $lead_id, ['tables' => count($tables)]);
 		return true;
 	}

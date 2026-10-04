@@ -351,26 +351,26 @@
 							generateListingTitle();
 					}
 
-				// Champs visibles : required + minlength/pattern (novalidate sur le form).
-				var missing = [];
-				form.querySelectorAll("input, select, textarea").forEach(function (inp) {
-						if (inp.disabled || inp.type === "hidden") return;
-						var step = inp.closest(".pk-step");
-						if (step && step.hidden) return;
-						if (inp.closest("[hidden]")) return;
-						inp.classList.remove("pk-invalid");
-						if ((inp.required && ! String(inp.value).trim()) || ! inp.checkValidity()) {
-								missing.push(inp);
-								inp.classList.add("pk-invalid");
-						}
-				});
+					// Vérification des champs obligatoires visibles
+					var missing = [];
+					form.querySelectorAll("input, select, textarea").forEach(function (inp) {
+							if (inp.disabled || inp.type === "hidden" || inp.closest("[hidden]")) return;
+							var step = inp.closest(".pk-step");
+							if (step && step.hidden) return; // Les étapes masquées ont déjà été vérifiées par le stepper
+							if (!inp.checkValidity() || (inp.required && ! String(inp.value).trim())) {
+									missing.push(inp);
+									inp.classList.add("pk-invalid");
+							} else {
+									inp.classList.remove("pk-invalid");
+							}
+					});
 
-				if (missing.length > 0) {
-						missing[0].focus();
-						setStatus((window.pkConfig && pkConfig.i18n && pkConfig.i18n.requiredFields) || "Veuillez vérifier les champs obligatoires.");
-						if (statusEl) statusEl.style.color = "#c0392b";
-						return;
-				}
+					if (missing.length > 0) {
+							missing[0].focus();
+							setStatus("✘ " + ((pkConfig.i18n && pkConfig.i18n.requiredFields) || "Veuillez vérifier les champs obligatoires."));
+							if (statusEl) statusEl.style.color = "#c0392b";
+							return;
+					}
 
 					submitBtn.disabled    = true;
 					var originalText      = submitBtn.textContent;

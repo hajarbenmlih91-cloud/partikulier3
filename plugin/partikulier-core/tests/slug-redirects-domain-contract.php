@@ -68,7 +68,7 @@ try {
     global $wpdb;
     $table = SlugRedirectsService::redirects_table();
 
-    // 1) Versions : schéma 2.7.0 (constante, option, health), versions d'artefact figées hors bump.
+    // 1) Versions : schéma 2.9.0 (constante, option, health), livraison intégrée.
     $health = (new HealthCheck())->get();
     $pluginDomains = count(array_filter($health['domains'] ?? [], static fn($d) => ($d['owner'] ?? '') === 'plugin'));
     $assert('E43-001', Schema::VERSION === '2.9.0'
@@ -102,7 +102,7 @@ try {
             $table, $exists ? 'présente' : 'ABSENTE', $columnsOk ? 'ok' : 'incomplètes',
             $uniqueSlug ? 'ok' : 'absent', $keyProperty ? 'ok' : 'absent'));
 
-    // 3) Manifeste : 21 tables, pk_slug_redirects plugin/listings/ML, 0 thème, 8/8 domaines.
+    // 3) Manifeste : 23 tables, pk_slug_redirects plugin/listings/ML, 0 thème, 8/8 domaines.
     $manifest = Schema::domainTables();
     $themeOwned = array_filter($manifest, static fn(array $d) => ($d['owner'] ?? '') === 'theme');
     $entry = $manifest['pk_slug_redirects'] ?? [];
@@ -111,7 +111,7 @@ try {
     $assert('E43-003', count($manifest) === 23 && $themeOwned === []
         && ($entry['owner'] ?? '') === 'plugin' && ($entry['domain'] ?? '') === 'listings' && ($entry['lot'] ?? '') === 'ML'
         && $pluginDomains === 8 && $slugTableHealthy,
-        sprintf('manifeste : %d/21 tables pk_, 0 côté thème, pk_slug_redirects owner=%s domain=%s lot=%s, %d/8 domaines plugin, health listings %s',
+        sprintf('manifeste : %d/23 tables pk_, 0 côté thème, pk_slug_redirects owner=%s domain=%s lot=%s, %d/8 domaines plugin, health listings %s',
             count($manifest), $entry['owner'] ?? '?', $entry['domain'] ?? '?', $entry['lot'] ?? '?',
             $pluginDomains, $slugTableHealthy ? '4/4 tables' : 'slug_redirects manquante'));
 

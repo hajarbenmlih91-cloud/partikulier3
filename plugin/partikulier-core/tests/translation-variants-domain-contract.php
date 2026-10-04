@@ -220,15 +220,14 @@ try {
     $assert('B6A-015', $domainsOk,
         'health check : translation_variants owner=plugin, 1/1 table, 8/8 domaines plugin (lot B COMPLET), 0 collision');
 
-    // 16) Manifeste : les 21 tables pk_ suivies (la 21e, pk_slug_redirects,
-    //     vient du micro-lot pré-prod, lot ML — postérieur au lot B),
+    // 16) Manifeste : les 23 tables pk_ suivies, recommandation R1 incluse,
     //     traduction_variants marqué B6, aucune table restée côté thème.
     $manifest = \Partikulier\Core\Database\Schema::domainTables();
     $themeOwned = array_filter($manifest, static fn(array $d) => ($d['owner'] ?? '') === 'theme');
     $b6Entry = $manifest['pk_property_variants'] ?? [];
     $assert('B6A-016', count($manifest) === 23 && $themeOwned === []
         && ($b6Entry['owner'] ?? '') === 'plugin' && ($b6Entry['lot'] ?? '') === 'B6',
-        'manifeste : 21/21 tables pk_ suivies, 0 restée côté thème, pk_property_variants owner=plugin lot=B6 (pk_slug_redirects : micro-lot ML, pas B)');
+        'manifeste : 23/23 tables pk_ suivies, 0 restée côté thème, pk_property_variants owner=plugin lot=B6');
 } catch (Throwable $error) {
     $assert('B6A-EXCEPTION', false, $error->getMessage());
 } finally {
