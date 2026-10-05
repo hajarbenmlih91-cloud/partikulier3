@@ -3758,3 +3758,28 @@ html[dir="rtl"] .pk-single .pk-single-gallery[data-pk-carousel] .pk-gallery-stag
 @media (min-width: 768px) {
 	.pk-mobile-sticky-cta { display: none !important; }
 }
+
+/* Annonces mobile : plus de chrome Woo (fil, kicker, compteur, encart).
+   Sticky Déposer/Rechercher = accueil seulement, après les vrais boutons. */
+@media (max-width: 767px) {
+	.pk-archive > .pk-container > .pk-breadcrumb,
+	.pk-archive-head .pk-editorial-kicker,
+	.pk-archive-search { display: none; }
+	.pk-archive-head { margin: .35rem 0 .75rem; }
+	.pk-archive-title {
+		font-size: 1.45rem;
+		line-height: 1.15;
+		letter-spacing: -.03em;
+	}
+	.pk-archive-toolbar {
+		font-size: 0;
+		gap: .5rem;
+		margin-top: .55rem;
+	}
+	.pk-archive-toolbar > .pk-archive-order,
+	.pk-archive-toolbar > form {
+		font-size: .85rem;
+		margin-inline-start: 0;
+	}
+	.pk-archive-toolbar .pk-archive-order select { width: 100%; }
+}

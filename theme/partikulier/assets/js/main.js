@@ -973,12 +973,27 @@
 	}
 }());
 
-/* Mobile : barre sticky React (Déposer / Rechercher) après le premier scroll. */
+/* Accueil mobile : sticky Déposer/Rechercher seulement quand les vrais
+   boutons du hero sortent de l’écran — sinon on voit 4 boutons.
+   Autres pages (annonces…) : pas de barre, comme React. */
 (function () {
 	var bar = document.querySelector(".pk-mobile-sticky-cta");
-	if (!bar) return;
+	var hero = document.querySelector(".pk-editorial-actions");
+	if (!bar || !hero) return;
+	function setOn(on) {
+		document.body.classList.toggle("pk-sticky-cta-on", !!on);
+	}
+	if ("IntersectionObserver" in window) {
+		var io = new IntersectionObserver(function (entries) {
+			var e = entries[0];
+			setOn(e && !e.isIntersecting);
+		}, { threshold: 0, rootMargin: "0px" });
+		io.observe(hero);
+		return;
+	}
 	function tick() {
-		document.body.classList.toggle("pk-sticky-cta-on", window.scrollY > 80);
+		var r = hero.getBoundingClientRect();
+		setOn(r.bottom < 0);
 	}
 	window.addEventListener("scroll", tick, { passive: true });
 	tick();
