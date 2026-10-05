@@ -60,7 +60,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 								$pk_name = get_bloginfo( 'name' );
 							?>
                         <a class="pk-logo-text" href="<?php echo $pk_home; // phpcs:ignore ?>" rel="home" aria-label="<?php echo esc_attr( sprintf( __( '%s, retour a l accueil', 'partikulier' ), $pk_name ) ); ?>">
-								<span class="pk-logo-name">partikulier<span class="pk-logo-tld">.com</span></span>
+								<span class="pk-logo-name">Partikulier<span class="pk-logo-tld">.ma</span></span>
 						</a>
 								<?php
 						}
