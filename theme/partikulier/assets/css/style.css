@@ -60,7 +60,7 @@ html[dir="rtl"] [lang="ar"] {
 		--pk-ink: #161715;
 		--pk-dark: #0f100e;
 		--pk-text: #3d403b;
-		--pk-muted: #5d625a;
+		--pk-muted: #767a72;
 		--pk-card-bg: #f5f5f0;
 		--pk-line: #e6e5df;
 		--pk-white: #fffefa;
@@ -99,7 +99,7 @@ h2 { font-size: clamp(1.5rem, 3vw, 2rem); }
 p { margin: 0 0 1em; }
 ul, ol { margin: 0; padding: 0; list-style: none; }
 button, input, select, textarea { font: inherit; color: inherit; }
-:focus { outline: 2px solid var(--pk-primary) !important; outline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--pk-primary); outline-offset: 2px; }
 .screen-reader-text { clip: rect(0 0 0 0); clip-path: inset(50%); height: 1px; width: 1px; overflow: hidden; position: absolute; white-space: nowrap; }
 
 /* ---------- Utilitaires ---------- */
@@ -113,7 +113,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 }
 .pk-container-narrow { max-width: 800px; }
 .pk-skip-link { position: fixed; inset-block-start: .75rem; inset-inline-start: .75rem; transform: translateY(-200%); background: var(--pk-primary); color: #fff; padding: .8rem 1.2rem; z-index: 99999; }
-.pk-skip-link:focus { transform: translateY(0); }
+.pk-skip-link:focus, .pk-skip-link:focus-visible { transform: translateY(0); outline: 2px solid #fff; }
 
 /* ---------- Boutons ---------- */
 .pk-btn {
@@ -3555,3 +3555,137 @@ html[dir="rtl"] .pk-archive-content .pk-card-price { left: auto; right: 12px; }
 .pk-gallery-lightbox-next { right: .8rem; top: 50%; transform: translateY(-50%); }
 .pk-gallery-lightbox-count { position: absolute; bottom: 1rem; left: 50%; transform: translateX(-50%); color: #fff; font-weight: 700; margin: 0; }
 body.pk-lightbox-open { overflow: hidden; }
+
+/* ============================================================
+   Parité React — lot HUD + chrome (revertible : retirer ce bloc)
+   Les règles historiques plus haut restent en git. Ici on gagne
+   la cascade sans réécrire le cœur (dépôt, i18n, Estatik CPT).
+   ============================================================ */
+
+@font-face {
+	font-family: "Instrument Serif";
+	font-style: italic;
+	font-weight: 400;
+	font-display: swap;
+	src: url("../fonts/instrument-serif-italic.woff2") format("woff2");
+}
+
+html:not([dir="rtl"]) em,
+html:not([dir="rtl"]) .pk-hero-accent {
+	font-family: "Instrument Serif", Georgia, serif;
+	font-style: italic;
+	font-weight: 400;
+	color: var(--pk-primary);
+}
+.pk-hero em,
+.pk-hero .pk-hero-accent,
+.pk-editorial-hero .pk-hero-accent {
+	color: var(--pk-hero-accent);
+}
+
+.es-powered { display: none !important; }
+
+.pk-card-actions {
+	position: static !important;
+	left: auto !important;
+	right: auto !important;
+	inset: auto !important;
+	display: contents;
+}
+.pk-card-peek,
+.pk-card-action.pk-card-peek {
+	position: absolute;
+	top: 12px;
+	right: 52px;
+	left: auto;
+	z-index: 4;
+}
+.pk-card-wishlist.pk-card-action {
+	position: absolute;
+	top: 12px;
+	right: 12px;
+	left: auto;
+	z-index: 4;
+}
+.pk-card-badge {
+	top: 12px;
+	left: 12px;
+	right: auto;
+	z-index: 4;
+}
+.pk-card-action:hover {
+	background: var(--pk-primary);
+	color: #fff;
+	transform: translateY(-2px);
+}
+.pk-card-wishlist:hover,
+.pk-card-wishlist.pk-wish-active,
+.pk-card-wishlist.pk-wish-active:hover {
+	color: #fff !important;
+	background: var(--pk-primary);
+}
+.pk-card-wishlist.pk-wish-active svg,
+.pk-card-wishlist.pk-wish-active:hover svg {
+	fill: #fff;
+	stroke: #fff;
+}
+html[dir="rtl"] .pk-card-peek,
+html[dir="rtl"] .pk-card-action.pk-card-peek { left: 52px; right: auto; }
+html[dir="rtl"] .pk-card-wishlist.pk-card-action { left: 12px; right: auto; }
+html[dir="rtl"] .pk-card-badge { left: auto; right: 12px; }
+
+.pk-card-title {
+	font-size: 17px !important;
+	font-weight: 700 !important;
+	line-height: 1.18;
+	letter-spacing: -0.02em;
+}
+.pk-card-price { font-weight: 900; color: var(--pk-ink); }
+
+.pk-single .pk-single-gallery[data-pk-carousel] { position: relative; }
+.pk-single .pk-single-gallery[data-pk-carousel] .pk-carousel-controls {
+	inset: auto !important;
+	top: auto !important;
+	left: auto !important;
+	right: auto !important;
+	bottom: 0;
+	width: auto !important;
+	transform: none !important;
+	display: block;
+	pointer-events: none;
+}
+.pk-single .pk-single-gallery[data-pk-carousel] .pk-carousel-button {
+	position: absolute;
+	bottom: 16px;
+	width: 34px;
+	height: 34px;
+	border-radius: 0;
+	z-index: 3;
+	pointer-events: auto;
+	background: #fff;
+}
+.pk-single .pk-single-gallery[data-pk-carousel] .pk-carousel-prev { right: 97px; left: auto; }
+.pk-single .pk-single-gallery[data-pk-carousel] .pk-carousel-next { right: 57px; left: auto; }
+.pk-single .pk-single-gallery[data-pk-carousel] .pk-carousel-count {
+	position: absolute;
+	right: 17px;
+	bottom: 17px;
+	left: auto;
+	border-radius: 0;
+	z-index: 2;
+	font-size: 10px;
+	font-weight: 800;
+	padding: 7px 9px;
+	background: rgba(0,0,0,.62);
+	color: #fff;
+	pointer-events: none;
+}
+.pk-single .pk-single-gallery[data-pk-carousel] .pk-carousel-button:hover {
+	background: var(--pk-primary);
+	color: #fff;
+}
+.pk-gallery-thumb { border-radius: 0; width: 82px; height: auto; aspect-ratio: 4 / 3; }
+.pk-gallery-thumb.is-active { border-color: var(--pk-primary); }
+html[dir="rtl"] .pk-single .pk-single-gallery[data-pk-carousel] .pk-carousel-prev { left: 97px; right: auto; }
+html[dir="rtl"] .pk-single .pk-single-gallery[data-pk-carousel] .pk-carousel-next { left: 57px; right: auto; }
+html[dir="rtl"] .pk-single .pk-single-gallery[data-pk-carousel] .pk-carousel-count { left: 17px; right: auto; }
