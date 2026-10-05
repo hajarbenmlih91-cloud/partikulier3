@@ -3765,10 +3765,10 @@ html[dir="rtl"] .pk-single .pk-single-gallery[data-pk-carousel] .pk-gallery-stag
 @media (max-width: 767px) {
 	.pk-archive > .pk-container > .pk-breadcrumb,
 	.pk-archive-head,
-	.pk-archive-search { display: none; }
+	.pk-archive-search { display: none !important; }
 	.pk-intent-sentinel { height: 1px; margin: 0; pointer-events: none; }
 	.pk-intent-bar {
-		display: flex;
+		display: flex !important;
 		position: sticky;
 		top: 0;
 		z-index: 1200;
