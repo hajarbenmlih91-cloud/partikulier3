@@ -1022,3 +1022,19 @@
 	window.addEventListener("scroll", tick, { passive: true });
 	tick();
 }());
+
+/* Mobile : retirer Accueil/Annonces/Déposer/Favoris/Connexion du flux
+   (v1.8 les réaffichait). Desktop/tablette inchangés. */
+(function () {
+	var nav = document.querySelector(".pk-main-nav");
+	if (!nav || !window.matchMedia) return;
+	var mq = window.matchMedia("(max-width: 767px)");
+	function sync() {
+		var mobile = mq.matches;
+		nav.hidden = mobile;
+		nav.setAttribute("aria-hidden", mobile ? "true" : "false");
+	}
+	sync();
+	if (mq.addEventListener) mq.addEventListener("change", sync);
+	else if (mq.addListener) mq.addListener(sync);
+}());
