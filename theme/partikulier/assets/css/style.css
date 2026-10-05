@@ -3831,7 +3831,7 @@ html[dir="rtl"] .pk-single .pk-single-gallery[data-pk-carousel] .pk-gallery-stag
 	body.home .pk-editorial-hero,
 	body.home .pk-editorial-hero__inner { min-height: 0; }
 	body.home .pk-editorial-hero__inner {
-		padding: 1rem 0 1.25rem;
+		padding: 1.1rem 20px 1.4rem;
 		gap: 1rem;
 		justify-content: flex-start;
 	}

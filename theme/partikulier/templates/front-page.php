@@ -45,7 +45,7 @@ get_header();
 		body.home .pk-header-search{display:none!important}
 		body.home .pk-editorial-actions{display:flex!important;flex-wrap:nowrap!important;gap:8px}
 		body.home .pk-editorial-actions .pk-btn{flex:1 1 0;min-width:0;min-height:44px;margin:0;font-size:12px;font-weight:800;white-space:nowrap}
-		body.home .pk-editorial-hero__inner{padding:1rem 0 1.25rem;gap:1rem}
+		body.home .pk-editorial-hero__inner{padding:1.1rem 20px 1.4rem!important;gap:1rem}
 	}
 	</style>
 	<section class="pk-editorial-hero" aria-label="<?php echo esc_attr( Partikulier_Localization::translate_polylang_string( 'Recherche principale', 'Recherche principale', 'partikulier' ) ); ?>">
