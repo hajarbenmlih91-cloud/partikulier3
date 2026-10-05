@@ -24,6 +24,50 @@ $is_type = $queried instanceof WP_Term && PARTIKULIER_ESTATIK_TYPE_TAXONOMY === 
 		<div class="pk-container">
                 <?php echo Partikulier_Geo::breadcrumbs_html(); // phpcs:ignore ?>
 
+				<?php
+				$pk_intent_action = isset( $_GET['es_action'] ) && is_scalar( $_GET['es_action'] ) ? sanitize_text_field( wp_unslash( $_GET['es_action'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+				$pk_intent_rent   = isset( $_GET['pk_rent'] ) && is_scalar( $_GET['pk_rent'] ) ? sanitize_text_field( wp_unslash( $_GET['pk_rent'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+				$pk_intent_keep   = array();
+				foreach ( array( 'es_type', 'es_city', 'es_price_max', 'pk_order' ) as $pk_intent_key ) {
+					if ( isset( $_GET[ $pk_intent_key ] ) && ! is_array( $_GET[ $pk_intent_key ] ) && '' !== (string) $_GET[ $pk_intent_key ] ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended,WordPress.Security.ValidatedSanitizedInput
+						$pk_intent_keep[ $pk_intent_key ] = sanitize_text_field( wp_unslash( $_GET[ $pk_intent_key ] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+					}
+				}
+				$pk_intent_base = pk_properties_archive_url();
+				if ( 'a-vendre' !== $pk_intent_action ) :
+					$pk_intent_items = ( 'a-louer' === $pk_intent_action )
+						? array(
+							array(
+								'href'   => add_query_arg( array_merge( $pk_intent_keep, array( 'es_action' => 'a-louer' ) ), $pk_intent_base ),
+								'label'  => 'Longue durée',
+								'active' => ( 'saisonnier' !== $pk_intent_rent ),
+							),
+							array(
+								'href'   => add_query_arg( array_merge( $pk_intent_keep, array( 'es_action' => 'a-louer', 'pk_rent' => 'saisonnier' ) ), $pk_intent_base ),
+								'label'  => 'Saisonnière',
+								'active' => ( 'saisonnier' === $pk_intent_rent ),
+							),
+						)
+						: array(
+							array(
+								'href'   => add_query_arg( array_merge( $pk_intent_keep, array( 'es_action' => 'a-vendre' ) ), $pk_intent_base ),
+								'label'  => 'Vente',
+								'active' => false,
+							),
+							array(
+								'href'   => add_query_arg( array_merge( $pk_intent_keep, array( 'es_action' => 'a-louer' ) ), $pk_intent_base ),
+								'label'  => 'Location',
+								'active' => false,
+							),
+						);
+					?>
+				<nav class="pk-intent-bar" aria-label="<?php echo esc_attr( Partikulier_Localization::translate_polylang_string( 'Type de transaction', 'Type de transaction', 'partikulier' ) ); ?>">
+					<?php foreach ( $pk_intent_items as $pk_intent_item ) : ?>
+						<a class="pk-intent-btn<?php echo $pk_intent_item['active'] ? ' is-active' : ''; ?>" href="<?php echo esc_url( $pk_intent_item['href'] ); ?>"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( $pk_intent_item['label'], $pk_intent_item['label'], 'partikulier' ) ); ?></a>
+					<?php endforeach; ?>
+				</nav>
+				<?php endif; ?>
+
 				<header class="pk-archive-head">
 						<p class="pk-editorial-kicker"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Le catalogue direct', 'Le catalogue direct', 'partikulier' ) ); ?></p>
 						<h1 class="pk-archive-title">
