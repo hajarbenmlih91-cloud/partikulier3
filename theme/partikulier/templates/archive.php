@@ -62,8 +62,13 @@ $is_type = $queried instanceof WP_Term && PARTIKULIER_ESTATIK_TYPE_TAXONOMY === 
 						);
 					?>
 				<nav class="pk-intent-bar" aria-label="<?php echo esc_attr( Partikulier_Localization::translate_polylang_string( 'Type de transaction', 'Type de transaction', 'partikulier' ) ); ?>">
-					<?php foreach ( $pk_intent_items as $pk_intent_item ) : ?>
-						<a class="pk-intent-btn<?php echo $pk_intent_item['active'] ? ' is-active' : ''; ?>" href="<?php echo esc_url( $pk_intent_item['href'] ); ?>"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( $pk_intent_item['label'], $pk_intent_item['label'], 'partikulier' ) ); ?></a>
+					<?php
+					$pk_intent_i = 0;
+					foreach ( $pk_intent_items as $pk_intent_item ) :
+						$pk_intent_i++;
+						$pk_intent_class = ( 1 === $pk_intent_i ) ? 'pk-btn pk-btn-primary' : 'pk-btn pk-btn-light';
+						?>
+						<a class="<?php echo esc_attr( $pk_intent_class ); ?>" href="<?php echo esc_url( $pk_intent_item['href'] ); ?>"<?php echo $pk_intent_item['active'] ? ' aria-current="page"' : ''; ?>><?php echo esc_html( Partikulier_Localization::translate_polylang_string( $pk_intent_item['label'], $pk_intent_item['label'], 'partikulier' ) ); ?></a>
 					<?php endforeach; ?>
 				</nav>
 				<?php endif; ?>
@@ -157,7 +162,7 @@ $is_type = $queried instanceof WP_Term && PARTIKULIER_ESTATIK_TYPE_TAXONOMY === 
 
 						<?php
 						$pk_active_filters = 0;
-						foreach ( array( 'es_action', 'es_type', 'es_city', 'es_price_max' ) as $pk_filter_key ) {
+						foreach ( array( 'es_type', 'es_city', 'es_price_max' ) as $pk_filter_key ) {
 							if ( isset( $_GET[ $pk_filter_key ] ) && '' !== trim( (string) wp_unslash( $_GET[ $pk_filter_key ] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended,WordPress.Security.ValidatedSanitizedInput -- présence/cast, valeur assainie (SE-020/E-2007)
 									$pk_active_filters++;
 							}
@@ -165,7 +170,7 @@ $is_type = $queried instanceof WP_Term && PARTIKULIER_ESTATIK_TYPE_TAXONOMY === 
 						$pk_filters_label = class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_polylang_string( 'Filtres', 'Filtres', 'partikulier' ) : __( 'Filtres', 'partikulier' );
 						?>
 										<div class="pk-archive-layout">
-														<button type="button" class="pk-filter-toggle" aria-expanded="<?php echo $pk_active_filters ? 'true' : 'false'; ?>" aria-controls="pk-filters-panel">
+														<button type="button" class="pk-filter-toggle" aria-expanded="false" aria-controls="pk-filters-panel">
 																<span class="pk-filter-toggle-label"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Affiner la recherche', 'Affiner la recherche', 'partikulier' ) ); ?></span>
 																<span class="pk-filter-toggle-meta"><span class="pk-filter-count"><?php echo esc_html( $pk_active_filters ); ?></span> <?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Filtres actifs', 'Filtres actifs', 'partikulier' ) ); ?></span>
 																<span class="pk-filter-toggle-icon" aria-hidden="true">+</span>
@@ -176,7 +181,7 @@ $is_type = $queried instanceof WP_Term && PARTIKULIER_ESTATIK_TYPE_TAXONOMY === 
 																<span><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Affiner la recherche', 'Affiner la recherche', 'partikulier' ) ); ?></span>
 														</div>
 										<div class="pk-filters-backdrop" data-pk-filter-close="true" hidden></div>
-												<div class="pk-filters-panel<?php echo $pk_active_filters ? ' ' . 'is-open' : ''; ?>" id="pk-filters-panel" aria-hidden="<?php echo $pk_active_filters ? 'false' : 'true'; ?>">
+												<div class="pk-filters-panel" id="pk-filters-panel" aria-hidden="true">
 												<button type="button" class="pk-filter-close" data-pk-filter-close="true" aria-label="<?php echo esc_attr( Partikulier_Localization::translate_polylang_string( 'Fermer', 'Fermer', 'partikulier' ) ); ?>"><span aria-hidden="true">×</span><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Fermer', 'Fermer', 'partikulier' ) ); ?></button>
 <h2 class="screen-reader-text"><?php echo esc_html( $pk_filters_label ); ?></h2>
 

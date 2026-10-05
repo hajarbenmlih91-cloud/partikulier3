@@ -94,6 +94,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 									?>
 								<input type="hidden" name="es_action" value="<?php echo esc_attr( $pk_header_action ); ?>">
 								<?php endif; ?>
+								<?php
+								$pk_header_rent = isset( $_GET['pk_rent'] ) && is_scalar( $_GET['pk_rent'] ) ? sanitize_text_field( wp_unslash( $_GET['pk_rent'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+								if ( '' !== $pk_header_rent ) :
+									?>
+								<input type="hidden" name="pk_rent" value="<?php echo esc_attr( $pk_header_rent ); ?>">
+								<?php endif; ?>
 								<button type="submit" aria-label="<?php esc_attr_e( 'Rechercher', 'partikulier' ); ?>">
 										<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
 								</button>
