@@ -26,6 +26,9 @@ $is_type = $queried instanceof WP_Term && PARTIKULIER_ESTATIK_TYPE_TAXONOMY === 
 			.pk-archive>.pk-container>.pk-breadcrumb,.pk-archive-head,.pk-archive-search{display:none!important}
 			.pk-intent-bar{display:flex!important;position:sticky;top:0;z-index:1200;gap:8px;margin:0 -16px 1rem;padding:9px 16px}
 			.pk-intent-bar .pk-btn{flex:1 1 0;min-height:40px;margin:0;font-size:12px;font-weight:800}
+			.pk-intent-bar .pk-btn-light{background:#fff;color:#161715;border-color:#161715}
+			body.pk-intent-stuck .pk-intent-bar .pk-btn-light{background:transparent;color:#fff;border-color:rgba(255,255,255,.55)}
+			body.pk-intent-stuck .pk-intent-bar .pk-btn-light:hover{background:#fff;color:#161715}
 		}
 		@media (min-width:768px){.pk-intent-bar,.pk-intent-sentinel{display:none!important}}
 		</style>
@@ -48,11 +51,13 @@ $is_type = $queried instanceof WP_Term && PARTIKULIER_ESTATIK_TYPE_TAXONOMY === 
 							array(
 								'href'   => add_query_arg( array_merge( $pk_intent_keep, array( 'es_action' => 'a-louer' ) ), $pk_intent_base ),
 								'label'  => 'Longue durée',
+								'btn'    => 'pk-btn-primary',
 								'active' => ( 'saisonnier' !== $pk_intent_rent ),
 							),
 							array(
 								'href'   => add_query_arg( array_merge( $pk_intent_keep, array( 'es_action' => 'a-louer', 'pk_rent' => 'saisonnier' ) ), $pk_intent_base ),
 								'label'  => 'Saisonnière',
+								'btn'    => 'pk-btn-light',
 								'active' => ( 'saisonnier' === $pk_intent_rent ),
 							),
 						)
@@ -60,11 +65,13 @@ $is_type = $queried instanceof WP_Term && PARTIKULIER_ESTATIK_TYPE_TAXONOMY === 
 							array(
 								'href'   => add_query_arg( array_merge( $pk_intent_keep, array( 'es_action' => 'a-vendre' ) ), $pk_intent_base ),
 								'label'  => 'Vente',
+								'btn'    => 'pk-btn-primary',
 								'active' => false,
 							),
 							array(
 								'href'   => add_query_arg( array_merge( $pk_intent_keep, array( 'es_action' => 'a-louer' ) ), $pk_intent_base ),
 								'label'  => 'Location',
+								'btn'    => 'pk-btn-light',
 								'active' => false,
 							),
 						);
@@ -72,7 +79,7 @@ $is_type = $queried instanceof WP_Term && PARTIKULIER_ESTATIK_TYPE_TAXONOMY === 
 				<div class="pk-intent-sentinel" aria-hidden="true"></div>
 				<nav class="pk-intent-bar" aria-label="<?php echo esc_attr( Partikulier_Localization::translate_polylang_string( 'Type de transaction', 'Type de transaction', 'partikulier' ) ); ?>">
 					<?php foreach ( $pk_intent_items as $pk_intent_item ) : ?>
-						<a class="pk-btn pk-btn-primary" href="<?php echo esc_url( $pk_intent_item['href'] ); ?>"<?php echo $pk_intent_item['active'] ? ' aria-current="page"' : ''; ?>><?php echo esc_html( Partikulier_Localization::translate_polylang_string( $pk_intent_item['label'], $pk_intent_item['label'], 'partikulier' ) ); ?></a>
+						<a class="pk-btn <?php echo esc_attr( ! empty( $pk_intent_item['btn'] ) ? $pk_intent_item['btn'] : 'pk-btn-primary' ); ?>" href="<?php echo esc_url( $pk_intent_item['href'] ); ?>"<?php echo $pk_intent_item['active'] ? ' aria-current="page"' : ''; ?>><?php echo esc_html( Partikulier_Localization::translate_polylang_string( $pk_intent_item['label'], $pk_intent_item['label'], 'partikulier' ) ); ?></a>
 					<?php endforeach; ?>
 				</nav>
 				<?php endif; ?>
