@@ -3292,7 +3292,28 @@ html[dir="rtl"] .pk-archive-content .pk-card-price { left: auto; right: 12px; }
  * du rail desktop dépend du contexte flex. Un block !important
  * plus bas écrasait la règle flex et renvoyait Ville en bas. */
 @media (min-width: 768px) {
-		.pk-archive-layout > .pk-filter-toggle { display: none !important; }
+		/* React /annonces : un seul scroll fenêtre. Nav et filtres ne sont pas sticky.
+		 * top:130px datait d’un header sticky retiré ; sans max-height le bas du rail
+		 * (derniers types, Ville, Appliquer) restait hors écran. Pas d’overflow-y interne. */
+		.pk-main-nav {
+				position: relative;
+				top: auto;
+				box-shadow: none;
+		}
+		.pk-filters,
+		.pk-archive .pk-filters {
+				position: static;
+				top: auto;
+				max-height: none;
+				overflow: visible;
+		}
+		.pk-archive-layout {
+				align-items: start;
+				grid-template-columns: 190px minmax(0, 1fr);
+				gap: 40px;
+		}
+		.pk-archive-layout > .pk-filter-toggle,
+		.pk-filter-close { display: none !important; }
 		.pk-archive .pk-filters-panel { display: flex !important; flex-direction: column; }
 }
 @media (max-width: 767px) {
