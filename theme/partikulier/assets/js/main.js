@@ -974,28 +974,18 @@
 }());
 
 /* Accueil mobile : sticky Déposer/Rechercher seulement quand les vrais
-   boutons du hero sortent de l’écran — sinon on voit 4 boutons.
-   Autres pages (annonces…) : pas de barre, comme React. */
+   boutons du hero sont ENTIÈREMENT au-dessus du viewport (bottom <= 0).
+   IntersectionObserver + overflow:hidden du hero faussait isIntersecting
+   → 4 boutons à l’écran. */
 (function () {
 	var bar = document.querySelector(".pk-mobile-sticky-cta");
 	var hero = document.querySelector(".pk-editorial-actions");
 	if (!bar || !hero) return;
-	function setOn(on) {
-		document.body.classList.toggle("pk-sticky-cta-on", !!on);
-	}
-	if ("IntersectionObserver" in window) {
-		var io = new IntersectionObserver(function (entries) {
-			var e = entries[0];
-			setOn(e && !e.isIntersecting);
-		}, { threshold: 0, rootMargin: "0px" });
-		io.observe(hero);
-		return;
-	}
 	function tick() {
-		var r = hero.getBoundingClientRect();
-		setOn(r.bottom < 0);
+		document.body.classList.toggle("pk-sticky-cta-on", hero.getBoundingClientRect().bottom <= 0);
 	}
 	window.addEventListener("scroll", tick, { passive: true });
+	window.addEventListener("resize", tick);
 	tick();
 }());
 
@@ -1024,15 +1014,29 @@
 }());
 
 /* Mobile : retirer Accueil/Annonces/Déposer/Favoris/Connexion du flux
-   (v1.8 les réaffichait). Desktop/tablette inchangés. */
+   (v1.8 les réaffichait). Desktop/tablette inchangés.
+   Annonces : cacher titre/compteur (CSS cache parfois stale) et montrer Vente/Location. */
 (function () {
-	var nav = document.querySelector(".pk-main-nav");
-	if (!nav || !window.matchMedia) return;
+	if (!window.matchMedia) return;
 	var mq = window.matchMedia("(max-width: 767px)");
+	var nav = document.querySelector(".pk-main-nav");
+	var head = document.querySelector(".pk-archive-head");
+	var crumbs = document.querySelector(".pk-archive > .pk-container > .pk-breadcrumb");
+	var search = document.querySelector(".pk-archive-search");
+	var intent = document.querySelector(".pk-intent-bar");
 	function sync() {
 		var mobile = mq.matches;
-		nav.hidden = mobile;
-		nav.setAttribute("aria-hidden", mobile ? "true" : "false");
+		if (nav) {
+			nav.hidden = mobile;
+			nav.setAttribute("aria-hidden", mobile ? "true" : "false");
+		}
+		if (head) head.hidden = mobile;
+		if (crumbs) crumbs.hidden = mobile;
+		if (search) search.hidden = mobile;
+		if (intent) {
+			intent.hidden = !mobile;
+			intent.style.display = mobile ? "flex" : "none";
+		}
 	}
 	sync();
 	if (mq.addEventListener) mq.addEventListener("change", sync);
