@@ -998,3 +998,27 @@
 	window.addEventListener("scroll", tick, { passive: true });
 	tick();
 }());
+
+/* Annonces mobile : fond noir seulement quand la barre Vente/Location
+   (ou Longue durée/Saisonnière) est réellement collée en haut. */
+(function () {
+	var bar = document.querySelector(".pk-intent-bar");
+	var sentinel = document.querySelector(".pk-intent-sentinel");
+	if (!bar || !sentinel) return;
+	function setStuck(on) {
+		document.body.classList.toggle("pk-intent-stuck", !!on);
+	}
+	if ("IntersectionObserver" in window) {
+		var io = new IntersectionObserver(function (entries) {
+			var e = entries[0];
+			setStuck(e && !e.isIntersecting);
+		}, { threshold: 0, rootMargin: "0px" });
+		io.observe(sentinel);
+		return;
+	}
+	function tick() {
+		setStuck(sentinel.getBoundingClientRect().bottom < 0);
+	}
+	window.addEventListener("scroll", tick, { passive: true });
+	tick();
+}());
