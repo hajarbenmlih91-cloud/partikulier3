@@ -876,7 +876,11 @@
 							input.disabled = false;
 					});
 					form.addEventListener("submit", function (event) {
-							if (hidden.value || ! (input.value || "").trim() || enResol) return;
+							if (hidden.value) {
+								input.disabled = true;
+								return;
+							}
+							if ( ! (input.value || "").trim() || enResol) return;
 							/* Deja resolu sans resultat pour cette valeur : on laisse le
 								formulaire partir tel quel (s=... : le serveur traduit le texte
 								en ville, ou retombe sur la recherche plein texte). */

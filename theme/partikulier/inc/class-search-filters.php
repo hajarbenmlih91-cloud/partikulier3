@@ -439,7 +439,10 @@ class Partikulier_Search_Filters {
 						l'autocompletion du formulaire de depot) ; aucun terme n'est jamais cree
 						ici, la moderation garde la main. Si rien n'est trouve, on laisse « s »
 						jouer son role de recherche de texte. */
-		if ( empty( $_GET['es_city'] ) && ! empty( $_GET['s'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( ! empty( $_GET['es_city'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			$query->set( 's', '' );
+			$query->is_search = false;
+	} elseif ( ! empty( $_GET['s'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 				$libre = trim( (string) wp_unslash( $_GET['s'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended,WordPress.Security.ValidatedSanitizedInput -- trim + correspondance de termes uniquement (SE-020/E-2007)
 			if ( '' !== $libre && class_exists( 'Partikulier_Morocco_Places' ) && taxonomy_exists( PARTIKULIER_ESTATIK_LOCATION_TAXONOMY ) ) {
 							$parties  = array_map( 'trim', preg_split( '/[,;]/u', $libre ) );

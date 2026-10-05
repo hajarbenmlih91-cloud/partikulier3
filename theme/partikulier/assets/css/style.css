@@ -3585,26 +3585,33 @@ html:not([dir="rtl"]) .pk-hero-accent {
 
 .es-powered { display: none !important; }
 
-/* HUD cartes = React .property-card__media : œil/cœur sur la PHOTO, partout. */
-.pk-card-media { position: relative; }
+/* HUD cartes = React .property-card__media : œil/cœur sur la PHOTO, partout.
+   Pas de shorthand `inset` : il écrasait top:12px (top:auto) et recollait
+   le groupe à gauche / hors cadre selon le contenant. */
+.pk-card-media { position: relative; overflow: hidden; }
 .pk-card-media-link { display: block; width: 100%; height: 100%; }
-.pk-card-actions {
+.pk-card-actions,
+.pk-editorial-cards .pk-card-actions,
+.pk-archive-content .pk-card-actions,
+.pk-grid-cards .pk-card-actions,
+.pk-card-media > .pk-card-actions {
 	position: absolute !important;
 	top: 12px !important;
 	right: 12px !important;
+	bottom: auto !important;
 	left: auto !important;
-	inset: auto 12px auto auto !important;
 	display: flex !important;
 	flex-direction: row;
 	gap: 6px;
 	z-index: 4;
+	width: auto !important;
 }
 .pk-card-peek,
 .pk-card-wishlist.pk-card-action {
-	position: static;
-	left: auto;
-	right: auto;
-	top: auto;
+	position: relative;
+	left: auto !important;
+	right: auto !important;
+	top: auto !important;
 }
 .pk-card-badge {
 	top: 12px;
@@ -3628,7 +3635,14 @@ html:not([dir="rtl"]) .pk-hero-accent {
 	fill: #fff;
 	stroke: #fff;
 }
-html[dir="rtl"] .pk-card-actions { left: 12px !important; right: auto !important; inset: auto auto auto 12px !important; }
+html[dir="rtl"] .pk-card-actions,
+html[dir="rtl"] .pk-editorial-cards .pk-card-actions,
+html[dir="rtl"] .pk-archive-content .pk-card-actions,
+html[dir="rtl"] .pk-grid-cards .pk-card-actions,
+html[dir="rtl"] .pk-card-media > .pk-card-actions {
+	left: 12px !important;
+	right: auto !important;
+}
 html[dir="rtl"] .pk-card-badge { left: auto; right: 12px; }
 
 .pk-card-title {
