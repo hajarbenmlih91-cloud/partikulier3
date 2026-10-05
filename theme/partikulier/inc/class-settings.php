@@ -46,7 +46,7 @@ class Partikulier_Settings {
 					),
 					'topbar_text'  => array(
 						'label'   => 'Texte du bandeau du haut (topbar)',
-						'default' => 'Annonces 100% gratuites — Publiez en 2 minutes sans commission',
+						'default' => 'La plateforme immobilière entre particuliers',
 					),
 				),
 			),
@@ -250,7 +250,7 @@ class Partikulier_Settings {
 			'site_intro'            => array( 'en' => 'Post your property for free, with no commission or middleman. Reach buyers and tenants directly.', 'ar' => 'أضف عقارك مجاناً، بدون عمولة أو وسيط. تواصل مباشرة مع المشترين والمستأجرين.' ),
 			'btn_deposit'           => array( 'en' => 'Post for free', 'ar' => 'أضف إعلاناً مجاناً' ),
 			'btn_listings'          => array( 'en' => 'Search by city', 'ar' => 'ابحث حسب المدينة' ),
-			'topbar_text'           => array( 'en' => '100% free listings — Publish in 2 minutes with no commission', 'ar' => 'إعلانات مجانية 100٪ — أضف إعلانك خلال دقيقتين بدون عمولة' ),
+			'topbar_text'           => array( 'en' => 'The real-estate platform between private individuals', 'ar' => 'المنصة العقارية بين الخواص' ),
 			'service1_name'         => array( 'en' => 'Free listings', 'ar' => 'إعلانات مجانية' ), 'service1_desc' => array( 'en' => 'Publish at no cost', 'ar' => 'انشر بدون تكلفة' ),
 			'service2_name'         => array( 'en' => 'No commission', 'ar' => 'بدون عمولة' ), 'service2_desc' => array( 'en' => 'No middleman', 'ar' => 'بدون وسيط' ),
 			'service3_name'         => array( 'en' => 'Video visits available', 'ar' => 'زيارات عبر الفيديو' ), 'service3_desc' => array( 'en' => 'Visit remotely', 'ar' => 'زر عن بُعد' ),
@@ -313,6 +313,16 @@ class Partikulier_Settings {
 			$localized_default = self::localized_default( $key, $value, self::current_language() );
 			if ( '' !== $localized_default ) {
 				$value = $localized_default;
+			}
+		}
+		if ( 'topbar_text' === $key ) {
+			$legacy = array(
+				'Annonces 100% gratuites — Publiez en 2 minutes sans commission' => 'La plateforme immobilière entre particuliers',
+				'100% free listings — Publish in 2 minutes with no commission'   => 'The real-estate platform between private individuals',
+				'إعلانات مجانية 100٪ — أضف إعلانك خلال دقيقتين بدون عمولة'        => 'المنصة العقارية بين الخواص',
+			);
+			if ( isset( $legacy[ $value ] ) ) {
+				$value = $legacy[ $value ];
 			}
 		}
 		if ( $is_editorial && isset( $opts['localized'] ) && is_array( $opts['localized'] ) ) {

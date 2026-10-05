@@ -3570,17 +3570,19 @@ body.pk-lightbox-open { overflow: hidden; }
 	src: url("../fonts/instrument-serif-italic.woff2") format("woff2");
 }
 
-html:not([dir="rtl"]) em,
-html:not([dir="rtl"]) .pk-hero-accent {
+html:not([dir="rtl"]) em {
 	font-family: "Instrument Serif", Georgia, serif;
 	font-style: italic;
 	font-weight: 400;
 	color: var(--pk-primary);
 }
-.pk-hero em,
-.pk-hero .pk-hero-accent,
-.pk-editorial-hero .pk-hero-accent {
-	color: var(--pk-hero-accent);
+/* Hero : même sable que le kicker « Annonces 100%… », pas le cognac. */
+html:not([dir="rtl"]) .pk-editorial-hero h1 .pk-hero-accent,
+.pk-editorial-hero h1 .pk-hero-accent {
+	font-family: "Instrument Serif", Georgia, serif;
+	font-style: italic;
+	font-weight: 400;
+	color: #ead8c2;
 }
 
 .es-powered { display: none !important; }
@@ -3719,3 +3721,40 @@ html[dir="rtl"] .pk-card-badge { left: auto; right: 12px; }
 html[dir="rtl"] .pk-single .pk-single-gallery[data-pk-carousel] .pk-gallery-stage .pk-carousel-prev { left: 57px !important; right: auto !important; }
 html[dir="rtl"] .pk-single .pk-single-gallery[data-pk-carousel] .pk-gallery-stage .pk-carousel-next { left: 97px !important; right: auto !important; }
 html[dir="rtl"] .pk-single .pk-single-gallery[data-pk-carousel] .pk-gallery-stage .pk-carousel-count { left: 17px !important; right: auto !important; }
+
+/* Mobile : sticky React = Déposer + Rechercher, pas Accueil/Annonces/Favoris.
+   Desktop + tablette (≥768) : .pk-main-nav inchangé. */
+.pk-mobile-sticky-cta { display: none; }
+@media (max-width: 767px) {
+	.pk-main-nav { display: none !important; }
+	.pk-mobile-sticky-cta {
+		display: none;
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		z-index: 1200;
+		align-items: center;
+		justify-content: center;
+		gap: 8px;
+		padding: 9px 16px;
+		background: rgba(22, 23, 21, .96);
+		box-shadow: 0 10px 30px rgba(22, 23, 21, .22);
+	}
+	body.pk-sticky-cta-on .pk-mobile-sticky-cta { display: flex; }
+	.pk-mobile-sticky-cta .pk-btn {
+		min-height: 40px;
+		margin: 0;
+		font-size: 12px;
+		font-weight: 800;
+	}
+	.pk-mobile-sticky-cta .pk-btn-light {
+		background: transparent;
+		color: #fff;
+		border-color: rgba(255, 255, 255, .55);
+	}
+	.pk-mobile-sticky-cta .pk-btn-light:hover { background: #fff; color: var(--pk-ink); }
+}
+@media (min-width: 768px) {
+	.pk-mobile-sticky-cta { display: none !important; }
+}

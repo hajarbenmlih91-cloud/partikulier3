@@ -205,4 +205,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 		</div>
 </nav>
 
+<nav class="pk-mobile-sticky-cta" aria-label="<?php echo esc_attr( Partikulier_Localization::translate_polylang_string( 'Actions rapides', 'Actions rapides', 'partikulier' ) ); ?>">
+	<a class="pk-btn pk-btn-primary" href="<?php echo esc_url( pk_page_url( 'deposer', '/deposer/' ) ); ?>"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Déposer une annonce', 'Déposer une annonce', 'partikulier' ) ); ?></a>
+	<a class="pk-btn pk-btn-light" href="<?php echo esc_url( pk_properties_archive_url() ); ?>"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Rechercher un bien', 'Rechercher un bien', 'partikulier' ) ); ?></a>
+</nav>
+
 <main id="main-content" class="pk-main">

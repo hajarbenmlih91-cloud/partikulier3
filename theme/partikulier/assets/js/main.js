@@ -972,3 +972,14 @@
 			syncButton(signupForm, signupBtn, ["es_user_email", "es_user_password"]);
 	}
 }());
+
+/* Mobile : barre sticky React (Déposer / Rechercher) après le premier scroll. */
+(function () {
+	var bar = document.querySelector(".pk-mobile-sticky-cta");
+	if (!bar) return;
+	function tick() {
+		document.body.classList.toggle("pk-sticky-cta-on", window.scrollY > 80);
+	}
+	window.addEventListener("scroll", tick, { passive: true });
+	tick();
+}());
