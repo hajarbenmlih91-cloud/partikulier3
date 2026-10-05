@@ -129,9 +129,11 @@ $is_type = $queried instanceof WP_Term && PARTIKULIER_ESTATIK_TYPE_TAXONOMY === 
 																<span><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Affiner la recherche', 'Affiner la recherche', 'partikulier' ) ); ?></span>
 														</div>
 										<div class="pk-filters-backdrop" data-pk-filter-close="true" hidden></div>
-												<div class="pk-filters-panel" id="pk-filters-panel" aria-hidden="true">
-												<button type="button" class="pk-filter-close" data-pk-filter-close="true" aria-label="<?php echo esc_attr( Partikulier_Localization::translate_polylang_string( 'Fermer', 'Fermer', 'partikulier' ) ); ?>"><span aria-hidden="true">×</span><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Fermer', 'Fermer', 'partikulier' ) ); ?></button>
-<h2 class="screen-reader-text"><?php echo esc_html( $pk_filters_label ); ?></h2>
+												<div class="pk-filters-panel" id="pk-filters-panel" aria-hidden="false">
+												<div class="pk-filter-sheet-head">
+					<h2><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Affiner la recherche', 'Affiner la recherche', 'partikulier' ) ); ?></h2>
+					<button type="button" class="pk-filter-close" data-pk-filter-close="true" aria-label="<?php echo esc_attr( Partikulier_Localization::translate_polylang_string( 'Fermer', 'Fermer', 'partikulier' ) ); ?>"><span aria-hidden="true">×</span></button>
+				</div>
 
 														<?php
 														/* E-5105 (F-T17-2, lot sécurité 6.20.6) : garde scalaire. */
@@ -197,6 +199,13 @@ $is_type = $queried instanceof WP_Term && PARTIKULIER_ESTATIK_TYPE_TAXONOMY === 
 										$types = get_terms( array( 'taxonomy' => PARTIKULIER_ESTATIK_TYPE_TAXONOMY, 'hide_empty' => true ) );
 										if ( $types && ! is_wp_error( $types ) ) {
 												echo '<ul class="pk-filter-list">';
+											$pk_all_types = isset( $pk_cumulative_args ) ? $pk_cumulative_args : array();
+											unset( $pk_all_types['es_type'] );
+											printf(
+												'<li><a href="%s">%s</a></li>',
+												esc_url( add_query_arg( $pk_all_types, pk_properties_archive_url() ) ),
+												esc_html( Partikulier_Localization::translate_polylang_string( 'Tous', 'Tous', 'partikulier' ) )
+											);
 											foreach ( $types as $term ) {
 													$active                       = $queried instanceof WP_Term && $queried->term_id === $term->term_id ? ' aria-current="true"' : '';
 															$type_args            = isset( $pk_cumulative_args ) ? $pk_cumulative_args : array();
