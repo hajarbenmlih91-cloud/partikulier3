@@ -3822,3 +3822,50 @@ html[dir="rtl"] .pk-single .pk-single-gallery[data-pk-carousel] .pk-gallery-stag
 		pointer-events: none !important;
 	}
 }
+
+/* Accueil mobile : premier écran = 2 boutons sur une ligne + moteur visible.
+   Header search masqué sur l’accueil seulement (Annonces le garde).
+   Desktop/tablette ≥768 inchangés. */
+@media (max-width: 767px) {
+	body.home .pk-header-search { display: none !important; }
+	body.home .pk-editorial-hero,
+	body.home .pk-editorial-hero__inner { min-height: 0; }
+	body.home .pk-editorial-hero__inner {
+		padding: 1rem 0 1.25rem;
+		gap: 1rem;
+		justify-content: flex-start;
+	}
+	body.home .pk-editorial-hero .pk-editorial-kicker { margin-bottom: .4rem; }
+	body.home .pk-editorial-hero h1 {
+		font-size: clamp(1.85rem, 9vw, 2.45rem);
+		margin: 0 0 .55rem;
+	}
+	body.home .pk-editorial-hero__intro {
+		margin: 0 0 .85rem;
+		font-size: .92rem;
+	}
+	body.home .pk-editorial-actions {
+		display: flex;
+		flex-wrap: nowrap !important;
+		gap: 8px;
+	}
+	body.home .pk-editorial-actions .pk-btn {
+		flex: 1 1 0;
+		width: auto;
+		min-width: 0;
+		min-height: 44px;
+		margin: 0;
+		padding: .55rem .5rem;
+		font-size: 12px;
+		font-weight: 800;
+		justify-content: center;
+		white-space: nowrap;
+	}
+	body.home .pk-editorial-search { width: 100%; margin-top: .1rem; }
+	body.home .pk-editorial-search .pk-search,
+	body.home .pk-editorial-search .pk-search.pk-search-hero {
+		grid-template-columns: 1fr !important;
+	}
+	body.home .pk-editorial-search .pk-search-action { grid-column: auto; }
+	body.home .pk-hero-trust { margin-top: .65rem; gap: .45rem 1rem; }
+}

@@ -40,6 +40,14 @@ get_header();
 		$badge_3  = Partikulier_Customization::editorial( 'badge_3', class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_polylang_string( 'Contact direct', 'Contact direct', 'partikulier' ) : 'Contact direct' );
 	?>
 
+	<style>
+	@media (max-width:767px){
+		body.home .pk-header-search{display:none!important}
+		body.home .pk-editorial-actions{display:flex!important;flex-wrap:nowrap!important;gap:8px}
+		body.home .pk-editorial-actions .pk-btn{flex:1 1 0;min-width:0;min-height:44px;margin:0;font-size:12px;font-weight:800;white-space:nowrap}
+		body.home .pk-editorial-hero__inner{padding:1rem 0 1.25rem;gap:1rem}
+	}
+	</style>
 	<section class="pk-editorial-hero" aria-label="<?php echo esc_attr( Partikulier_Localization::translate_polylang_string( 'Recherche principale', 'Recherche principale', 'partikulier' ) ); ?>">
 		<div class="pk-editorial-hero__media"><img src="<?php echo esc_url( $hero_url ); ?>" alt="<?php echo esc_attr( $hero_alt ); ?>" width="1600" height="686" fetchpriority="high" decoding="async"><div class="pk-editorial-hero__veil"></div></div>
 	<div class="pk-container pk-editorial-hero__inner">
