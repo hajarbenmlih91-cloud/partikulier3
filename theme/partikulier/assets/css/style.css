@@ -3792,3 +3792,20 @@ html[dir="rtl"] .pk-single .pk-single-gallery[data-pk-carousel] .pk-gallery-stag
 		font-weight: 800;
 	}
 }
+
+/* Mobile : jamais Accueil / Annonces / Déposer / Favoris / Connexion.
+   v1.8 remettait display:block à 767px — on referme ici, en dernier. */
+@media (max-width: 767px) {
+	.pk-main-nav {
+		display: none !important;
+		visibility: hidden !important;
+		height: 0 !important;
+		max-height: 0 !important;
+		overflow: hidden !important;
+		margin: 0 !important;
+		padding: 0 !important;
+		border: 0 !important;
+		box-shadow: none !important;
+		pointer-events: none !important;
+	}
+}
