@@ -21,6 +21,14 @@ $is_type = $queried instanceof WP_Term && PARTIKULIER_ESTATIK_TYPE_TAXONOMY === 
 ?>
 
 <section class="pk-archive">
+		<style>
+		@media (max-width:767px){
+			.pk-archive>.pk-container>.pk-breadcrumb,.pk-archive-head,.pk-archive-search{display:none!important}
+			.pk-intent-bar{display:flex!important;position:sticky;top:0;z-index:1200;gap:8px;margin:0 -16px 1rem;padding:9px 16px}
+			.pk-intent-bar .pk-btn{flex:1 1 0;min-height:40px;margin:0;font-size:12px;font-weight:800}
+		}
+		@media (min-width:768px){.pk-intent-bar,.pk-intent-sentinel{display:none!important}}
+		</style>
 		<div class="pk-container">
                 <?php echo Partikulier_Geo::breadcrumbs_html(); // phpcs:ignore ?>
 
