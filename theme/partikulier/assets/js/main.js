@@ -1030,12 +1030,12 @@
 			nav.hidden = mobile;
 			nav.setAttribute("aria-hidden", mobile ? "true" : "false");
 		}
-		if (head) head.hidden = mobile;
+		if (head) head.hidden = false;
 		if (crumbs) crumbs.hidden = mobile;
-		if (search) search.hidden = mobile;
+		if (search) search.hidden = false;
 		if (intent) {
-			intent.hidden = !mobile;
-			intent.style.display = mobile ? "flex" : "none";
+			intent.hidden = true;
+			intent.style.display = "none";
 		}
 	}
 	sync();

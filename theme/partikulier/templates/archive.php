@@ -23,14 +23,12 @@ $is_type = $queried instanceof WP_Term && PARTIKULIER_ESTATIK_TYPE_TAXONOMY === 
 <section class="pk-archive">
 		<style>
 		@media (max-width:767px){
-			.pk-archive>.pk-container>.pk-breadcrumb,.pk-archive-head,.pk-archive-search{display:none!important}
-			.pk-intent-bar{display:flex!important;position:sticky;top:0;z-index:1200;gap:8px;margin:0 -16px 1rem;padding:9px 16px}
-			.pk-intent-bar .pk-btn{flex:1 1 0;min-height:40px;margin:0;font-size:12px;font-weight:800}
-			.pk-intent-bar .pk-btn-light{background:#fff;color:#161715;border-color:#161715}
-			body.pk-intent-stuck .pk-intent-bar .pk-btn-light{background:transparent;color:#fff;border-color:rgba(255,255,255,.55)}
-			body.pk-intent-stuck .pk-intent-bar .pk-btn-light:hover{background:#fff;color:#161715}
+			.pk-header-search,.pk-archive>.pk-container>.pk-breadcrumb,.pk-intent-bar,.pk-intent-sentinel,.pk-archive-toolbar{display:none!important}
+			.pk-archive-head,.pk-archive-search,.pk-archive-search .pk-search,.pk-archive-search .pk-archive-trust{display:block!important}
+			.pk-archive-search .pk-archive-trust{display:flex!important}
+			.pk-filter-toggle{display:flex!important;width:100%}
 		}
-		@media (min-width:768px){.pk-intent-bar,.pk-intent-sentinel{display:none!important}}
+		@media (min-width:768px){.pk-intent-bar,.pk-intent-sentinel,.pk-filter-toggle,.pk-filter-close{display:none!important}}
 		</style>
 		<div class="pk-container">
                 <?php echo Partikulier_Geo::breadcrumbs_html(); // phpcs:ignore ?>
@@ -84,7 +82,9 @@ $is_type = $queried instanceof WP_Term && PARTIKULIER_ESTATIK_TYPE_TAXONOMY === 
 				</nav>
 				<?php endif; ?>
 
-				<h1 class="screen-reader-text"><?php
+				<header class="pk-archive-head">
+						<p class="pk-editorial-kicker"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Le catalogue direct', 'Le catalogue direct', 'partikulier' ) ); ?></p>
+						<h1 class="pk-archive-title"><?php
 				if ( is_search() ) {
 					printf( esc_html__( 'Résultats pour « %s »', 'partikulier' ), esc_html( get_search_query() ) );
 				} elseif ( $is_geo ) {
@@ -97,6 +97,13 @@ $is_type = $queried instanceof WP_Term && PARTIKULIER_ESTATIK_TYPE_TAXONOMY === 
 					single_term_title();
 				}
 				?></h1>
+						<p class="pk-archive-subtitle"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Des biens publiés par leurs propriétaires identifiés.', 'Des biens publiés par leurs propriétaires identifiés.', 'partikulier' ) ); ?></p>
+				</header>
+				<div class="pk-archive-search">
+						<?php $variant = 'archive'; require PARTIKULIER_DIR . '/templates/parts/search-form.php'; ?>
+						<ul class="pk-archive-trust"><li><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Localisation d’abord', 'Localisation d’abord', 'partikulier' ) ); ?></li><li><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Vendeur identifié', 'Vendeur identifié', 'partikulier' ) ); ?></li><li><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Contact direct', 'Contact direct', 'partikulier' ) ); ?></li></ul>
+				</div>
+
 
 
 
@@ -134,7 +141,7 @@ $is_type = $queried instanceof WP_Term && PARTIKULIER_ESTATIK_TYPE_TAXONOMY === 
 														?>
 														<div class="pk-filter pk-filter-city">
 																<h3 class="pk-filter-title"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Ville', 'Ville', 'partikulier' ) ); ?></h3>
-														<form action="<?php echo esc_url( pk_properties_archive_url() ); ?>" method="get" class="pk-filter-city-form pk-place-autocomplete">
+														<form action="<?php echo esc_url( pk_properties_archive_url() ); ?>" method="get" id="pk-filter-city-form" class="pk-filter-city-form pk-place-autocomplete">
 																<label class="screen-reader-text" for="pk-filter-city-input"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Toutes les villes', 'Toutes les villes', 'partikulier' ) ); ?></label>
 																<?php foreach ( array( 'es_action', 'es_type', 'es_price_max', 'pk_order' ) as $pk_preserve_key ) : ?>
 																		<?php if ( isset( $_GET[ $pk_preserve_key ] ) && ! is_array( $_GET[ $pk_preserve_key ] ) ) : ?>
@@ -207,6 +214,9 @@ $is_type = $queried instanceof WP_Term && PARTIKULIER_ESTATIK_TYPE_TAXONOMY === 
 										?>
 								</div>
 
+														<div class="pk-filter-footer">
+															<button type="submit" form="pk-filter-city-form" class="pk-filter-apply"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Appliquer', 'Appliquer', 'partikulier' ) ); ?></button>
+														</div>
 														<script>
 														(function () {
 																var toggle = document.querySelector('.pk-filter-toggle');
@@ -223,7 +233,7 @@ $is_type = $queried instanceof WP_Term && PARTIKULIER_ESTATIK_TYPE_TAXONOMY === 
 																		else if (mobile && !visible) panel.setAttribute('inert', '');
 																		else panel.removeAttribute('inert');
 																		toggle.setAttribute('aria-expanded', mobile && visible ? 'true' : 'false');
-																		if (backdrop) { backdrop.hidden = !visible; backdrop.classList.toggle('is-open', mobile && visible); }
+																		if (backdrop) { backdrop.hidden = !(mobile && visible); backdrop.classList.toggle('is-open', mobile && visible); }
 																		document.body.classList.toggle('pk-filters-open', mobile && visible);
 																		if (mobile && visible) { var close = panel.querySelector('.pk-filter-close'); if (close) close.focus(); }
 																		if (mobile && !visible) toggle.focus();
