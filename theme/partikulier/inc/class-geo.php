@@ -75,11 +75,19 @@ class Partikulier_Geo {
 			$out .= '<option value="">' . esc_html__( 'Tous les biens', 'partikulier' ) . '</option>';
 		}
 		$lang = function_exists( 'pll_current_language' ) ? pll_current_language( 'slug' ) : 'fr';
+		$skip = array( 'apartments', 'condos', 'condo', 'houses', 'house', 'land', 'multifamily', 'townhouses', 'townhouse' );
 		foreach ( $types as $t ) {
-			$label = ( 'ar' === $lang && class_exists( 'Partikulier_Listing_I18n' ) )
-				? Partikulier_Listing_I18n::localized_type( $t->name, $lang )
-				: $t->name;
-			$out  .= '<option value="' . esc_attr( $t->slug ) . '">' . esc_html( $label ) . '</option>';
+			if ( in_array( strtolower( (string) $t->name ), $skip, true ) ) {
+				continue;
+			}
+			if ( 'ar' === $lang && class_exists( 'Partikulier_Listing_I18n' ) ) {
+				$label = Partikulier_Listing_I18n::localized_type( $t->name, $lang );
+			} elseif ( class_exists( 'Partikulier_Localization' ) ) {
+				$label = Partikulier_Localization::translate_taxonomy_label( $t->name );
+			} else {
+				$label = $t->name;
+			}
+			$out .= '<option value="' . esc_attr( $t->slug ) . '">' . esc_html( $label ) . '</option>';
 		}
 		return $out;
 	}

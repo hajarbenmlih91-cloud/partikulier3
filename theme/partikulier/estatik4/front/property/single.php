@@ -214,9 +214,9 @@ $gallery_ids = array();
 					<?php if ( count( $gallery_ids ) > 1 ) : ?>
 						<nav class="pk-carousel-controls" aria-label="<?php esc_attr_e( 'Navigation des photos', 'partikulier' ); ?>">
 							<button class="pk-carousel-button pk-carousel-prev" type="button" aria-controls="<?php echo esc_attr( $gallery_id ); ?>" aria-label="<?php esc_attr_e( 'Photo précédente', 'partikulier' ); ?>">‹</button>
-							<span class="pk-carousel-count" aria-live="polite">1 / <?php echo (int) count( $gallery_ids ); ?></span>
 							<button class="pk-carousel-button pk-carousel-next" type="button" aria-controls="<?php echo esc_attr( $gallery_id ); ?>" aria-label="<?php esc_attr_e( 'Photo suivante', 'partikulier' ); ?>">›</button>
 						</nav>
+						<span class="pk-carousel-count" aria-live="polite">1 / <?php echo (int) count( $gallery_ids ); ?></span>
 					<?php endif; ?>
 					<ul class="pk-gallery-thumbs">
 						<?php foreach ( $gallery_ids as $i => $id ) : ?>
