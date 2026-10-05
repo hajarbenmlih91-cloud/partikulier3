@@ -32,7 +32,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 <!-- Topbar style Woo Shop -->
 <div class="pk-topbar" role="complementary" aria-label="<?php esc_attr_e( 'Informations de contact', 'partikulier' ); ?>">
 		<div class="pk-container pk-topbar-inner">
-				<span class="pk-topbar-promo"><?php echo esc_html( Partikulier_Settings::get( 'topbar_text' ) ); ?></span>
+				<span class="pk-topbar-promo"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'La plateforme immobilière entre particuliers', 'La plateforme immobilière entre particuliers', 'partikulier' ) ); ?></span>
 				<div class="pk-topbar-contact">
 						<a href="<?php echo esc_url( pk_page_url( 'deposer', '/deposer/' ) ); ?>"><?php esc_html_e( 'Déposer une annonce', 'partikulier' ); ?></a>
 						<a href="<?php echo esc_url( pk_properties_archive_url() ); ?>"><?php esc_html_e( 'Toutes les annonces', 'partikulier' ); ?></a>
