@@ -3759,8 +3759,8 @@ html[dir="rtl"] .pk-single .pk-single-gallery[data-pk-carousel] .pk-gallery-stag
 	.pk-mobile-sticky-cta { display: none !important; }
 }
 
-/* Annonces mobile : plus de chrome Woo. Intent = Vente/Location
-   (puis Longue durée/Saisonnière). Desktop inchangé. */
+/* Annonces mobile : intent sticky = mêmes boutons que le hero
+   (Déposer / Rechercher). Desktop inchangé. */
 .pk-intent-bar { display: none; }
 @media (max-width: 767px) {
 	.pk-archive > .pk-container > .pk-breadcrumb,
@@ -3768,27 +3768,28 @@ html[dir="rtl"] .pk-single .pk-single-gallery[data-pk-carousel] .pk-gallery-stag
 	.pk-archive-search { display: none; }
 	.pk-intent-bar {
 		display: flex;
+		position: sticky;
+		top: 0;
+		z-index: 1200;
 		gap: 8px;
-		margin: .35rem 0 1rem;
+		margin: 0 -16px 1rem;
+		padding: 9px 16px;
+		background: rgba(22, 23, 21, .96);
+		box-shadow: 0 10px 30px rgba(22, 23, 21, .22);
 	}
-	.pk-intent-btn {
+	.pk-intent-bar .pk-btn {
 		flex: 1 1 0;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		min-height: 44px;
+		width: auto;
+		min-height: 40px;
+		margin: 0;
 		padding: .55rem .75rem;
-		border: 1px solid var(--pk-line);
-		background: #fff;
-		color: var(--pk-ink);
-		font-size: 13px;
+		font-size: 12px;
 		font-weight: 800;
-		letter-spacing: -.01em;
-		text-decoration: none;
 	}
-	.pk-intent-btn.is-active {
-		background: var(--pk-ink);
-		border-color: var(--pk-ink);
+	.pk-intent-bar .pk-btn-light {
+		background: transparent;
 		color: #fff;
+		border-color: rgba(255, 255, 255, .55);
 	}
+	.pk-intent-bar .pk-btn-light:hover { background: #fff; color: var(--pk-ink); }
 }

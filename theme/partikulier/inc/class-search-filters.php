@@ -639,6 +639,40 @@ class Partikulier_Search_Filters {
 
 									$query->set( 'meta_query', $meta_query );
 		}
+
+		$pk_rent = '';
+		if ( isset( $_GET['pk_rent'] ) && is_scalar( $_GET['pk_rent'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			$pk_rent = sanitize_key( wp_unslash( $_GET['pk_rent'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		}
+		$pk_action_now = isset( $_GET['es_action'] ) && is_scalar( $_GET['es_action'] ) ? sanitize_text_field( wp_unslash( $_GET['es_action'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( 'saisonnier' === $pk_rent || ( 'a-louer' === $pk_action_now && 'saisonnier' !== $pk_rent ) ) {
+			$rent_meta = (array) $query->get( 'meta_query' );
+			unset( $rent_meta['relation'] );
+			if ( 'saisonnier' === $pk_rent ) {
+				$rent_meta[] = array(
+					'key'     => '_pk_rent',
+					'value'   => 'saisonnier',
+					'compare' => '=',
+				);
+			} else {
+				$rent_meta[] = array(
+					'relation' => 'OR',
+					array(
+						'key'     => '_pk_rent',
+						'compare' => 'NOT EXISTS',
+					),
+					array(
+						'key'     => '_pk_rent',
+						'value'   => 'saisonnier',
+						'compare' => '!=',
+					),
+				);
+			}
+			if ( count( $rent_meta ) > 1 ) {
+				$rent_meta['relation'] = 'AND';
+			}
+			$query->set( 'meta_query', $rent_meta );
+		}
 	}
 
 		/**
