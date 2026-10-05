@@ -119,7 +119,8 @@ if ( $price ) {
 }
 ?>
 <article class="pk-card pk-card-property" itemscope itemtype="https://schema.org/RealEstateListing">
-		<a class="pk-card-media" href="<?php echo esc_url( $pk_property_url ); ?>" tabindex="-1" aria-hidden="true">
+		<div class="pk-card-media">
+		<a class="pk-card-media-link" href="<?php echo esc_url( $pk_property_url ); ?>" tabindex="-1" aria-hidden="true">
 				<?php
 				if ( $gallery ) {
 								$jpg       = Partikulier_AVIF::valid_image_url( (int) $gallery[0], 'pk-card' );
@@ -165,7 +166,6 @@ if ( $price ) {
 				endif;
 				?>
 		</a>
-
 		<div class="pk-card-actions">
 				<a class="pk-card-action pk-card-peek" href="<?php echo esc_url( $pk_property_url ); ?>" aria-label="<?php echo esc_attr( Partikulier_Localization::translate_polylang_string( 'Aperçu rapide', 'Aperçu rapide', 'partikulier' ) ); ?>">
 						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
@@ -173,6 +173,7 @@ if ( $price ) {
 				<button type="button" class="pk-card-action pk-card-wishlist" data-post-id="<?php echo esc_attr( $property->ID ); ?>" aria-label="<?php echo esc_attr( Partikulier_Localization::translate_polylang_string( 'Ajouter aux favoris', 'Ajouter aux favoris', 'partikulier' ) ); ?>">
 						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
 				</button>
+		</div>
 		</div>
 
 		<div class="pk-card-body">

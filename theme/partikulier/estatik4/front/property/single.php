@@ -189,6 +189,7 @@ $gallery_ids = array();
 			<?php if ( $gallery_ids ) : ?>
 				<?php $gallery_id = 'pk-gallery-' . (int) $post->ID; ?>
 				<section class="pk-single-gallery" data-pk-carousel aria-roledescription="<?php esc_attr_e( 'carrousel', 'partikulier' ); ?>" aria-label="<?php esc_attr_e( 'Photos du bien', 'partikulier' ); ?>">
+					<div class="pk-gallery-stage">
 					<div class="pk-carousel-track" id="<?php echo esc_attr( $gallery_id ); ?>" tabindex="0">
 						<?php foreach ( $gallery_ids as $i => $id ) : ?>
 							<?php
@@ -218,6 +219,7 @@ $gallery_ids = array();
 						</nav>
 						<span class="pk-carousel-count" aria-live="polite">1 / <?php echo (int) count( $gallery_ids ); ?></span>
 					<?php endif; ?>
+					</div>
 					<ul class="pk-gallery-thumbs">
 						<?php foreach ( $gallery_ids as $i => $id ) : ?>
 							<?php $thumb = wp_get_attachment_image_url( $id, 'pk-card' ) ?: wp_get_attachment_image_url( $id, 'thumbnail' ); ?>
