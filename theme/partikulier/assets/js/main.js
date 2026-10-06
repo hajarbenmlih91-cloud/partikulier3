@@ -695,7 +695,7 @@
 				var mobile  = isMobileFilter();
 				var visible = mobile ? ! ! open : true;
 				filterPanel.classList.toggle("is-open", mobile && visible);
-				filterPanel.setAttribute("aria-hidden", visible ? "false" : "true");
+				filterPanel.setAttribute("aria-hidden", (mobile && ! visible) ? "true" : "false");
 				if ("inert" in filterPanel) filterPanel.inert = mobile && ! visible;
 			else if (mobile && ! visible) filterPanel.setAttribute("inert", "");
 			else filterPanel.removeAttribute("inert");
@@ -707,13 +707,12 @@
 				if (archiveSearch) archiveSearch.classList.toggle("is-mobile-filter-open", mobile && visible);
 				if (archiveTrust) archiveTrust.classList.toggle("is-mobile-filter-open", mobile && visible);
 				filterToggle.setAttribute("aria-expanded", mobile && visible ? "true" : "false");
-				if (mobile && visible && filterClose) filterClose.focus();
-				if (mobile && ! visible) filterToggle.focus();
 		}
 					var earlyOpen = filterPanel.classList.contains("is-open") && filterPanel.getAttribute("aria-hidden") === "false";
 					if (window.pkEarlyFilterClick) document.removeEventListener("click", window.pkEarlyFilterClick, true);
 					if (window.pkEarlyFilterKeydown) document.removeEventListener("keydown", window.pkEarlyFilterKeydown, true);
 					setFilters(earlyOpen);
+					window.addEventListener("resize", function () { setFilters(filterPanel.classList.contains("is-open")); });
 					filterToggle.addEventListener("click", function () {
 							setFilters( ! filterPanel.classList.contains("is-open"));
 					});
@@ -1041,4 +1040,81 @@
 	sync();
 	if (mq.addEventListener) mq.addEventListener("change", sync);
 	else if (mq.addListener) mq.addListener(sync);
+}());
+
+
+/* Annonces : selects du moteur = liste dans la carte (pas le menu OS). */
+(function () {
+	"use strict";
+	var root = document.querySelector(".pk-archive-search");
+	if (!root) return;
+	function closeAll(except) {
+		root.querySelectorAll(".pk-select.is-open").forEach(function (wrap) {
+			if (wrap === except) return;
+			wrap.classList.remove("is-open");
+			var list = wrap.querySelector(".pk-select-list");
+			var btn = wrap.querySelector(".pk-select-btn");
+			if (list) list.hidden = true;
+			if (btn) btn.setAttribute("aria-expanded", "false");
+		});
+	}
+	root.querySelectorAll("select").forEach(function (select) {
+		if (select.closest(".pk-select")) return;
+		var wrap = document.createElement("div");
+		wrap.className = "pk-select";
+		select.parentNode.insertBefore(wrap, select);
+		wrap.appendChild(select);
+		select.classList.add("pk-select-native");
+		var btn = document.createElement("button");
+		btn.type = "button";
+		btn.className = "pk-select-btn";
+		btn.setAttribute("aria-haspopup", "listbox");
+		btn.setAttribute("aria-expanded", "false");
+		function currentLabel() {
+			var opt = select.options[select.selectedIndex];
+			return opt ? opt.textContent.replace(/^\s+|\s+$/g, "") : "";
+		}
+		btn.textContent = currentLabel();
+		var list = document.createElement("ul");
+		list.className = "pk-select-list";
+		list.hidden = true;
+		list.setAttribute("role", "listbox");
+		function rebuild() {
+			list.textContent = "";
+			Array.prototype.forEach.call(select.options, function (opt, index) {
+				var li = document.createElement("li");
+				li.className = "pk-select-option";
+				li.setAttribute("role", "option");
+				li.textContent = opt.textContent.replace(/^\s+|\s+$/g, "");
+				if (opt.selected) li.setAttribute("aria-selected", "true");
+				li.addEventListener("click", function () {
+					select.selectedIndex = index;
+					try { select.dispatchEvent(new Event("change", { bubbles: true })); }
+					catch (err) { /* IE */ }
+					btn.textContent = currentLabel();
+					closeAll();
+				});
+				list.appendChild(li);
+			});
+		}
+		rebuild();
+		btn.addEventListener("click", function (event) {
+			event.preventDefault();
+			event.stopPropagation();
+			var willOpen = list.hidden;
+			closeAll();
+			if (willOpen) {
+				rebuild();
+				list.hidden = false;
+				wrap.classList.add("is-open");
+				btn.setAttribute("aria-expanded", "true");
+			}
+		});
+		wrap.appendChild(btn);
+		wrap.appendChild(list);
+	});
+	document.addEventListener("click", function (event) {
+		if (event.target.closest && event.target.closest(".pk-select")) return;
+		closeAll();
+	});
 }());

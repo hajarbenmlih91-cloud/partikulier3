@@ -237,17 +237,17 @@ $is_type = $queried instanceof WP_Term && PARTIKULIER_ESTATIK_TYPE_TAXONOMY === 
 																		var mobile = isMobile();
 																		var visible = mobile ? !!open : true;
 																		panel.classList.toggle('is-open', mobile && visible);
-																		panel.setAttribute('aria-hidden', visible ? 'false' : 'true');
+																		panel.setAttribute('aria-hidden', (mobile && !visible) ? 'true' : 'false');
 																		if ('inert' in panel) panel.inert = mobile && !visible;
 																		else if (mobile && !visible) panel.setAttribute('inert', '');
 																		else panel.removeAttribute('inert');
 																		toggle.setAttribute('aria-expanded', mobile && visible ? 'true' : 'false');
 																		if (backdrop) { backdrop.hidden = !(mobile && visible); backdrop.classList.toggle('is-open', mobile && visible); }
 																		document.body.classList.toggle('pk-filters-open', mobile && visible);
-																		if (mobile && visible) { var close = panel.querySelector('.pk-filter-close'); if (close) close.focus(); }
-																		if (mobile && !visible) toggle.focus();
+																		
 																}
 																apply(isMobile() && panel.classList.contains('is-open'));
+																window.addEventListener('resize', function () { apply(panel.classList.contains('is-open')); });
 																window.pkEarlyFilterApply = apply;
 																window.pkEarlyFilterClick = function (event) {
 																		var target = event.target.closest ? event.target.closest('.pk-filter-toggle, [data-pk-filter-close]') : null;
