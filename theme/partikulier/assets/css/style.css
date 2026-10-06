@@ -3896,9 +3896,19 @@ html[dir="rtl"] .pk-single .pk-single-gallery[data-pk-carousel] .pk-gallery-stag
 .pk-archive .pk-filters-panel > .pk-filter-sheet-head { order: 0; }
 .pk-archive .pk-filters-panel > .pk-filter-actions { order: 1; }
 .pk-archive .pk-filters-panel > .pk-filter-types { order: 2; }
-.pk-archive .pk-filters-panel > .pk-filter-city { order: 3; }
-.pk-archive .pk-filters-panel > .pk-filter-footer { order: 4; }
+.pk-archive .pk-filters-panel > .pk-filter-budget { order: 3; display: block !important; }
+.pk-archive .pk-filters-panel > .pk-filter-city { order: 4; }
+.pk-archive .pk-filters-panel > .pk-filter-footer { order: 5; }
 .pk-archive .pk-filter-city-form .pk-filter-apply { display: none !important; }
+.pk-archive .pk-filter {
+	margin: 0 !important;
+	padding: 1.15rem 0 !important;
+	border-top: 0;
+	border-bottom: 1px solid var(--pk-line);
+}
+.pk-archive .pk-filter + .pk-filter { padding-top: 1.15rem !important; }
+.pk-archive .pk-filter-title { margin: 0 0 .75rem !important; }
+.pk-archive .pk-filter-city-form input { margin-top: 0; }
 
 /* Listes du moteur : dans la carte, pas le menu natif Windows. */
 .pk-archive-search .pk-select { position: relative; width: 100%; }
@@ -4050,6 +4060,7 @@ html[dir="rtl"] .pk-single .pk-single-gallery[data-pk-carousel] .pk-gallery-stag
 	}
 	.pk-archive .pk-filters-panel > .pk-filter-actions,
 	.pk-archive .pk-filters-panel > .pk-filter-types,
+	.pk-archive .pk-filters-panel > .pk-filter-budget,
 	.pk-archive .pk-filters-panel > .pk-filter-city { display: block !important; }
 	.pk-archive .pk-filter-footer {
 		position: sticky;

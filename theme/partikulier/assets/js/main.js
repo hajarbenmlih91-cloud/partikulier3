@@ -1098,6 +1098,10 @@
 			});
 		}
 		rebuild();
+		select.addEventListener("pk-select-rebuild", function () {
+			rebuild();
+			btn.textContent = currentLabel();
+		});
 		btn.addEventListener("click", function (event) {
 			event.preventDefault();
 			event.stopPropagation();
@@ -1117,4 +1121,52 @@
 		if (event.target.closest && event.target.closest(".pk-select")) return;
 		closeAll();
 	});
+}());
+
+
+/* Budget max : paliers vente ≠ location, dès le changement d’action. */
+(function () {
+	"use strict";
+	var action = document.getElementById("pk-s-action");
+	var budget = document.getElementById("pk-s-budget");
+	if (!action || !budget) return;
+	function parseList(attr) {
+		try { return JSON.parse(budget.getAttribute(attr) || "[]"); }
+		catch (err) { return []; }
+	}
+	var sale = parseList("data-pk-sale");
+	var rent = parseList("data-pk-rent");
+	var unlimited = budget.getAttribute("data-pk-unlimited") || "Illimité";
+	var suffixSale = budget.getAttribute("data-pk-suffix-sale") || " MAD";
+	var suffixRent = budget.getAttribute("data-pk-suffix-rent") || " MAD / mois";
+	function formatNumber(n) {
+		try { return Number(n).toLocaleString("fr-FR"); }
+		catch (err) { return String(n); }
+	}
+	function fill(values, suffix) {
+		var current = budget.value;
+		while (budget.firstChild) budget.removeChild(budget.firstChild);
+		var empty = document.createElement("option");
+		empty.value = "";
+		empty.textContent = unlimited;
+		budget.appendChild(empty);
+		values.forEach(function (n) {
+			var opt = document.createElement("option");
+			opt.value = String(n);
+			opt.textContent = formatNumber(n) + suffix;
+			budget.appendChild(opt);
+		});
+		var keep = false;
+		Array.prototype.forEach.call(budget.options, function (opt) {
+			if (opt.value === current) keep = true;
+		});
+		budget.value = keep ? current : "";
+		try { budget.dispatchEvent(new Event("pk-select-rebuild")); }
+		catch (err) { /* ignore */ }
+	}
+	function sync() {
+		var isRent = action.value === "a-louer";
+		fill(isRent ? rent : sale, isRent ? suffixRent : suffixSale);
+	}
+	action.addEventListener("change", sync);
 }());
