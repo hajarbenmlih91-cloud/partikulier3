@@ -3870,21 +3870,17 @@ html[dir="rtl"] .pk-single .pk-single-gallery[data-pk-carousel] .pk-gallery-stag
 	body.home .pk-hero-trust { margin-top: .65rem; gap: .45rem 1rem; }
 }
 
-/* Annonces mobile = catalogue. Tiroir 100% (titre + ×, bouton bas). Clics desktop/mobile. */
-.pk-archive .pk-filter-list a,
-.pk-archive .pk-filters input,
-.pk-archive .pk-filters button,
-.pk-archive .pk-filters select {
-	pointer-events: auto !important;
-	position: relative;
-	z-index: 2;
-}
+/* Annonces : rail cliquable, tiroir 100%, listes dans la carte. */
 .pk-archive .pk-filter-list a {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
 	min-height: 44px;
 	padding: .35rem 0;
+	position: relative;
+	z-index: 2;
+	cursor: pointer;
+	pointer-events: auto;
 }
 .pk-archive .pk-filter-title {
 	text-transform: uppercase;
@@ -3903,6 +3899,79 @@ html[dir="rtl"] .pk-single .pk-single-gallery[data-pk-carousel] .pk-gallery-stag
 .pk-archive .pk-filters-panel > .pk-filter-city { order: 3; }
 .pk-archive .pk-filters-panel > .pk-filter-footer { order: 4; }
 .pk-archive .pk-filter-city-form .pk-filter-apply { display: none !important; }
+
+/* Listes du moteur : dans la carte, pas le menu natif Windows. */
+.pk-archive-search .pk-select { position: relative; width: 100%; }
+.pk-archive-search .pk-select-native {
+	position: absolute !important;
+	width: 1px !important;
+	height: 1px !important;
+	opacity: 0 !important;
+	pointer-events: none !important;
+	clip: rect(0, 0, 0, 0);
+}
+.pk-archive-search .pk-select-btn {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	width: 100%;
+	min-height: 32px;
+	margin: 0;
+	padding: .25rem 1.1rem .25rem 0;
+	border: 0;
+	background: transparent;
+	color: var(--pk-ink);
+	font: inherit;
+	font-size: 13px;
+	font-weight: 600;
+	text-align: start;
+	cursor: pointer;
+}
+.pk-archive-search .pk-select-btn::after {
+	content: "";
+	width: 0;
+	height: 0;
+	border-inline-start: 4px solid transparent;
+	border-inline-end: 4px solid transparent;
+	border-top: 5px solid var(--pk-ink);
+	flex: 0 0 auto;
+	margin-inline-start: .4rem;
+}
+.pk-archive-search .pk-select-list {
+	display: none;
+	position: static;
+	width: 100%;
+	max-width: 100%;
+	max-height: 12.5rem;
+	margin: .4rem 0 0;
+	padding: 0;
+	list-style: none;
+	overflow-x: hidden;
+	overflow-y: auto;
+	background: #fff;
+	border: 1px solid var(--pk-line);
+}
+.pk-archive-search .pk-select.is-open .pk-select-list { display: block; }
+.pk-archive-search .pk-select-option {
+	min-height: 40px;
+	padding: .55rem .7rem;
+	cursor: pointer;
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--pk-ink);
+}
+.pk-archive-search .pk-select-option:hover,
+.pk-archive-search .pk-select-option[aria-selected="true"] {
+	background: var(--pk-ink);
+	color: #fff;
+}
+.pk-archive-search .pk-place-suggestions {
+	position: static !important;
+	width: 100% !important;
+	max-width: 100% !important;
+	inset: auto !important;
+	max-height: 12.5rem;
+}
 
 @media (max-width: 767px) {
 	.pk-header-search { display: none !important; }
@@ -3951,27 +4020,33 @@ html[dir="rtl"] .pk-single .pk-single-gallery[data-pk-carousel] .pk-gallery-stag
 		font-size: 1.6rem;
 		line-height: 1;
 	}
+	/* Fermé : display none — plus de panneau fixed invisible qui mange les clics. */
 	.pk-archive .pk-filters-panel {
-		display: flex !important;
+		display: none !important;
 		flex-direction: column;
 		position: fixed;
 		inset: 0 !important;
 		width: 100% !important;
 		max-width: none !important;
-		z-index: 1400;
+		z-index: 2000;
 		transform: none;
 		padding: 1rem 1.15rem 0;
 		background: #fff;
 		overflow-y: auto;
 		visibility: hidden;
-		pointer-events: none !important;
+		pointer-events: none;
 	}
 	.pk-archive .pk-filters-panel.is-open {
+		display: flex !important;
 		visibility: visible;
 		pointer-events: auto !important;
 	}
-	.pk-archive .pk-filters-panel:not(.is-open) {
-		pointer-events: none !important;
+	.pk-archive .pk-filters-panel.is-open .pk-filter-list a,
+	.pk-archive .pk-filters-panel.is-open input,
+	.pk-archive .pk-filters-panel.is-open button {
+		pointer-events: auto !important;
+		position: relative;
+		z-index: 2;
 	}
 	.pk-archive .pk-filters-panel > .pk-filter-actions,
 	.pk-archive .pk-filters-panel > .pk-filter-types,
@@ -3993,26 +4068,48 @@ html[dir="rtl"] .pk-single .pk-single-gallery[data-pk-carousel] .pk-gallery-stag
 		color: #fff;
 		font-weight: 800;
 	}
-	.pk-archive .pk-filters-backdrop { z-index: 1390; }
+	.pk-archive .pk-filters-backdrop { z-index: 1990; }
+	.pk-archive .pk-filters-panel .pk-place-suggestions {
+		position: static !important;
+		width: 100% !important;
+		max-width: 100% !important;
+	}
 }
 @media (min-width: 768px) {
 	.pk-filter-sheet-head { display: none !important; }
+	.pk-archive-content { position: relative; z-index: 0; }
 	.pk-archive .pk-filters {
-		position: relative;
-		z-index: 4;
+		position: relative !important;
+		z-index: 5;
 		pointer-events: auto !important;
+		transform: none !important;
 	}
 	.pk-archive .pk-filters-panel {
+		display: flex !important;
+		flex-direction: column;
 		transform: none !important;
 		position: static !important;
 		inset: auto !important;
 		width: auto !important;
+		height: auto !important;
+		max-height: none !important;
 		overflow: visible !important;
 		visibility: visible !important;
 		pointer-events: auto !important;
-		z-index: 4;
+		z-index: 5;
 	}
-	.pk-archive .pk-filters-backdrop { display: none !important; pointer-events: none !important; }
+	.pk-archive .pk-filters-panel .pk-filter-list a {
+		pointer-events: auto !important;
+		cursor: pointer;
+	}
+	.pk-archive .pk-filters-backdrop {
+		display: none !important;
+		pointer-events: none !important;
+		position: static !important;
+		width: 0 !important;
+		height: 0 !important;
+		inset: auto !important;
+	}
 	.pk-archive .pk-filter-footer {
 		margin-top: 1.25rem;
 		position: static;
