@@ -23,7 +23,7 @@ class Partikulier_Cache {
 		/** Version de ce module : changer cette valeur declenche UNE purge complete au
 		 *  premier passage HTTP qui suit la mise a jour (entrees ecrites par la version
 		 *  precedente). Voir maybe_purge_after_update(). */
-		const CACHE_VERSION = '2026-10-05-catalog-3';
+		const CACHE_VERSION = '2026-10-05-catalog-4';
 
 		/** Une seule demande de purge hote par requete PHP : plusieurs hooks de purge
 		 *  peuvent se declencher dans la meme requete (save_post, edited_term, ...). */

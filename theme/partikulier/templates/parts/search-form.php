@@ -62,13 +62,16 @@ $selected_city_label = ( $selected_city_term && ! is_wp_error( $selected_city_te
 				</div>
 
 						<div class="pk-search-field pk-search-city pk-place-autocomplete">
-						<label class="pk-search-label" for="pk-s-city-input"><?php esc_html_e( 'Ville', 'partikulier' ); ?></label>
+						<label class="pk-search-label" for="pk-s-city-input"><?php
+						$pk_city_lbl = ( 'archive' === $variant ) ? 'Ville ou quartier' : 'Ville';
+			echo esc_html( class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_polylang_string( $pk_city_lbl, $pk_city_lbl, 'partikulier' ) : $pk_city_lbl );
+?></label>
 						<div class="pk-place-autocomplete-wrap">
 								<?php /* name="s" : sans JavaScript, le texte tape part au serveur, qui le traduit
 									en terme es_location (class-search-filters) ou retombe sur la recherche
 									plein texte. Avec JavaScript, le champ est desactive a la soumission des
 									que l'autocompletion a fixe es_city : s ne part jamais en double. */ ?>
-								<input type="search" name="s" id="pk-s-city-input" class="pk-place-input" value="<?php echo esc_attr( $selected_city_label ); ?>" placeholder="<?php echo esc_attr__( 'Toutes les villes', 'partikulier' ); ?>" autocomplete="off" data-pk-place-input="true" data-pk-place-value="pk-s-city-value" aria-controls="pk-s-city-suggestions" aria-autocomplete="list">
+								<input type="search" name="s" id="pk-s-city-input" class="pk-place-input" value="<?php echo esc_attr( $selected_city_label ); ?>" placeholder="<?php echo esc_attr( ( 'archive' === $variant ) ? ( class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_polylang_string( 'Ville ou quartier', 'Ville ou quartier', 'partikulier' ) : 'Ville ou quartier' ) : ( class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_polylang_string( 'Toutes les villes', 'Toutes les villes', 'partikulier' ) : __( 'Toutes les villes', 'partikulier' ) ) ); ?>" autocomplete="off" data-pk-place-input="true" data-pk-place-value="pk-s-city-value" aria-controls="pk-s-city-suggestions" aria-autocomplete="list">
 								<input type="hidden" name="es_city" id="pk-s-city-value" value="<?php echo esc_attr( $selected_city_slug ); ?>">
 								<ul id="pk-s-city-suggestions" class="pk-suggest pk-place-suggestions" role="listbox" hidden></ul>
 						</div>
@@ -76,10 +79,18 @@ $selected_city_label = ( $selected_city_term && ! is_wp_error( $selected_city_te
 
 		<div class="pk-search-field pk-search-budget">
 				<label class="pk-search-label" for="pk-s-budget"><?php esc_html_e( 'Budget max', 'partikulier' ); ?></label>
-				<select name="es_price_max" id="pk-s-budget">
-						<option value=""><?php echo esc_html__( 'Illimité', 'partikulier' ); ?></option>
-								<?php foreach ( array( 100000, 200000, 300000, 400000, 500000, 750000, 1000000, 1500000 ) as $b ) : ?>
-										<option value="<?php echo esc_attr( $b ); ?>"<?php selected( $selected_price_max, (string) $b ); ?>><?php echo esc_html( number_format_i18n( $b ) ) . ' MAD'; ?></option>
+				<?php
+				$pk_budget_sale = array( 100000, 200000, 300000, 400000, 500000, 750000, 1000000, 1500000 );
+				$pk_budget_rent = array( 3000, 4000, 5000, 7000, 10000, 15000, 20000, 30000 );
+				$pk_budget_renting = ( 'a-louer' === $selected_action );
+				$pk_budget_values = $pk_budget_renting ? $pk_budget_rent : $pk_budget_sale;
+				$pk_budget_suffix = $pk_budget_renting ? ' MAD / mois' : ' MAD';
+				$pk_unlimited     = class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_polylang_string( 'Illimité', 'Illimité', 'partikulier' ) : __( 'Illimité', 'partikulier' );
+				?>
+				<select name="es_price_max" id="pk-s-budget" data-pk-sale="<?php echo esc_attr( wp_json_encode( $pk_budget_sale ) ); ?>" data-pk-rent="<?php echo esc_attr( wp_json_encode( $pk_budget_rent ) ); ?>" data-pk-unlimited="<?php echo esc_attr( $pk_unlimited ); ?>" data-pk-suffix-sale=" MAD" data-pk-suffix-rent=" MAD / mois">
+						<option value=""><?php echo esc_html( $pk_unlimited ); ?></option>
+								<?php foreach ( $pk_budget_values as $b ) : ?>
+										<option value="<?php echo esc_attr( $b ); ?>"<?php selected( $selected_price_max, (string) $b ); ?>><?php echo esc_html( number_format_i18n( $b ) . $pk_budget_suffix ); ?></option>
 								<?php endforeach; ?>
 				</select>
 		</div>

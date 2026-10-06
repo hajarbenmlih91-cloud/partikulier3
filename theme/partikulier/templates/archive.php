@@ -142,9 +142,9 @@ $is_type = $queried instanceof WP_Term && PARTIKULIER_ESTATIK_TYPE_TAXONOMY === 
 														$pk_filter_city_label = ( $pk_filter_city_term && ! is_wp_error( $pk_filter_city_term ) ) ? $pk_filter_city_term->name : '';
 														?>
 														<div class="pk-filter pk-filter-city">
-																<h3 class="pk-filter-title"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Ville', 'Ville', 'partikulier' ) ); ?></h3>
+																<h3 class="pk-filter-title"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Ville ou quartier', 'Ville ou quartier', 'partikulier' ) ); ?></h3>
 														<form action="<?php echo esc_url( pk_properties_archive_url() ); ?>" method="get" id="pk-filter-city-form" class="pk-filter-city-form pk-place-autocomplete">
-																<label class="screen-reader-text" for="pk-filter-city-input"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Toutes les villes', 'Toutes les villes', 'partikulier' ) ); ?></label>
+																<label class="screen-reader-text" for="pk-filter-city-input"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Ville ou quartier', 'Ville ou quartier', 'partikulier' ) ); ?></label>
 																<?php foreach ( array( 'es_action', 'es_type', 'es_price_max', 'pk_order' ) as $pk_preserve_key ) : ?>
 																		<?php if ( isset( $_GET[ $pk_preserve_key ] ) && ! is_array( $_GET[ $pk_preserve_key ] ) ) : ?>
 																				<input type="hidden" name="<?php echo esc_attr( $pk_preserve_key ); ?>" value="<?php echo esc_attr( sanitize_text_field( wp_unslash( $_GET[ $pk_preserve_key ] ) ) ); ?>">
@@ -152,7 +152,7 @@ $is_type = $queried instanceof WP_Term && PARTIKULIER_ESTATIK_TYPE_TAXONOMY === 
 																<?php endforeach; ?>
 																<div class="pk-place-autocomplete-wrap">
 																		<?php /* name="s" : secours sans JavaScript, desactive par le JS quand es_city est fixe. */ ?>
-																		<input id="pk-filter-city-input" name="s" class="pk-place-input" type="search" data-pk-place-input="true" data-pk-place-value="pk-filter-city-value" autocomplete="off" aria-controls="pk-filter-city-suggestions" aria-autocomplete="list" placeholder="<?php echo esc_attr( Partikulier_Localization::translate_polylang_string( 'Toutes les villes', 'Toutes les villes', 'partikulier' ) ); ?>" value="<?php echo esc_attr( $pk_filter_city_label ); ?>">
+																		<input id="pk-filter-city-input" name="s" class="pk-place-input" type="search" data-pk-place-input="true" data-pk-place-value="pk-filter-city-value" autocomplete="off" aria-controls="pk-filter-city-suggestions" aria-autocomplete="list" placeholder="<?php echo esc_attr( Partikulier_Localization::translate_polylang_string( 'Ville ou quartier', 'Ville ou quartier', 'partikulier' ) ); ?>" value="<?php echo esc_attr( $pk_filter_city_label ); ?>">
 																				<input type="hidden" name="es_city" id="pk-filter-city-value" value="<?php echo esc_attr( $pk_filter_city_slug ); ?>">
 																		<ul id="pk-filter-city-suggestions" class="pk-suggest pk-place-suggestions" role="listbox" hidden></ul>
 																</div>
@@ -181,6 +181,10 @@ $is_type = $queried instanceof WP_Term && PARTIKULIER_ESTATIK_TYPE_TAXONOMY === 
 																			$action_args['es_action'] = $action_item['value'];
 																	} else {
 																			unset( $action_args['es_action'] );
+																	}
+																	$pk_prev_action = isset( $pk_cumulative_args['es_action'] ) ? (string) $pk_cumulative_args['es_action'] : '';
+																	if ( (string) $action_item['value'] !== $pk_prev_action ) {
+																			unset( $action_args['es_price_max'] );
 																	}
 																		$action_url = add_query_arg( $action_args, pk_properties_archive_url() );
 																		/* 6.17.30 : laisser passer gettext — l'appel direct
@@ -223,7 +227,41 @@ $is_type = $queried instanceof WP_Term && PARTIKULIER_ESTATIK_TYPE_TAXONOMY === 
 										?>
 								</div>
 
-														<div class="pk-filter-footer">
+
+<?php
+$pk_budget_action = isset( $pk_cumulative_args['es_action'] ) ? (string) $pk_cumulative_args['es_action'] : '';
+if ( in_array( $pk_budget_action, array( 'a-vendre', 'a-louer' ), true ) ) :
+	$pk_budget_sale    = array( 100000, 200000, 300000, 400000, 500000, 750000, 1000000, 1500000 );
+	$pk_budget_rent    = array( 3000, 4000, 5000, 7000, 10000, 15000, 20000, 30000 );
+	$pk_budget_renting = ( 'a-louer' === $pk_budget_action );
+	$pk_budget_values  = $pk_budget_renting ? $pk_budget_rent : $pk_budget_sale;
+	$pk_budget_suffix  = $pk_budget_renting ? ' MAD / mois' : ' MAD';
+	$pk_budget_current = isset( $pk_cumulative_args['es_price_max'] ) ? (string) $pk_cumulative_args['es_price_max'] : '';
+	$pk_budget_clear   = $pk_cumulative_args;
+	unset( $pk_budget_clear['es_price_max'] );
+	?>
+						<div class="pk-filter pk-filter-budget">
+								<h3 class="pk-filter-title"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Budget max', 'Budget max', 'partikulier' ) ); ?></h3>
+								<ul class="pk-filter-list">
+									<li><a href="<?php echo esc_url( add_query_arg( $pk_budget_clear, pk_properties_archive_url() ) ); ?>"<?php echo '' === $pk_budget_current ? ' aria-current="true"' : ''; ?>><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Illimité', 'Illimité', 'partikulier' ) ); ?></a></li>
+<?php
+foreach ( $pk_budget_values as $pk_budget_n ) :
+	$pk_budget_args                 = $pk_cumulative_args;
+	$pk_budget_args['es_price_max'] = (string) $pk_budget_n;
+	$pk_budget_active               = ( (string) $pk_budget_n === $pk_budget_current ) ? ' aria-current="true"' : '';
+	printf(
+		'<li><a href="%1$s"%3$s>%2$s</a></li>',
+		esc_url( add_query_arg( $pk_budget_args, pk_properties_archive_url() ) ),
+		esc_html( number_format_i18n( $pk_budget_n ) . $pk_budget_suffix ),
+		$pk_budget_active /* phpcs:ignore WordPress.Security.EscapeOutput -- constante interne aria-current */
+	);
+endforeach;
+?>
+								</ul>
+						</div>
+<?php endif; ?>
+
+<div class="pk-filter-footer">
 															<button type="submit" form="pk-filter-city-form" class="pk-filter-apply"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Appliquer', 'Appliquer', 'partikulier' ) ); ?></button>
 														</div>
 														<script>
