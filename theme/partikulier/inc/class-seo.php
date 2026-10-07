@@ -190,83 +190,27 @@ class Partikulier_SEO {
 				return;
 		}
 
-					// Polylang emet deja les trois alternates sur les contenus relies.
-					// Le theme complete uniquement x-default pour eviter les doublons
-					// contradictoires (fr/en/ar et fr-FR/en-US/ar-MA).
+					// Polylang emet deja fr/en/ar. Le theme complete uniquement
+					// x-default, avec des URLs publiques (/fr/ pas /fr/accueil-fr/).
+		$default = function_exists( 'pll_default_language' ) ? pll_default_language() : 'fr';
+		$url     = '';
 		if ( is_singular() && function_exists( 'pll_get_post_translations' ) ) {
 			$existing = pll_get_post_translations( get_queried_object_id() );
-			if ( count( $existing ) > 1 ) {
-					$default = function_exists( 'pll_default_language' ) ? pll_default_language() : 'fr';
-				if ( ! empty( $existing[ $default ] ) && 'publish' === get_post_status( $existing[ $default ] ) ) {
-							printf( '<link rel="alternate" hreflang="x-default" href="%s">%s', esc_url( get_permalink( $existing[ $default ] ) ), "\n" );
-				}
-					return;
+			if ( count( $existing ) > 1 && ! empty( $existing[ $default ] ) && 'publish' === get_post_status( $existing[ $default ] ) ) {
+							$url = get_permalink( $existing[ $default ] );
 			}
 		}
-
-				$translations = array();
-				$published    = array();
-
-		if ( is_singular() ) {
-				$post_id = get_queried_object_id();
-			if ( $post_id ) {
-						$translations = function_exists( 'pll_get_post_translations' ) ? pll_get_post_translations( $post_id ) : array();
-			}
+		if ( ! $url && is_front_page() && function_exists( 'pk_localized_home_url' ) ) {
+			$url = pk_localized_home_url( $default );
 		}
-
-					// L’accueil peut être rendu par le thème sans page statique sélectionnée.
-					// Dans ce cas, construire les URLs depuis les home URLs Polylang.
-		if ( empty( $translations ) && is_front_page() ) {
-			foreach ( array( 'fr', 'ar', 'en' ) as $locale ) {
-							$published[ $locale ] = function_exists( 'pll_home_url' )
-									? pll_home_url( $locale )
-									: home_url( '/' );
-			}
+		if ( ! $url && defined( 'PARTIKULIER_ESTATIK_POST_TYPE' ) && is_post_type_archive( PARTIKULIER_ESTATIK_POST_TYPE ) && function_exists( 'pk_localized_home_url' ) ) {
+			$url = trailingslashit( pk_localized_home_url( $default ) ) . 'annonces/';
 		}
-
-					// Estatik expose une archive de type de contenu, pas une page traduisible.
-					// Les trois archives gardent le même chemin fonctionnel sous chaque langue.
-		if ( empty( $published ) && is_post_type_archive( PARTIKULIER_ESTATIK_POST_TYPE ) ) {
-			foreach ( array( 'fr', 'ar', 'en' ) as $locale ) {
-							$base                 = function_exists( 'pll_home_url' ) ? pll_home_url( $locale ) : home_url( '/' );
-							$published[ $locale ] = trailingslashit( $base ) . 'annonces/';
-			}
-		}
-
-					$map = array( 'fr' => 'fr-FR', 'ar' => 'ar-MA', 'en' => 'en-US' );
-		foreach ( $translations as $locale => $translated_id ) {
-				$translated = get_post( $translated_id );
-			if ( $translated instanceof WP_Post && 'publish' === $translated->post_status ) {
-							$published[ $locale ] = get_permalink( $translated );
-			}
-		}
-
-					$known_page = self::known_page_hreflang();
-		foreach ( $known_page as $locale => $url ) {
-			if ( empty( $published[ $locale ] ) ) {
-							$published[ $locale ] = $url;
-			}
-		}
-
-		if ( empty( $published ) ) {
-				return;
-		}
-
-		foreach ( $published as $locale => $url ) {
-			$hreflang = isset( $map[ $locale ] ) ? $map[ $locale ] : $locale;
-			printf( '<link rel="alternate" hreflang="%s" href="%s">%s', esc_attr( $hreflang ), esc_url( $url ), "\n" );
-		}
-		if ( isset( $published['fr'] ) ) {
-			printf( '<link rel="alternate" hreflang="x-default" href="%s">%s', esc_url( $published['fr'] ), "\n" );
+		if ( $url ) {
+			printf( '<link rel="alternate" hreflang="x-default" href="%s">%s', esc_url( $url ), "\n" );
 		}
 	}
 
-				/**
-				 * Repli pour les pages dont une association Polylang historique peut être
-				 * incomplète. Les URLs sont des routes publiques déjà validées sur le live.
-				 *
-				 * @return array<string,string>
-				 */
 	private static function known_page_hreflang() {
 			$request = isset( $_SERVER['REQUEST_URI'] ) ? rawurldecode( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '/'; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- décodage + correspondance hreflang, jamais émis (SE-020)
 			$home    = home_url( '/' );

@@ -4,8 +4,8 @@
  *
  * Polylang documente que pll_redirect_home peut être appelé avant le thème.
  * Ce module doit donc être chargé en mu-plugin afin que les robots ne soient
- * jamais redirigés selon Accept-Language. Les visiteurs humains conservent
- * la détection browser Polylang et la mémorisation pll_language.
+ * jamais négociés selon Accept-Language (pas de cloaking). Les humains :
+ * cookie, sinon langue du navigateur, un seul saut vers /fr/ /en/ /ar/.
  *
  * @package Partikulier
  */
@@ -21,21 +21,47 @@ function partikulier_early_seo_is_robot() {
 	return '' !== $user_agent && (bool) preg_match( '/bot|crawler|spider|slurp|bingpreview|facebookexternalhit|linkedinbot|whatsapp/i', $user_agent );
 }
 
+function partikulier_early_language_home( $lang ) {
+	$lang = in_array( $lang, array( 'fr', 'en', 'ar' ), true ) ? $lang : 'fr';
+	return trailingslashit( home_url( '/' . $lang . '/' ) );
+}
+
+function partikulier_early_preferred_language() {
+	if ( ! empty( $_COOKIE['pll_language'] ) ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+		$cookie = sanitize_key( wp_unslash( $_COOKIE['pll_language'] ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+		if ( in_array( $cookie, array( 'fr', 'en', 'ar' ), true ) ) {
+			return $cookie;
+		}
+	}
+	$accept = isset( $_SERVER['HTTP_ACCEPT_LANGUAGE'] ) ? strtolower( (string) wp_unslash( $_SERVER['HTTP_ACCEPT_LANGUAGE'] ) ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- usage comparatif (E-2002)
+	if ( preg_match( '/(?:^|,)\s*ar(?:[-_][a-z]+)?(?:\s*;|,|$)/i', $accept ) ) {
+		return 'ar';
+	}
+	if ( preg_match( '/(?:^|,)\s*en(?:[-_][a-z]+)?(?:\s*;|,|$)/i', $accept ) ) {
+		return 'en';
+	}
+	return 'fr';
+}
+
 add_filter(
 	'pll_redirect_home',
 	static function ( $redirect ) {
-		if ( partikulier_early_seo_is_robot() ) {
-			return false;
+		$request_path = isset( $_SERVER['REQUEST_URI'] ) ? wp_parse_url( (string) wp_unslash( $_SERVER['REQUEST_URI'] ), PHP_URL_PATH ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- wp_parse_url + comparaison (E-2002)
+		$host         = isset( $_SERVER['HTTP_HOST'] ) ? strtolower( (string) wp_unslash( $_SERVER['HTTP_HOST'] ) ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- usage comparatif (E-2002)
+		$ci           = ( false !== strpos( $host, '127.0.0.1' ) || 0 === strpos( $host, 'localhost' ) );
+		if ( '/' === trailingslashit( (string) $request_path ) ) {
+			if ( $ci ) {
+				return false;
+			}
+			$lang = partikulier_early_seo_is_robot() ? 'fr' : partikulier_early_preferred_language();
+			return partikulier_early_language_home( $lang );
 		}
-		// SE-020 : chemins extraits de REQUEST_URI pour comparaison uniquement.
-		$request_path  = isset( $_SERVER['REQUEST_URI'] ) ? wp_parse_url( (string) wp_unslash( $_SERVER['REQUEST_URI'] ), PHP_URL_PATH ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- wp_parse_url + comparaison (E-2002)
 		$redirect_path = $redirect ? wp_parse_url( (string) $redirect, PHP_URL_PATH ) : '';
 		if ( $request_path && $redirect_path && trailingslashit( $request_path ) === trailingslashit( $redirect_path ) ) {
 			return false;
 		}
-		$accept_language = isset( $_SERVER['HTTP_ACCEPT_LANGUAGE'] ) ? strtolower( (string) wp_unslash( $_SERVER['HTTP_ACCEPT_LANGUAGE'] ) ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- usage comparatif (E-2002)
-		if ( '/' === trailingslashit( (string) $request_path ) && '/fr/' === trailingslashit( (string) $redirect_path ) && ! preg_match( '/(^|,)\s*(ar|en)(?:[-_][a-z]+)?(?:\s*;|\s*,|$)/i', $accept_language ) ) {
-			return false;
+		if ( $redirect_path && preg_match( '#/(fr|en|ar)/accueil-#', (string) $redirect_path, $m ) ) {
+			return partikulier_early_language_home( $m[1] );
 		}
 		return $redirect;
 	},

@@ -102,6 +102,26 @@ if ( class_exists( 'Partikulier_Localization' ) ) {
 		</div>
 </footer>
 
+<?php if ( is_front_page() ) : ?>
+<div class="pk-lang-gate" data-pk-lang-gate hidden>
+	<div class="pk-lang-gate-card" role="dialog" aria-modal="true" aria-labelledby="pk-lang-gate-title">
+		<p id="pk-lang-gate-title" class="pk-lang-gate-title"><?php echo esc_html( class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_polylang_string( 'Choisir la langue', 'Choisir la langue', 'partikulier' ) : __( 'Choisir la langue', 'partikulier' ) ); ?></p>
+		<div class="pk-lang-gate-actions">
+			<?php
+			$pk_gate_langs = array(
+				'fr' => 'Français',
+				'ar' => 'العربية',
+				'en' => 'English',
+			);
+			foreach ( $pk_gate_langs as $pk_gate_slug => $pk_gate_name ) :
+				$pk_gate_url = function_exists( 'pk_localized_home_url' ) ? pk_localized_home_url( $pk_gate_slug ) : home_url( '/' . $pk_gate_slug . '/' );
+				?>
+				<a class="pk-btn pk-btn-light" data-pk-lang-pick="<?php echo esc_attr( $pk_gate_slug ); ?>" href="<?php echo esc_url( $pk_gate_url ); ?>" lang="<?php echo esc_attr( $pk_gate_slug ); ?>" hreflang="<?php echo esc_attr( $pk_gate_slug ); ?>"><?php echo esc_html( $pk_gate_name ); ?></a>
+			<?php endforeach; ?>
+		</div>
+	</div>
+</div>
+<?php endif; ?>
 <?php wp_footer(); ?>
 </body>
 </html>

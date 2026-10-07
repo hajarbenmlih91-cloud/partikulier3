@@ -1170,3 +1170,34 @@
 	}
 	action.addEventListener("change", sync);
 }());
+
+
+/* Première visite : mémoriser le choix de langue (header ou popup). */
+(function () {
+	"use strict";
+	function chosen() {
+		try {
+			if (window.localStorage && localStorage.getItem("pk_lang_gate") === "1") return true;
+		} catch (err) { /* private mode */ }
+		return /(?:^|; )pk_lang_gate=1(?:;|$)/.test(document.cookie);
+	}
+	function setChosen() {
+		document.cookie = "pk_lang_gate=1;path=/;max-age=31536000;SameSite=Lax";
+		try { if (window.localStorage) localStorage.setItem("pk_lang_gate", "1"); } catch (err) { /* ignore */ }
+	}
+	var gate = document.querySelector("[data-pk-lang-gate]");
+	if (gate) {
+		if (chosen()) {
+			gate.hidden = true;
+		} else {
+			gate.hidden = false;
+			document.body.classList.add("pk-lang-gate-open");
+			gate.querySelectorAll("[data-pk-lang-pick]").forEach(function (link) {
+				link.addEventListener("click", setChosen);
+			});
+		}
+	}
+	document.querySelectorAll("[data-pk-lang] a").forEach(function (link) {
+		link.addEventListener("click", setChosen);
+	});
+}());
