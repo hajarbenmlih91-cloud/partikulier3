@@ -4135,3 +4135,40 @@ html[dir="rtl"] .pk-single .pk-single-gallery[data-pk-carousel] .pk-gallery-stag
 		font-weight: 800;
 	}
 }
+
+
+/* Première visite : choix de langue (navigateur a déjà posé /fr /en /ar). */
+.pk-lang-gate[hidden] { display: none !important; }
+.pk-lang-gate {
+	position: fixed;
+	inset: 0;
+	z-index: 3000;
+	display: grid;
+	place-items: center;
+	padding: 1.25rem;
+	background: rgba(22, 23, 21, .48);
+}
+.pk-lang-gate-card {
+	width: min(22rem, 100%);
+	padding: 1.35rem 1.25rem 1.2rem;
+	background: #fff;
+	color: var(--pk-ink);
+	box-shadow: 0 18px 48px rgba(22, 23, 21, .18);
+}
+.pk-lang-gate-title {
+	margin: 0 0 1rem;
+	font-size: 1.05rem;
+	font-weight: 800;
+	letter-spacing: -.02em;
+}
+.pk-lang-gate-actions {
+	display: flex;
+	flex-direction: column;
+	gap: .55rem;
+}
+.pk-lang-gate-actions .pk-btn {
+	width: 100%;
+	min-height: 44px;
+	justify-content: center;
+}
+body.pk-lang-gate-open { overflow: hidden; }

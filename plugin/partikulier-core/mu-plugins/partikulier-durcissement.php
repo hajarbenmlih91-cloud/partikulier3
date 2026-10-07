@@ -31,8 +31,27 @@ add_action(
 		}
 		header_remove( 'X-Powered-By' );
 		header_remove( 'X-Generator' );
+		if ( false !== strpos( (string) home_url( '/' ), 'hostingersite.com' ) ) {
+			header( 'X-Robots-Tag: noindex, nofollow' );
+		}
 	},
 	20
+);
+
+add_filter(
+	'rest_endpoints',
+	static function ( $endpoints ) {
+		if ( ! is_array( $endpoints ) ) {
+			return $endpoints;
+		}
+		foreach ( array_keys( $endpoints ) as $route ) {
+			if ( false !== strpos( (string) $route, 'hostinger-easy-onboarding' ) ) {
+				unset( $endpoints[ $route ] );
+			}
+		}
+		return $endpoints;
+	},
+	99
 );
 
 /**

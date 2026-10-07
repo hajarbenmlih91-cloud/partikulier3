@@ -53,7 +53,15 @@ class Partikulier_Sitemap {
 		// Le filtre robots_txt ci-dessous produit l’unique directive Sitemap.
 	}
 
+	public static function is_non_production_host() {
+		return false !== strpos( (string) home_url( '/' ), 'hostingersite.com' );
+	}
+
 	public static function robots_filter( $output, $public ) {
+		unset( $public );
+		if ( self::is_non_production_host() ) {
+			return "User-agent: *\nDisallow: /\n";
+		}
 		$output  = preg_replace( '/^Sitemap:\s*.*$/mi', '', (string) $output );
 		$output  = rtrim( $output ) . "\n";
 		$output .= "Disallow: /?s=\n";
@@ -95,7 +103,7 @@ class Partikulier_Sitemap {
                  * sans Polylang, l'unique entrée FR porte ses alias fr/x-default. */
 			$home_alternates = array( 'fr' => $home, 'x-default' => $home );
 			foreach ( array( 'fr', 'en', 'ar' ) as $locale ) {
-					$locale_url = function_exists( 'pll_home_url' ) ? pll_home_url( $locale ) : '';
+					$locale_url = function_exists( 'pk_localized_home_url' ) ? pk_localized_home_url( $locale ) : '';
 					if ( $locale_url && $locale_url !== $home ) {
 							$home_alternates[ $locale ] = $locale_url;
 					}
@@ -112,7 +120,7 @@ class Partikulier_Sitemap {
 		$excluded_pages = array( 'deposer', 'deposer-en', 'deposer-ar', 'deposer-une-annonce', 'deposer-annonce', 'mes-annonces', 'mes-annonces-en', 'mes-annonces-ar', 'favoris', 'favoris-en', 'favoris-ar', 'connexion', 'connexion-en', 'connexion-ar', 'annonces', 'catalogue' );
 		$seen_pages     = array();
 		foreach ( $pages as $p ) {
-			if ( in_array( $p->post_name, $excluded_pages, true ) ) {
+			if ( in_array( $p->post_name, $excluded_pages, true ) || 0 === strpos( (string) $p->post_name, 'accueil-' ) ) {
 				continue;
 			}
 			$translated_pages = function_exists( 'pll_get_post_translations' ) ? pll_get_post_translations( $p->ID ) : array( 'fr' => $p->ID );

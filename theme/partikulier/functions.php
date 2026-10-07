@@ -137,16 +137,36 @@ add_filter( 'register_post_type_args', 'pk_properties_post_type_args', 20, 2 );
 add_action(
 	'template_redirect',
 	static function () {
-		if ( is_admin() || wp_doing_ajax() || ! defined( 'POLYLANG_VERSION' ) ) {
+		if ( is_admin() || wp_doing_ajax() || ( defined( 'REST_REQUEST' ) && REST_REQUEST ) ) {
 			return;
 		}
 		$path = (string) wp_parse_url( wp_unslash( $_SERVER['REQUEST_URI'] ?? '/' ), PHP_URL_PATH ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+		$ua   = isset( $_SERVER['HTTP_USER_AGENT'] ) ? strtolower( (string) wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+		$bot  = '' !== $ua && (bool) preg_match( '/bot|crawler|spider|slurp|bingpreview|facebookexternalhit|linkedinbot|whatsapp/i', $ua );
+		if ( '/' === trailingslashit( $path ) ) {
+			$lang = 'fr';
+			if ( ! $bot && ! empty( $_COOKIE['pll_language'] ) ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+				$cookie_lang = sanitize_key( wp_unslash( $_COOKIE['pll_language'] ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+				if ( in_array( $cookie_lang, array( 'fr', 'en', 'ar' ), true ) ) {
+					$lang = $cookie_lang;
+				}
+			} elseif ( ! $bot ) {
+				$accept = isset( $_SERVER['HTTP_ACCEPT_LANGUAGE'] ) ? strtolower( (string) wp_unslash( $_SERVER['HTTP_ACCEPT_LANGUAGE'] ) ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+				if ( preg_match( '/(?:^|,)\s*ar(?:[-_][a-z]+)?(?:\s*;|,|$)/i', $accept ) ) {
+					$lang = 'ar';
+				} elseif ( preg_match( '/(?:^|,)\s*en(?:[-_][a-z]+)?(?:\s*;|,|$)/i', $accept ) ) {
+					$lang = 'en';
+				}
+			}
+			wp_safe_redirect( pk_localized_home_url( $lang ), $bot ? 301 : 302 );
+			exit;
+		}
 		if ( preg_match( '#^/(fr|en|ar)/accueil-(?:fr|en|ar)/?$#', $path, $m ) ) {
 			wp_safe_redirect( pk_localized_home_url( $m[1] ), 301 );
 			exit;
 		}
 	},
-	2
+	1
 );
 
 /**
