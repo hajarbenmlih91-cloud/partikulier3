@@ -83,6 +83,7 @@ class Partikulier_Required_Page_Translations {
 				pll_save_post_translations( $map );
 			}
 		}
+		flush_rewrite_rules( false );
 	}
 
 	/**
@@ -100,4 +101,78 @@ class Partikulier_Required_Page_Translations {
 		);
 		clean_post_cache( (int) $id );
 	}
+
+	/**
+	 * WP résout le 1er post_name ; sans ça /ar/deposer/ = page FR + 301.
+	 */
+	public static function resolve_query( $q ) {
+		if ( is_admin() || ! $q instanceof WP_Query || ! $q->is_main_query() ) {
+			return;
+		}
+		$pagename = (string) $q->get( 'pagename' );
+		if ( false !== strpos( $pagename, '/' ) ) {
+			$pagename = basename( $pagename );
+		}
+		if ( ! in_array( $pagename, array( 'deposer', 'faq', 'contact' ), true ) ) {
+			return;
+		}
+		if ( ! function_exists( 'pll_current_language' ) ) {
+			return;
+		}
+		$lang = pll_current_language( 'slug' );
+		if ( ! $lang ) {
+			return;
+		}
+		$found = get_posts(
+			array(
+				'post_type'              => 'page',
+				'post_status'            => 'publish',
+				'name'                   => $pagename,
+				'posts_per_page'         => 1,
+				'fields'                 => 'ids',
+				'lang'                   => $lang,
+				'suppress_filters'       => false,
+				'no_found_rows'          => true,
+				'update_post_meta_cache' => false,
+				'update_post_term_cache' => false,
+			)
+		);
+		if ( empty( $found ) ) {
+			return;
+		}
+		$q->set( 'page_id', (int) $found[0] );
+		$q->set( 'pagename', '' );
+		$q->set( 'name', '' );
+		$q->is_page     = true;
+		$q->is_singular = true;
+	}
+
+	public static function keep_canonical( $redirect_url, $language = null ) {
+		if ( ! is_page() ) {
+			return $redirect_url;
+		}
+		$slug = get_post_field( 'post_name', get_queried_object_id() );
+		if ( in_array( $slug, array( 'deposer', 'faq', 'contact' ), true ) ) {
+			return false;
+		}
+		return $redirect_url;
+	}
+
+	public static function init() {
+		add_action( 'pre_get_posts', array( __CLASS__, 'resolve_query' ) );
+		add_filter( 'pll_check_canonical_url', array( __CLASS__, 'keep_canonical' ), 10, 2 );
+		add_filter(
+			'redirect_canonical',
+			static function ( $redirect, $request ) {
+				if ( is_string( $request ) && preg_match( '#/(ar|en|fr)/(deposer|faq|contact)/?$#', $request ) ) {
+					return false;
+				}
+				return $redirect;
+			},
+			10,
+			2
+		);
+	}
 }
+
+Partikulier_Required_Page_Translations::init();
