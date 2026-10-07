@@ -109,16 +109,24 @@ class Partikulier_Required_Page_Translations {
 		if ( is_admin() || ! $q instanceof WP_Query || ! $q->is_main_query() ) {
 			return;
 		}
-		$pagename = (string) $q->get( 'pagename' );
-		if ( false !== strpos( $pagename, '/' ) ) {
-			$pagename = basename( $pagename );
+		$path = '';
+		if ( ! empty( $_SERVER['REQUEST_URI'] ) ) {
+			$path = (string) wp_parse_url( wp_unslash( $_SERVER['REQUEST_URI'] ), PHP_URL_PATH );
+		}
+		$lang     = '';
+		$pagename = '';
+		if ( preg_match( '#^/(ar|en|fr)/(deposer|faq|contact)/?$#', $path, $m ) ) {
+			$lang     = $m[1];
+			$pagename = $m[2];
+		} else {
+			$pagename = (string) $q->get( 'pagename' );
+			if ( false !== strpos( $pagename, '/' ) ) {
+				$pagename = basename( $pagename );
+			}
+			$lang = (string) $q->get( 'lang' );
 		}
 		if ( ! in_array( $pagename, array( 'deposer', 'faq', 'contact' ), true ) ) {
 			return;
-		}
-		$lang = (string) $q->get( 'lang' );
-		if ( ! $lang && ! empty( $_SERVER['REQUEST_URI'] ) && preg_match( '#^/(ar|en|fr)(/|$)#', (string) wp_parse_url( $_SERVER['REQUEST_URI'], PHP_URL_PATH ), $m ) ) {
-			$lang = $m[1];
 		}
 		if ( ! $lang || ! function_exists( 'pll_get_post_language' ) ) {
 			return;
@@ -149,8 +157,10 @@ class Partikulier_Required_Page_Translations {
 		$q->set( 'page_id', $found );
 		$q->set( 'pagename', '' );
 		$q->set( 'name', '' );
-		$q->is_page     = true;
-		$q->is_singular = true;
+		$q->queried_object    = null;
+		$q->queried_object_id = 0;
+		$q->is_page           = true;
+		$q->is_singular       = true;
 	}
 
 	public static function keep_canonical( $redirect_url, $language = null ) {
