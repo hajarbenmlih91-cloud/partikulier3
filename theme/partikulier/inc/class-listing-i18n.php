@@ -260,4 +260,48 @@ class Partikulier_Listing_I18n {
 
 			return rtrim( $text, " ,—-،" );
 	}
+
+		/**
+		 * Ensoleillement : lookup sur la valeur brute, sans replier la sortie.
+		 *
+		 * @param string $raw  Valeur canonique (option value).
+		 * @param string $lang Langue.
+		 * @return string
+		 */
+	public static function sun_phrase( $raw, $lang ) {
+			$raw = (string) $raw;
+		if ( '' === $raw ) {
+				return '';
+		}
+			$lex = self::lex( $lang );
+
+			return isset( $lex['sun'][ $raw ] ) ? $lex['sun'][ $raw ] : $raw;
+	}
+
+		/**
+		 * Complément d'étage (« au RDC », « في الطابق 3 ») sans replier la clé.
+		 *
+		 * @param string $floor Valeur canonique.
+		 * @param string $lang  Langue.
+		 * @return string
+		 */
+	public static function floor_inner( $floor, $lang ) {
+			$floor = (string) $floor;
+		if ( '' === $floor ) {
+				return '';
+		}
+			$lex = self::lex( $lang );
+		if ( 'RDC' === $floor ) {
+				return 'fr' === $lang ? 'au RDC' : $lex['ground_floor'];
+		}
+		if ( isset( $lex['floors'][ $floor ] ) ) {
+				$label = $lex['floors'][ $floor ];
+		} elseif ( 'fr' === $lang ) {
+				$label = $floor;
+		} else {
+				$label = self::floor_label( $floor, $lang );
+		}
+
+			return sprintf( $lex['at_floor'], $label );
+	}
 }
