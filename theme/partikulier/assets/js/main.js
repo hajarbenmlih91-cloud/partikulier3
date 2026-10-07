@@ -1192,9 +1192,24 @@
 		} else {
 			gate.hidden = false;
 			document.body.classList.add("pk-lang-gate-open");
+			function dismiss() {
+				setChosen();
+				gate.hidden = true;
+				document.body.classList.remove("pk-lang-gate-open");
+			}
 			gate.querySelectorAll("[data-pk-lang-pick]").forEach(function (link) {
 				link.addEventListener("click", setChosen);
 			});
+			var closeBtn = gate.querySelector("[data-pk-lang-dismiss]");
+			if (closeBtn) closeBtn.addEventListener("click", dismiss);
+			gate.addEventListener("click", function (e) { if (e.target === gate) dismiss(); });
+			document.addEventListener("keydown", function (e) {
+				if (e.key === "Escape" && !gate.hidden) dismiss();
+			});
+			var focusTarget = closeBtn || gate.querySelector("[data-pk-lang-pick]");
+			if (focusTarget && typeof focusTarget.focus === "function") {
+				try { focusTarget.focus(); } catch (err) { /* ignore */ }
+			}
 		}
 	}
 	document.querySelectorAll("[data-pk-lang] a").forEach(function (link) {
