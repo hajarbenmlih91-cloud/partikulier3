@@ -160,19 +160,6 @@ add_action(
 					$lang = 'en';
 				}
 			}
-			if ( ! headers_sent() ) {
-				setcookie(
-					'pll_language',
-					$lang,
-					array(
-						'expires'  => time() + YEAR_IN_SECONDS,
-						'path'     => '/',
-						'secure'   => is_ssl(),
-						'httponly' => false,
-						'samesite' => 'Lax',
-					)
-				);
-			}
 			wp_safe_redirect( pk_localized_home_url( $lang ), $bot ? 301 : 302 );
 			exit;
 		}
