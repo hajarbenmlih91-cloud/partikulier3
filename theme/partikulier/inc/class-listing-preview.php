@@ -231,7 +231,7 @@ class Partikulier_Listing_Preview {
 			$details[] = sprintf(
 				/* translators: %s: etage. */
 				__( 'situé %s', 'partikulier' ),
-				'RDC' === $v['floor'] ? __( 'au rdc', 'partikulier' ) : sprintf( __( 'au %s', 'partikulier' ), mb_strtolower( $v['floor'] ) )
+				self::floor_inner( $v['floor'] )
 			);
 		}
 		$details[] = 'Oui' === $v['garage'] ? __( 'avec garage ou sous-sol', 'partikulier' ) : __( 'sans garage', 'partikulier' );
@@ -240,7 +240,7 @@ class Partikulier_Listing_Preview {
 			$details[] = __( 'sans vis-à-vis', 'partikulier' );
 		}
 		if ( '' !== $v['sunshine'] ) {
-			$details[] = mb_strtolower( $v['sunshine'] );
+			$details[] = self::sun_phrase( $v['sunshine'] );
 		}
 
 		// Phrase d'accroche placee EN TETE : « Propriétaire vend studio... ».
@@ -437,10 +437,10 @@ class Partikulier_Listing_Preview {
 			$features[] = __( 'sans vis-à-vis', 'partikulier' );
 		}
 		if ( '' !== $v['sunshine'] ) {
-			$features[] = mb_strtolower( $v['sunshine'] );
+			$features[] = self::sun_phrase( $v['sunshine'] );
 		}
 		if ( '' !== $v['floor'] ) {
-			$features[] = 'RDC' === $v['floor'] ? __( 'au rez-de-chaussée', 'partikulier' ) : mb_strtolower( $v['floor'] );
+			$features[] = 'RDC' === $v['floor'] ? __( 'au rez-de-chaussée', 'partikulier' ) : self::floor_inner( $v['floor'] );
 		}
 		if ( $features ) {
 			$alt .= ', ' . $features[ ( $index - 1 ) % count( $features ) ];
@@ -518,6 +518,78 @@ class Partikulier_Listing_Preview {
 				. __( 'PROPRIÉTAIRE', 'partikulier' )
 			),
 		);
+	}
+
+	/**
+	 * Langue du dépôt (clé brute pk_language), jamais un fold.
+	 *
+	 * @return string
+	 */
+	private static function request_lang() {
+		$lang = isset( $_POST['pk_language'] ) ? sanitize_key( wp_unslash( $_POST['pk_language'] ) ) : '';
+		if ( ! in_array( $lang, array( 'fr', 'en', 'ar' ), true ) && function_exists( 'pll_current_language' ) ) {
+			$lang = sanitize_key( (string) pll_current_language( 'slug' ) );
+		}
+
+		return in_array( $lang, array( 'fr', 'en', 'ar' ), true ) ? $lang : 'fr';
+	}
+
+	/**
+	 * @param string $raw Valeur canonique d'ensoleillement.
+	 * @return string
+	 */
+	private static function sun_phrase( $raw ) {
+		$raw = (string) $raw;
+		if ( '' === $raw ) {
+			return '';
+		}
+		$lex = self::lexicon();
+		if ( isset( $lex['sun'][ $raw ] ) ) {
+			return $lex['sun'][ $raw ];
+		}
+
+		return $raw;
+	}
+
+	/**
+	 * @param string $floor Valeur canonique d'étage.
+	 * @return string
+	 */
+	private static function floor_inner( $floor ) {
+		$floor = (string) $floor;
+		if ( '' === $floor ) {
+			return '';
+		}
+		$lang = self::request_lang();
+		$lex  = self::lexicon();
+		if ( 'RDC' === $floor ) {
+			return 'fr' === $lang ? 'au RDC' : ( $lex['ground_floor'] ?? 'au RDC' );
+		}
+		if ( isset( $lex['floors'][ $floor ] ) ) {
+			$label = $lex['floors'][ $floor ];
+		} elseif ( 'fr' === $lang ) {
+			$label = $floor;
+		} elseif ( class_exists( '\\Partikulier\\Core\\Domain\\I18n\\ListingVocabulary' ) ) {
+			$label = \Partikulier\Core\Domain\I18n\ListingVocabulary::floor_label( $floor, $lang );
+		} else {
+			$label = $floor;
+		}
+
+		return sprintf( $lex['at_floor'] ?? 'au %s', $label );
+	}
+
+	/**
+	 * @return array
+	 */
+	private static function lexicon() {
+		if ( class_exists( '\\Partikulier\\Core\\Domain\\I18n\\ListingLexicon' ) ) {
+			$lex = \Partikulier\Core\Domain\I18n\ListingLexicon::lex( self::request_lang() );
+			if ( is_array( $lex ) ) {
+				return $lex;
+			}
+		}
+
+		return array();
 	}
 
 	/**
