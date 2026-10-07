@@ -116,31 +116,37 @@ class Partikulier_Required_Page_Translations {
 		if ( ! in_array( $pagename, array( 'deposer', 'faq', 'contact' ), true ) ) {
 			return;
 		}
-		if ( ! function_exists( 'pll_current_language' ) ) {
+		$lang = (string) $q->get( 'lang' );
+		if ( ! $lang && ! empty( $_SERVER['REQUEST_URI'] ) && preg_match( '#^/(ar|en|fr)(/|$)#', (string) wp_parse_url( $_SERVER['REQUEST_URI'], PHP_URL_PATH ), $m ) ) {
+			$lang = $m[1];
+		}
+		if ( ! $lang || ! function_exists( 'pll_get_post_language' ) ) {
 			return;
 		}
-		$lang = pll_current_language( 'slug' );
-		if ( ! $lang ) {
-			return;
-		}
-		$found = get_posts(
+		$candidates = get_posts(
 			array(
 				'post_type'              => 'page',
 				'post_status'            => 'publish',
 				'name'                   => $pagename,
-				'posts_per_page'         => 1,
+				'posts_per_page'         => 10,
 				'fields'                 => 'ids',
-				'lang'                   => $lang,
-				'suppress_filters'       => false,
+				'suppress_filters'       => true,
 				'no_found_rows'          => true,
 				'update_post_meta_cache' => false,
 				'update_post_term_cache' => false,
 			)
 		);
-		if ( empty( $found ) ) {
+		$found = 0;
+		foreach ( $candidates as $cid ) {
+			if ( $lang === pll_get_post_language( (int) $cid ) ) {
+				$found = (int) $cid;
+				break;
+			}
+		}
+		if ( ! $found ) {
 			return;
 		}
-		$q->set( 'page_id', (int) $found[0] );
+		$q->set( 'page_id', $found );
 		$q->set( 'pagename', '' );
 		$q->set( 'name', '' );
 		$q->is_page     = true;
