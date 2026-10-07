@@ -259,6 +259,7 @@ jobs:
           wp eval 'if(class_exists("Partikulier_Required_Pages")){delete_option("pk_front_ensured"); Partikulier_Required_Pages::ensure_front();}'
           if [ "$DEPLOY_ENV" = "uat" ]; then
             wp eval-file wp-content/themes/partikulier/cli/demo-seed.php
+            printf 'User-agent: *\nDisallow: /\n' > "$WP_PATH/robots.txt"
           fi
           wp cache flush || true
           wp rewrite flush || true
