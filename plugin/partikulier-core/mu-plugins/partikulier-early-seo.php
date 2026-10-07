@@ -103,9 +103,23 @@ add_filter(
 	static function ( $location, $status ) {
 		// SE-020 : idem — chemin comparé, jamais émis.
 		$request_path = isset( $_SERVER['REQUEST_URI'] ) ? wp_parse_url( (string) wp_unslash( $_SERVER['REQUEST_URI'] ), PHP_URL_PATH ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- wp_parse_url + comparaison (E-2002)
-		if ( 302 === (int) $status && '/' === trailingslashit( (string) $request_path ) ) {
+		if ( '/' === trailingslashit( (string) $request_path ) ) {
 			header( 'Cache-Control: private, no-store, max-age=0' );
 			header( 'Vary: Accept-Language, Cookie', false );
+			$loc_path = (string) wp_parse_url( (string) $location, PHP_URL_PATH );
+			if ( preg_match( '#^/(fr|en|ar)/#', $loc_path, $m ) ) {
+				setcookie(
+					'pll_language',
+					$m[1],
+					array(
+						'expires'  => time() + YEAR_IN_SECONDS,
+						'path'     => '/',
+						'secure'   => is_ssl(),
+						'httponly' => false,
+						'samesite' => 'Lax',
+					)
+				);
+			}
 		}
 		return $location;
 	},
