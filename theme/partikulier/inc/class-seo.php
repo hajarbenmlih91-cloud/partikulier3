@@ -24,6 +24,7 @@ class Partikulier_SEO {
 			remove_action( 'wp_head', 'wp_generator' );
 			add_action( 'wp_head', array( __CLASS__, 'meta_head' ), 1 );
 			add_action( 'wp_head', array( __CLASS__, 'hreflang_head' ), 2 );
+			add_filter( 'pll_rel_hreflang_attributes', array( __CLASS__, 'public_hreflang_urls' ) );
 	}
 
 		/**
@@ -200,15 +201,30 @@ class Partikulier_SEO {
 							$url = get_permalink( $existing[ $default ] );
 			}
 		}
-		if ( ! $url && is_front_page() && function_exists( 'pk_localized_home_url' ) ) {
-			$url = pk_localized_home_url( $default );
-		}
 		if ( ! $url && defined( 'PARTIKULIER_ESTATIK_POST_TYPE' ) && is_post_type_archive( PARTIKULIER_ESTATIK_POST_TYPE ) && function_exists( 'pk_localized_home_url' ) ) {
 			$url = trailingslashit( pk_localized_home_url( $default ) ) . 'annonces/';
 		}
 		if ( $url ) {
 			printf( '<link rel="alternate" hreflang="x-default" href="%s">%s', esc_url( $url ), "\n" );
 		}
+	}
+
+	public static function public_hreflang_urls( $hreflangs ) {
+		if ( ! is_array( $hreflangs ) ) {
+			return $hreflangs;
+		}
+		$out = array();
+		foreach ( $hreflangs as $lang => $url ) {
+			$path = (string) wp_parse_url( (string) $url, PHP_URL_PATH );
+			if ( preg_match( '#/(fr|en|ar)/accueil-(?:fr|en|ar)/?#', $path, $m ) && function_exists( 'pk_localized_home_url' ) ) {
+				$url = pk_localized_home_url( $m[1] );
+			}
+			if ( 'x-default' === $lang && function_exists( 'pk_localized_home_url' ) && ( '/' === trailingslashit( $path ) || false !== strpos( $path, '/accueil-' ) ) ) {
+				$url = pk_localized_home_url( 'fr' );
+			}
+			$out[ $lang ] = $url;
+		}
+		return $out;
 	}
 
 	private static function known_page_hreflang() {

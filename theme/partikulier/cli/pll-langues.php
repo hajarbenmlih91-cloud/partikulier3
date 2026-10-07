@@ -38,4 +38,13 @@ if ( is_wp_error( $erreurs ) && $erreurs->has_errors() ) {
 	WP_CLI::error( 'réglages polylang : ' . $erreurs->get_error_message() );
 }
 wp_cache_flush();
+if ( false !== strpos( (string) home_url( '/' ), 'hostingersite.com' ) ) {
+	$robots = "User-agent: *\nDisallow: /\n";
+	$wrote  = file_put_contents( ABSPATH . 'robots.txt', $robots );
+	if ( false === $wrote ) {
+		WP_CLI::warning( 'robots.txt UAT non écrit' );
+	} else {
+		WP_CLI::success( 'robots.txt UAT : User-agent: * / Disallow: /' );
+	}
+}
 WP_CLI::success( 'langues fr (défaut) / en / ar (rtl=1) créées, réglages de référence posés' );

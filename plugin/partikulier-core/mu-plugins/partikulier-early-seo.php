@@ -26,6 +26,12 @@ function partikulier_early_language_home( $lang ) {
 	return trailingslashit( home_url( '/' . $lang . '/' ) );
 }
 
+function partikulier_early_set_language_cookie( $lang ) {
+	$lang = in_array( $lang, array( 'fr', 'en', 'ar' ), true ) ? $lang : 'fr';
+	$GLOBALS['partikulier_root_lang'] = $lang;
+	$_COOKIE['pll_language']          = $lang; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
+}
+
 function partikulier_early_preferred_language() {
 	if ( ! empty( $_COOKIE['pll_language'] ) ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
 		$cookie = sanitize_key( wp_unslash( $_COOKIE['pll_language'] ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
@@ -54,6 +60,7 @@ add_filter(
 				return false;
 			}
 			$lang = partikulier_early_seo_is_robot() ? 'fr' : partikulier_early_preferred_language();
+			partikulier_early_set_language_cookie( $lang );
 			return partikulier_early_language_home( $lang );
 		}
 		$redirect_path = $redirect ? wp_parse_url( (string) $redirect, PHP_URL_PATH ) : '';
@@ -67,6 +74,28 @@ add_filter(
 	},
 	10,
 	1
+);
+
+add_action(
+	'send_headers',
+	static function () {
+		$lang = isset( $GLOBALS['partikulier_root_lang'] ) ? (string) $GLOBALS['partikulier_root_lang'] : '';
+		if ( ! $lang || headers_sent() ) {
+			return;
+		}
+		setcookie(
+			'pll_language',
+			$lang,
+			array(
+				'expires'  => time() + YEAR_IN_SECONDS,
+				'path'     => '/',
+				'secure'   => is_ssl(),
+				'httponly' => false,
+				'samesite' => 'Lax',
+			)
+		);
+	},
+	99
 );
 
 add_filter(
