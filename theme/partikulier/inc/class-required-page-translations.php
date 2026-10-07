@@ -49,11 +49,12 @@ class Partikulier_Required_Page_Translations {
 				if ( ! empty( $map[ $lang ] ) ) {
 					$existing = get_post( (int) $map[ $lang ] );
 					if ( $existing instanceof WP_Post && 'trash' !== $existing->post_status ) {
-						if ( 'publish' !== $existing->post_status || $slug !== $existing->post_name ) {
-							wp_update_post( array( 'ID' => (int) $existing->ID, 'post_status' => 'publish', 'post_name' => $slug ) );
+						if ( 'publish' !== $existing->post_status ) {
+							wp_update_post( array( 'ID' => (int) $existing->ID, 'post_status' => 'publish' ) );
 						}
 						update_post_meta( (int) $existing->ID, '_wp_page_template', $def['template'] );
 						pll_set_post_language( (int) $existing->ID, $lang );
+						self::force_slug( (int) $existing->ID, $slug );
 						$map[ $lang ] = (int) $existing->ID;
 						continue;
 					}
@@ -74,7 +75,7 @@ class Partikulier_Required_Page_Translations {
 					continue;
 				}
 				pll_set_post_language( (int) $id, $lang );
-				wp_update_post( array( 'ID' => (int) $id, 'post_name' => $slug ) );
+				self::force_slug( (int) $id, $slug );
 				update_post_meta( (int) $id, '_wp_page_template', $def['template'] );
 				$map[ $lang ] = (int) $id;
 			}
@@ -82,5 +83,21 @@ class Partikulier_Required_Page_Translations {
 				pll_save_post_translations( $map );
 			}
 		}
+	}
+
+	/**
+	 * Polylang gratuit n’autorise pas le même slug via wp_update_post.
+	 * L’URL publique est /{lang}/{slug}/ — le slug doit être identique.
+	 */
+	private static function force_slug( $id, $slug ) {
+		global $wpdb;
+		$wpdb->update(
+			$wpdb->posts,
+			array( 'post_name' => $slug ),
+			array( 'ID' => (int) $id ),
+			array( '%s' ),
+			array( '%d' )
+		);
+		clean_post_cache( (int) $id );
 	}
 }
