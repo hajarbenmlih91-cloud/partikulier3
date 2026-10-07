@@ -540,11 +540,15 @@ class Partikulier_Listing_Preview {
 	 */
 	private static function sun_phrase( $raw ) {
 		$raw = (string) $raw;
-		if ( '' === $raw || ! class_exists( 'Partikulier_Listing_I18n' ) ) {
-			return $raw;
+		if ( '' === $raw ) {
+			return '';
+		}
+		$lex = self::lexicon();
+		if ( isset( $lex['sun'][ $raw ] ) ) {
+			return $lex['sun'][ $raw ];
 		}
 
-		return Partikulier_Listing_I18n::sun_phrase( $raw, self::request_lang() );
+		return $raw;
 	}
 
 	/**
@@ -556,11 +560,36 @@ class Partikulier_Listing_Preview {
 		if ( '' === $floor ) {
 			return '';
 		}
-		if ( class_exists( 'Partikulier_Listing_I18n' ) ) {
-			return Partikulier_Listing_I18n::floor_inner( $floor, self::request_lang() );
+		$lang = self::request_lang();
+		$lex  = self::lexicon();
+		if ( 'RDC' === $floor ) {
+			return 'fr' === $lang ? 'au RDC' : ( $lex['ground_floor'] ?? 'au RDC' );
+		}
+		if ( isset( $lex['floors'][ $floor ] ) ) {
+			$label = $lex['floors'][ $floor ];
+		} elseif ( 'fr' === $lang ) {
+			$label = $floor;
+		} elseif ( class_exists( '\\Partikulier\\Core\\Domain\\I18n\\ListingVocabulary' ) ) {
+			$label = \Partikulier\Core\Domain\I18n\ListingVocabulary::floor_label( $floor, $lang );
+		} else {
+			$label = $floor;
 		}
 
-		return 'RDC' === $floor ? 'au RDC' : sprintf( __( 'au %s', 'partikulier' ), $floor );
+		return sprintf( $lex['at_floor'] ?? 'au %s', $label );
+	}
+
+	/**
+	 * @return array
+	 */
+	private static function lexicon() {
+		if ( class_exists( '\\Partikulier\\Core\\Domain\\I18n\\ListingLexicon' ) ) {
+			$lex = \Partikulier\Core\Domain\I18n\ListingLexicon::lex( self::request_lang() );
+			if ( is_array( $lex ) ) {
+				return $lex;
+			}
+		}
+
+		return array();
 	}
 
 	/**
