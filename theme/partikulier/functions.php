@@ -192,6 +192,12 @@ function pk_page_url( $slug, $fallback = '/' ) {
 			$translated_id = pll_get_post( $page->ID );
 		if ( $translated_id ) {
 				$page = get_post( $translated_id );
+		} else {
+			$cur = function_exists( 'pll_current_language' ) ? pll_current_language( 'slug' ) : '';
+			$def = function_exists( 'pll_default_language' ) ? pll_default_language() : 'fr';
+			if ( $cur && $cur !== $def ) {
+				error_log( 'partikulier pk_page_url: no ' . $cur . ' translation for ' . $slug );
+			}
 		}
 	}
 	if ( $page instanceof WP_Post ) {
@@ -285,6 +291,7 @@ $partikulier_modules = array(
 		'/inc/class-automation-bridge.php',
 		'/inc/class-payment-foundation.php',
 		'/inc/class-page-templates.php',
+		'/inc/class-required-page-translations.php',
 		'/inc/class-required-pages.php',
 		'/inc/class-morocco-places.php',
 		'/inc/class-place-requests.php',

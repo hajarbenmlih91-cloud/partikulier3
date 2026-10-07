@@ -362,6 +362,9 @@ class Partikulier_Required_Pages {
 			Partikulier_Cache::purge_all();
 		}
 		$log( 'langs=' . implode( ',', array_keys( $map ) ) . ' front=' . (int) $front . ' default=' . $default );
+		if ( class_exists( 'Partikulier_Required_Page_Translations' ) ) {
+			Partikulier_Required_Page_Translations::ensure();
+		}
 		update_option( 'pk_front_ensured', '2.10.16', false );
 	}
 
