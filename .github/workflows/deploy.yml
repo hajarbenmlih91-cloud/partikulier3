@@ -260,6 +260,8 @@ jobs:
           if [ "$DEPLOY_ENV" = "uat" ]; then
             wp eval-file wp-content/themes/partikulier/cli/demo-seed.php
             printf 'User-agent: *\nDisallow: /\n' > "$WP_PATH/robots.txt"
+            echo "ORIGIN robots.txt:"
+            cat "$WP_PATH/robots.txt"
           fi
           wp cache flush || true
           wp rewrite flush || true

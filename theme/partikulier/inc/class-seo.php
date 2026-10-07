@@ -227,38 +227,6 @@ class Partikulier_SEO {
 		return $out;
 	}
 
-	private static function known_page_hreflang() {
-			$request = isset( $_SERVER['REQUEST_URI'] ) ? rawurldecode( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '/'; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- décodage + correspondance hreflang, jamais émis (SE-020)
-			$home    = home_url( '/' );
-			$faq     = false;
-			$contact = false;
-
-		if ( false !== strpos( $request, 'faq' ) || false !== strpos( $request, 'questions-frequentes' ) || false !== strpos( $request, 'frequently-asked-questions' ) || false !== strpos( $request, 'الأسئلة-الشائعة' ) ) {
-						$faq = true;
-		}
-		if ( false !== strpos( $request, 'contact' ) || false !== strpos( $request, 'اتصل-بنا' ) ) {
-							$contact = true;
-		}
-
-		if ( $faq ) {
-				return array(
-				'fr' => trailingslashit( $home . 'fr/questions-frequentes' ),
-				'ar' => trailingslashit( $home . 'ar/الأسئلة-الشائعة' ),
-				'en' => trailingslashit( $home . 'frequently-asked-questions' ),
-				);
-		}
-
-		if ( $contact ) {
-				return array(
-				'fr' => trailingslashit( $home . 'fr/contact' ),
-				'ar' => trailingslashit( $home . 'ar/اتصل-بنا' ),
-				'en' => trailingslashit( $home . 'contact-us' ),
-				);
-		}
-
-								return array();
-	}
-
 				/**
 				 * Description SEO automatique selon le contexte.
 				 */
