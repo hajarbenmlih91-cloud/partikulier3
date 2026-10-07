@@ -102,6 +102,7 @@ if ( class_exists( 'Partikulier_Localization' ) ) {
 		</div>
 </footer>
 
+<?php if ( is_front_page() ) : ?>
 <div class="pk-lang-gate" data-pk-lang-gate hidden>
 	<div class="pk-lang-gate-card" role="dialog" aria-modal="true" aria-labelledby="pk-lang-gate-title">
 		<p id="pk-lang-gate-title" class="pk-lang-gate-title"><?php echo esc_html( class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_polylang_string( 'Choisir la langue', 'Choisir la langue', 'partikulier' ) : __( 'Choisir la langue', 'partikulier' ) ); ?></p>
@@ -120,6 +121,7 @@ if ( class_exists( 'Partikulier_Localization' ) ) {
 		</div>
 	</div>
 </div>
+<?php endif; ?>
 <?php wp_footer(); ?>
 </body>
 </html>
