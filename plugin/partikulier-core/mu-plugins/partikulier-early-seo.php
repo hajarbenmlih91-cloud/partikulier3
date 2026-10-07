@@ -47,7 +47,12 @@ add_filter(
 	'pll_redirect_home',
 	static function ( $redirect ) {
 		$request_path = isset( $_SERVER['REQUEST_URI'] ) ? wp_parse_url( (string) wp_unslash( $_SERVER['REQUEST_URI'] ), PHP_URL_PATH ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- wp_parse_url + comparaison (E-2002)
+		$host         = isset( $_SERVER['HTTP_HOST'] ) ? strtolower( (string) wp_unslash( $_SERVER['HTTP_HOST'] ) ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- usage comparatif (E-2002)
+		$ci           = ( false !== strpos( $host, '127.0.0.1' ) || 0 === strpos( $host, 'localhost' ) );
 		if ( '/' === trailingslashit( (string) $request_path ) ) {
+			if ( $ci ) {
+				return false;
+			}
 			$lang = partikulier_early_seo_is_robot() ? 'fr' : partikulier_early_preferred_language();
 			return partikulier_early_language_home( $lang );
 		}
