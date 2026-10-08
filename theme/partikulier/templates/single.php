@@ -104,20 +104,21 @@ while ( have_posts() ) :
 				<div class="pk-single-gallery" data-count="<?php echo count( $gallery ); ?>">
 					<?php foreach ( $gallery as $i => $id ) : ?>
 						<?php
-							$img = wp_get_attachment_image_url( (int) $id, 'pk-hero' );
-							// Le filtre global peut déjà retourner l’AVIF ; la balise picture doit conserver son JPEG de secours.
-						if ( $img && str_ends_with( $img, '.avif' ) ) {
-							$img = substr( $img, 0, -5 );
-						}
+							$hero = wp_get_attachment_image_src( (int) $id, 'pk-hero' );
+							$img  = ( is_array( $hero ) && ! empty( $hero[0] ) ) ? $hero[0] : '';
 							$avif = $img ? Partikulier_AVIF::avif_path_for_url( $img ) : false;
-						$alt      = get_post_meta( (int) $id, '_wp_attachment_image_alt', true ) ?: get_the_title();
+							$alt  = get_post_meta( (int) $id, '_wp_attachment_image_alt', true ) ?: get_the_title();
+							$srcset = function_exists( 'wp_get_attachment_image_srcset' ) ? wp_get_attachment_image_srcset( (int) $id, 'pk-hero' ) : false;
+							$sizes  = '(max-width: 767px) 100vw, 1100px';
+							$w      = ( is_array( $hero ) && ! empty( $hero[1] ) ) ? (int) $hero[1] : 1600;
+							$h      = ( is_array( $hero ) && ! empty( $hero[2] ) ) ? (int) $hero[2] : 900;
 						?>
 						<?php if ( $img ) : ?>
 							<picture class="pk-single-gallery-item">
 								<?php if ( $avif ) : ?>
 									<source type="image/avif" srcset="<?php echo esc_attr( $avif ); ?>">
 								<?php endif; ?>
-								<img src="<?php echo esc_url( $img ); ?>" alt="<?php echo esc_attr( $alt ); ?>" width="1600" height="900" loading="eager" decoding="async" <?php echo 0 === $i ? 'fetchpriority="high"' : ''; ?>>
+								<img src="<?php echo esc_url( $img ); ?>"<?php echo $srcset ? ' srcset="' . esc_attr( $srcset ) . '" sizes="' . esc_attr( $sizes ) . '"' : ''; ?> alt="<?php echo esc_attr( $alt ); ?>" width="<?php echo (int) $w; ?>" height="<?php echo (int) $h; ?>" loading="<?php echo 0 === $i ? 'eager' : 'lazy'; ?>" decoding="async" <?php echo 0 === $i ? 'fetchpriority="high"' : ''; ?>>
 							</picture>
 						<?php endif; ?>
 					<?php endforeach; ?>

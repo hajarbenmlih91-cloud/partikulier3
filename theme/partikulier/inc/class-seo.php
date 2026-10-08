@@ -387,12 +387,30 @@ class Partikulier_SEO {
 			printf( '<meta property="og:title" content="%s">%s', esc_attr( get_the_title( $post ) ), "\n" );
 			$pk_og_marque = false;
 		if ( has_post_thumbnail( $post ) ) {
-				$img = wp_get_attachment_image_src( get_post_thumbnail_id( $post ), 'large' );
-			if ( $img ) {
-				printf( '<meta property="og:image" content="%s">%s', esc_url( $img[0] ), "\n" );
-				printf( '<meta property="og:image:width" content="%d">%s', intval( $img[1] ), "\n" );
-				printf( '<meta property="og:image:height" content="%d">%s', intval( $img[2] ), "\n" );
+			$thumb_id = (int) get_post_thumbnail_id( $post );
+			$og       = class_exists( 'Partikulier_Image_Optimize' ) ? Partikulier_Image_Optimize::og_image( $thumb_id ) : false;
+			if ( ! $og ) {
+				$src = wp_get_attachment_image_src( $thumb_id, 'large' );
+				if ( is_array( $src ) && ! empty( $src[0] ) && false === strpos( (string) $src[0], '.avif' ) ) {
+					$og = array(
+						'url'    => (string) $src[0],
+						'width'  => (int) $src[1],
+						'height' => (int) $src[2],
+						'type'   => (string) get_post_mime_type( $thumb_id ),
+					);
+				}
+			}
+			if ( $og && ! empty( $og['url'] ) ) {
+				printf( '<meta property="og:image" content="%s">%s', esc_url( $og['url'] ), "\n" );
+				if ( ! empty( $og['width'] ) && ! empty( $og['height'] ) ) {
+					printf( '<meta property="og:image:width" content="%d">%s', (int) $og['width'], "\n" );
+					printf( '<meta property="og:image:height" content="%d">%s', (int) $og['height'], "\n" );
+				}
+				if ( ! empty( $og['type'] ) ) {
+					printf( '<meta property="og:image:type" content="%s">%s', esc_attr( $og['type'] ), "\n" );
+				}
 				printf( '<meta property="og:image:alt" content="%s">%s', esc_attr( get_the_title( $post ) ), "\n" );
+				printf( '<meta name="twitter:image" content="%s">%s', esc_url( $og['url'] ), "\n" );
 				$pk_og_marque = true;
 			}
 		}

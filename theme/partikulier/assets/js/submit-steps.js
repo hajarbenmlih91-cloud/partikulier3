@@ -92,21 +92,35 @@
 
 			if (usingProposal) {
 				if ( ! proposedCity.value.trim()) {
-					proposedCity.classList.add("pk-invalid");
-					proposedCity.focus();
+					flagField(proposedCity, (pkConfig.i18n && pkConfig.i18n.chooseCity) || "");
 					ok = false;
 				}
 			} else if ( ! cityName.value) {
-				cityInput.classList.add("pk-invalid");
-				cityInput.focus();
+				flagField(cityInput, (pkConfig.i18n && pkConfig.i18n.chooseCity) || "");
 				ok = false;
 			} else if ( ! districtWrap.hidden && ! districtName.value) {
-				districtInput.classList.add("pk-invalid");
-				districtInput.focus();
+				flagField(districtInput, (pkConfig.i18n && pkConfig.i18n.chooseDistrict) || "");
 				ok = false;
 			}
 		}
 		return ok;
+	}
+
+	function flagField(field, message) {
+		if ( ! field) {
+			return;
+		}
+		field.classList.add("pk-invalid");
+		if (message && field.setCustomValidity) {
+			field.setCustomValidity(message);
+		}
+		field.focus();
+		if (field.reportValidity) {
+			field.reportValidity();
+		}
+		if (field.setCustomValidity) {
+			field.setCustomValidity("");
+		}
 	}
 
 	/* -------------------------------------- proposition de lieu absent */
@@ -117,9 +131,9 @@
 		proposalToggle.addEventListener("click", function () {
 			var opening                = proposalBox.hidden;
 			proposalBox.hidden         = ! opening;
-			proposalToggle.textContent = opening
-				? "Finalement, choisir dans la liste"
-				: "Je ne trouve pas ma ville ou mon quartier";
+			var openL  = proposalToggle.getAttribute("data-pk-label-open") || "";
+			var closeL = proposalToggle.getAttribute("data-pk-label-close") || proposalToggle.textContent;
+			proposalToggle.textContent = opening ? openL : closeL;
 
 			if (opening) {
 				// La saisie libre remplace la selection : on repart propre.
@@ -140,7 +154,7 @@
 	function closeProposal() {
 		if (proposalBox && ! proposalBox.hidden) {
 			proposalBox.hidden                                    = true;
-			proposalToggle.textContent                            = "Je ne trouve pas ma ville ou mon quartier";
+			proposalToggle.textContent = proposalToggle.getAttribute("data-pk-label-close") || proposalToggle.textContent;
 			document.getElementById("pk-proposed-city").value     = "";
 			document.getElementById("pk-proposed-district").value = "";
 		}
@@ -403,7 +417,9 @@
 					keep();
 					return;
 				}
-				if (/heic|heif/i.test(file.type || "") || /\.(heic|heif)$/i.test(file.name || "")) {
+				var mime = (file.type || "").toLowerCase();
+				var jpegName = /\.jpe?g$/i.test(file.name || "");
+				if (mime ? (mime !== "image/jpeg" && mime !== "image/jpg") : ! jpegName) {
 					keep();
 					return;
 				}

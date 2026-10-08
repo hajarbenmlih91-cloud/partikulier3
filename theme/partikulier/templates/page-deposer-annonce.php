@@ -196,7 +196,7 @@ $types = get_terms( array(
 								</div>
 
 								<p class="pk-place-missing">
-										<button type="button" class="pk-linklike" id="pk-place-missing-toggle">
+										<button type="button" class="pk-linklike" id="pk-place-missing-toggle" data-pk-label-close="<?php echo esc_attr( __( 'Je ne trouve pas ma ville ou mon quartier', 'partikulier' ) ); ?>" data-pk-label-open="<?php echo esc_attr( __( 'Finalement, choisir dans la liste', 'partikulier' ) ); ?>">
 												<?php esc_html_e( 'Je ne trouve pas ma ville ou mon quartier', 'partikulier' ); ?>
 										</button>
 								</p>
