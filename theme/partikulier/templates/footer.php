@@ -106,20 +106,36 @@ if ( class_exists( 'Partikulier_Localization' ) ) {
 <div class="pk-lang-gate" data-pk-lang-gate hidden>
 	<div class="pk-lang-gate-card" role="dialog" aria-modal="true" aria-labelledby="pk-lang-gate-title">
 		<button type="button" class="pk-lang-gate-close" data-pk-lang-dismiss aria-label="<?php echo esc_attr( class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_polylang_string( 'Fermer', 'Fermer', 'partikulier' ) : __( 'Fermer', 'partikulier' ) ); ?>">×</button>
-		<p id="pk-lang-gate-title" class="pk-lang-gate-title"><?php echo esc_html( class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_polylang_string( 'Choisir la langue', 'Choisir la langue', 'partikulier' ) : __( 'Choisir la langue', 'partikulier' ) ); ?></p>
+		<p class="pk-lang-gate-kicker" aria-hidden="true">Partikulier.ma</p>
+		<p id="pk-lang-gate-title" class="pk-lang-gate-title"><span lang="fr">Bienvenue</span> · <span lang="ar">مرحباً</span> · <span lang="en">Welcome</span></p>
+		<p class="pk-lang-gate-sub"><span lang="fr">Choisissez votre langue</span> · <span lang="ar">اختر لغتك</span> · <span lang="en">Choose your language</span></p>
 		<div class="pk-lang-gate-actions">
 			<?php
 			$pk_gate_langs = array(
-				'fr' => 'Français',
-				'ar' => 'العربية',
-				'en' => 'English',
+				'fr' => array( 'name' => 'Français', 'tag' => 'Entre particuliers, sans commission' ),
+				'ar' => array( 'name' => 'العربية', 'tag' => 'بين الأفراد، بدون عمولة' ),
+				'en' => array( 'name' => 'English', 'tag' => 'Between individuals, no commission' ),
 			);
-			foreach ( $pk_gate_langs as $pk_gate_slug => $pk_gate_name ) :
+			foreach ( $pk_gate_langs as $pk_gate_slug => $pk_gate_lang ) :
 				$pk_gate_url = function_exists( 'pk_localized_home_url' ) ? pk_localized_home_url( $pk_gate_slug ) : home_url( '/' . $pk_gate_slug . '/' );
 				?>
-				<a class="pk-btn" data-pk-lang-pick="<?php echo esc_attr( $pk_gate_slug ); ?>" href="<?php echo esc_url( $pk_gate_url ); ?>" lang="<?php echo esc_attr( $pk_gate_slug ); ?>" hreflang="<?php echo esc_attr( $pk_gate_slug ); ?>"><?php echo esc_html( $pk_gate_name ); ?></a>
+				<a class="pk-lang-option" data-pk-lang-pick="<?php echo esc_attr( $pk_gate_slug ); ?>" href="<?php echo esc_url( $pk_gate_url ); ?>" lang="<?php echo esc_attr( $pk_gate_slug ); ?>" hreflang="<?php echo esc_attr( $pk_gate_slug ); ?>">
+					<?php if ( 'fr' === $pk_gate_slug ) : ?>
+						<svg class="pk-lang-flag" viewBox="0 0 30 21" aria-hidden="true" focusable="false"><rect width="10" height="21" fill="#0055A4"/><rect x="10" width="10" height="21" fill="#FFFFFF"/><rect x="20" width="10" height="21" fill="#EF4135"/></svg>
+					<?php elseif ( 'ar' === $pk_gate_slug ) : ?>
+						<svg class="pk-lang-flag" viewBox="0 0 30 21" aria-hidden="true" focusable="false"><rect width="30" height="21" fill="#C1272D"/><path d="M15 4.5 18.53 15.35 9.29 8.65 20.71 8.65 11.47 15.35 Z" fill="none" stroke="#006233" stroke-width="1.1"/></svg>
+					<?php else : ?>
+						<svg class="pk-lang-flag" viewBox="0 0 30 21" aria-hidden="true" focusable="false"><rect width="30" height="21" fill="#012169"/><path d="M0 0 30 21 M30 0 0 21" stroke="#FFFFFF" stroke-width="4"/><path d="M0 0 30 21 M30 0 0 21" stroke="#C8102E" stroke-width="1.6"/><path d="M15 0 V21 M0 10.5 H30" stroke="#FFFFFF" stroke-width="7"/><path d="M15 0 V21 M0 10.5 H30" stroke="#C8102E" stroke-width="4"/></svg>
+					<?php endif; ?>
+					<span class="pk-lang-names">
+						<strong><?php echo esc_html( $pk_gate_lang['name'] ); ?></strong>
+						<small><?php echo esc_html( $pk_gate_lang['tag'] ); ?></small>
+					</span>
+					<span class="pk-lang-go" aria-hidden="true">→</span>
+				</a>
 			<?php endforeach; ?>
 		</div>
+		<p class="pk-lang-gate-note"><span lang="fr">Langue modifiable à tout moment</span> · <span lang="ar">يمكن تغيير اللغة لاحقاً</span> · <span lang="en">Change anytime</span></p>
 	</div>
 </div>
 <?php endif; ?>
