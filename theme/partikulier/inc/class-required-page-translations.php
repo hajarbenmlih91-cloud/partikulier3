@@ -49,8 +49,15 @@ class Partikulier_Required_Page_Translations {
 				if ( ! empty( $map[ $lang ] ) ) {
 					$existing = get_post( (int) $map[ $lang ] );
 					if ( $existing instanceof WP_Post && 'trash' !== $existing->post_status ) {
+						$fix = array( 'ID' => (int) $existing->ID );
 						if ( 'publish' !== $existing->post_status ) {
-							wp_update_post( array( 'ID' => (int) $existing->ID, 'post_status' => 'publish' ) );
+							$fix['post_status'] = 'publish';
+						}
+						if ( isset( $titles[ $slug ][ $lang ] ) && $titles[ $slug ][ $lang ] !== $existing->post_title ) {
+							$fix['post_title'] = $titles[ $slug ][ $lang ];
+						}
+						if ( count( $fix ) > 1 ) {
+							wp_update_post( $fix );
 						}
 						update_post_meta( (int) $existing->ID, '_wp_page_template', $def['template'] );
 						pll_set_post_language( (int) $existing->ID, $lang );

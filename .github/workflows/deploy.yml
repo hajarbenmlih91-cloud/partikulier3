@@ -257,6 +257,7 @@ jobs:
           wp eval-file wp-content/themes/partikulier/cli/pll-langues.php
           wp eval-file wp-content/themes/partikulier/cli/pll-masse.php
           wp eval 'if(class_exists("Partikulier_Required_Pages")){delete_option("pk_front_ensured"); Partikulier_Required_Pages::ensure_front();}'
+          wp eval 'if ( "devpartikulier" === (string) get_option( "blogname" ) ) { update_option( "blogname", "Partikulier" ); }'
           if [ "$DEPLOY_ENV" = "uat" ]; then
             wp eval-file wp-content/themes/partikulier/cli/demo-seed.php
             printf 'User-agent: *\nDisallow: /\n' > "$WP_PATH/robots.txt"
