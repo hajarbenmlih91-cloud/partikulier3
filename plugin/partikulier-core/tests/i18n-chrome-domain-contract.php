@@ -5,7 +5,7 @@
  * Couvre l'extinction du dictionnaire interne chrome/form + du filtre
  * gettext au profit du service unifié du plugin partikulier-core 2.8.0 :
  *  - couture armée : la facade I18nChromeService et ses deux dictionnaires
- *    (ChromeDictionary 136 entrées, FormsDictionary 146 entrées) sont
+ *    (ChromeDictionary 136 entrées, FormsDictionary 148 entrées) sont
  *    chargés, la classe thème Partikulier_Localization est présente avec
  *    l'API renforcée (couture + replis *_local) ;
  *  - parité des données : dictionnaires chrome et form identiques entre le
@@ -91,7 +91,7 @@ try {
     foreach ($pluginForms as $k => $v) {
         if (!isset($themeForms[$k]) || $themeForms[$k] !== $v) { $formsDiff++; }
     }
-    $assert('C2A-003', $formsDiff === 0 && count($pluginForms) === 146 && count($themeForms) === 146,
+    $assert('C2A-003', $formsDiff === 0 && count($pluginForms) === 148 && count($themeForms) === 148,
         sprintf('dictionnaire form : %d entrées plugin == %d entrées thème (dormant), %d divergence — port VERBATIM prouvé',
             count($pluginForms), count($themeForms), $formsDiff));
 

@@ -15,7 +15,7 @@
  *  - E24-001 : les 5 fichiers sources ne déclarent plus AUCUNE clé
  *    dupliquée (scan tokenizer, même logique que la gate
  *    scripts/check-duplicate-keys.php) ;
- *  - E24-002 : dictionnaire forms FIGÉ — 146 entrées, empreinte des clés
+ *  - E24-002 : dictionnaire forms FIGÉ — 148 entrées, empreinte des clés
  *    et des entrées épinglées (toute évolution = mise à jour consciente
  *    du contrat, E-2403 « entrées uniques figées ») ;
  *  - E24-003 : dictionnaire chrome FIGÉ — 136 entrées, empreintes épinglées ;
@@ -124,10 +124,10 @@ try {
             ? 'gate DuplicateArrayKey sur les 5 dictionnaires : 0 clé dupliquée (E-2401/E-2402)'
             : 'clés dupliquées résiduelles : ' . implode(' ; ', array_slice($dupDetail, 0, 5)));
 
-    // 2) E24-002 — dictionnaire forms figé (146 entrées, empreintes épinglées).
+    // 2) E24-002 — dictionnaire forms figé (148 entrées, empreintes épinglées).
     $fp = $fingerprint(FormsDictionary::translations());
-    $assert('E24-002', $fp['count'] === 146 && $fp['keys_md5'] === '828c2ef4703729bfab42f228203f8b65'
-        && $fp['entries_md5'] === '226158f0f76dcd4a7269c160bc1c3d4a',
+    $assert('E24-002', $fp['count'] === 148 && $fp['keys_md5'] === 'ebe88486471bb2ad39a1b329cfb1dc50'
+        && $fp['entries_md5'] === 'b59832493dde8867dcade952d0094953',
         sprintf('forms figé : %d entrées, clés %s, entrées %s', $fp['count'], $fp['keys_md5'], $fp['entries_md5']));
 
     // 3) E24-003 — dictionnaire chrome figé (136 entrées, empreintes épinglées).
