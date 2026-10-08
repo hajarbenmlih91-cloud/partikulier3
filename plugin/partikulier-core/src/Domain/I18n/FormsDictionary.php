@@ -3,7 +3,7 @@
  * Dictionnaire de repli du formulaire de dépôt (lot C2, CDC v1.2 §3.2 I18N-1).
  *
  * Port VERBATIM du catalogue du thème (class-localization-forms.php, lot B6
- * découpe REG-3 — 140 entrées trilingues) : la totalité du littéral est copiée
+ * découpe REG-3 — 146 entrées trilingues) : la totalité du littéral est copiée
  * byte pour byte depuis la source par scripts/c2-plugin-dictionaries.py, la
  * parité est prouvée par le contrat C2A-003 (égalité profonde avec
  * Partikulier_Localization::form_translations()). Libellés du formulaire de
@@ -21,7 +21,7 @@ namespace Partikulier\Core\Domain\I18n;
 final class FormsDictionary
 {
 	/**
-	 * Libellés du formulaire de dépôt (140 entrées trilingues, port VERBATIM —
+	 * Libellés du formulaire de dépôt (146 entrées trilingues, port VERBATIM —
 	 * l'indentation héritée du thème est conservée à dessein pour
 	 * l'auditabilité du diff).
 	 *
@@ -56,6 +56,12 @@ final class FormsDictionary
 								'Partout au Maroc.'        => array( 'fr' => 'Partout au Maroc.', 'en' => 'Throughout Morocco.', 'ar' => 'في جميع أنحاء المغرب.' ),
 								'Aide'                     => array( 'fr' => 'Aide', 'en' => 'Help', 'ar' => 'مساعدة' ),
 										'Choisissez un quartier' => array( 'fr' => 'Choisissez un quartier', 'en' => 'Choose a neighborhood', 'ar' => 'اختر الحي' ),
+								'Choisissez'             => array( 'fr' => 'Choisissez', 'en' => 'Choose', 'ar' => 'اختر' ),
+								'Choisissez le nombre'   => array( 'fr' => 'Choisissez le nombre', 'en' => 'Choose a number', 'ar' => 'اختر العدد' ),
+								'Charges (MAD / mois)'   => array( 'fr' => 'Charges (MAD / mois)', 'en' => 'Charges (MAD / month)', 'ar' => 'الرسوم (درهم / شهر)' ),
+								'Disponibilité'          => array( 'fr' => 'Disponibilité', 'en' => 'Availability', 'ar' => 'التوفر' ),
+								'Terrain (m²)'           => array( 'fr' => 'Terrain (m²)', 'en' => 'Land (m²)', 'ar' => 'الأرض (م²)' ),
+								'Demi-salles de bains'   => array( 'fr' => 'Demi-salles de bains', 'en' => 'Half-baths', 'ar' => 'نصف حمّام' ),
 										'Le catalogue direct' => array( 'fr' => 'Le catalogue direct', 'en' => 'The direct catalog', 'ar' => 'كتالوج مباشر' ),
 										'Des biens publiés directement par leurs propriétaires.' => array( 'fr' => 'Des biens publiés directement par leurs propriétaires.', 'en' => 'Properties published directly by their owners.', 'ar' => 'عقارات منشورة مباشرة من قبل أصحابها.' ),
 										'Localisation d’abord' => array( 'fr' => 'Localisation d’abord', 'en' => 'Location first', 'ar' => 'الموقع أولاً' ),

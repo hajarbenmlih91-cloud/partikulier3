@@ -203,7 +203,7 @@ $gallery_ids = array();
 										<?php if ( $avif ) : ?>
 											<source type="image/avif" srcset="<?php echo esc_attr( $avif ); ?>">
 										<?php endif; ?>
-										<img src="<?php echo esc_url( $img ); ?>" alt="<?php echo esc_attr( $alt ); ?>" loading="eager" decoding="async" <?php echo 0 === $i ? 'fetchpriority="high"' : ''; ?>>
+										<img src="<?php echo esc_url( $img ); ?>" alt="<?php echo esc_attr( $alt ); ?>" loading="<?php echo 0 === $i ? 'eager' : 'lazy'; ?>" decoding="async" <?php echo 0 === $i ? 'fetchpriority="high"' : ''; ?>>
 									</picture>
 									<?php if ( $is_closed ) : ?>
 										<span class="pk-photo-watermark" aria-hidden="true"><?php echo esc_html( $closed_label ); ?></span>
@@ -226,7 +226,7 @@ $gallery_ids = array();
 							<?php if ( $thumb ) : ?>
 								<li>
 									<button type="button" class="pk-gallery-thumb<?php echo 0 === $i ? ' is-active' : ''; ?>" data-pk-slide="<?php echo (int) $i; ?>" aria-label="<?php echo esc_attr( sprintf( __( 'Afficher la photo %d', 'partikulier' ), $i + 1 ) ); ?>">
-										<img src="<?php echo esc_url( $thumb ); ?>" alt="" width="120" height="90">
+										<img src="<?php echo esc_url( $thumb ); ?>" alt="" width="120" height="90" loading="lazy" decoding="async">
 									</button>
 								</li>
 							<?php endif; ?>

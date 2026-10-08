@@ -17,6 +17,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 		exit;
 }
 
+$pk_i18n = static function ( $text ) {
+	$text = (string) $text;
+	if ( class_exists( 'Partikulier_Localization' ) ) {
+		return Partikulier_Localization::translate_polylang_string( $text, $text, 'partikulier' );
+	}
+	return __( $text, 'partikulier' );
+};
+
 $edit_id      = isset( $_GET['edit'] ) ? absint( $_GET['edit'] ) : 0;
 $editing_post = null;
 if ( $edit_id ) {
@@ -148,7 +156,7 @@ $types = get_terms( array(
 														'houses'      => __( 'Maison / Villa', 'partikulier' ),
 														'house'       => __( 'Maison / Villa', 'partikulier' ),
 														'land'        => __( 'Terrain', 'partikulier' ),
-														'multifamily' => __( 'Immeuble', 'partikulier' ),
+														'multifamily' => $pk_i18n( 'Immeuble' ),
 														'townhouses'  => __( 'Maison de ville / Riad', 'partikulier' ),
 														'townhouse'   => __( 'Maison de ville / Riad', 'partikulier' ),
 														'villa'       => __( 'Villa', 'partikulier' ),
@@ -240,7 +248,7 @@ $types = get_terms( array(
 																<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-6h18v6M3 12V7m18 5V9a2 2 0 0 0-2-2h-5v5"/><circle cx="7.5" cy="9.5" r="1.6"/></svg>
 														</span>
 														<select id="pk-bedrooms" name="pk_bedrooms" required>
-																<option value=""><?php esc_html_e( 'Choisissez le nombre', 'partikulier' ); ?></option>
+																<option value=""><?php echo esc_html( $pk_i18n( 'Choisissez le nombre' ) ); ?></option>
 																<option value="0"><?php esc_html_e( 'Studio / 0 chambre', 'partikulier' ); ?></option>
 																<option value="1"><?php esc_html_e( '1 chambre', 'partikulier' ); ?></option>
 																<option value="2"><?php esc_html_e( '2 chambres', 'partikulier' ); ?></option>
@@ -259,7 +267,7 @@ $types = get_terms( array(
 										<div data-pk-field="pk_living_rooms" class="pk-field">
 												<label class="pk-label" for="pk-living-rooms"><?php esc_html_e( 'Nombre de salons', 'partikulier' ); ?> <span class="pk-req">*</span></label>
 												<select id="pk-living-rooms" name="pk_living_rooms" required>
-														<option value=""><?php esc_html_e( 'Choisissez le nombre', 'partikulier' ); ?></option>
+														<option value=""><?php echo esc_html( $pk_i18n( 'Choisissez le nombre' ) ); ?></option>
 														<option value="0"><?php esc_html_e( '0 salon — pièce principale', 'partikulier' ); ?></option>
 																<option value="1"><?php esc_html_e( '1 salon', 'partikulier' ); ?></option>
 																<option value="2"><?php esc_html_e( '2 salons', 'partikulier' ); ?></option>
@@ -273,7 +281,7 @@ $types = get_terms( array(
 																<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16v3a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4z"/><path d="M7 12V6.5A2.5 2.5 0 0 1 9.5 4c1.2 0 2.1.8 2.4 1.9"/></svg>
 														</span>
 														<select id="pk-bathrooms" name="pk_bathrooms" required>
-																<option value=""><?php esc_html_e( 'Choisissez le nombre', 'partikulier' ); ?></option>
+																<option value=""><?php echo esc_html( $pk_i18n( 'Choisissez le nombre' ) ); ?></option>
 																		<option value="1"><?php esc_html_e( '1 salle de bains', 'partikulier' ); ?></option>
 																		<option value="2"><?php esc_html_e( '2 salles de bains', 'partikulier' ); ?></option>
 																		<option value="3+"><?php esc_html_e( '3 salles de bains ou plus', 'partikulier' ); ?></option>
@@ -347,12 +355,12 @@ $types = get_terms( array(
 										<input type="number" id="pk-terrace-surface" name="pk_terrace_surface" min="1" inputmode="numeric">
 								</div>
 									<div data-pk-field="pk_charges" class="pk-field" hidden>
-										<label class="pk-label" for="pk-charges"><?php esc_html_e( 'Charges (MAD / mois)', 'partikulier' ); ?></label>
+										<label class="pk-label" for="pk-charges"><?php echo esc_html( $pk_i18n( 'Charges (MAD / mois)' ) ); ?></label>
 										<input type="number" id="pk-charges" name="pk_charges" min="0" max="100000" inputmode="numeric" placeholder="<?php esc_attr_e( 'Ex. 700', 'partikulier' ); ?>">
 									</div>
 
 									<div data-pk-field="pk_availability" class="pk-field" hidden>
-										<label class="pk-label" for="pk-availability"><?php esc_html_e( 'Disponibilité', 'partikulier' ); ?></label>
+										<label class="pk-label" for="pk-availability"><?php echo esc_html( $pk_i18n( 'Disponibilité' ) ); ?></label>
 										<input type="text" id="pk-availability" name="pk_availability" placeholder="<?php esc_attr_e( 'Ex. Immédiate, sous 3 mois…', 'partikulier' ); ?>">
 									</div>
 
@@ -363,21 +371,21 @@ $types = get_terms( array(
 
 									<div data-pk-field="pk_energy_class" class="pk-field" hidden>
 										<label class="pk-label" for="pk-energy-class"><?php esc_html_e( 'Classe énergie', 'partikulier' ); ?></label>
-										<select id="pk-energy-class" name="pk_energy_class"><option value=""><?php esc_html_e( 'Choisissez', 'partikulier' ); ?></option><?php foreach ( array( 'A', 'B', 'C', 'D', 'E', 'F', 'G' ) as $pk_classe ) : ?><option value="<?php echo esc_attr( $pk_classe ); ?>"><?php echo esc_html( $pk_classe ); ?></option><?php endforeach; ?></select>
+										<select id="pk-energy-class" name="pk_energy_class"><option value=""><?php echo esc_html( $pk_i18n( 'Choisissez' ) ); ?></option><?php foreach ( array( 'A', 'B', 'C', 'D', 'E', 'F', 'G' ) as $pk_classe ) : ?><option value="<?php echo esc_attr( $pk_classe ); ?>"><?php echo esc_html( $pk_classe ); ?></option><?php endforeach; ?></select>
 									</div>
 
 									<div data-pk-field="pk_ges_class" class="pk-field" hidden>
 										<label class="pk-label" for="pk-ges-class"><?php esc_html_e( 'GES', 'partikulier' ); ?></label>
-										<select id="pk-ges-class" name="pk_ges_class"><option value=""><?php esc_html_e( 'Choisissez', 'partikulier' ); ?></option><?php foreach ( array( 'A', 'B', 'C', 'D', 'E', 'F', 'G' ) as $pk_classe ) : ?><option value="<?php echo esc_attr( $pk_classe ); ?>"><?php echo esc_html( $pk_classe ); ?></option><?php endforeach; ?></select>
+										<select id="pk-ges-class" name="pk_ges_class"><option value=""><?php echo esc_html( $pk_i18n( 'Choisissez' ) ); ?></option><?php foreach ( array( 'A', 'B', 'C', 'D', 'E', 'F', 'G' ) as $pk_classe ) : ?><option value="<?php echo esc_attr( $pk_classe ); ?>"><?php echo esc_html( $pk_classe ); ?></option><?php endforeach; ?></select>
 									</div>
 
 									<div data-pk-field="pk_lot_size" class="pk-field" hidden>
-										<label class="pk-label" for="pk-lot-size"><?php esc_html_e( 'Terrain (m²)', 'partikulier' ); ?></label>
+										<label class="pk-label" for="pk-lot-size"><?php echo esc_html( $pk_i18n( 'Terrain (m²)' ) ); ?></label>
 										<input type="number" id="pk-lot-size" name="pk_lot_size" min="1" max="1000000" inputmode="numeric" placeholder="<?php esc_attr_e( 'Ex. 300', 'partikulier' ); ?>">
 									</div>
 
 									<div data-pk-field="pk_half_baths" class="pk-field" hidden>
-										<label class="pk-label" for="pk-half-baths"><?php esc_html_e( 'Demi-salles de bains', 'partikulier' ); ?></label>
+										<label class="pk-label" for="pk-half-baths"><?php echo esc_html( $pk_i18n( 'Demi-salles de bains' ) ); ?></label>
 										<input type="number" id="pk-half-baths" name="pk_half_baths" min="0" max="10" inputmode="numeric">
 									</div>
 
