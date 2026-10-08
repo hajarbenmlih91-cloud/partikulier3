@@ -365,6 +365,7 @@
 		// Liste en mémoire, comme main.js : chaque sélection s'ajoute.
 		var chosen    = [];
 		var syncing   = false;
+		var squeezeQ  = Promise.resolve();
 		var dropLabel = dropzone ? dropzone.querySelector("strong") : null;
 
 		function liveCount() {
@@ -391,6 +392,93 @@
 			syncing = false;
 		}
 
+		/**
+		 * Allège la photo dans le navigateur. L’annonceur ne fait rien :
+		 * en cas d’échec on garde le fichier d’origine (le serveur recadre).
+		 */
+		function squeezePhoto(file) {
+			return new Promise(function (resolve) {
+				var keep = function () { resolve(file); };
+				if ( ! file || typeof HTMLCanvasElement === "undefined" || typeof File === "undefined") {
+					keep();
+					return;
+				}
+				if (/heic|heif/i.test(file.type || "") || /\.(heic|heif)$/i.test(file.name || "")) {
+					keep();
+					return;
+				}
+				var maxEdge = 1920;
+				var quality = 0.82;
+				var maxBytes = 409600;
+
+				function draw(src, w, h, closeSrc) {
+					if ( ! w || ! h) {
+						if (closeSrc) closeSrc();
+						keep();
+						return;
+					}
+					var scale = Math.min(1, maxEdge / Math.max(w, h));
+					if (scale === 1 && file.size <= maxBytes && file.type === "image/jpeg") {
+						if (closeSrc) closeSrc();
+						keep();
+						return;
+					}
+					var cw = Math.max(1, Math.round(w * scale));
+					var ch = Math.max(1, Math.round(h * scale));
+					var canvas = document.createElement("canvas");
+					canvas.width  = cw;
+					canvas.height = ch;
+					var ctx = canvas.getContext("2d", { alpha: false });
+					if ( ! ctx || typeof canvas.toBlob !== "function") {
+						if (closeSrc) closeSrc();
+						keep();
+						return;
+					}
+					ctx.drawImage(src, 0, 0, cw, ch);
+					if (closeSrc) closeSrc();
+					canvas.toBlob(function (blob) {
+						if ( ! blob || blob.size < 32) {
+							keep();
+							return;
+						}
+						if (scale === 1 && blob.size >= file.size) {
+							keep();
+							return;
+						}
+						var base = (file.name || "photo").replace(/\.[^.]+$/, "") || "photo";
+						resolve(new File([blob], base + ".jpg", { type: "image/jpeg", lastModified: Date.now() }));
+					}, "image/jpeg", quality);
+				}
+
+				if (window.createImageBitmap) {
+					var tryBitmap = function (opts) {
+						return window.createImageBitmap(file, opts || {});
+					};
+					tryBitmap({ imageOrientation: "from-image" }).catch(function () {
+						return tryBitmap();
+					}).then(function (bitmap) {
+						if ( ! bitmap) { keep(); return; }
+						draw(bitmap, bitmap.width, bitmap.height, function () {
+							if (bitmap.close) bitmap.close();
+						});
+					}).catch(keep);
+					return;
+				}
+
+				var img = new Image();
+				var url = URL.createObjectURL(file);
+				img.onload = function () {
+					URL.revokeObjectURL(url);
+					draw(img, img.naturalWidth || img.width, img.naturalHeight || img.height, null);
+				};
+				img.onerror = function () {
+					URL.revokeObjectURL(url);
+					keep();
+				};
+				img.src = url;
+			});
+		}
+
 		function addFiles(files) {
 			files = Array.prototype.slice.call(files || []).filter(function (f) {
 				return ! f.type || f.type.indexOf("image/") === 0 || /\.(jpe?g|png|webp|avif|heic|heif)$/i.test(f.name);
@@ -415,6 +503,14 @@
 					updateDropLabel();
 				});
 				photoPreview.appendChild(li);
+				squeezeQ = squeezeQ.then(function () {
+					return squeezePhoto(f).then(function (out) {
+						if (chosen[idx] === f && out) {
+							chosen[idx] = out;
+							syncInput();
+						}
+					});
+				}).catch(function () { /* photo d'origine conservée */ });
 			});
 			if (total > MAX_PHOTOS) {
 				setStatus("15 photos maximum. Les fichiers en trop ont été ignorés.");
