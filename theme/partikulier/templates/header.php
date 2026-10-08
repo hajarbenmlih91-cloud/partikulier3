@@ -67,11 +67,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 						?>
 				</div>
 
-				<?php
-				// En mode tunnel (dépôt d'annonce), masquer la barre de recherche globale pour éviter les distractions
-				$pk_is_deposit_page = is_page( 'deposer' ) || is_page_template( 'templates/page-deposer-annonce.php' );
-				if ( ! $pk_is_deposit_page ) :
-				?>
 				<div class="pk-header-search">
 						<?php
 						$pk_city_slug  = isset( $_GET['es_city'] ) && is_scalar( $_GET['es_city'] ) ? sanitize_title( wp_unslash( $_GET['es_city'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
@@ -105,7 +100,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 								</button>
 						</form>
 				</div>
-				<?php endif; ?>
 
 				<div class="pk-header-actions">
 						<?php

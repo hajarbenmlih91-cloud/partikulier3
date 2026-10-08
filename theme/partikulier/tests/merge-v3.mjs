@@ -57,7 +57,7 @@ for (const [engineName, engine] of Object.entries({ chromium, firefox, webkit })
               assert.equal(state.links.length, 3, 'All configured languages are available');
               assert.ok(state.links.every(link => !new URL(link).searchParams.has('lang')), 'Language switcher uses canonical translated URLs');
               if (path === fixture.deposits[language]) {
-                assert.equal(await page.locator('.pk-header-search').count(), 0, 'Deposit tunnel hides global search');
+                assert.equal(await page.locator('.pk-header-search').count(), 1, 'Deposit page shows the global search (revue user 2026-10-08 : header plein, mêmes marges)');
               }
               results.push({ engine: engineName, width, language, url, check: 'navigation/layout', status: 'PASS' });
             }
