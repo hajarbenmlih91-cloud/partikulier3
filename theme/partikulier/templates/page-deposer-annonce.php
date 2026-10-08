@@ -71,6 +71,17 @@ $types = get_terms( array(
 				</div>
 		</div>
 
+		<div class="pk-container pk-stepper-wrap">
+				<nav class="pk-stepper" aria-label="<?php echo esc_attr( Partikulier_Localization::translate_polylang_string( 'Étapes de publication', 'Étapes de publication', 'partikulier' ) ); ?>">
+										<ol class="pk-stepper-list">
+												<li class="pk-stepper-item is-current" data-step-indicator="1" aria-current="step"><span class="pk-stepper-number">1</span><span class="pk-stepper-label"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Qui publie l’annonce ?', 'Qui publie l’annonce ?', 'partikulier' ) ); ?></span></li>
+												<li class="pk-stepper-item" data-step-indicator="2"><span class="pk-stepper-number">2</span><span class="pk-stepper-label"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Les informations du bien', 'Les informations du bien', 'partikulier' ) ); ?></span></li>
+												<li class="pk-stepper-item" data-step-indicator="3"><span class="pk-stepper-number">3</span><span class="pk-stepper-label"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Votre aperçu', 'Votre aperçu', 'partikulier' ) ); ?></span></li>
+										</ol>
+										<p class="pk-stepper-status" id="pk-stepper-status" role="status" aria-live="polite"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Étape 1', 'Étape 1', 'partikulier' ) ); ?></p>
+								</nav>
+		</div>
+
 		<div class="pk-container pk-submit-body">
 				<form class="pk-form pk-steps" id="pk-submit-form" method="post" action="<?php echo esc_url( admin_url( 'admin-ajax.php' ) ); ?>" enctype="multipart/form-data" novalidate>
 						<input type="hidden" name="action" value="pk_submit_listing">
@@ -84,14 +95,7 @@ $types = get_terms( array(
 						<?php // SE-034 : clé d'idempotence — unique à chaque affichage du formulaire. ?>
 						<input type="hidden" name="pk_idempotency_key" value="<?php echo esc_attr( Partikulier_Form::idempotency_field_value() ); ?>">
 
-								<nav class="pk-stepper" aria-label="<?php echo esc_attr( Partikulier_Localization::translate_polylang_string( 'Étapes de publication', 'Étapes de publication', 'partikulier' ) ); ?>">
-										<ol class="pk-stepper-list">
-												<li class="pk-stepper-item is-current" data-step-indicator="1" aria-current="step"><span class="pk-stepper-number">1</span><span class="pk-stepper-label"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Qui publie l’annonce ?', 'Qui publie l’annonce ?', 'partikulier' ) ); ?></span></li>
-												<li class="pk-stepper-item" data-step-indicator="2"><span class="pk-stepper-number">2</span><span class="pk-stepper-label"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Les informations du bien', 'Les informations du bien', 'partikulier' ) ); ?></span></li>
-												<li class="pk-stepper-item" data-step-indicator="3"><span class="pk-stepper-number">3</span><span class="pk-stepper-label"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Votre aperçu', 'Votre aperçu', 'partikulier' ) ); ?></span></li>
-										</ol>
-										<p class="pk-stepper-status" id="pk-stepper-status" role="status" aria-live="polite"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Étape 1', 'Étape 1', 'partikulier' ) ); ?></p>
-								</nav>
+								
 
 								<input type="hidden" name="pk_city_name" id="pk-city-name" value="">
 						<input type="hidden" name="pk_district_name" id="pk-district-name" value="">
