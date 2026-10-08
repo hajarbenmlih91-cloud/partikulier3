@@ -167,6 +167,13 @@ jobs:
             echo "  StrictHostKeyChecking yes"
             echo "  IdentitiesOnly yes"
             echo "  BatchMode yes"
+            # Résilience réseau : Hostinger coupe parfois la poignée de main
+            # (exit 255 observé sur la sauvegarde pré-déploiement, 6.20.58).
+            # ssh et rsync (via -e ssh) réessaient la connexion avant d'abandonner.
+            echo "  ConnectionAttempts 4"
+            echo "  ConnectTimeout 15"
+            echo "  ServerAliveInterval 15"
+            echo "  ServerAliveCountMax 3"
           } > "$HOME/.ssh/config"
           chmod 600 "$HOME/.ssh/config"
 
