@@ -34,6 +34,15 @@ class Partikulier_Form {
 			}
 				wp_die( esc_html__( 'Votre session a expiré. Rechargez la page avant de réessayer.', 'partikulier' ), esc_html__( 'Erreur de sécurité', 'partikulier' ), array( 'response' => 403 ) );
 		}
+					// admin-ajax n'a pas de contexte Polylang : la langue UI voyage avec le
+					// formulaire (pk_language, ajouté par main.js). On réaffirme le domaine
+					// « partikulier » vers cette langue pour que __() serve le .mo ar/en
+					// (messages d'erreur inclus) au lieu des msgids FR.
+					$pk_ui_lang = isset( $_POST['pk_language'] ) ? sanitize_key( wp_unslash( $_POST['pk_language'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification -- nonce vérifié ci-dessus
+					if ( in_array( $pk_ui_lang, array( 'ar', 'en' ), true )
+						&& class_exists( '\Partikulier\Core\Domain\I18n\I18nDomainLoader' ) ) {
+						\Partikulier\Core\Domain\I18n\I18nDomainLoader::reload_for_slug( $pk_ui_lang );
+					}
 						// SE-034 (E-3401→E-3403) : idempotence du canal public. La clé
 				// voyage en champ caché (rendu à chaque affichage) ; un rejeu de la
 				// MÊME charge avec la MÊME clé rend la réponse stockée (replayed:
