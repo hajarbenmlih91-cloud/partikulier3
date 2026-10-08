@@ -379,6 +379,9 @@
 					if (statusEl) statusEl.style.color = "var(--pk-primary)";
 
 					var fd = new FormData(form);
+					/* admin-ajax n'a pas de contexte Polylang : sans cette langue explicite,
+					   le serveur résout __() et la langue de l'annonce en FR même depuis /ar/. */
+					fd.append("pk_language", (typeof pkConfig !== "undefined" && pkConfig.language) ? pkConfig.language : (document.documentElement.lang || "fr"));
 
 					fetch(pkConfig.ajaxUrl, { method: "POST", body: fd, credentials: "same-origin" })
 							.then(function (res) {
