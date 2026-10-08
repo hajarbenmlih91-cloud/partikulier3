@@ -106,6 +106,8 @@
 		return ok;
 	}
 
+	/** Message = placeholder déjà traduit dans le HTML. Ne pas réécrire
+	 *  le placeholder en français : le message AR redeviendrait FR. */
 	function flagField(field, message) {
 		if ( ! field) {
 			return;
@@ -300,9 +302,8 @@
 	}
 
 	function openDistricts(city) {
-		districtWrap.hidden       = false;
-		districtInput.placeholder = "Choisissez un quartier de " + city;
-		districtInput.value       = "";
+		districtWrap.hidden = false;
+		districtInput.value = "";
 		districtName.value        = "";
 		fetchPlaces({ scope: "district", city: city }).then(function (results) {
 			renderList(districtList, results, function (item) {
