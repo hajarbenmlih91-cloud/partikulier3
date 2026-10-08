@@ -107,6 +107,8 @@ class Partikulier_Localization {
 								add_filter( 'pll_get_post_types', array( __CLASS__, 'register_polylang_post_type' ), 10, 2 );
 								add_filter( 'pll_get_taxonomies', array( __CLASS__, 'register_polylang_taxonomies' ), 10, 2 );
 								add_filter( 'pll_preferred_language', array( __CLASS__, 'filter_robot_preferred_language' ), 10, 2 );
+								// Devise : « درهم » en arabe, MAD ailleurs (filtre partikulier_currency des templates).
+								add_filter( 'partikulier_currency', array( __CLASS__, 'currency_for_language' ) );
 								// Priorité 20 pour passer APRES les filtres par défaut d'Estatik.
 								add_action( 'pre_get_posts', array( __CLASS__, 'optimize_property_queries' ), 20 );
 								// Neutraliser le réglage Estatik properties_per_page pour forcer 24.
@@ -121,6 +123,18 @@ class Partikulier_Localization {
 			}
 		}
 			return 'fr';
+	}
+
+	/**
+	 * Devise affichée avec les prix : « درهم » en arabe, MAD sinon.
+	 * Le couple nombre + devise est isolé en CSS (bloc RTL de style.css)
+	 * pour que la numération ne soit jamais inversée par le bidi.
+	 *
+	 * @param string $currency Devise par défaut (MAD).
+	 * @return string
+	 */
+	public static function currency_for_language( $currency ) {
+		return ( 'ar' === self::current_language() ) ? 'درهم' : $currency;
 	}
 
 		/**

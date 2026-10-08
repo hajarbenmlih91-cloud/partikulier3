@@ -4274,3 +4274,11 @@ body.pk-lang-gate-open { overflow: hidden; }
 /* Aperçu (étape 3) : carte posée, double filet cognac. */
 .pk-preview { position: relative; box-shadow: 0 24px 48px -28px rgba(22, 23, 21, .25); }
 .pk-preview::before { content: ""; position: absolute; inset: 8px; border: 1px solid rgba(155, 106, 61, .35); pointer-events: none; }
+
+/* Prix en RTL : le nombre reste en lecture LTR, jamais inversé par le bidi.
+   La note (/ شهر) est isolée pour garder sa propre direction. */
+html[dir="rtl"] .pk-card-price,
+html[dir="rtl"] .pk-single-price,
+html[dir="rtl"] .pk-preview-price { direction: ltr; unicode-bidi: isolate; }
+html[dir="rtl"] .pk-card-price-note,
+html[dir="rtl"] .pk-single-price-note { direction: rtl; unicode-bidi: isolate; }

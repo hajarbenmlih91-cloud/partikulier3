@@ -511,7 +511,7 @@ class Partikulier_Listing_Preview {
 			'meta'        => self::build_meta_description( $v ),
 			'alt'         => self::build_image_alt( $v ),
 			'facts'       => $facts,
-			'price'       => $v['price'] ? number_format_i18n( $v['price'] ) . ' MAD' : '',
+			'price'       => $v['price'] ? number_format_i18n( $v['price'] ) . ' ' . apply_filters( 'partikulier_currency', 'MAD' ) : '',
 			'kicker'      => trim(
 				( 'louer' === $v['action'] ? __( 'LOUER', 'partikulier' ) : __( 'VENDRE', 'partikulier' ) )
 				. ' · '
