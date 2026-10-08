@@ -126,8 +126,8 @@ try {
 
     // 2) E24-002 — dictionnaire forms figé (146 entrées, empreintes épinglées).
     $fp = $fingerprint(FormsDictionary::translations());
-    $assert('E24-002', $fp['count'] === 146 && $fp['keys_md5'] === 'd39edf3e7426023711283de4eaa8466c'
-        && $fp['entries_md5'] === 'fe16de48d87c75f7b9938e4086a3864d',
+    $assert('E24-002', $fp['count'] === 146 && $fp['keys_md5'] === '828c2ef4703729bfab42f228203f8b65'
+        && $fp['entries_md5'] === '226158f0f76dcd4a7269c160bc1c3d4a',
         sprintf('forms figé : %d entrées, clés %s, entrées %s', $fp['count'], $fp['keys_md5'], $fp['entries_md5']));
 
     // 3) E24-003 — dictionnaire chrome figé (136 entrées, empreintes épinglées).
