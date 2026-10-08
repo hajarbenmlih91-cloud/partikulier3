@@ -1180,13 +1180,13 @@
 	"use strict";
 	function chosen() {
 		try {
-			if (window.localStorage && localStorage.getItem("pk_lang_gate") === "1") return true;
+			if (window.localStorage && localStorage.getItem("pk_lang_gate_v2") === "1") return true;
 		} catch (err) { /* private mode */ }
-		return /(?:^|; )pk_lang_gate=1(?:;|$)/.test(document.cookie);
+		return /(?:^|; )pk_lang_gate_v2=1(?:;|$)/.test(document.cookie);
 	}
 	function setChosen() {
-		document.cookie = "pk_lang_gate=1;path=/;max-age=31536000;SameSite=Lax";
-		try { if (window.localStorage) localStorage.setItem("pk_lang_gate", "1"); } catch (err) { /* ignore */ }
+		document.cookie = "pk_lang_gate_v2=1;path=/;max-age=31536000;SameSite=Lax";
+		try { if (window.localStorage) localStorage.setItem("pk_lang_gate_v2", "1"); } catch (err) { /* ignore */ }
 	}
 	var gate = document.querySelector("[data-pk-lang-gate]");
 	if (gate) {
