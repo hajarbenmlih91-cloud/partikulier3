@@ -256,6 +256,7 @@ $partikulier_modules = array(
 		/* Lot E (SECU-1) : passerelle unique des appels système — chargée
 		 * AVANT class-avif.php qui l'utilise pour avifenc/vips. */
 		'/inc/class-exec-whitelist.php',
+		'/inc/class-image-optimize.php',
 		'/inc/class-avif.php',
 		'/inc/class-geo.php',
 		'/inc/class-search-filters.php',

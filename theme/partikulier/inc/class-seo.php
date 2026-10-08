@@ -175,8 +175,7 @@ class Partikulier_SEO {
 				printf( '<meta property="og:type" content="website">%s', "\n" );
 				printf( '<meta property="og:title" content="%s">%s', esc_attr( is_front_page() ? get_bloginfo( 'name' ) : wp_get_document_title() ), "\n" );
 			if ( $pk_og_img[0] ) {
-					printf( '<meta property="og:image" content="%s">%s', esc_url( $pk_og_img[0] ), "\n" );
-					printf( '<meta property="og:image:alt" content="%s">%s', esc_attr( $pk_og_img[1] ), "\n" );
+				self::emit_og_image( $pk_og_img[0], $pk_og_img[1], (int) $pk_og_img[2], (int) $pk_og_img[3], (string) $pk_og_img[4] );
 			}
 				printf( '<meta name="twitter:card" content="%s">%s', ( $pk_og_img[0] ? 'summary_large_image' : 'summary' ), "\n" );
 		}
@@ -386,24 +385,20 @@ class Partikulier_SEO {
 			printf( '<meta property="og:type" content="article">%s', "\n" );
 			printf( '<meta property="og:title" content="%s">%s', esc_attr( get_the_title( $post ) ), "\n" );
 			$pk_og_marque = false;
+			/* Jamais d’AVIF en og:image (crawlers). JPEG/PNG de l’annonce, sinon
+			 * hero.jpg du thème — toujours un JPEG, jamais zéro balise. */
 		if ( has_post_thumbnail( $post ) ) {
-				$img = wp_get_attachment_image_src( get_post_thumbnail_id( $post ), 'large' );
-			if ( $img ) {
-				printf( '<meta property="og:image" content="%s">%s', esc_url( $img[0] ), "\n" );
-				printf( '<meta property="og:image:width" content="%d">%s', intval( $img[1] ), "\n" );
-				printf( '<meta property="og:image:height" content="%d">%s', intval( $img[2] ), "\n" );
-				printf( '<meta property="og:image:alt" content="%s">%s', esc_attr( get_the_title( $post ) ), "\n" );
+			$thumb_id = (int) get_post_thumbnail_id( $post );
+			$og       = class_exists( 'Partikulier_Image_Optimize' ) ? Partikulier_Image_Optimize::og_image( $thumb_id ) : false;
+			if ( $og && ! empty( $og['url'] ) ) {
+				self::emit_og_image( $og['url'], get_the_title( $post ), (int) $og['width'], (int) $og['height'], (string) $og['type'] );
 				$pk_og_marque = true;
 			}
 		}
 		if ( ! $pk_og_marque ) {
-				/* Une fiche importee sans image a la une partage un lien sans apercu
-			* (mesure : 354 pages sans og:image). Le hero du site sert de secours,
-			* comme pour l'accueil : mieux vaut une image generique qu'un fil vide. */
 				$pk_og_img = self::og_image_fallback();
 			if ( $pk_og_img[0] ) {
-					printf( '<meta property="og:image" content="%s">%s', esc_url( $pk_og_img[0] ), "\n" );
-					printf( '<meta property="og:image:alt" content="%s">%s', esc_attr( $pk_og_img[1] ), "\n" );
+				self::emit_og_image( $pk_og_img[0], $pk_og_img[1], (int) $pk_og_img[2], (int) $pk_og_img[3], (string) $pk_og_img[4] );
 			}
 		}
 			printf( '<meta name="article:published_time" content="%s">%s', esc_attr( mysql2date( 'c', $post->post_date_gmt ) ), "\n" );
@@ -411,21 +406,54 @@ class Partikulier_SEO {
 			printf( '<meta name="twitter:card" content="summary_large_image">%s', "\n" );
 	}
 
+	/**
+	 * @param string $url    URL JPEG/PNG.
+	 * @param string $alt    Texte alternatif.
+	 * @param int    $width  Largeur réelle.
+	 * @param int    $height Hauteur réelle.
+	 * @param string $type   Mime (image/jpeg par défaut).
+	 */
+	private static function emit_og_image( $url, $alt, $width = 0, $height = 0, $type = 'image/jpeg' ) {
+		printf( '<meta property="og:image" content="%s">%s', esc_url( $url ), "\n" );
+		if ( $width > 0 && $height > 0 ) {
+			printf( '<meta property="og:image:width" content="%d">%s', $width, "\n" );
+			printf( '<meta property="og:image:height" content="%d">%s', $height, "\n" );
+		}
+		if ( '' !== $type ) {
+			printf( '<meta property="og:image:type" content="%s">%s', esc_attr( $type ), "\n" );
+		}
+		printf( '<meta property="og:image:alt" content="%s">%s', esc_attr( $alt ), "\n" );
+		printf( '<meta name="twitter:image" content="%s">%s', esc_url( $url ), "\n" );
+	}
+
 		/**
 		 * Image de secours pour l'og:image des pages sans image propre.
 		 *
-		 * @return array{0:string,1:string} URL absolue + texte alternatif, ou array( '', '' ).
+		 * @return array{0:string,1:string,2:int,3:int,4:string} URL, alt, largeur, hauteur, mime.
 		 */
 	private static function og_image_fallback() {
-		if ( ! class_exists( 'Partikulier_Customization' ) ) {
-				return array( '', '' );
+		$url = '';
+		$alt = '';
+		if ( class_exists( 'Partikulier_Customization' ) ) {
+			$maybe = Partikulier_Customization::hero_url();
+			$url   = is_string( $maybe ) ? $maybe : '';
+			$got   = Partikulier_Customization::hero_alt( '' );
+			$alt   = is_string( $got ) ? $got : '';
 		}
-			$url = Partikulier_Customization::hero_url();
-		if ( ! is_string( $url ) || '' === $url ) {
-				return array( '', '' );
+		if ( '' === $url ) {
+			$url = get_theme_file_uri( 'assets/img/hero.jpg' );
 		}
-			$alt = Partikulier_Customization::hero_alt( '' );
-			return array( $url, ( is_string( $alt ) ? $alt : '' ) );
+		$width  = 0;
+		$height = 0;
+		$path   = get_theme_file_path( 'assets/img/hero.jpg' );
+		if ( is_readable( $path ) ) {
+			$dims = @getimagesize( $path ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
+			if ( is_array( $dims ) ) {
+				$width  = (int) $dims[0];
+				$height = (int) $dims[1];
+			}
+		}
+		return array( $url, $alt, $width, $height, 'image/jpeg' );
 	}
 
 		/**

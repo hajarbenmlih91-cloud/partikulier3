@@ -92,21 +92,37 @@
 
 			if (usingProposal) {
 				if ( ! proposedCity.value.trim()) {
-					proposedCity.classList.add("pk-invalid");
-					proposedCity.focus();
+					flagField(proposedCity, proposedCity.getAttribute("placeholder") || "");
 					ok = false;
 				}
 			} else if ( ! cityName.value) {
-				cityInput.classList.add("pk-invalid");
-				cityInput.focus();
+				flagField(cityInput, cityInput.getAttribute("placeholder") || "");
 				ok = false;
 			} else if ( ! districtWrap.hidden && ! districtName.value) {
-				districtInput.classList.add("pk-invalid");
-				districtInput.focus();
+				flagField(districtInput, districtInput.getAttribute("placeholder") || "");
 				ok = false;
 			}
 		}
 		return ok;
+	}
+
+	/** Message = placeholder déjà traduit dans le HTML. Ne pas réécrire
+	 *  le placeholder en français : le message AR redeviendrait FR. */
+	function flagField(field, message) {
+		if ( ! field) {
+			return;
+		}
+		field.classList.add("pk-invalid");
+		if (message && field.setCustomValidity) {
+			field.setCustomValidity(message);
+		}
+		field.focus();
+		if (field.reportValidity) {
+			field.reportValidity();
+		}
+		if (field.setCustomValidity) {
+			field.setCustomValidity("");
+		}
 	}
 
 	/* -------------------------------------- proposition de lieu absent */
@@ -117,9 +133,9 @@
 		proposalToggle.addEventListener("click", function () {
 			var opening                = proposalBox.hidden;
 			proposalBox.hidden         = ! opening;
-			proposalToggle.textContent = opening
-				? "Finalement, choisir dans la liste"
-				: "Je ne trouve pas ma ville ou mon quartier";
+			var openL  = proposalToggle.getAttribute("data-pk-label-open") || "";
+			var closeL = proposalToggle.getAttribute("data-pk-label-close") || proposalToggle.textContent;
+			proposalToggle.textContent = opening ? openL : closeL;
 
 			if (opening) {
 				// La saisie libre remplace la selection : on repart propre.
@@ -140,7 +156,7 @@
 	function closeProposal() {
 		if (proposalBox && ! proposalBox.hidden) {
 			proposalBox.hidden                                    = true;
-			proposalToggle.textContent                            = "Je ne trouve pas ma ville ou mon quartier";
+			proposalToggle.textContent = proposalToggle.getAttribute("data-pk-label-close") || proposalToggle.textContent;
 			document.getElementById("pk-proposed-city").value     = "";
 			document.getElementById("pk-proposed-district").value = "";
 		}
@@ -286,9 +302,8 @@
 	}
 
 	function openDistricts(city) {
-		districtWrap.hidden       = false;
-		districtInput.placeholder = "Choisissez un quartier de " + city;
-		districtInput.value       = "";
+		districtWrap.hidden = false;
+		districtInput.value = "";
 		districtName.value        = "";
 		fetchPlaces({ scope: "district", city: city }).then(function (results) {
 			renderList(districtList, results, function (item) {
@@ -365,6 +380,7 @@
 		// Liste en mémoire, comme main.js : chaque sélection s'ajoute.
 		var chosen    = [];
 		var syncing   = false;
+		var squeezeQ  = Promise.resolve();
 		var dropLabel = dropzone ? dropzone.querySelector("strong") : null;
 
 		function liveCount() {
@@ -391,6 +407,95 @@
 			syncing = false;
 		}
 
+		/**
+		 * Allège la photo dans le navigateur. L’annonceur ne fait rien :
+		 * en cas d’échec on garde le fichier d’origine (le serveur recadre).
+		 */
+		function squeezePhoto(file) {
+			return new Promise(function (resolve) {
+				var keep = function () { resolve(file); };
+				if ( ! file || typeof HTMLCanvasElement === "undefined" || typeof File === "undefined") {
+					keep();
+					return;
+				}
+				var mime = (file.type || "").toLowerCase();
+				var jpegName = /\.jpe?g$/i.test(file.name || "");
+				if (mime ? (mime !== "image/jpeg" && mime !== "image/jpg") : ! jpegName) {
+					keep();
+					return;
+				}
+				var maxEdge = 1920;
+				var quality = 0.82;
+				var maxBytes = 409600;
+
+				function draw(src, w, h, closeSrc) {
+					if ( ! w || ! h) {
+						if (closeSrc) closeSrc();
+						keep();
+						return;
+					}
+					var scale = Math.min(1, maxEdge / Math.max(w, h));
+					if (scale === 1 && file.size <= maxBytes && file.type === "image/jpeg") {
+						if (closeSrc) closeSrc();
+						keep();
+						return;
+					}
+					var cw = Math.max(1, Math.round(w * scale));
+					var ch = Math.max(1, Math.round(h * scale));
+					var canvas = document.createElement("canvas");
+					canvas.width  = cw;
+					canvas.height = ch;
+					var ctx = canvas.getContext("2d", { alpha: false });
+					if ( ! ctx || typeof canvas.toBlob !== "function") {
+						if (closeSrc) closeSrc();
+						keep();
+						return;
+					}
+					ctx.drawImage(src, 0, 0, cw, ch);
+					if (closeSrc) closeSrc();
+					canvas.toBlob(function (blob) {
+						if ( ! blob || blob.size < 32) {
+							keep();
+							return;
+						}
+						if (scale === 1 && blob.size >= file.size) {
+							keep();
+							return;
+						}
+						var base = (file.name || "photo").replace(/\.[^.]+$/, "") || "photo";
+						resolve(new File([blob], base + ".jpg", { type: "image/jpeg", lastModified: Date.now() }));
+					}, "image/jpeg", quality);
+				}
+
+				if (window.createImageBitmap) {
+					var tryBitmap = function (opts) {
+						return window.createImageBitmap(file, opts || {});
+					};
+					tryBitmap({ imageOrientation: "from-image" }).catch(function () {
+						return tryBitmap();
+					}).then(function (bitmap) {
+						if ( ! bitmap) { keep(); return; }
+						draw(bitmap, bitmap.width, bitmap.height, function () {
+							if (bitmap.close) bitmap.close();
+						});
+					}).catch(keep);
+					return;
+				}
+
+				var img = new Image();
+				var url = URL.createObjectURL(file);
+				img.onload = function () {
+					URL.revokeObjectURL(url);
+					draw(img, img.naturalWidth || img.width, img.naturalHeight || img.height, null);
+				};
+				img.onerror = function () {
+					URL.revokeObjectURL(url);
+					keep();
+				};
+				img.src = url;
+			});
+		}
+
 		function addFiles(files) {
 			files = Array.prototype.slice.call(files || []).filter(function (f) {
 				return ! f.type || f.type.indexOf("image/") === 0 || /\.(jpe?g|png|webp|avif|heic|heif)$/i.test(f.name);
@@ -415,6 +520,14 @@
 					updateDropLabel();
 				});
 				photoPreview.appendChild(li);
+				squeezeQ = squeezeQ.then(function () {
+					return squeezePhoto(f).then(function (out) {
+						if (chosen[idx] === f && out) {
+							chosen[idx] = out;
+							syncInput();
+						}
+					});
+				}).catch(function () { /* photo d'origine conservée */ });
 			});
 			if (total > MAX_PHOTOS) {
 				setStatus("15 photos maximum. Les fichiers en trop ont été ignorés.");

@@ -193,9 +193,14 @@ $gallery_ids = array();
 					<div class="pk-carousel-track" id="<?php echo esc_attr( $gallery_id ); ?>" tabindex="0">
 						<?php foreach ( $gallery_ids as $i => $id ) : ?>
 							<?php
-							$img  = wp_get_attachment_image_url( $id, 'pk-hero' );
+							$hero = wp_get_attachment_image_src( $id, 'pk-hero' );
+							$img  = ( is_array( $hero ) && ! empty( $hero[0] ) ) ? $hero[0] : '';
 							$avif = $img ? Partikulier_AVIF::avif_path_for_url( $img ) : false;
 							$alt  = get_post_meta( $id, '_wp_attachment_image_alt', true ) ?: get_the_title( $post );
+							$srcset = function_exists( 'wp_get_attachment_image_srcset' ) ? wp_get_attachment_image_srcset( $id, 'pk-hero' ) : false;
+							$sizes  = '(max-width: 767px) 100vw, 1100px';
+							$w      = ( is_array( $hero ) && ! empty( $hero[1] ) ) ? (int) $hero[1] : 1600;
+							$h      = ( is_array( $hero ) && ! empty( $hero[2] ) ) ? (int) $hero[2] : 900;
 							?>
 							<?php if ( $img ) : ?>
 								<figure class="pk-single-gallery-item pk-carousel-slide<?php echo 0 === $i ? ' is-active' : ''; ?>" aria-label="<?php echo esc_attr( sprintf( __( 'Photo %1$d sur %2$d', 'partikulier' ), $i + 1, count( $gallery_ids ) ) ); ?>">
@@ -203,7 +208,7 @@ $gallery_ids = array();
 										<?php if ( $avif ) : ?>
 											<source type="image/avif" srcset="<?php echo esc_attr( $avif ); ?>">
 										<?php endif; ?>
-										<img src="<?php echo esc_url( $img ); ?>" alt="<?php echo esc_attr( $alt ); ?>" loading="<?php echo 0 === $i ? 'eager' : 'lazy'; ?>" decoding="async" <?php echo 0 === $i ? 'fetchpriority="high"' : ''; ?>>
+										<img src="<?php echo esc_url( $img ); ?>"<?php echo $srcset ? ' srcset="' . esc_attr( $srcset ) . '" sizes="' . esc_attr( $sizes ) . '"' : ''; ?> alt="<?php echo esc_attr( $alt ); ?>" width="<?php echo (int) $w; ?>" height="<?php echo (int) $h; ?>" loading="<?php echo 0 === $i ? 'eager' : 'lazy'; ?>" decoding="async" <?php echo 0 === $i ? 'fetchpriority="high"' : ''; ?>>
 									</picture>
 									<?php if ( $is_closed ) : ?>
 										<span class="pk-photo-watermark" aria-hidden="true"><?php echo esc_html( $closed_label ); ?></span>

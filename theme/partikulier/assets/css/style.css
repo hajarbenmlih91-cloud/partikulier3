@@ -2050,7 +2050,19 @@ html[dir="rtl"] .pk-card-price {
 		box-shadow: 0 0 0 3px rgba(155, 106, 61, .12);
 }
 .pk-form input::placeholder, .pk-form textarea::placeholder { color: #a8aca4; }
-.pk-form .pk-invalid { border-color: #c0392b; box-shadow: 0 0 0 3px rgba(192, 57, 43, .10); }
+.pk-form .pk-invalid,
+.pk-form input.pk-invalid:focus,
+.pk-form input.pk-invalid:focus-visible,
+.pk-form select.pk-invalid:focus,
+.pk-form select.pk-invalid:focus-visible,
+.pk-form textarea.pk-invalid:focus,
+.pk-form textarea.pk-invalid:focus-visible,
+.pk-form .pk-field input.pk-invalid:focus-visible {
+		border-color: #c0392b;
+		box-shadow: 0 0 0 3px rgba(192, 57, 43, .10);
+		outline: 2px solid #c0392b;
+		outline-offset: 2px;
+}
 
 .pk-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1.1rem; }
 
