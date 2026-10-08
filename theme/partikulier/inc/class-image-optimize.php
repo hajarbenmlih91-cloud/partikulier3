@@ -27,24 +27,6 @@ class Partikulier_Image_Optimize {
 	public static function init() {
 		add_filter( 'wp_handle_upload', array( __CLASS__, 'recompress_upload' ), 5, 2 );
 		add_filter( 'wp_generate_attachment_metadata', array( __CLASS__, 'maybe_og_jpeg' ), 20, 2 );
-		add_filter( 'jpeg_quality', array( __CLASS__, 'quality' ) );
-		add_filter( 'wp_editor_set_quality', array( __CLASS__, 'editor_quality' ), 10, 2 );
-	}
-
-	public static function quality() {
-		return self::QUALITY;
-	}
-
-	/**
-	 * @param int    $quality Qualité demandée par WP.
-	 * @param string $mime    Mime de l’éditeur.
-	 * @return int
-	 */
-	public static function editor_quality( $quality, $mime = '' ) {
-		if ( in_array( $mime, array( 'image/jpeg', 'image/webp' ), true ) ) {
-			return self::QUALITY;
-		}
-		return (int) $quality;
 	}
 
 	/**
@@ -173,7 +155,7 @@ class Partikulier_Image_Optimize {
 	 * @return array{url:string,width:int,height:int,type:string}|false
 	 */
 	private static function ensure_og_jpeg( $attachment_id ) {
-		if ( get_post_meta( $attachment_id, '_pk_og_jpeg_skip', true ) ) {
+		if ( get_transient( 'pk_og_jpeg_fail_' . $attachment_id ) ) {
 			return false;
 		}
 		$cached = self::og_from_meta( $attachment_id );
@@ -194,7 +176,7 @@ class Partikulier_Image_Optimize {
 
 		$editor = wp_get_image_editor( $file );
 		if ( is_wp_error( $editor ) ) {
-			update_post_meta( $attachment_id, '_pk_og_jpeg_skip', '1' );
+			set_transient( 'pk_og_jpeg_fail_' . $attachment_id, 1, 12 * HOUR_IN_SECONDS );
 			return false;
 		}
 		$size = $editor->get_size();
@@ -209,9 +191,10 @@ class Partikulier_Image_Optimize {
 			if ( file_exists( $dest ) ) {
 				wp_delete_file( $dest );
 			}
-			update_post_meta( $attachment_id, '_pk_og_jpeg_skip', '1' );
+			set_transient( 'pk_og_jpeg_fail_' . $attachment_id, 1, 12 * HOUR_IN_SECONDS );
 			return false;
 		}
+		delete_transient( 'pk_og_jpeg_fail_' . $attachment_id );
 		return self::store_og_jpeg( $attachment_id, $dest );
 	}
 
@@ -252,7 +235,6 @@ class Partikulier_Image_Optimize {
 		}
 		$rel = ltrim( substr( $path, strlen( $base ) ), '/' );
 		update_post_meta( $attachment_id, '_pk_og_jpeg', $rel );
-		delete_post_meta( $attachment_id, '_pk_og_jpeg_skip' );
 		$url  = trailingslashit( (string) $upload['baseurl'] ) . $rel;
 		$dims = @getimagesize( $path ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged
 		return array(

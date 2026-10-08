@@ -2060,7 +2060,8 @@ html[dir="rtl"] .pk-card-price {
 .pk-form .pk-field input.pk-invalid:focus-visible {
 		border-color: #c0392b;
 		box-shadow: 0 0 0 3px rgba(192, 57, 43, .10);
-		outline: none;
+		outline: 2px solid #c0392b;
+		outline-offset: 2px;
 }
 
 .pk-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1.1rem; }

@@ -72,8 +72,6 @@ class Partikulier_Scripts {
 									'whatsappNote'  => __( 'Conservez ce code. L’annonce sera publiée seulement après vérification manuelle du message par l’équipe Partikulier.', 'partikulier' ),
 										'photoError'    => __( "photo(s) n'ont pas pu être ajoutées :", 'partikulier' ),
 										'photoHint'     => __( 'Vous pourrez les ajouter depuis « Mes annonces » après validation.', 'partikulier' ),
-										'chooseCity'    => __( 'Choisissez une ville dans la liste.', 'partikulier' ),
-										'chooseDistrict'=> __( 'Choisissez un quartier dans la liste.', 'partikulier' ),
 									/* SE-044 / DP-9 (revues E4 + CP5, D2) : messages de validation client du parcours
 									 * de désactivation — msgids déjà portés par les catalogues EN/AR (SE-035) ;
 									 * servis par pkConfig.i18n, sans repli français codé en dur côté JS. */

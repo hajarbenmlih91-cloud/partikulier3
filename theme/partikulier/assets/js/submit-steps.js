@@ -92,14 +92,14 @@
 
 			if (usingProposal) {
 				if ( ! proposedCity.value.trim()) {
-					flagField(proposedCity, (pkConfig.i18n && pkConfig.i18n.chooseCity) || "");
+					flagField(proposedCity, proposedCity.getAttribute("placeholder") || "");
 					ok = false;
 				}
 			} else if ( ! cityName.value) {
-				flagField(cityInput, (pkConfig.i18n && pkConfig.i18n.chooseCity) || "");
+				flagField(cityInput, cityInput.getAttribute("placeholder") || "");
 				ok = false;
 			} else if ( ! districtWrap.hidden && ! districtName.value) {
-				flagField(districtInput, (pkConfig.i18n && pkConfig.i18n.chooseDistrict) || "");
+				flagField(districtInput, districtInput.getAttribute("placeholder") || "");
 				ok = false;
 			}
 		}
