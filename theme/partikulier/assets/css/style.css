@@ -3418,11 +3418,7 @@ html[dir="rtl"] .pk-archive-content .pk-card-price { left: auto; right: 12px; }
 }
 
 /* --- Mode Tunnel Déposeur : zéro distraction sur le parcours de dépôt --- */
-.page-template-page-deposer-annonce .pk-header-search,
-.page-template-page-deposer-annonce .pk-topbar,
-.page-template-page-deposer-annonce .pk-main-nav {
-		display: none !important;
-}
+
 
 /* --- Neutralisation de la modal brute d'authentification Estatik ---
 	Cibler #es-authentication-popup / .es-auth__popup, et l'overlay Magnific
@@ -4302,5 +4298,5 @@ html[dir="rtl"] .pk-single-price-note { direction: rtl; unicode-bidi: isolate; }
    standard pour ne plus flotter « en moitié ». */
 .pk-submit-hero .pk-container { text-align: center; }
 .pk-submit-subtitle { margin-inline: auto; }
-.pk-stepper { max-width: none; }
+.pk-stepper { max-width: 760px; margin-inline: auto; }
 .pk-stepper-status { text-align: center; }
