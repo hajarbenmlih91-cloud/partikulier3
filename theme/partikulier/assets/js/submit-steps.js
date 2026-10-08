@@ -27,7 +27,7 @@
 
 	/* ---------------------------------------------------------- etapes */
 
-		var stepIndicators = Array.prototype.slice.call(form.querySelectorAll("[data-step-indicator]"));
+		var stepIndicators = Array.prototype.slice.call(document.querySelectorAll("[data-step-indicator]"));
 		var stepperStatus  = document.getElementById("pk-stepper-status");
 
 	function updateStepper(n) {
@@ -42,7 +42,7 @@
 			}
 		});
 		if (stepperStatus) {
-			var current               = form.querySelector('[data-step-indicator="' + n + '"] .pk-stepper-label');
+			var current               = document.querySelector('[data-step-indicator="' + n + '"] .pk-stepper-label');
 			stepperStatus.textContent = n + " / " + stepIndicators.length + " — " + (current ? current.textContent : "");
 		}
 	}
