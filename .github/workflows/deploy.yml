@@ -274,6 +274,7 @@ jobs:
             cat "$WP_PATH/robots.txt"
           fi
           wp cache flush || true
+          wp eval 'if ( class_exists( "Partikulier_Cache" ) ) { Partikulier_Cache::purge_all(); }' || true
           wp rewrite flush || true
           REMOTE
 

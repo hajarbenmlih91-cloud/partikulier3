@@ -16,4 +16,7 @@ if ( $number === (string) ( $opts['whatsapp_validation_number'] ?? '' ) ) {
 }
 $opts['whatsapp_validation_number'] = $number;
 update_option( 'pk_theme_options', $opts );
+if ( class_exists( 'Partikulier_Cache' ) ) {
+	Partikulier_Cache::purge_all();
+}
 WP_CLI::success( 'numéro WhatsApp UAT configuré : ' . $number );

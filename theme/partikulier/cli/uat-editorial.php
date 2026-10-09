@@ -26,6 +26,9 @@ foreach ( $editorial as $lang => $text ) {
 }
 if ( $dirty ) {
 	update_option( 'pk_customization_options', $opts );
+	if ( class_exists( 'Partikulier_Cache' ) ) {
+		Partikulier_Cache::purge_all();
+	}
 	WP_CLI::success( 'titres hero UAT mis à jour (AR + EN)' );
 } else {
 	WP_CLI::success( 'titres hero UAT déjà à jour, skip' );
