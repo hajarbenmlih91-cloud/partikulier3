@@ -2,7 +2,8 @@
 /**
  * Config UAT — titres éditoriaux d'accueil (hero) validés par le propriétaire :
  * AR « اشترِي واكتري مباشرة من المالكين. » / EN « Buy and rent directly from owners. ».
- * Idempotent. Jamais en production : le CD ne l'appelle que si DEPLOY_ENVIRONMENT=uat.
+ * Écrit dans pk_customization_options (source réelle du hero), idempotent.
+ * Jamais en production : le CD ne l'appelle que si DEPLOY_ENVIRONMENT=uat.
  */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit( 'CLI only' );
@@ -11,19 +12,20 @@ $editorial = array(
 	'ar' => 'اشترِي واكتري مباشرة من المالكين.',
 	'en' => 'Buy and rent directly from owners.',
 );
-$opts      = get_option( 'pk_theme_options', array() );
+$opts      = get_option( 'pk_customization_options', array() );
 $opts      = is_array( $opts ) ? $opts : array();
-$opts['localized'] = isset( $opts['localized'] ) && is_array( $opts['localized'] ) ? $opts['localized'] : array();
+$opts['editorial'] = isset( $opts['editorial'] ) && is_array( $opts['editorial'] ) ? $opts['editorial'] : array();
+$opts['editorial']['home_title'] = isset( $opts['editorial']['home_title'] ) && is_array( $opts['editorial']['home_title'] ) ? $opts['editorial']['home_title'] : array();
 $dirty = false;
 foreach ( $editorial as $lang => $text ) {
-	$current = isset( $opts['localized'][ $lang ]['site_tagline'] ) ? (string) $opts['localized'][ $lang ]['site_tagline'] : '';
+	$current = isset( $opts['editorial']['home_title'][ $lang ] ) ? (string) $opts['editorial']['home_title'][ $lang ] : '';
 	if ( $text !== $current ) {
-		$opts['localized'][ $lang ]['site_tagline'] = $text;
+		$opts['editorial']['home_title'][ $lang ] = $text;
 		$dirty = true;
 	}
 }
 if ( $dirty ) {
-	update_option( 'pk_theme_options', $opts );
+	update_option( 'pk_customization_options', $opts );
 	WP_CLI::success( 'titres hero UAT mis à jour (AR + EN)' );
 } else {
 	WP_CLI::success( 'titres hero UAT déjà à jour, skip' );
