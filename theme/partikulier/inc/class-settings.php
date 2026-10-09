@@ -246,7 +246,7 @@ class Partikulier_Settings {
 	 */
 	private static function localized_default( $key, $value, $language ) {
 		$map      = array(
-			'site_tagline'          => array( 'en' => 'Buy and rent directly from private owners.', 'ar' => 'اشترِ واكترِ مباشرة من المالكين' ),
+			'site_tagline'          => array( 'en' => 'Buy and rent directly from owners.', 'ar' => 'اشترِي واكتري مباشرة من المالكين.' ),
 			'site_intro'            => array( 'en' => 'Post your property for free, with no commission or middleman. Reach buyers and tenants directly.', 'ar' => 'أضف عقارك مجاناً، بدون عمولة أو وسيط. تواصل مباشرة مع المشترين والمستأجرين.' ),
 			'btn_deposit'           => array( 'en' => 'Post for free', 'ar' => 'أضف إعلاناً مجاناً' ),
 			'btn_listings'          => array( 'en' => 'Search by city', 'ar' => 'ابحث حسب المدينة' ),
