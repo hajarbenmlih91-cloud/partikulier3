@@ -294,6 +294,7 @@ $partikulier_modules = array(
 		'/inc/class-page-templates.php',
 		'/inc/class-required-page-translations.php',
 		'/inc/class-required-pages.php',
+		'/inc/class-page-translations.php',
 		'/inc/class-morocco-places.php',
 		'/inc/class-place-requests.php',
 		'/inc/class-places-admin.php',
