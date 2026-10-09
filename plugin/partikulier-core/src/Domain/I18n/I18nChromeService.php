@@ -119,7 +119,7 @@ final class I18nChromeService
 	 */
 	public static function translate( string $translation, string $text, string $domain ): string
 	{
-		if ( 'estatik' === $domain ) {
+		if ( 'es' === $domain ) {
 			return EstatikDictionary::translate( $translation, $text, self::current_language() );
 		}
 		if ( self::DOMAIN !== $domain ) {

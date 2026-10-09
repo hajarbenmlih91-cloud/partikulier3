@@ -1747,3 +1747,21 @@ msgstr "Log in to manage your listings."
 
 msgid "Cette annonce a été refusée par l’équipe. Elle ne peut pas être modifiée par son propriétaire."
 msgstr "This listing was refused by the team. It cannot be modified by its owner."
+
+msgid "Vente"
+msgstr "Sale"
+
+msgid "Location"
+msgstr "Rental"
+
+msgid "Saisonnière"
+msgstr "Seasonal"
+
+msgid "Longue durée"
+msgstr "Long-term"
+
+msgid "Pièces"
+msgstr "Rooms"
+
+msgid "GES"
+msgstr "GHG"

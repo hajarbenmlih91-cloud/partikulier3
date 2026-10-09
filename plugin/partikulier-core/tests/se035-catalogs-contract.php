@@ -10,10 +10,10 @@
  * pages EN/AR rendaient majoritairement en français.
  *
  * Ce contrat verrouille :
- *  - E35-001 (E-3501, AR) : ar.mo = 633 entrées au format canonique (comptes étendus DP-9)
+ *  - E35-001 (E-3501, AR) : ar.mo = 638 entrées au format canonique (comptes étendus DP-9 + visite 3 langues 10/10)
  *    (rev 0, hash vide en fin — forme C1A-011), lisible pomo, AUCUNE
  *    traduction vide, échantillon front représentatif traduit ;
- *  - E35-002 (E-3501, EN) : en_US.mo = 581 entrées, mêmes exigences (comptes étendus DP-9) ;
+ *  - E35-002 (E-3501, EN) : en_US.mo = 587 entrées, mêmes exigences (comptes étendus DP-9 + visite 3 langues 10/10) ;
  *  - E35-003 (E-3502) : GÉNÉRATION — scripts/build-catalogs.php (compilateur
  *    .po → .mo autonome, déterministe) reproduit byte à byte les .mo
  *    livrés depuis leurs sources .po (--check) ;
@@ -91,7 +91,7 @@ $sample = [
 ];
 
 try {
-    // 1) AR — 633 entrées (étendues DP-9), format canonique, lisible pomo, aucune vide.
+    // 1) AR — 638 entrées (étendues DP-9 + visite 3 langues 10/10), format canonique, lisible pomo, aucune vide.
     $hdrAr = $moHeader($langDir . '/ar.mo');
     $pomoAr = new MO();
     $readableAr = $pomoAr->import_from_file($langDir . '/ar.mo');
@@ -104,13 +104,13 @@ try {
     }
     $sampleArBad = array_keys(array_filter($sampleArOk, static fn($ok): bool => !$ok));
     $assert('E35-001',
-        (int) $hdrAr['total'] === 633 && (int) $hdrAr['hash_len'] === 0 && (int) $hdrAr['hash_addr'] === 28 + 16 * 633
-        && $readableAr && count($pomoAr->entries) === 633 && $emptyAr === [] && $sampleArBad === [],
+        (int) $hdrAr['total'] === 638 && (int) $hdrAr['hash_len'] === 0 && (int) $hdrAr['hash_addr'] === 28 + 16 * 638
+        && $readableAr && count($pomoAr->entries) === 638 && $emptyAr === [] && $sampleArBad === [],
         sprintf('ar.mo : %d entrées (format canonique hash_addr=%d), pomo %s, traductions vides %d, échantillon front non traduit %d',
             (int) $hdrAr['total'], (int) $hdrAr['hash_addr'], $readableAr ? 'OK' : 'ÉCHEC', count($emptyAr), count($sampleArBad))
             . ($sampleArBad !== [] ? ' — manquantes : ' . implode(' ; ', array_slice($sampleArBad, 0, 3)) : ''));
 
-    // 2) EN — 581 entrées (étendues DP-9), mêmes exigences.
+    // 2) EN — 587 entrées (étendues DP-9 + visite 3 langues 10/10), mêmes exigences.
     $hdrEn = $moHeader($langDir . '/en_US.mo');
     $pomoEn = new MO();
     $readableEn = $pomoEn->import_from_file($langDir . '/en_US.mo');
@@ -123,8 +123,8 @@ try {
     }
     $sampleEnBad = array_keys(array_filter($sampleEnOk, static fn($ok): bool => !$ok));
     $assert('E35-002',
-        (int) $hdrEn['total'] === 581 && (int) $hdrEn['hash_len'] === 0 && (int) $hdrEn['hash_addr'] === 28 + 16 * 581
-        && $readableEn && count($pomoEn->entries) === 581 && $emptyEn === [] && $sampleEnBad === [],
+        (int) $hdrEn['total'] === 587 && (int) $hdrEn['hash_len'] === 0 && (int) $hdrEn['hash_addr'] === 28 + 16 * 587
+        && $readableEn && count($pomoEn->entries) === 587 && $emptyEn === [] && $sampleEnBad === [],
         sprintf('en_US.mo : %d entrées (format canonique hash_addr=%d), pomo %s, traductions vides %d, échantillon front non traduit %d',
             (int) $hdrEn['total'], (int) $hdrEn['hash_addr'], $readableEn ? 'OK' : 'ÉCHEC', count($emptyEn), count($sampleEnBad))
             . ($sampleEnBad !== [] ? ' — manquantes : ' . implode(' ; ', array_slice($sampleEnBad, 0, 3)) : ''));
