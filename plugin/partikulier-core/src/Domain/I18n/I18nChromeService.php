@@ -119,7 +119,11 @@ final class I18nChromeService
 	 */
 	public static function translate( string $translation, string $text, string $domain ): string
 	{
-		if ( 'es' === $domain ) {
+		/* Estatik : domaine propre « es », plus deux chaînes appelées SANS
+		 * domaine (hooks.php « Powered by %s », un « Reset password ») qui
+		 * atterrissent sur « default ». Le repli ne s'applique qu'aux
+		 * chaînes connues d'Estatik — le reste du domaine default passe. */
+		if ( 'es' === $domain || 'default' === $domain ) {
 			return EstatikDictionary::translate( $translation, $text, self::current_language() );
 		}
 		if ( self::DOMAIN !== $domain ) {

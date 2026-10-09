@@ -118,3 +118,16 @@ msgstr "كل خيارات إنشاء الحساب"
 
 msgid "Sign up"
 msgstr "إنشاء حساب"
+
+msgctxt "terms & conditions"
+msgid "SIGN UP"
+msgstr "إنشاء حساب"
+
+msgid "By clicking the %1$s button you agree to the %2$s and %3$s"
+msgstr "بالنقر على زر %1$s فإنك توافق على %2$s و %3$s"
+
+msgid "Change anytime"
+msgstr "يمكن تغييره في أي وقت"
+
+msgid "Reset"
+msgstr "إعادة تعيين"
