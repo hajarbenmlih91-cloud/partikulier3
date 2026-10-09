@@ -84,10 +84,17 @@ $selected_city_label = ( $selected_city_term && ! is_wp_error( $selected_city_te
 				$pk_budget_rent = array( 3000, 4000, 5000, 7000, 10000, 15000, 20000, 30000 );
 				$pk_budget_renting = ( 'a-louer' === $selected_action );
 				$pk_budget_values = $pk_budget_renting ? $pk_budget_rent : $pk_budget_sale;
-				$pk_budget_suffix = $pk_budget_renting ? ' MAD / mois' : ' MAD';
+				/* Revue user 08/10 : devise via le filtre partikulier_currency
+				   (درهم en AR) + unité par langue, au lieu de « MAD » codé dur. */
+				$pk_budget_lang   = function_exists( 'pll_current_language' ) ? pll_current_language( 'slug' ) : 'fr';
+				$pk_budget_cur    = apply_filters( 'partikulier_currency', 'MAD' );
+				$pk_budget_month  = 'ar' === $pk_budget_lang ? ' / شهر' : ( 'en' === $pk_budget_lang ? ' / month' : ' / mois' );
+				$pk_suffix_sale   = ' ' . $pk_budget_cur;
+				$pk_suffix_rent   = ' ' . $pk_budget_cur . $pk_budget_month;
+				$pk_budget_suffix = $pk_budget_renting ? $pk_suffix_rent : $pk_suffix_sale;
 				$pk_unlimited     = class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_polylang_string( 'Illimité', 'Illimité', 'partikulier' ) : __( 'Illimité', 'partikulier' );
 				?>
-				<select name="es_price_max" id="pk-s-budget" data-pk-sale="<?php echo esc_attr( wp_json_encode( $pk_budget_sale ) ); ?>" data-pk-rent="<?php echo esc_attr( wp_json_encode( $pk_budget_rent ) ); ?>" data-pk-unlimited="<?php echo esc_attr( $pk_unlimited ); ?>" data-pk-suffix-sale=" MAD" data-pk-suffix-rent=" MAD / mois">
+				<select name="es_price_max" id="pk-s-budget" data-pk-sale="<?php echo esc_attr( wp_json_encode( $pk_budget_sale ) ); ?>" data-pk-rent="<?php echo esc_attr( wp_json_encode( $pk_budget_rent ) ); ?>" data-pk-unlimited="<?php echo esc_attr( $pk_unlimited ); ?>" data-pk-suffix-sale="<?php echo esc_attr( $pk_suffix_sale ); ?>" data-pk-suffix-rent="<?php echo esc_attr( $pk_suffix_rent ); ?>">
 						<option value=""><?php echo esc_html( $pk_unlimited ); ?></option>
 								<?php foreach ( $pk_budget_values as $b ) : ?>
 										<option value="<?php echo esc_attr( $b ); ?>"<?php selected( $selected_price_max, (string) $b ); ?>><?php echo esc_html( number_format_i18n( $b ) . $pk_budget_suffix ); ?></option>

@@ -218,6 +218,16 @@ class Partikulier_Morocco_Places {
 					return 1;
 			}
 
+			// 2b. Saisie latine approximative (fautes de frappe) : une fenêtre
+			// du nom proche de la saisie suffit. Revue user 08/10 : « casabla »
+			// doit proposer الدار البيضاء côté AR (le slug du terme suit).
+			if ( strlen( $needle_clean ) >= 4 && function_exists( 'levenshtein' ) ) {
+				$window = substr( $fr_clean, 0, strlen( $needle_clean ) + 1 );
+				if ( levenshtein( $needle_clean, $window ) <= 2 ) {
+					return 1;
+				}
+			}
+
 			// 3. Correspondance en alphabet arabe (avec ou sans « ال »)
 			$place_ar = class_exists( 'Partikulier_Listing_I18n' ) ? Partikulier_Listing_I18n::localized_place( $place_fr, 'ar' ) : '';
 			if ( '' === $place_ar || $place_ar === $place_fr ) {

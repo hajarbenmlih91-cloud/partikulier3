@@ -700,6 +700,77 @@ class Partikulier_Search_Filters {
 		}
 			return false;
 	}
+
+	/**
+	 * Compteurs de facettes « types de biens » dans le contexte actif
+	 * (transaction, ville, budget max — le type exclu), revue user 08/10 :
+	 * « quand on choisit vente, on voit les nombres de biens en vente ».
+	 * Les clauses reproduisent la résolution de apply_filters (slugs stables
+	 * a-vendre/a-louer, terme ville relus sans filtre de langue).
+	 *
+	 * @return array<int,int> term_id => nombre d'annonces publish.
+	 */
+	public static function facet_type_counts() {
+		$counts    = array();
+		$tax_query = array();
+
+		$action_raw = isset( $_GET['es_action'] ) && is_scalar( $_GET['es_action'] ) ? sanitize_text_field( wp_unslash( $_GET['es_action'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( '' !== $action_raw && taxonomy_exists( PARTIKULIER_ESTATIK_STATUS_TAXONOMY ) ) {
+			$slug = $action_raw;
+			if ( in_array( $action_raw, array( 'a-vendre', 'a-louer' ), true ) ) {
+				$needles      = 'a-louer' === $action_raw ? array( 'louer', 'location', 'rent' ) : array( 'vend', 'vente', 'sale' );
+				$action_terms = get_terms( array( 'taxonomy' => PARTIKULIER_ESTATIK_STATUS_TAXONOMY, 'hide_empty' => false ) );
+				if ( ! is_wp_error( $action_terms ) ) {
+					foreach ( $action_terms as $action_term ) {
+						$action_name = function_exists( 'remove_accents' ) ? remove_accents( $action_term->name ) : $action_term->name;
+						$action_name = function_exists( 'mb_strtolower' ) ? mb_strtolower( $action_name ) : strtolower( $action_name );
+						foreach ( $needles as $needle ) {
+							if ( false !== strpos( $action_name, $needle ) ) {
+								$slug = $action_term->slug;
+								break 2;
+							}
+						}
+					}
+				}
+			}
+			$tax_query[] = array( 'taxonomy' => PARTIKULIER_ESTATIK_STATUS_TAXONOMY, 'field' => 'slug', 'terms' => array( $slug ) );
+		}
+
+		$city_raw = isset( $_GET['es_city'] ) && is_scalar( $_GET['es_city'] ) ? sanitize_text_field( wp_unslash( $_GET['es_city'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( '' !== $city_raw && taxonomy_exists( PARTIKULIER_ESTATIK_LOCATION_TAXONOMY ) ) {
+			$city_term = get_term_by( 'slug', $city_raw, PARTIKULIER_ESTATIK_LOCATION_TAXONOMY );
+			if ( ! $city_term || is_wp_error( $city_term ) ) {
+				$city_term = self::term_raw( $city_raw, PARTIKULIER_ESTATIK_LOCATION_TAXONOMY, false );
+			}
+			if ( $city_term && ! is_wp_error( $city_term ) ) {
+				$tax_query[] = array( 'taxonomy' => PARTIKULIER_ESTATIK_LOCATION_TAXONOMY, 'field' => 'term_id', 'terms' => array( $city_term->term_id ) );
+			}
+		}
+
+		$price_max  = isset( $_GET['es_price_max'] ) ? (int) $_GET['es_price_max'] : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$meta_query = $price_max > 0 ? array( array( 'key' => 'es_property_price', 'value' => $price_max, 'type' => 'NUMERIC', 'compare' => '<=' ) ) : array();
+
+		$types = get_terms( array( 'taxonomy' => PARTIKULIER_ESTATIK_TYPE_TAXONOMY, 'hide_empty' => true ) );
+		if ( ! $types || is_wp_error( $types ) ) {
+			return $counts;
+		}
+		foreach ( $types as $type_term ) {
+			$args = array(
+				'post_type'      => PARTIKULIER_ESTATIK_POST_TYPE,
+				'post_status'    => 'publish',
+				'posts_per_page' => 1,
+				'fields'         => 'ids',
+				'no_found_rows'  => false,
+				'tax_query'      => array_merge( $tax_query, array( array( 'taxonomy' => PARTIKULIER_ESTATIK_TYPE_TAXONOMY, 'field' => 'term_id', 'terms' => array( $type_term->term_id ) ) ) ),
+			);
+			if ( $meta_query ) {
+				$args['meta_query'] = $meta_query;
+			}
+			$facet_q                        = new WP_Query( $args );
+			$counts[ $type_term->term_id ] = (int) $facet_q->found_posts;
+		}
+		return $counts;
+	}
 }
 
 Partikulier_Search_Filters::init();

@@ -362,7 +362,13 @@ class Partikulier_JSONLD {
 				$term     = get_queried_object();
 				$crumbs[] = array( 'name' => self::localized_phrase( 'annonces' ), 'url' => pk_properties_archive_url() );
 			if ( $term instanceof WP_Term ) {
-							$crumbs[] = array( 'name' => self::localized_place( $term->name ), 'url' => function_exists( 'pk_term_url' ) ? pk_term_url( $term ) : get_term_link( $term ) );
+					/* Les termes status d'Estatik portent des noms bruts (« For sale »,
+					 * « A louer ») : le fil d'Ariane doit servir le libellé traduit
+					 * (fold + dictionnaires), pas le nom du terme ni un lieu. */
+					$pk_crumb_name = ( defined( 'PARTIKULIER_ESTATIK_STATUS_TAXONOMY' ) && $term->taxonomy === PARTIKULIER_ESTATIK_STATUS_TAXONOMY && class_exists( 'Partikulier_Localization' ) )
+						? Partikulier_Localization::translate_taxonomy_label( $term->name )
+						: self::localized_place( $term->name );
+					$crumbs[] = array( 'name' => $pk_crumb_name, 'url' => function_exists( 'pk_term_url' ) ? pk_term_url( $term ) : get_term_link( $term ) );
 			}
 		} elseif ( is_post_type_archive( PARTIKULIER_ESTATIK_POST_TYPE ) ) {
 				$crumbs[] = array( 'name' => self::localized_phrase( 'listings' ), 'url' => pk_properties_archive_url() );
