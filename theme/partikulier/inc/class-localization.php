@@ -107,12 +107,55 @@ class Partikulier_Localization {
 								add_filter( 'pll_get_post_types', array( __CLASS__, 'register_polylang_post_type' ), 10, 2 );
 								add_filter( 'pll_get_taxonomies', array( __CLASS__, 'register_polylang_taxonomies' ), 10, 2 );
 								add_filter( 'pll_preferred_language', array( __CLASS__, 'filter_robot_preferred_language' ), 10, 2 );
-								// Devise : « درهم » en arabe, MAD ailleurs (filtre partikulier_currency des templates).
-								add_filter( 'partikulier_currency', array( __CLASS__, 'currency_for_language' ) );
+							// Devise : « درهم » en arabe, MAD ailleurs (filtre partikulier_currency des templates).
+							add_filter( 'partikulier_currency', array( __CLASS__, 'currency_for_language' ) );
+							// Chaînes Estatik non traduites par son catalogue : repli trilingue ciblé.
+							add_filter( 'gettext', array( __CLASS__, 'estatik_gettext' ), 20, 3 );
 								// Priorité 20 pour passer APRES les filtres par défaut d'Estatik.
 								add_action( 'pre_get_posts', array( __CLASS__, 'optimize_property_queries' ), 20 );
 								// Neutraliser le réglage Estatik properties_per_page pour forcer 24.
 								add_filter( 'es_settings', array( __CLASS__, 'force_estatik_pagination' ), 999 );
+	}
+
+	/**
+	 * Repli de traduction pour les chaînes Estatik absentes de ses catalogues
+	 * (popup d'authentification). N'écrase JAMAIS une traduction existante :
+	 * ne s'applique que si gettext renvoie encore la chaîne source anglaise.
+	 */
+	public static function estatik_gettext( $translation, $text, $domain ) {
+		if ( 'estatik' !== $domain || $translation !== $text ) {
+			return $translation;
+		}
+		$lang = self::current_language();
+		$dict = array(
+			'ar' => array(
+				'Powered by' => 'مدعوم من',
+				'By clicking the «SIGN UP» button you agree to the Terms of Use and Privacy Policy' => 'بالنقر على زر «تسجيل» فإنك توافق على شروط الاستخدام وسياسة الخصوصية.',
+				'Terms of Use' => 'شروط الاستخدام',
+				'Privacy Policy' => 'سياسة الخصوصية',
+				'Reset password' => 'إعادة تعيين كلمة المرور',
+				'Back to login' => 'العودة إلى تسجيل الدخول',
+				'Change anytime' => 'يمكن تغييره في أي وقت',
+				'You\'ll use it to sign in, and we\'ll use it to contact you.' => 'ستستخدمه لتسجيل الدخول، وسنستخدمه للتواصل معك.',
+				'Can\'t contain the name or email address' => 'لا يمكن أن يحتوي على الاسم أو البريد الإلكتروني',
+				'Sign in' => 'تسجيل الدخول',
+				'Login' => 'تسجيل الدخول',
+				'Email' => 'البريد الإلكتروني',
+				'Password' => 'كلمة المرور',
+			),
+			'fr' => array(
+				'Powered by' => 'Propulsé par',
+				'By clicking the «SIGN UP» button you agree to the Terms of Use and Privacy Policy' => 'En cliquant sur « S’INSCRIRE », vous acceptez les conditions d’utilisation et la politique de confidentialité.',
+				'Terms of Use' => 'Conditions d’utilisation',
+				'Privacy Policy' => 'Politique de confidentialité',
+				'Reset password' => 'Réinitialiser le mot de passe',
+				'Back to login' => 'Retour à la connexion',
+				'Change anytime' => 'Modifiable à tout moment',
+				'You\'ll use it to sign in, and we\'ll use it to contact you.' => 'Vous l’utiliserez pour vous connecter, et nous pour vous contacter.',
+				'Can\'t contain the name or email address' => 'Ne peut pas contenir le nom ou l’adresse e-mail',
+			),
+		);
+		return $dict[ $lang ][ $text ] ?? $translation;
 	}
 
 	public static function current_language() {
