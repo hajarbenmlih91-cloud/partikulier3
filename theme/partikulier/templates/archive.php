@@ -164,11 +164,12 @@ $is_type = $queried instanceof WP_Term && PARTIKULIER_ESTATIK_TYPE_TAXONOMY === 
 														<h3 class="pk-filter-title"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Transaction', 'Transaction', 'partikulier' ) ); ?></h3>
 														<ul class="pk-filter-list pk-filter-action-list">
 																<?php
-																$action_items       = array(
-																		array( 'value' => '', 'label' => 'Tout' ),
-																		array( 'value' => 'a-vendre', 'label' => 'Vendre' ),
-																		array( 'value' => 'a-louer', 'label' => 'Louer' ),
-																);
+															/* Revue user 08/10 : pas d'entrée « Tout / الكل » —
+															   l'absence de paramètre es_action EST l'état « tout ». */
+															$action_items       = array(
+																array( 'value' => 'a-vendre', 'label' => 'Vendre' ),
+																array( 'value' => 'a-louer', 'label' => 'Louer' ),
+															);
 																$pk_cumulative_args = array();
 																foreach ( array( 'es_action', 'es_type', 'es_city', 'es_price_max', 'pk_order' ) as $pk_query_key ) {
 																	if ( isset( $_GET[ $pk_query_key ] ) && ! is_array( $_GET[ $pk_query_key ] ) && '' !== (string) $_GET[ $pk_query_key ] ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended,WordPress.Security.ValidatedSanitizedInput -- présence/cast, valeur assainie (SE-020/E-2007)
@@ -203,13 +204,8 @@ $is_type = $queried instanceof WP_Term && PARTIKULIER_ESTATIK_TYPE_TAXONOMY === 
 										$types = get_terms( array( 'taxonomy' => PARTIKULIER_ESTATIK_TYPE_TAXONOMY, 'hide_empty' => true ) );
 										if ( $types && ! is_wp_error( $types ) ) {
 												echo '<ul class="pk-filter-list">';
-											$pk_all_types = isset( $pk_cumulative_args ) ? $pk_cumulative_args : array();
-											unset( $pk_all_types['es_type'] );
-											printf(
-												'<li><a href="%s">%s</a></li>',
-												esc_url( add_query_arg( $pk_all_types, pk_properties_archive_url() ) ),
-												esc_html( Partikulier_Localization::translate_polylang_string( 'Tous', 'Tous', 'partikulier' ) )
-											);
+											/* Revue user 08/10 : lien « Tous » retiré des facettes types. */
+											$pk_facet_counts = class_exists( 'Partikulier_Search_Filters' ) ? Partikulier_Search_Filters::facet_type_counts() : array();
 											foreach ( $types as $term ) {
 													$active                       = $queried instanceof WP_Term && $queried->term_id === $term->term_id ? ' aria-current="true"' : '';
 															$type_args            = isset( $pk_cumulative_args ) ? $pk_cumulative_args : array();
@@ -217,9 +213,9 @@ $is_type = $queried instanceof WP_Term && PARTIKULIER_ESTATIK_TYPE_TAXONOMY === 
 															printf(
 																	'<li><a href="%1$s"%3$s>%2$s <span class="pk-filter-count">(%4$s)</span></a></li>',
 																	esc_url( add_query_arg( $type_args, pk_properties_archive_url() ) ),
-																	esc_html( Partikulier_Localization::translate_taxonomy_label( $term->name ) ),
-																	$active, /* phpcs:ignore WordPress.Security.EscapeOutput -- ' aria-current="true"' ou '' : constante interne (SE-020) */
-																	esc_html( number_format_i18n( $term->count ) )
+													esc_html( Partikulier_Localization::translate_taxonomy_label( $term->name ) ),
+													$active, /* phpcs:ignore WordPress.Security.EscapeOutput -- ' aria-current="true"' ou '' : constante interne (SE-020) */
+													esc_html( number_format_i18n( isset( $pk_facet_counts[ $term->term_id ] ) ? (int) $pk_facet_counts[ $term->term_id ] : 0 ) )
 															);
 											}
 												echo '</ul>';
@@ -235,7 +231,11 @@ if ( in_array( $pk_budget_action, array( 'a-vendre', 'a-louer' ), true ) ) :
 	$pk_budget_rent    = array( 3000, 4000, 5000, 7000, 10000, 15000, 20000, 30000 );
 	$pk_budget_renting = ( 'a-louer' === $pk_budget_action );
 	$pk_budget_values  = $pk_budget_renting ? $pk_budget_rent : $pk_budget_sale;
-	$pk_budget_suffix  = $pk_budget_renting ? ' MAD / mois' : ' MAD';
+	/* Revue user 08/10 : devise via le filtre partikulier_currency (درهم en AR)
+	   et unité par langue ; le nombre est isolé en LTR pour le bidi. */
+	$pk_budget_lang    = function_exists( 'pll_current_language' ) ? pll_current_language( 'slug' ) : 'fr';
+	$pk_budget_cur     = apply_filters( 'partikulier_currency', 'MAD' );
+	$pk_budget_suffix  = ' ' . $pk_budget_cur . ( $pk_budget_renting ? ( 'ar' === $pk_budget_lang ? ' / شهر' : ( 'en' === $pk_budget_lang ? ' / month' : ' / mois' ) ) : '' );
 	$pk_budget_current = isset( $pk_cumulative_args['es_price_max'] ) ? (string) $pk_cumulative_args['es_price_max'] : '';
 	$pk_budget_clear   = $pk_cumulative_args;
 	unset( $pk_budget_clear['es_price_max'] );
@@ -250,10 +250,12 @@ foreach ( $pk_budget_values as $pk_budget_n ) :
 	$pk_budget_args['es_price_max'] = (string) $pk_budget_n;
 	$pk_budget_active               = ( (string) $pk_budget_n === $pk_budget_current ) ? ' aria-current="true"' : '';
 	printf(
-		'<li><a href="%1$s"%3$s>%2$s</a></li>',
+		'<li><a href="%1$s"%3$s><span dir="ltr">%4$s</span>%5$s</a></li>',
 		esc_url( add_query_arg( $pk_budget_args, pk_properties_archive_url() ) ),
-		esc_html( number_format_i18n( $pk_budget_n ) . $pk_budget_suffix ),
-		$pk_budget_active /* phpcs:ignore WordPress.Security.EscapeOutput -- constante interne aria-current */
+		'',
+		$pk_budget_active, /* phpcs:ignore WordPress.Security.EscapeOutput -- constante interne aria-current */
+		esc_html( number_format_i18n( $pk_budget_n ) ),
+		esc_html( $pk_budget_suffix )
 	);
 endforeach;
 ?>
