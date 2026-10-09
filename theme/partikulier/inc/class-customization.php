@@ -134,6 +134,11 @@ class Partikulier_Customization {
 		 */
 	public static function defaults() {
 			return array(
+				'home_kicker'        => array(
+							'fr'         => 'La plateforme immobilière entre particuliers',
+													'en' => 'The real estate platform between private owners',
+										'ar' => 'المنصة العقارية بين المالكين',
+									),
 				'home_title'         => array(
 							'fr'         => 'Vendez et louez entre particuliers.',
 													'en' => 'Buy and rent directly from owners.',
@@ -362,7 +367,7 @@ class Partikulier_Customization {
 														<h3><?php echo esc_html( $label ); ?></h3>
 														<h4><?php esc_html_e( 'Éditorialisation de la home — lot H', 'partikulier' ); ?></h4>
 														<table class="form-table" role="presentation"><tbody>
-														<?php foreach ( self::defaults() as $h_key => $h_defaults ) : $h_value = $custom['editorial'][ $h_key ][ $language ] ?? ( 'fr' === $language ? $h_defaults['fr'] : '' ); $h_label = array( 'home_title' => 'Titre de la home', 'home_intro' => 'Introduction de la home', 'hero_alt' => 'Alt hero dans cette langue', 'badge_1' => 'Badge 1', 'badge_2' => 'Badge 2', 'badge_3' => 'Badge 3' )[ $h_key ]; ?>
+														<?php foreach ( self::defaults() as $h_key => $h_defaults ) : $h_value = $custom['editorial'][ $h_key ][ $language ] ?? ( 'fr' === $language ? $h_defaults['fr'] : '' ); $h_label = array( 'home_kicker' => 'Surtitre de la home', 'home_title' => 'Titre de la home', 'home_intro' => 'Introduction de la home', 'hero_alt' => 'Alt hero dans cette langue', 'badge_1' => 'Badge 1', 'badge_2' => 'Badge 2', 'badge_3' => 'Badge 3' )[ $h_key ]; ?>
 														<tr><th scope="row"><label for="pk-h-<?php echo esc_attr( $language . '-' . $h_key ); ?>"><?php echo esc_html( $h_label ); ?></label></th><td><?php if ( 'home_intro' === $h_key ) : ?><textarea class="large-text" rows="3" id="pk-h-<?php echo esc_attr( $language . '-' . $h_key ); ?>" name="pk_opts[editorial][<?php echo esc_attr( $h_key ); ?>][<?php echo esc_attr( $language ); ?>]" maxlength="400"><?php echo esc_textarea( $h_value ); ?></textarea><?php else : ?><input class="regular-text" type="text" maxlength="120" id="pk-h-<?php echo esc_attr( $language . '-' . $h_key ); ?>" name="pk_opts[editorial][<?php echo esc_attr( $h_key ); ?>][<?php echo esc_attr( $language ); ?>]" value="<?php echo esc_attr( $h_value ); ?>"><?php endif; ?></td></tr>
 														<?php endforeach; ?></tbody></table>
 														<table class="form-table" role="presentation"><tbody><tr><th scope="row"><label for="pk-<?php echo esc_attr( $language ); ?>-hero-alt">Texte alternatif de la photo hero</label></th><td><input id="pk-<?php echo esc_attr( $language ); ?>-hero-alt" class="regular-text pk-hero-alt-field" type="text" name="pk_opts[hero_image_alt_i18n][<?php echo esc_attr( $language ); ?>]" value="<?php echo esc_attr( $custom['hero_image_alt_i18n'][ $language ] ?? ( 'fr' === $language ? ( $custom['hero_image_alt'] ?? 'Maison moderne à vendre, annonces immobilières entre particuliers' ) : '' ) ); ?>" data-preview-key="hero_image_alt" data-alt-language="<?php echo esc_attr( strtoupper( $language ) ); ?>"><p class="description">Décrivez précisément la photo dans cette langue pour l’accessibilité et le référencement.</p></td></tr></tbody></table>
