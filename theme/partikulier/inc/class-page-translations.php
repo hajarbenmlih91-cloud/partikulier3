@@ -34,7 +34,7 @@ class Partikulier_Page_Translations {
 			'contact'      => array( 'en' => 'Contact us', 'ar' => 'اتصل بنا' ),
 		);
 		$created = array();
-		foreach ( self::pages() as $slug => $definition ) {
+		foreach ( Partikulier_Required_Pages::pages() as $slug => $definition ) {
 			$fr = get_posts(
 				array(
 					'post_type'        => 'page',
