@@ -134,11 +134,11 @@ class Partikulier_Customization {
 		 */
 	public static function defaults() {
 			return array(
-					'home_title'         => array(
+				'home_title'         => array(
 							'fr'         => 'Vendez et louez entre particuliers.',
-																	'en' => 'Buy and rent directly from private owners.',
-									'ar' => 'اشترِ واكترِ مباشرة من المالكين.',
-							),
+													'en' => 'Buy and rent directly from owners.',
+										'ar' => 'اشترِي واكتري مباشرة من المالكين.',
+									),
 							'home_intro' => array(
 									'fr' => 'Déposez votre annonce immobilière gratuitement, sans commission, sans intermédiaire. Directement aux acheteurs et locataires.',
 									'en' => 'Post your property for free, with no commission or middleman. Reach buyers and tenants directly.',
