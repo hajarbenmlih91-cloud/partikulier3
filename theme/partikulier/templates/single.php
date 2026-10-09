@@ -191,7 +191,7 @@ while ( have_posts() ) :
 								'es_size'                    => array( $surface, Partikulier_Localization::translate_polylang_string( 'Surface', 'Surface', 'partikulier' ), Partikulier_Localization::translate_polylang_string( 'm²', 'm²', 'partikulier' ), '' ),
 								'es_property_floor_level'    => array( $floor, Partikulier_Localization::translate_polylang_string( 'Étage', 'Étage', 'partikulier' ), '', '' ),
 								'es_property_epc_class'      => array( $energy, Partikulier_Localization::translate_polylang_string( 'Classe énergie', 'Classe énergie', 'partikulier' ), '', 'pk-feature--lettre' ),
-								'es_property_ges_class'      => array( $ges, Partikulier_Localization::translate_polylang_string( 'GES', 'GES', 'partikulier' ), '', 'pk-feature--lettre' ),
+								'es_property_ges_class'      => array( $ges, __( 'GES', 'partikulier' ), '', 'pk-feature--lettre' ),
 								'_pk_charges'                => array( $charges, Partikulier_Localization::translate_polylang_string( 'Charges', 'Charges', 'partikulier' ), Partikulier_Localization::translate_polylang_string( 'MAD / mois', 'MAD / mois', 'partikulier' ), '' ),
 								'_pk_availability'           => array( $availability, Partikulier_Localization::translate_polylang_string( 'Disponibilité', 'Disponibilité', 'partikulier' ), '', '' ),
 								'es_bedrooms'                => array( $bedrooms, Partikulier_Localization::translate_polylang_string( 'Chambres', 'Chambres', 'partikulier' ), '', '' ),

@@ -1903,3 +1903,18 @@ msgstr "سجّل الدخول لإدارة إعلاناتك."
 
 msgid "Cette annonce a été refusée par l’équipe. Elle ne peut pas être modifiée par son propriétaire."
 msgstr "تم رفض هذا الإعلان من طرف الفريق. لا يمكن للمالك تعديله."
+
+msgid "Vente"
+msgstr "بيع"
+
+msgid "Saisonnière"
+msgstr "موسمية"
+
+msgid "Longue durée"
+msgstr "طويلة الأمد"
+
+msgid "Pièces"
+msgstr "غرف"
+
+msgid "GES"
+msgstr "غازات الدفيئة"

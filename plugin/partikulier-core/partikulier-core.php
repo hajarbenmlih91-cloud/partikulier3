@@ -132,6 +132,7 @@ require_once __DIR__ . '/src/Domain/I18n/I18nContentService.php';
  */
 require_once __DIR__ . '/src/Domain/I18n/ChromeDictionary.php';
 require_once __DIR__ . '/src/Domain/I18n/FormsDictionary.php';
+require_once __DIR__ . '/src/Domain/I18n/EstatikDictionary.php';
 require_once __DIR__ . '/src/Domain/I18n/I18nChromeService.php';
 
 /*

@@ -15,7 +15,10 @@ findings = []
 def report(lang, page, kind, detail):
     findings.append({'lang': lang, 'page': page, 'kind': kind, 'detail': detail})
 
+_QA_TS = __import__('time').time_ns()
 def get(url, raw=False):
+    sep = '&' if '?' in url else '?'
+    url = url + sep + 'pkqa=' + str(_QA_TS)
     try:
         r = urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=30)
         body = r.read()

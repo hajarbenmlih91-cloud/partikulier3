@@ -77,7 +77,7 @@ $is_type = $queried instanceof WP_Term && PARTIKULIER_ESTATIK_TYPE_TAXONOMY === 
 				<div class="pk-intent-sentinel" aria-hidden="true"></div>
 				<nav class="pk-intent-bar" aria-label="<?php echo esc_attr( Partikulier_Localization::translate_polylang_string( 'Type de transaction', 'Type de transaction', 'partikulier' ) ); ?>">
 					<?php foreach ( $pk_intent_items as $pk_intent_item ) : ?>
-						<a class="pk-btn <?php echo esc_attr( ! empty( $pk_intent_item['btn'] ) ? $pk_intent_item['btn'] : 'pk-btn-primary' ); ?>" href="<?php echo esc_url( $pk_intent_item['href'] ); ?>"<?php echo $pk_intent_item['active'] ? ' aria-current="page"' : ''; ?>><?php echo esc_html( Partikulier_Localization::translate_polylang_string( $pk_intent_item['label'], $pk_intent_item['label'], 'partikulier' ) ); ?></a>
+						<a class="pk-btn <?php echo esc_attr( ! empty( $pk_intent_item['btn'] ) ? $pk_intent_item['btn'] : 'pk-btn-primary' ); ?>" href="<?php echo esc_url( $pk_intent_item['href'] ); ?>"<?php echo $pk_intent_item['active'] ? ' aria-current="page"' : ''; ?>><?php echo esc_html( __( $pk_intent_item['label'], 'partikulier' ) ); ?></a>
 					<?php endforeach; ?>
 				</nav>
 				<?php endif; ?>
