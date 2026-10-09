@@ -199,7 +199,7 @@ while ( have_posts() ) :
 								'es_bathrooms'               => array( $bath, Partikulier_Localization::translate_polylang_string( 'Salles de bains', 'Salles de bains', 'partikulier' ), '', '' ),
 								'es_property_half_baths'     => array( $half_baths, Partikulier_Localization::translate_polylang_string( 'Demi-salles de bains', 'Demi-salles de bains', 'partikulier' ), '', '' ),
 								'_pk_terrace'                => array( $terrace_label, Partikulier_Localization::translate_polylang_string( 'Terrasse', 'Terrasse', 'partikulier' ), '', '' ),
-								'es_property_total_rooms'    => array( $rooms, Partikulier_Localization::translate_polylang_string( 'Pièces', 'Pièces', 'partikulier' ), '', '' ),
+								'es_property_total_rooms'    => array( $rooms, __( 'Pièces', 'partikulier' ), '', '' ),
 								'es_property_lot_size'       => array( $lot_size, Partikulier_Localization::translate_polylang_string( 'Terrain', 'Terrain', 'partikulier' ), Partikulier_Localization::translate_polylang_string( 'm²', 'm²', 'partikulier' ), '' ),
 								'es_property_year_built'     => array( $year, Partikulier_Localization::translate_polylang_string( 'Année de construction', 'Année de construction', 'partikulier' ), '', '', 'brut' ),
 								'es_property_year_remodeled' => array( $renovated, Partikulier_Localization::translate_polylang_string( 'Rénovation', 'Rénovation', 'partikulier' ), '', '', 'brut' ),
