@@ -23,9 +23,12 @@ class Partikulier_Required_Page_Translations {
 		}
 		$langs  = array( 'fr', 'en', 'ar' );
 		$titles = array(
-			'deposer' => array( 'fr' => 'Déposer une annonce', 'en' => 'Post a listing', 'ar' => 'إضافة إعلان' ),
-			'faq'     => array( 'fr' => 'Questions fréquentes', 'en' => 'FAQ', 'ar' => 'الأسئلة الشائعة' ),
-			'contact' => array( 'fr' => 'Contactez-nous', 'en' => 'Contact us', 'ar' => 'اتصل بنا' ),
+			'deposer'      => array( 'fr' => 'Déposer une annonce', 'en' => 'Post a listing', 'ar' => 'إضافة إعلان' ),
+			'faq'          => array( 'fr' => 'Questions fréquentes', 'en' => 'FAQ', 'ar' => 'الأسئلة الشائعة' ),
+			'contact'      => array( 'fr' => 'Contactez-nous', 'en' => 'Contact us', 'ar' => 'اتصل بنا' ),
+			'favoris'      => array( 'fr' => 'Favoris', 'en' => 'Favorites', 'ar' => 'المفضلة' ),
+			'connexion'    => array( 'fr' => 'Connexion', 'en' => 'Sign in', 'ar' => 'تسجيل الدخول' ),
+			'mes-annonces' => array( 'fr' => 'Mes annonces', 'en' => 'My listings', 'ar' => 'إعلاناتي' ),
 		);
 		$pages = class_exists( 'Partikulier_Required_Pages' ) ? Partikulier_Required_Pages::pages() : array();
 		foreach ( array_keys( $titles ) as $slug ) {
@@ -122,7 +125,7 @@ class Partikulier_Required_Page_Translations {
 		}
 		$lang     = '';
 		$pagename = '';
-		if ( preg_match( '#^/(ar|en|fr)/(deposer|faq|contact)/?$#', $path, $m ) ) {
+		if ( preg_match( '#^/(ar|en|fr)/(deposer|faq|contact|favoris|connexion|mes-annonces)/?$#', $path, $m ) ) {
 			$lang     = $m[1];
 			$pagename = $m[2];
 		} else {
@@ -132,7 +135,7 @@ class Partikulier_Required_Page_Translations {
 			}
 			$lang = (string) $q->get( 'lang' );
 		}
-		if ( ! in_array( $pagename, array( 'deposer', 'faq', 'contact' ), true ) ) {
+		if ( ! in_array( $pagename, array( 'deposer', 'faq', 'contact', 'favoris', 'connexion', 'mes-annonces' ), true ) ) {
 			return;
 		}
 		if ( ! $lang || ! function_exists( 'pll_get_post_language' ) ) {
@@ -175,7 +178,7 @@ class Partikulier_Required_Page_Translations {
 			return $redirect_url;
 		}
 		$slug = get_post_field( 'post_name', get_queried_object_id() );
-		if ( in_array( $slug, array( 'deposer', 'faq', 'contact' ), true ) ) {
+		if ( in_array( $slug, array( 'deposer', 'faq', 'contact', 'favoris', 'connexion', 'mes-annonces' ), true ) ) {
 			return false;
 		}
 		return $redirect_url;
@@ -187,7 +190,7 @@ class Partikulier_Required_Page_Translations {
 		add_filter(
 			'redirect_canonical',
 			static function ( $redirect, $request ) {
-				if ( is_string( $request ) && preg_match( '#/(ar|en|fr)/(deposer|faq|contact)/?$#', $request ) ) {
+				if ( is_string( $request ) && preg_match( '#/(ar|en|fr)/(deposer|faq|contact|favoris|connexion|mes-annonces)/?$#', $request ) ) {
 					return false;
 				}
 				return $redirect;

@@ -1,0 +1,18 @@
+# Catalogue FR de complément Estatik (popup d'authentification) — les msgid
+# sont COPIES EXACTES des templates estatik. Le catalogue es-fr_FR.mo du
+# plugin couvre la base ; celui-ci comble les chaînes manquantes.
+msgid ""
+msgstr "Content-Type: text/plain; charset=UTF-8\n"
+
+msgctxt "terms & conditions"
+msgid "SIGN UP"
+msgstr "S’INSCRIRE"
+
+msgid "By clicking the %1$s button you agree to the %2$s and %3$s"
+msgstr "En cliquant sur le bouton %1$s, vous acceptez %2$s et %3$s"
+
+msgid "Change anytime"
+msgstr "Modifiable à tout moment"
+
+msgid "Reset"
+msgstr "Réinitialiser"

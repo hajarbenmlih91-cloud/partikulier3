@@ -22,6 +22,7 @@ final class EstatikDictionary
 	{
 		return array(
 			'ar' => array(
+				'Powered by %s' => 'مدعوم من %s',
 				'Powered by' => 'مدعوم من',
 				'By clicking the «SIGN UP» button you agree to the Terms of Use and Privacy Policy' => 'بالنقر على زر «تسجيل» فإنك توافق على شروط الاستخدام وسياسة الخصوصية.',
 				'Terms of Use' => 'شروط الاستخدام',
@@ -35,8 +36,13 @@ final class EstatikDictionary
 				'Login' => 'تسجيل الدخول',
 				'Email' => 'البريد الإلكتروني',
 				'Password' => 'كلمة المرور',
+				'By clicking the %1$s button you agree to the %2$s and %3$s' => 'بالنقر على زر %1$s فإنك توافق على %2$s و %3$s',
+				'SIGN UP' => 'إنشاء حساب',
+				'Change anytime' => 'يمكن تغييره في أي وقت',
+				'Reset' => 'إعادة تعيين',
 			),
 			'fr' => array(
+				'Powered by %s' => 'Propulsé par %s',
 				'Powered by' => 'Propulsé par',
 				'By clicking the «SIGN UP» button you agree to the Terms of Use and Privacy Policy' => 'En cliquant sur « S’INSCRIRE », vous acceptez les conditions d’utilisation et la politique de confidentialité.',
 				'Terms of Use' => 'Conditions d’utilisation',
@@ -46,6 +52,9 @@ final class EstatikDictionary
 				'Change anytime' => 'Modifiable à tout moment',
 				'You\'ll use it to sign in, and we\'ll use it to contact you.' => 'Vous l’utiliserez pour vous connecter, et nous pour vous contacter.',
 				'Can\'t contain the name or email address' => 'Ne peut pas contenir le nom ou l’adresse e-mail',
+				'By clicking the %1$s button you agree to the %2$s and %3$s' => 'En cliquant sur le bouton %1$s, vous acceptez %2$s et %3$s',
+				'SIGN UP' => 'S’INSCRIRE',
+				'Reset' => 'Réinitialiser',
 			),
 		);
 	}

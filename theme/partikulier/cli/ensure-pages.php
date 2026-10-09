@@ -1,51 +1,42 @@
 <?php
 /**
- * Création idempotente des traductions EN/AR des pages requises (favoris,
- * connexion, mes-annonces, faq, contact, deposer).
- *
- * Constat visite 3 langues 10/10 : /ar/favoris/ (et /en/favoris/) servaient
- * la page FR — les traductions Polylang n'existaient pas (create_missing ne
- * crée que la langue par défaut). Appelé à chaque déploiement, loggue ce
- * qu'il crée. Le contenu des templates est i18n via gettext/trilingue inline ;
- * seule la page traduite manquait.
+ * Raccorde les traductions EN/AR des pages requises (même slug de base).
+ * Sans ça, /en/favoris/ et /ar/favoris/ retombent sur la page FR.
+ * Jamais silencieux : le déploiement affiche le résultat.
  */
 if ( ! defined( 'ABSPATH' ) ) {
 	exit( 'CLI only' );
 }
 
-if ( ! class_exists( 'Partikulier_Required_Pages' ) || ! class_exists( 'Partikulier_Page_Translations' ) ) {
-	echo "ensure-pages: classes absentes\n";
+if ( ! class_exists( 'Partikulier_Required_Page_Translations' ) ) {
+	echo "ensure-pages: classe absente\n";
 	exit( 1 );
 }
 
-$created = Partikulier_Page_Translations::ensure();
-if ( $created ) {
-	echo 'ensure-pages: créé ' . implode( ', ', $created ) . "\n";
-} else {
-	echo "ensure-pages: rien à créer (traductions déjà présentes)\n";
-}
+Partikulier_Required_Page_Translations::ensure();
+echo "ensure-pages: ensure() exécuté\n";
 
-/* Vérification : chaque page requise doit avoir un ID par langue. */
 $manque = array();
-foreach ( array( 'fr', 'en', 'ar' ) as $lang ) {
-	foreach ( Partikulier_Required_Pages::pages() as $slug => $definition ) {
-		$ids = get_posts(
-			array(
-				'post_type'        => 'page',
-				'post_status'      => 'publish',
-				'posts_per_page'   => 1,
-				'fields'           => 'ids',
-				'suppress_filters' => false,
-				'lang'             => $lang,
-				'meta_query'       => array(
-					array(
-						'key'   => '_wp_page_template',
-						'value' => $definition['template'],
-					),
-				),
-			)
-		);
-		if ( ! $ids ) {
+foreach ( array( 'deposer', 'faq', 'contact', 'favoris', 'connexion', 'mes-annonces' ) as $slug ) {
+	$posts = get_posts(
+		array(
+			'post_type'        => 'page',
+			'post_status'      => 'publish',
+			'name'             => $slug,
+			'posts_per_page'   => 10,
+			'fields'           => 'ids',
+			'suppress_filters' => true,
+		)
+	);
+	$langs = array();
+	foreach ( (array) $posts as $pid ) {
+		$lang = function_exists( 'pll_get_post_language' ) ? pll_get_post_language( (int) $pid, 'slug' ) : '';
+		if ( $lang ) {
+			$langs[ $lang ] = (int) $pid;
+		}
+	}
+	foreach ( array( 'fr', 'en', 'ar' ) as $lang ) {
+		if ( empty( $langs[ $lang ] ) ) {
 			$manque[] = $slug . ':' . $lang;
 		}
 	}
@@ -53,5 +44,5 @@ foreach ( array( 'fr', 'en', 'ar' ) as $lang ) {
 if ( $manque ) {
 	echo 'ensure-pages: ATTENTION manquantes: ' . implode( ', ', $manque ) . "\n";
 } else {
-	echo "ensure-pages: vérification OK (6 pages × 3 langues présentes)\n";
+	echo "ensure-pages: vérification OK (6 pages × 3 langues, slug de base)\n";
 }
