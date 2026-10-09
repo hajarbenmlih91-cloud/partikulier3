@@ -38,7 +38,6 @@ final class EstatikDictionary
 				'Password' => 'كلمة المرور',
 				'By clicking the %1$s button you agree to the %2$s and %3$s' => 'بالنقر على زر %1$s فإنك توافق على %2$s و %3$s',
 				'SIGN UP' => 'إنشاء حساب',
-				'Change anytime' => 'يمكن تغييره في أي وقت',
 				'Reset' => 'إعادة تعيين',
 			),
 			'fr' => array(
