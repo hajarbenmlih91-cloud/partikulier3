@@ -269,7 +269,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 	langues partagent le même squelette. */
 html[dir="rtl"] .pk-header-inner { direction: ltr; }
 html[dir="rtl"] .pk-header-search { direction: rtl; }
-html[dir="rtl"] .pk-header-actions { direction: rtl; }
+html[dir="rtl"] .pk-header-actions { direction: ltr; }
 html[dir="rtl"] .pk-header-actions .pk-header-cta { direction: rtl; unicode-bidi: isolate; }
 
 /* Barre de recherche centrale (style Woo Shop) */
