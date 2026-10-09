@@ -52,7 +52,7 @@ get_header();
 		<div class="pk-editorial-hero__media"><img src="<?php echo esc_url( $hero_url ); ?>" alt="<?php echo esc_attr( $hero_alt ); ?>" width="1600" height="686" fetchpriority="high" decoding="async"><div class="pk-editorial-hero__veil"></div></div>
 	<div class="pk-container pk-editorial-hero__inner">
 		<div class="pk-editorial-hero__copy">
-			<p class="pk-editorial-kicker"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'La plateforme immobilière entre particuliers', 'La plateforme immobilière entre particuliers', 'partikulier' ) ); ?></p>
+			<p class="pk-editorial-kicker"><?php echo esc_html( Partikulier_Customization::editorial( 'home_kicker', 'La plateforme immobilière entre particuliers' ) ); ?></p>
 			<h1><?php
 			// Le preview React scinde l'accroche : 1re ligne blanche sans-serif,
 			// 2e ligne en italique serif sable. On coupe sur le dernier segment
