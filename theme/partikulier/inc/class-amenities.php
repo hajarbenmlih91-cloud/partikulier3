@@ -21,7 +21,7 @@ class Partikulier_Amenities {
 
 	public static function defaults() {
 		$base = array(
-			array( 'id' => 'terrace', 'fr' => 'Terrasse', 'en' => 'Terrace', 'ar' => 'تراس', 'legacy' => 'pk_terrace', 'follow' => 'surface', 'ctx' => array( 'vente', 'vide' ) ),
+			array( 'id' => 'terrace', 'fr' => 'Terrasse', 'en' => 'Terrace', 'ar' => 'تراس', 'legacy' => 'pk_terrace', 'follow' => 'surface', 'ctx' => array( 'vente', 'vide', 'meuble' ) ),
 			array( 'id' => 'garage', 'fr' => 'Garage ou sous-sol', 'en' => 'Garage or basement', 'ar' => 'مرآب أو قبو', 'legacy' => 'pk_garage', 'ctx' => array( 'vente', 'vide' ) ),
 			array( 'id' => 'elevator', 'fr' => 'Ascenseur', 'en' => 'Lift', 'ar' => 'مصعد', 'legacy' => 'pk_elevator', 'ctx' => array( 'vente', 'vide', 'meuble' ) ),
 			array( 'id' => 'visavis', 'fr' => 'Sans vis-à-vis', 'en' => 'No overlooking neighbours', 'ar' => 'بدون إطلالة مقابلة', 'legacy' => 'pk_vis_a_vis', 'ctx' => array( 'vente', 'vide' ) ),
@@ -30,7 +30,7 @@ class Partikulier_Amenities {
 			array( 'id' => 'garden', 'fr' => 'Jardin privatif', 'en' => 'Private garden', 'ar' => 'حديقة خاصة', 'ctx' => array( 'vente', 'vide' ) ),
 			array( 'id' => 'hvac', 'fr' => 'Chauffage et climatisation centrale', 'en' => 'Central heating and air conditioning', 'ar' => 'تدفئة وتكييف مركزي', 'ctx' => array( 'vente', 'vide' ) ),
 			array( 'id' => 'security', 'fr' => 'Sécurité', 'en' => 'Security', 'ar' => 'أمن', 'ctx' => array( 'vente', 'vide', 'meuble' ) ),
-			array( 'id' => 'sea', 'fr' => 'Vue mer', 'en' => 'Sea view', 'ar' => 'إطلالة على البحر', 'ctx' => array( 'vente', 'vide' ) ),
+			array( 'id' => 'sea', 'fr' => 'Vue sur mer', 'en' => 'Sea view', 'ar' => 'إطلالة على البحر', 'ctx' => array( 'vente', 'vide', 'meuble' ) ),
 			array( 'id' => 'gym', 'fr' => 'Salle de sport', 'en' => 'Gym', 'ar' => 'قاعة رياضة', 'ctx' => array( 'vente', 'vide' ) ),
 			array( 'id' => 'pool', 'fr' => 'Piscine', 'en' => 'Swimming pool', 'ar' => 'مسبح', 'ctx' => array( 'vente', 'vide', 'meuble' ) ),
 			array( 'id' => 'elec', 'fr' => 'Compteur électrique', 'en' => 'Electricity meter', 'ar' => 'عداد الكهرباء', 'ctx' => array( 'vente', 'vide' ) ),
@@ -76,14 +76,15 @@ class Partikulier_Amenities {
 				$vus[ $item['id'] ] = true;
 			}
 		}
-		if ( empty( $config['ctx_ready'] ) ) {
-			foreach ( self::meuble_items() as $item ) {
+		if ( empty( $config['ctx_ready'] ) || (int) ( isset( $config['catalog'] ) ? $config['catalog'] : 0 ) < 3 ) {
+			foreach ( self::defaults() as $item ) {
 				if ( ! isset( $vus[ $item['id'] ] ) ) {
-					$items[] = $item;
+					$items[]            = $item;
+					$vus[ $item['id'] ] = true;
 				}
 			}
 		}
-		return $items;
+		return self::upgrade_rent_ctx( $items, (int) ( isset( $config['catalog'] ) ? $config['catalog'] : 0 ) );
 	}
 
 	public static function lang() {
@@ -328,7 +329,7 @@ class Partikulier_Amenities {
 					$ctx[] = $code;
 				}
 			}
-			$item['ctx'] = $ctx ? $ctx : array( 'vente', 'vide', 'meuble' );
+			$item['ctx'] = $ctx ? $ctx : array( 'vente', 'vide', 'meuble', 'saisonnier' );
 			$vus[ $id ] = true;
 			$items[]    = $item;
 			if ( count( $items ) >= 40 ) {
@@ -376,7 +377,7 @@ class Partikulier_Amenities {
 				}
 			}
 		}
-		update_option( self::OPTION, array( 'items' => $items, 'types' => $propre, 'group' => $copy['group'], 'hint' => $copy['hint'], 'furnish' => $furnish, 'ctx_ready' => 1, 'maj' => current_time( 'mysql' ) ) );
+		update_option( self::OPTION, array( 'items' => $items, 'types' => $propre, 'group' => $copy['group'], 'hint' => $copy['hint'], 'furnish' => $furnish, 'ctx_ready' => 1, 'catalog' => 3, 'maj' => current_time( 'mysql' ) ) );
 		return true;
 	}
 
