@@ -220,6 +220,7 @@ class Partikulier_Form {
 		 */
 	public static function process( $data, $files ) {
 		$pk_amenity_ids = null;
+		$pk_rent_meta   = null;
 		if ( class_exists( 'Partikulier_Amenities' ) ) {
 			list( $data, $pk_amenity_ids ) = Partikulier_Amenities::apply_to_request( $data );
 		}
@@ -403,6 +404,26 @@ class Partikulier_Form {
 		if ( 'Oui' === $terrace && ! $terrace_surface ) {
 				return new WP_Error( 'terrace_surface', __( 'Indiquez la superficie de la terrasse.', 'partikulier' ) );
 		}
+		if ( class_exists( 'Partikulier_Amenities' ) && isset( $data['pk_rent_present'] ) ) {
+			$pk_tx = isset( $data['pk_transaction'] ) ? sanitize_key( wp_unslash( $data['pk_transaction'] ) ) : '';
+			if ( '' === $pk_tx ) {
+				$pk_tx = isset( $data['pk_action_mode'] ) ? sanitize_key( wp_unslash( $data['pk_action_mode'] ) ) : 'vendre';
+			}
+			if ( 'louer' !== $pk_tx ) {
+				$pk_rent_meta = array( 'rent' => '', 'furnished' => '' );
+			} else {
+				$pk_kind = isset( $data['pk_rent_kind'] ) ? sanitize_key( wp_unslash( $data['pk_rent_kind'] ) ) : 'longue';
+				if ( 'saisonnier' === $pk_kind ) {
+					$pk_rent_meta = array( 'rent' => 'saisonnier', 'furnished' => 'meuble' );
+				} else {
+					$pk_furn = isset( $data['pk_furnished'] ) ? sanitize_key( wp_unslash( $data['pk_furnished'] ) ) : '';
+					if ( ! in_array( $pk_furn, array( 'meuble', 'vide' ), true ) ) {
+						return new WP_Error( 'furnished', Partikulier_Amenities::furnish_label( 'error' ) );
+					}
+					$pk_rent_meta = array( 'rent' => 'longue', 'furnished' => $pk_furn );
+				}
+			}
+		}
 		if ( ! in_array( $sunshine, array( '', 'Ensoleillé le matin', 'Ensoleillé l’après-midi', "Ensoleillé l'après-midi", 'Toute la journée', 'Très peu' ), true ) ) {
 				return new WP_Error( 'sunshine', __( 'Choisissez un niveau d’ensoleillement valide.', 'partikulier' ) );
 		}
@@ -510,6 +531,15 @@ class Partikulier_Form {
 						update_post_meta( $post_id, '_pk_elevator', $elevator );
 		if ( is_array( $pk_amenity_ids ) ) {
 			update_post_meta( $post_id, '_pk_amenities', $pk_amenity_ids );
+		}
+		if ( is_array( $pk_rent_meta ) ) {
+			if ( '' === $pk_rent_meta['rent'] ) {
+				delete_post_meta( $post_id, '_pk_rent' );
+				delete_post_meta( $post_id, '_pk_furnished' );
+			} else {
+				update_post_meta( $post_id, '_pk_rent', $pk_rent_meta['rent'] );
+				update_post_meta( $post_id, '_pk_furnished', $pk_rent_meta['furnished'] );
+			}
 		}
 
 							// --- Taxonomies ---

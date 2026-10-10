@@ -42,8 +42,9 @@ class Partikulier_Amenities_Admin {
 		}
 		$lignes = isset( $_POST['pk_amenity_row'] ) && is_array( $_POST['pk_amenity_row'] ) ? wp_unslash( $_POST['pk_amenity_row'] ) : array();
 		$textes = array(
-			'group' => isset( $_POST['pk_amenity_group'] ) && is_array( $_POST['pk_amenity_group'] ) ? wp_unslash( $_POST['pk_amenity_group'] ) : array(),
-			'hint'  => isset( $_POST['pk_amenity_hint'] ) && is_array( $_POST['pk_amenity_hint'] ) ? wp_unslash( $_POST['pk_amenity_hint'] ) : array(),
+			'group'   => isset( $_POST['pk_amenity_group'] ) && is_array( $_POST['pk_amenity_group'] ) ? wp_unslash( $_POST['pk_amenity_group'] ) : array(),
+			'hint'    => isset( $_POST['pk_amenity_hint'] ) && is_array( $_POST['pk_amenity_hint'] ) ? wp_unslash( $_POST['pk_amenity_hint'] ) : array(),
+			'furnish' => isset( $_POST['pk_amenity_furnish'] ) && is_array( $_POST['pk_amenity_furnish'] ) ? wp_unslash( $_POST['pk_amenity_furnish'] ) : array(),
 		);
 		$types  = isset( $_POST['pk_amenity_type'] ) && is_array( $_POST['pk_amenity_type'] ) ? wp_unslash( $_POST['pk_amenity_type'] ) : array();
 		$presents = isset( $_POST['pk_amenity_type_present'] ) && is_array( $_POST['pk_amenity_type_present'] ) ? wp_unslash( $_POST['pk_amenity_type_present'] ) : array();
@@ -100,6 +101,29 @@ class Partikulier_Amenities_Admin {
 							<label><?php echo esc_html( $nom ); ?> <input type="text" class="large-text" name="pk_amenity_hint[<?php echo esc_attr( $code ); ?>]" value="<?php echo esc_attr( $config['hint'][ $code ] ?? '' ); ?>"></label><br>
 						<?php endforeach; ?></td>
 					</tr>
+				</tbody></table>
+				<h2><?php esc_html_e( 'Location : meublé ou vide', 'partikulier' ); ?></h2>
+				<p class="description"><?php esc_html_e( 'En location longue durée, le déposant choisit meublé ou vide. En location saisonnière, le bien est toujours meublé : ce choix ne s’affiche pas. La vente n’a pas cette question.', 'partikulier' ); ?></p>
+				<table class="form-table"><tbody>
+					<?php
+					$pk_furnish = isset( $config['furnish'] ) && is_array( $config['furnish'] ) ? $config['furnish'] : Partikulier_Amenities::default_furnish();
+					$pk_furnish_rows = array(
+						'title'  => __( 'Titre', 'partikulier' ),
+						'meuble' => __( 'Meublé', 'partikulier' ),
+						'vide'   => __( 'Vide', 'partikulier' ),
+						'note'   => __( 'Phrase saisonnière', 'partikulier' ),
+						'error'  => __( 'Message si le choix manque', 'partikulier' ),
+					);
+					foreach ( $pk_furnish_rows as $pk_cle => $pk_nom ) :
+						$pk_vals = isset( $pk_furnish[ $pk_cle ] ) && is_array( $pk_furnish[ $pk_cle ] ) ? $pk_furnish[ $pk_cle ] : array();
+						?>
+					<tr>
+						<th scope="row"><?php echo esc_html( $pk_nom ); ?></th>
+						<td><?php foreach ( $langues as $code => $nom ) : ?>
+							<label><?php echo esc_html( $nom ); ?> <input type="text" class="regular-text" name="pk_amenity_furnish[<?php echo esc_attr( $pk_cle ); ?>][<?php echo esc_attr( $code ); ?>]" value="<?php echo esc_attr( $pk_vals[ $code ] ?? '' ); ?>"></label><br>
+						<?php endforeach; ?></td>
+					</tr>
+					<?php endforeach; ?>
 				</tbody></table>
 				<h2><?php esc_html_e( 'Pastilles', 'partikulier' ); ?></h2>
 				<table class="widefat striped">

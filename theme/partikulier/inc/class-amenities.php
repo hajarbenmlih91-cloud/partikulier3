@@ -45,6 +45,36 @@ class Partikulier_Amenities {
 		);
 	}
 
+	public static function default_furnish() {
+		return array(
+			'title'  => array( 'fr' => 'Ameublement', 'en' => 'Furnishing', 'ar' => 'التأثيث' ),
+			'meuble' => array( 'fr' => 'Meublé', 'en' => 'Furnished', 'ar' => 'مفروش' ),
+			'vide'   => array( 'fr' => 'Vide', 'en' => 'Unfurnished', 'ar' => 'غير مفروش' ),
+			'note'   => array(
+				'fr' => 'Une location saisonnière est toujours meublée.',
+				'en' => 'A seasonal rental is always furnished.',
+				'ar' => 'الإيجار الموسمي يكون مفروشاً دائماً.',
+			),
+			'error'  => array(
+				'fr' => 'Indiquez si le bien est meublé ou vide.',
+				'en' => 'Say whether the property is furnished or unfurnished.',
+				'ar' => 'حدّد إن كان العقار مفروشاً أو فارغاً.',
+			),
+		);
+	}
+
+	public static function furnish_label( $key ) {
+		$base = self::default_furnish();
+		if ( ! isset( $base[ $key ] ) ) {
+			return '';
+		}
+		$config = self::config();
+		$bloc   = isset( $config['furnish'][ $key ] ) && is_array( $config['furnish'][ $key ] ) ? $config['furnish'][ $key ] : $base[ $key ];
+		$lang   = self::lang();
+		$texte  = isset( $bloc[ $lang ] ) ? trim( (string) $bloc[ $lang ] ) : '';
+		return '' !== $texte ? $texte : (string) $base[ $key ]['fr'];
+	}
+
 	public static function config() {
 		static $cache = null;
 		if ( null !== $cache ) {
