@@ -262,6 +262,7 @@ $partikulier_modules = array(
 		'/inc/class-search-filters.php',
 		'/inc/class-form.php',
 		'/inc/class-deposit-form.php',
+		'/inc/class-amenities.php',
 		'/inc/class-dashboard.php',
                 '/inc/class-listing-transitions.php',
 		'/inc/class-owner-insights.php',
