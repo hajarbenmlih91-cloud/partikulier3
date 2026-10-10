@@ -231,7 +231,7 @@
 		if (radio.name === "pk_transaction") {
 			document.getElementById("pk-action-mode").value = radio.value;
 		}
-		if (radio.name === "pk_transaction" || radio.name === "pk_rent_kind") {
+		if (radio.name === "pk_transaction" || radio.name === "pk_rent_kind" || radio.name === "pk_furnished") {
 			refreshRent();
 		}
 		if (radio.name === "pk_role" && refreshAgentRefusal()) {
@@ -267,6 +267,7 @@
 		}
 		if (locked) locked.hidden = ! seasonal;
 		if (meuble) meuble.required = isRent && ! seasonal;
+		if (window.pkFilterChips) window.pkFilterChips();
 	}
 
 	refreshAgentRefusal();
