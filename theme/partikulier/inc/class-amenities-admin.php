@@ -103,7 +103,7 @@ class Partikulier_Amenities_Admin {
 					</tr>
 				</tbody></table>
 				<h2><?php esc_html_e( 'Location : meublé ou vide', 'partikulier' ); ?></h2>
-				<p class="description"><?php esc_html_e( 'En location longue durée, le déposant choisit meublé ou vide. En location saisonnière, le bien est toujours meublé : ce choix ne s’affiche pas. La vente n’a pas cette question.', 'partikulier' ); ?></p>
+					<p class="description"><?php esc_html_e( 'En location longue durée, le déposant choisit meublé ou vide. En location saisonnière, le bien est toujours meublé. La liste « Meublé / saisonnière » est la même pour les deux.', 'partikulier' ); ?></p>
 				<table class="form-table"><tbody>
 					<?php
 					$pk_furnish = isset( $config['furnish'] ) && is_array( $config['furnish'] ) ? $config['furnish'] : Partikulier_Amenities::default_furnish();
@@ -139,6 +139,13 @@ class Partikulier_Amenities_Admin {
 							<td>
 								<input type="hidden" name="pk_amenity_row[<?php echo (int) $i; ?>][id]" value="<?php echo esc_attr( $item['id'] ); ?>">
 								<input type="text" class="regular-text" name="pk_amenity_row[<?php echo (int) $i; ?>][fr]" value="<?php echo esc_attr( $item['fr'] ?? '' ); ?>" required>
+								<?php
+								$pk_ctx = isset( $item['ctx'] ) && is_array( $item['ctx'] ) && $item['ctx'] ? $item['ctx'] : array( 'vente', 'vide', 'meuble' );
+								$pk_ctx_noms = array( 'vente' => __( 'Vente', 'partikulier' ), 'vide' => __( 'Location vide', 'partikulier' ), 'meuble' => __( 'Meublé / saisonnière', 'partikulier' ) );
+								foreach ( $pk_ctx_noms as $pk_code => $pk_nom ) :
+									?>
+									<label style="display:inline-block;margin-right:.6rem;"><input type="checkbox" name="pk_amenity_row[<?php echo (int) $i; ?>][ctx][]" value="<?php echo esc_attr( $pk_code ); ?>" <?php checked( in_array( $pk_code, $pk_ctx, true ) ); ?>> <?php echo esc_html( $pk_nom ); ?></label>
+								<?php endforeach; ?>
 								<?php if ( ! empty( $item['follow'] ) ) : ?><p class="description"><?php esc_html_e( 'Ouvre le champ surface de la terrasse.', 'partikulier' ); ?></p><?php endif; ?>
 							</td>
 							<td><input type="text" class="regular-text" name="pk_amenity_row[<?php echo (int) $i; ?>][en]" value="<?php echo esc_attr( $item['en'] ?? '' ); ?>"></td>
@@ -156,6 +163,19 @@ class Partikulier_Amenities_Admin {
 				<?php foreach ( $groupes as $groupe ) : ?>
 					<?php
 					$cochees = array_key_exists( $groupe['key'], (array) $config['types'] ) ? (array) $config['types'][ $groupe['key'] ] : wp_list_pluck( $items, 'id' );
+					if ( empty( $config['ctx_ready'] ) ) {
+						$pk_cites = array();
+						foreach ( (array) $config['types'] as $pk_liste ) {
+							foreach ( (array) $pk_liste as $pk_id ) {
+								$pk_cites[ $pk_id ] = true;
+							}
+						}
+						foreach ( $items as $pk_item ) {
+							if ( ! isset( $pk_cites[ $pk_item['id'] ] ) ) {
+								$cochees[] = $pk_item['id'];
+							}
+						}
+					}
 					?>
 					<input type="hidden" name="pk_amenity_type_present[]" value="<?php echo esc_attr( $groupe['key'] ); ?>">
 					<h3><?php echo esc_html( $groupe['label'] ); ?></h3>

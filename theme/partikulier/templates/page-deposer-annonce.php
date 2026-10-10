@@ -396,8 +396,10 @@ $types = get_terms( array(
 														<?php
 														$pk_slugs = Partikulier_Amenities::slugs_for( $pk_item );
 														$pk_on    = in_array( $pk_item['id'], $pk_amenity_on, true );
+														$pk_ctx   = isset( $pk_item['ctx'] ) && is_array( $pk_item['ctx'] ) && $pk_item['ctx'] ? $pk_item['ctx'] : array( 'vente', 'vide', 'meuble' );
+														$pk_ord   = Partikulier_Amenities::meuble_order();
 														?>
-														<label class="pk-chip" data-amenity="<?php echo esc_attr( $pk_item['id'] ); ?>" data-types="<?php echo esc_attr( $pk_slugs ? implode( ' ', $pk_slugs ) : '*' ); ?>">
+														<label class="pk-chip" data-amenity="<?php echo esc_attr( $pk_item['id'] ); ?>" data-types="<?php echo esc_attr( $pk_slugs ? implode( ' ', $pk_slugs ) : '*' ); ?>" data-ctx="<?php echo esc_attr( implode( ' ', $pk_ctx ) ); ?>" data-meuble-order="<?php echo esc_attr( isset( $pk_ord[ $pk_item['id'] ] ) ? (string) $pk_ord[ $pk_item['id'] ] : '999' ); ?>">
 																<input class="pk-chip-input" type="checkbox" name="pk_amenities[]" value="<?php echo esc_attr( $pk_item['id'] ); ?>" <?php checked( $pk_on ); ?>>
 																<span><?php echo esc_html( Partikulier_Amenities::label( $pk_item ) ); ?></span>
 														</label>
@@ -561,17 +563,45 @@ $types = get_terms( array(
 						if ( amenity && surface && surface.parentNode ) {
 							surface.parentNode.insertBefore( amenity, surface );
 						}
-						form.querySelectorAll( '.pk-chip' ).forEach( function ( chip ) {
+						filtrerPastilles( slug );
+					}
+					function contexteLocation() {
+						var tx = form.querySelector( 'input[name="pk_transaction"]:checked' );
+						var kind = form.querySelector( 'input[name="pk_rent_kind"]:checked' );
+						var furn = form.querySelector( 'input[name="pk_furnished"]:checked' );
+						if ( ! tx || tx.value !== 'louer' ) { return 'vente'; }
+						if ( ( kind && kind.value === 'saisonnier' ) || ( furn && furn.value === 'meuble' ) ) { return 'meuble'; }
+						return 'vide';
+					}
+					function filtrerPastilles( slug ) {
+						if ( ! slug ) {
+							var select = document.getElementById( 'pk-type' );
+							var option = select && select.options[ select.selectedIndex ];
+							slug = option ? option.getAttribute( 'data-pk-slug' ) : '';
+						}
+						var ctx = contexteLocation();
+						var chips = form.querySelectorAll( '.pk-chip' );
+						chips.forEach( function ( chip, i ) {
+							if ( ! chip.hasAttribute( 'data-home' ) ) { chip.setAttribute( 'data-home', String( i ) ); }
 							var types = ( chip.getAttribute( 'data-types' ) || '' ).split( ' ' );
-							var cache = types.indexOf( '*' ) === -1 && types.indexOf( slug ) === -1;
+							var contexts = ( chip.getAttribute( 'data-ctx' ) || 'vente vide meuble' ).split( ' ' );
+							var cache = ( types.indexOf( '*' ) === -1 && types.indexOf( slug ) === -1 ) || contexts.indexOf( ctx ) === -1;
 							chip.hidden = cache;
 							if ( cache ) {
 								var box = chip.querySelector( '.pk-chip-input' );
 								if ( box ) { box.checked = false; }
 							}
 						} );
+						var wrap = form.querySelector( '.pk-chips' );
+						if ( wrap ) {
+							var liste = Array.prototype.slice.call( wrap.querySelectorAll( '.pk-chip' ) );
+							var cle = ctx === 'meuble' ? 'data-meuble-order' : 'data-home';
+							liste.sort( function ( a, b ) { return ( parseInt( a.getAttribute( cle ), 10 ) || 999 ) - ( parseInt( b.getAttribute( cle ), 10 ) || 999 ); } );
+							liste.forEach( function ( chip ) { wrap.appendChild( chip ); } );
+						}
 						syncPastilles();
 					}
+					window.pkFilterChips = function () { filtrerPastilles( '' ); };
 					function syncPastilles() {
 						form.querySelectorAll( '[data-legacy-input]' ).forEach( function ( hidden ) {
 							var id = hidden.getAttribute( 'data-legacy-input' );

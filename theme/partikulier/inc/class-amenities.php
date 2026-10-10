@@ -11,27 +11,32 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+require_once __DIR__ . '/class-amenities-context.php';
+
 class Partikulier_Amenities {
+
+	use Partikulier_Amenities_Context;
 
 	const OPTION = 'pk_amenities';
 
 	public static function defaults() {
-		return array(
-			array( 'id' => 'terrace', 'fr' => 'Terrasse', 'en' => 'Terrace', 'ar' => 'تراس', 'legacy' => 'pk_terrace', 'follow' => 'surface' ),
-			array( 'id' => 'garage', 'fr' => 'Garage ou sous-sol', 'en' => 'Garage or basement', 'ar' => 'مرآب أو قبو', 'legacy' => 'pk_garage' ),
-			array( 'id' => 'elevator', 'fr' => 'Ascenseur', 'en' => 'Lift', 'ar' => 'مصعد', 'legacy' => 'pk_elevator' ),
-			array( 'id' => 'visavis', 'fr' => 'Sans vis-à-vis', 'en' => 'No overlooking neighbours', 'ar' => 'بدون إطلالة مقابلة', 'legacy' => 'pk_vis_a_vis' ),
-			array( 'id' => 'balcony', 'fr' => 'Balcon', 'en' => 'Balcony', 'ar' => 'شرفة' ),
-			array( 'id' => 'kitchen', 'fr' => 'Équipements de cuisine', 'en' => 'Kitchen appliances', 'ar' => 'أجهزة المطبخ' ),
-			array( 'id' => 'garden', 'fr' => 'Jardin privatif', 'en' => 'Private garden', 'ar' => 'حديقة خاصة' ),
-			array( 'id' => 'hvac', 'fr' => 'Chauffage et climatisation centrale', 'en' => 'Central heating and air conditioning', 'ar' => 'تدفئة وتكييف مركزي' ),
-			array( 'id' => 'security', 'fr' => 'Sécurité', 'en' => 'Security', 'ar' => 'أمن' ),
-			array( 'id' => 'sea', 'fr' => 'Vue mer', 'en' => 'Sea view', 'ar' => 'إطلالة على البحر' ),
-			array( 'id' => 'gym', 'fr' => 'Salle de sport', 'en' => 'Gym', 'ar' => 'قاعة رياضة' ),
-			array( 'id' => 'pool', 'fr' => 'Piscine', 'en' => 'Swimming pool', 'ar' => 'مسبح' ),
-			array( 'id' => 'elec', 'fr' => 'Compteur électrique', 'en' => 'Electricity meter', 'ar' => 'عداد الكهرباء' ),
-			array( 'id' => 'water', 'fr' => 'Compteur d’eau', 'en' => 'Water meter', 'ar' => 'عداد الماء' ),
+		$base = array(
+			array( 'id' => 'terrace', 'fr' => 'Terrasse', 'en' => 'Terrace', 'ar' => 'تراس', 'legacy' => 'pk_terrace', 'follow' => 'surface', 'ctx' => array( 'vente', 'vide' ) ),
+			array( 'id' => 'garage', 'fr' => 'Garage ou sous-sol', 'en' => 'Garage or basement', 'ar' => 'مرآب أو قبو', 'legacy' => 'pk_garage', 'ctx' => array( 'vente', 'vide' ) ),
+			array( 'id' => 'elevator', 'fr' => 'Ascenseur', 'en' => 'Lift', 'ar' => 'مصعد', 'legacy' => 'pk_elevator', 'ctx' => array( 'vente', 'vide', 'meuble' ) ),
+			array( 'id' => 'visavis', 'fr' => 'Sans vis-à-vis', 'en' => 'No overlooking neighbours', 'ar' => 'بدون إطلالة مقابلة', 'legacy' => 'pk_vis_a_vis', 'ctx' => array( 'vente', 'vide' ) ),
+			array( 'id' => 'balcony', 'fr' => 'Balcon', 'en' => 'Balcony', 'ar' => 'شرفة', 'ctx' => array( 'vente', 'vide' ) ),
+			array( 'id' => 'kitchen', 'fr' => 'Équipements de cuisine', 'en' => 'Kitchen appliances', 'ar' => 'أجهزة المطبخ', 'ctx' => array( 'vente', 'vide' ) ),
+			array( 'id' => 'garden', 'fr' => 'Jardin privatif', 'en' => 'Private garden', 'ar' => 'حديقة خاصة', 'ctx' => array( 'vente', 'vide' ) ),
+			array( 'id' => 'hvac', 'fr' => 'Chauffage et climatisation centrale', 'en' => 'Central heating and air conditioning', 'ar' => 'تدفئة وتكييف مركزي', 'ctx' => array( 'vente', 'vide' ) ),
+			array( 'id' => 'security', 'fr' => 'Sécurité', 'en' => 'Security', 'ar' => 'أمن', 'ctx' => array( 'vente', 'vide', 'meuble' ) ),
+			array( 'id' => 'sea', 'fr' => 'Vue mer', 'en' => 'Sea view', 'ar' => 'إطلالة على البحر', 'ctx' => array( 'vente', 'vide' ) ),
+			array( 'id' => 'gym', 'fr' => 'Salle de sport', 'en' => 'Gym', 'ar' => 'قاعة رياضة', 'ctx' => array( 'vente', 'vide' ) ),
+			array( 'id' => 'pool', 'fr' => 'Piscine', 'en' => 'Swimming pool', 'ar' => 'مسبح', 'ctx' => array( 'vente', 'vide', 'meuble' ) ),
+			array( 'id' => 'elec', 'fr' => 'Compteur électrique', 'en' => 'Electricity meter', 'ar' => 'عداد الكهرباء', 'ctx' => array( 'vente', 'vide' ) ),
+			array( 'id' => 'water', 'fr' => 'Compteur d’eau', 'en' => 'Water meter', 'ar' => 'عداد الماء', 'ctx' => array( 'vente', 'vide' ) ),
 		);
+		return array_merge( $base, self::meuble_items() );
 	}
 
 	public static function default_copy() {
@@ -43,36 +48,6 @@ class Partikulier_Amenities {
 				'ar' => 'حدّد ما يتوفر في العقار. الباقي يُحسب « لا ».',
 			),
 		);
-	}
-
-	public static function default_furnish() {
-		return array(
-			'title'  => array( 'fr' => 'Ameublement', 'en' => 'Furnishing', 'ar' => 'التأثيث' ),
-			'meuble' => array( 'fr' => 'Meublé', 'en' => 'Furnished', 'ar' => 'مفروش' ),
-			'vide'   => array( 'fr' => 'Vide', 'en' => 'Unfurnished', 'ar' => 'غير مفروش' ),
-			'note'   => array(
-				'fr' => 'Une location saisonnière est toujours meublée.',
-				'en' => 'A seasonal rental is always furnished.',
-				'ar' => 'الإيجار الموسمي يكون مفروشاً دائماً.',
-			),
-			'error'  => array(
-				'fr' => 'Indiquez si le bien est meublé ou vide.',
-				'en' => 'Say whether the property is furnished or unfurnished.',
-				'ar' => 'حدّد إن كان العقار مفروشاً أو فارغاً.',
-			),
-		);
-	}
-
-	public static function furnish_label( $key ) {
-		$base = self::default_furnish();
-		if ( ! isset( $base[ $key ] ) ) {
-			return '';
-		}
-		$config = self::config();
-		$bloc   = isset( $config['furnish'][ $key ] ) && is_array( $config['furnish'][ $key ] ) ? $config['furnish'][ $key ] : $base[ $key ];
-		$lang   = self::lang();
-		$texte  = isset( $bloc[ $lang ] ) ? trim( (string) $bloc[ $lang ] ) : '';
-		return '' !== $texte ? $texte : (string) $base[ $key ]['fr'];
 	}
 
 	public static function config() {
@@ -91,10 +66,21 @@ class Partikulier_Amenities {
 	}
 
 	public static function items() {
-		$items = array();
-		foreach ( self::config()['items'] as $item ) {
+		$config = self::config();
+		$items  = array();
+		$vus    = array();
+		foreach ( $config['items'] as $item ) {
 			if ( is_array( $item ) && ! empty( $item['id'] ) ) {
-				$items[] = $item;
+				$item               = self::with_context( $item );
+				$items[]            = $item;
+				$vus[ $item['id'] ] = true;
+			}
+		}
+		if ( empty( $config['ctx_ready'] ) ) {
+			foreach ( self::meuble_items() as $item ) {
+				if ( ! isset( $vus[ $item['id'] ] ) ) {
+					$items[] = $item;
+				}
 			}
 		}
 		return $items;
@@ -239,8 +225,11 @@ class Partikulier_Amenities {
 		}
 		$brut    = isset( $data['pk_amenities'] ) ? (array) $data['pk_amenities'] : array();
 		$allowed = array();
+		$ctx     = self::context_from_request( $data );
 		foreach ( self::for_slug( self::slug_from_request( $data ) ) as $item ) {
-			$allowed[ $item['id'] ] = true;
+			if ( self::item_allows( $item, $ctx ) ) {
+				$allowed[ $item['id'] ] = true;
+			}
 		}
 		$ids = array();
 		foreach ( $brut as $id ) {
@@ -257,9 +246,13 @@ class Partikulier_Amenities {
 		if ( null === $ids ) {
 			return array( $data, null );
 		}
-		$slug = self::slug_from_request( $data );
+		$slug   = self::slug_from_request( $data );
+		$champs = array();
 		foreach ( self::legacy_map() as $id => $champ ) {
-			if ( in_array( $id, $ids, true ) ) {
+			$champs[ $champ ] = ! empty( $champs[ $champ ] ) || in_array( $id, $ids, true );
+		}
+		foreach ( $champs as $champ => $oui ) {
+			if ( $oui ) {
 				$data[ $champ ] = 'Oui';
 				continue;
 			}
@@ -276,10 +269,15 @@ class Partikulier_Amenities {
 	public static function extra_labels( $post_id ) {
 		$ids = get_post_meta( $post_id, '_pk_amenities', true );
 		if ( ! is_array( $ids ) ) {
-			$ids = array();
+			$ids  = array();
+			$deja = array();
 			foreach ( self::legacy_map() as $id => $champ ) {
+				if ( isset( $deja[ $champ ] ) ) {
+					continue;
+				}
 				if ( 'Oui' === get_post_meta( $post_id, '_' . $champ, true ) ) {
-					$ids[] = $id;
+					$ids[]          = $id;
+					$deja[ $champ ] = true;
 				}
 			}
 		}
@@ -323,6 +321,14 @@ class Partikulier_Amenities {
 			if ( 'terrace' === $id ) {
 				$item['follow'] = 'surface';
 			}
+			$ctx = array();
+			foreach ( (array) ( isset( $ligne['ctx'] ) ? $ligne['ctx'] : array() ) as $code ) {
+				$code = sanitize_key( $code );
+				if ( in_array( $code, self::context_keys(), true ) ) {
+					$ctx[] = $code;
+				}
+			}
+			$item['ctx'] = $ctx ? $ctx : array( 'vente', 'vide', 'meuble' );
 			$vus[ $id ] = true;
 			$items[]    = $item;
 			if ( count( $items ) >= 40 ) {
@@ -361,7 +367,16 @@ class Partikulier_Amenities {
 				$copy[ $cle ][ $lang ] = '' !== $val ? mb_substr( $val, 0, 160 ) : $copy[ $cle ][ $lang ];
 			}
 		}
-		update_option( self::OPTION, array( 'items' => $items, 'types' => $propre, 'group' => $copy['group'], 'hint' => $copy['hint'], 'maj' => current_time( 'mysql' ) ) );
+		$furnish = self::default_furnish();
+		foreach ( $furnish as $cle => $langs ) {
+			foreach ( array( 'fr', 'en', 'ar' ) as $lang ) {
+				$val = isset( $textes['furnish'][ $cle ][ $lang ] ) ? sanitize_text_field( $textes['furnish'][ $cle ][ $lang ] ) : '';
+				if ( '' !== $val ) {
+					$furnish[ $cle ][ $lang ] = mb_substr( $val, 0, 160 );
+				}
+			}
+		}
+		update_option( self::OPTION, array( 'items' => $items, 'types' => $propre, 'group' => $copy['group'], 'hint' => $copy['hint'], 'furnish' => $furnish, 'ctx_ready' => 1, 'maj' => current_time( 'mysql' ) ) );
 		return true;
 	}
 
