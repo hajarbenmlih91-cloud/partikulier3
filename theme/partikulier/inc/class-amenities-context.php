@@ -57,6 +57,14 @@ trait Partikulier_Amenities_Context {
 			array( 'id' => 'tv', 'fr' => 'TV', 'en' => 'TV', 'ar' => 'تلفاز', 'ctx' => array( 'meuble' ) ),
 			array( 'id' => 'washer', 'fr' => 'Machine à laver', 'en' => 'Washing machine', 'ar' => 'غسالة', 'ctx' => array( 'meuble' ) ),
 			array( 'id' => 'wifi', 'fr' => 'WIFI', 'en' => 'Wi-Fi', 'ar' => 'واي فاي', 'ctx' => array( 'meuble' ) ),
+			array( 'id' => 'microwave', 'fr' => 'Micro-ondes', 'en' => 'Microwave', 'ar' => 'ميكروويف', 'ctx' => array( 'vide', 'meuble' ) ),
+			array( 'id' => 'glazing', 'fr' => 'Double vitrage', 'en' => 'Double glazing', 'ar' => 'زجاج مزدوج', 'ctx' => array( 'vide', 'meuble' ) ),
+			array( 'id' => 'pool_view', 'fr' => 'Vue sur piscine', 'en' => 'Pool view', 'ar' => 'إطلالة على المسبح', 'ctx' => array( 'vide', 'meuble' ) ),
+			array( 'id' => 'mountain', 'fr' => 'Vue sur les montagnes', 'en' => 'Mountain view', 'ar' => 'إطلالة على الجبال', 'ctx' => array( 'vide', 'meuble' ) ),
+			array( 'id' => 'forest', 'fr' => 'Vue forêt', 'en' => 'Forest view', 'ar' => 'إطلالة على الغابة', 'ctx' => array( 'vide', 'meuble' ) ),
+			array( 'id' => 'nature', 'fr' => 'Vue sur la nature', 'en' => 'Nature view', 'ar' => 'إطلالة على الطبيعة', 'ctx' => array( 'vide', 'meuble' ) ),
+			array( 'id' => 'dishwasher', 'fr' => 'Lave-vaisselle', 'en' => 'Dishwasher', 'ar' => 'غسالة أطباق', 'ctx' => array( 'vide', 'meuble' ) ),
+			array( 'id' => 'pets', 'fr' => 'Animaux domestiques autorisés', 'en' => 'Pets allowed', 'ar' => 'الحيوانات الأليفة مسموحة', 'ctx' => array( 'saisonnier' ) ),
 		);
 	}
 
@@ -66,6 +74,8 @@ trait Partikulier_Amenities_Context {
 			'salon_ma' => 60, 'salon_eu' => 70, 'satellite' => 80, 'clim' => 90, 'security' => 100,
 			'door' => 110, 'kitchen_fit' => 120, 'fridge' => 130, 'oven' => 140, 'tv' => 150,
 			'washer' => 160, 'wifi' => 170,
+			'microwave' => 180, 'glazing' => 190, 'pool_view' => 200, 'sea' => 210, 'terrace' => 220,
+			'mountain' => 230, 'forest' => 240, 'nature' => 250, 'dishwasher' => 260, 'pets' => 270,
 		);
 	}
 
@@ -83,7 +93,28 @@ trait Partikulier_Amenities_Context {
 	}
 
 	public static function context_keys() {
-		return array( 'vente', 'vide', 'meuble' );
+		return array( 'vente', 'vide', 'meuble', 'saisonnier' );
+	}
+
+	public static function upgrade_rent_ctx( $items, $catalog ) {
+		if ( $catalog >= 3 ) {
+			return $items;
+		}
+		foreach ( $items as $i => $item ) {
+			$id = isset( $item['id'] ) ? $item['id'] : '';
+			if ( ! in_array( $id, array( 'terrace', 'sea' ), true ) ) {
+				continue;
+			}
+			$ctx = isset( $item['ctx'] ) ? (array) $item['ctx'] : array();
+			if ( ! in_array( 'meuble', $ctx, true ) ) {
+				$ctx[] = 'meuble';
+			}
+			$items[ $i ]['ctx'] = $ctx;
+			if ( 'sea' === $id && isset( $item['fr'] ) && 'Vue mer' === $item['fr'] ) {
+				$items[ $i ]['fr'] = 'Vue sur mer';
+			}
+		}
+		return $items;
 	}
 
 	public static function context_from_request( $data ) {
@@ -99,7 +130,7 @@ trait Partikulier_Amenities_Context {
 		}
 		$kind = isset( $data['pk_rent_kind'] ) ? sanitize_key( wp_unslash( $data['pk_rent_kind'] ) ) : 'longue';
 		if ( 'saisonnier' === $kind ) {
-			return 'meuble';
+			return 'saisonnier';
 		}
 		$furn = isset( $data['pk_furnished'] ) ? sanitize_key( wp_unslash( $data['pk_furnished'] ) ) : '';
 		return 'meuble' === $furn ? 'meuble' : 'vide';
@@ -110,6 +141,9 @@ trait Partikulier_Amenities_Context {
 			return true;
 		}
 		$liste = isset( $item['ctx'] ) ? (array) $item['ctx'] : array();
-		return ! $liste || in_array( $ctx, $liste, true );
+		if ( ! $liste || in_array( $ctx, $liste, true ) ) {
+			return true;
+		}
+		return 'saisonnier' === $ctx && in_array( 'meuble', $liste, true );
 	}
 }

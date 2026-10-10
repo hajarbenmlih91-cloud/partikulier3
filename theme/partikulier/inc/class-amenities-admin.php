@@ -103,7 +103,7 @@ class Partikulier_Amenities_Admin {
 					</tr>
 				</tbody></table>
 				<h2><?php esc_html_e( 'Location : meublé ou vide', 'partikulier' ); ?></h2>
-					<p class="description"><?php esc_html_e( 'En location longue durée, le déposant choisit meublé ou vide. En location saisonnière, le bien est toujours meublé. La liste « Meublé / saisonnière » est la même pour les deux.', 'partikulier' ); ?></p>
+					<p class="description"><?php esc_html_e( 'La location saisonnière reprend les pastilles meublées, plus celles cochées seulement pour la saisonnière. Les pastilles de toutes les locations sont cochées pour le vide et le meublé.', 'partikulier' ); ?></p>
 				<table class="form-table"><tbody>
 					<?php
 					$pk_furnish = isset( $config['furnish'] ) && is_array( $config['furnish'] ) ? $config['furnish'] : Partikulier_Amenities::default_furnish();
@@ -140,8 +140,8 @@ class Partikulier_Amenities_Admin {
 								<input type="hidden" name="pk_amenity_row[<?php echo (int) $i; ?>][id]" value="<?php echo esc_attr( $item['id'] ); ?>">
 								<input type="text" class="regular-text" name="pk_amenity_row[<?php echo (int) $i; ?>][fr]" value="<?php echo esc_attr( $item['fr'] ?? '' ); ?>" required>
 								<?php
-								$pk_ctx = isset( $item['ctx'] ) && is_array( $item['ctx'] ) && $item['ctx'] ? $item['ctx'] : array( 'vente', 'vide', 'meuble' );
-								$pk_ctx_noms = array( 'vente' => __( 'Vente', 'partikulier' ), 'vide' => __( 'Location vide', 'partikulier' ), 'meuble' => __( 'Meublé / saisonnière', 'partikulier' ) );
+								$pk_ctx = isset( $item['ctx'] ) && is_array( $item['ctx'] ) && $item['ctx'] ? $item['ctx'] : array( 'vente', 'vide', 'meuble', 'saisonnier' );
+								$pk_ctx_noms = array( 'vente' => __( 'Vente', 'partikulier' ), 'vide' => __( 'Location vide', 'partikulier' ), 'meuble' => __( 'Location meublée', 'partikulier' ), 'saisonnier' => __( 'Saisonnière', 'partikulier' ) );
 								foreach ( $pk_ctx_noms as $pk_code => $pk_nom ) :
 									?>
 									<label style="display:inline-block;margin-right:.6rem;"><input type="checkbox" name="pk_amenity_row[<?php echo (int) $i; ?>][ctx][]" value="<?php echo esc_attr( $pk_code ); ?>" <?php checked( in_array( $pk_code, $pk_ctx, true ) ); ?>> <?php echo esc_html( $pk_nom ); ?></label>
