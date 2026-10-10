@@ -219,6 +219,10 @@ class Partikulier_Form {
 		 * @return int|WP_Error ID de l'annonce ou erreur.
 		 */
 	public static function process( $data, $files ) {
+		$pk_amenity_ids = null;
+		if ( class_exists( 'Partikulier_Amenities' ) ) {
+			list( $data, $pk_amenity_ids ) = Partikulier_Amenities::apply_to_request( $data );
+		}
 					$title           = isset( $data['pk_title'] ) ? self::normalize_generated_title( sanitize_text_field( wp_unslash( $data['pk_title'] ) ) ) : '';
 			$description             = isset( $data['pk_description'] ) ? sanitize_textarea_field( wp_unslash( $data['pk_description'] ) ) : '';
 					$price           = isset( $data['pk_price'] ) ? sanitize_text_field( wp_unslash( $data['pk_price'] ) ) : '';
@@ -502,8 +506,11 @@ class Partikulier_Form {
 		if ( '' !== $floor ) {
 			update_post_meta( $post_id, '_pk_floor', $floor );
 		}
-							update_post_meta( $post_id, '_pk_garage', $garage );
-							update_post_meta( $post_id, '_pk_elevator', $elevator );
+						update_post_meta( $post_id, '_pk_garage', $garage );
+						update_post_meta( $post_id, '_pk_elevator', $elevator );
+		if ( is_array( $pk_amenity_ids ) ) {
+			update_post_meta( $post_id, '_pk_amenities', $pk_amenity_ids );
+		}
 
 							// --- Taxonomies ---
 		Partikulier_Morocco_Places::with_all_languages( static function () use ( $post_id, $type, $action, $city ) {

@@ -4300,3 +4300,19 @@ html[dir="rtl"] .pk-single-price-note { direction: rtl; unicode-bidi: isolate; }
 .pk-submit-subtitle { margin-inline: auto; }
 .pk-stepper { max-width: 760px; margin-inline: auto; }
 .pk-stepper-status { text-align: center; }
+
+/* Pastilles d'équipements : contour cognac, pas le fond encré des anciens Oui/Non. */
+.pk-amenity { display: flex; flex-wrap: wrap; align-items: flex-start; gap: .55rem .75rem; }
+.pk-amenity .pk-label { margin: .55rem 0 0; }
+.pk-chips { display: flex; flex-wrap: wrap; gap: .45rem; flex: 1; min-width: 0; }
+.pk-chip { position: relative; display: inline-flex; align-items: center; min-height: 44px; padding: .45rem .85rem; border: 1px solid #d9d6ce; border-radius: 10px; background: #fff; color: var(--pk-ink); font-size: .9rem; line-height: 1.35; cursor: pointer; }
+.pk-chip-input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.pk-chip:has(.pk-chip-input:checked) { background: #fff; border: 2px solid #9b6a3d; color: var(--pk-primary-dark); font-weight: 600; }
+.pk-chip:has(.pk-chip-input:focus-visible) { outline: 2px solid var(--pk-primary); outline-offset: 2px; }
+.pk-chip[hidden] { display: none; }
+.pk-amenity-hint { margin: .35rem 0 0; color: #6b675f; font-size: .82rem; }
+.pk-amenity-row { display: flex; flex-wrap: wrap; gap: .45rem; list-style: none; margin: 1rem 0 0; padding: 0; }
+.pk-amenity-row li { padding: .4rem .75rem; border: 2px solid #9b6a3d; border-radius: 10px; background: #fff; color: var(--pk-primary-dark); font-size: .88rem; font-weight: 600; }
+@media (max-width: 560px) {
+	.pk-amenity { flex-direction: column; }
+}

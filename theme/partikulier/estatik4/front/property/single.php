@@ -388,6 +388,16 @@ $gallery_ids = array();
 						}
 						?>
 					</dl>
+					<?php
+					$pk_amenity_labels = class_exists( 'Partikulier_Amenities' ) ? Partikulier_Amenities::extra_labels( $post->ID ) : array();
+					if ( $pk_amenity_labels ) :
+						?>
+						<ul class="pk-amenity-row">
+							<?php foreach ( $pk_amenity_labels as $pk_amenity_label ) : ?>
+								<li><?php echo esc_html( $pk_amenity_label ); ?></li>
+							<?php endforeach; ?>
+						</ul>
+					<?php endif; ?>
 				</section>
 
 				<section class="pk-single-section pk-single-description" aria-label="<?php esc_attr_e( 'Description', 'partikulier' ); ?>">

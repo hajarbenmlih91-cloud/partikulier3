@@ -176,7 +176,7 @@ $types = get_terms( array(
 																$display_name = Partikulier_Listing_I18n::localized_type( $display_name, pll_current_language( 'slug' ) );
 														}
 												?>
-														<option value="<?php echo esc_attr( $term->term_id ); ?>" data-pk-slug="<?php echo esc_attr( $term->slug ); ?>"><?php echo esc_html( $display_name ); ?></option>
+														<option value="<?php echo esc_attr( $term->term_id ); ?>" data-pk-slug="<?php echo esc_attr( $term->slug ); ?>" <?php selected( $editing_post && has_term( (int) $term->term_id, 'es_type', $editing_post ) ); ?>><?php echo esc_html( $display_name ); ?></option>
 												<?php endforeach; ?>
 										</select>
 								</div>
@@ -296,8 +296,7 @@ $types = get_terms( array(
 										</div>
 								</div>
 
-								<div class="pk-grid-2">
-										<div data-pk-field="pk_floor" class="pk-field">
+						<div data-pk-field="pk_floor" class="pk-field">
 												<label class="pk-label" for="pk-floor"><?php esc_html_e( 'Étage', 'partikulier' ); ?></label>
 												<select id="pk-floor" name="pk_floor">
 														<option value="RDC"><?php esc_html_e( 'RDC', 'partikulier' ); ?></option>
@@ -305,38 +304,10 @@ $types = get_terms( array(
 																		<option value="<?php echo esc_attr( $i . ( 1 === $i ? 'er' : 'e' ) . ' étage' ); ?>"><?php printf( esc_html__( '%d%s étage', 'partikulier' ), (int) $i, ( 1 === $i ? 'er' : 'e' ) ); ?></option>
 																<?php endfor; ?>
 														<option value="Dernier étage"><?php esc_html_e( 'Dernier étage', 'partikulier' ); ?></option>
-												</select>
-										</div>
-										<div data-pk-field="pk_garage" class="pk-field">
-												<label class="pk-label"><?php esc_html_e( 'Garage ou sous-sol', 'partikulier' ); ?></label>
-												<div class="pk-toggle" data-toggle="pk_garage">
-														<button type="button" class="pk-toggle-btn" data-value="Oui"><?php esc_html_e( 'Oui', 'partikulier' ); ?></button>
-														<button type="button" class="pk-toggle-btn is-on" data-value="Non"><?php esc_html_e( 'Non', 'partikulier' ); ?></button>
-												</div>
-												<input type="hidden" name="pk_garage" value="Non">
-										</div>
-								</div>
+								</select>
+						</div>
 
-								<div class="pk-grid-2">
-										<div data-pk-field="pk_elevator" class="pk-field">
-												<label class="pk-label"><?php esc_html_e( 'Ascenseur', 'partikulier' ); ?></label>
-												<div class="pk-toggle" data-toggle="pk_elevator">
-														<button type="button" class="pk-toggle-btn" data-value="Oui"><?php esc_html_e( 'Oui', 'partikulier' ); ?></button>
-														<button type="button" class="pk-toggle-btn is-on" data-value="Non"><?php esc_html_e( 'Non', 'partikulier' ); ?></button>
-												</div>
-												<input type="hidden" name="pk_elevator" value="Non">
-										</div>
-										<div data-pk-field="pk_vis_a_vis" class="pk-field">
-												<label class="pk-label"><?php esc_html_e( 'Sans vis-à-vis', 'partikulier' ); ?></label>
-												<div class="pk-toggle" data-toggle="pk_vis_a_vis">
-														<button type="button" class="pk-toggle-btn" data-value="Oui"><?php esc_html_e( 'Oui', 'partikulier' ); ?></button>
-														<button type="button" class="pk-toggle-btn is-on" data-value="Non"><?php esc_html_e( 'Non', 'partikulier' ); ?></button>
-												</div>
-												<input type="hidden" name="pk_vis_a_vis" value="Non">
-										</div>
-								</div>
-
-								<div data-pk-field="pk_sunshine" class="pk-field">
+						<div data-pk-field="pk_sunshine" class="pk-field">
 										<label class="pk-label" for="pk-sunshine"><?php esc_html_e( 'Ensoleillement', 'partikulier' ); ?></label>
 										<select id="pk-sunshine" name="pk_sunshine">
 												<option value=""><?php esc_html_e( 'Indifférent / Non précisé', 'partikulier' ); ?></option>
@@ -347,16 +318,45 @@ $types = get_terms( array(
 										</select>
 								</div>
 
-								<div data-pk-field="pk_terrace" class="pk-field">
-										<label class="pk-label"><?php esc_html_e( 'Terrasse', 'partikulier' ); ?></label>
-										<div class="pk-toggle pk-toggle-half" data-toggle="pk_terrace">
-												<button type="button" class="pk-toggle-btn" data-value="Oui"><?php esc_html_e( 'Oui', 'partikulier' ); ?></button>
-												<button type="button" class="pk-toggle-btn is-on" data-value="Non"><?php esc_html_e( 'Non', 'partikulier' ); ?></button>
+						<?php
+						$pk_amenity_on = array();
+						if ( $editing_post && class_exists( 'Partikulier_Amenities' ) ) {
+							$pk_saved = get_post_meta( $editing_post->ID, '_pk_amenities', true );
+							if ( is_array( $pk_saved ) ) {
+								$pk_amenity_on = $pk_saved;
+							} else {
+								foreach ( Partikulier_Amenities::legacy_map() as $pk_aid => $pk_achamp ) {
+									if ( 'Oui' === get_post_meta( $editing_post->ID, '_' . $pk_achamp, true ) ) {
+										$pk_amenity_on[] = $pk_aid;
+									}
+								}
+							}
+						}
+						?>
+						<div class="pk-field pk-amenity-field" data-pk-amenities>
+								<div class="pk-amenity">
+										<span class="pk-label"><?php echo esc_html( class_exists( 'Partikulier_Amenities' ) ? Partikulier_Amenities::copy( 'group' ) : __( 'Équipements', 'partikulier' ) ); ?></span>
+										<div class="pk-chips">
+												<?php foreach ( class_exists( 'Partikulier_Amenities' ) ? Partikulier_Amenities::items() : array() as $pk_item ) : ?>
+														<?php
+														$pk_slugs = Partikulier_Amenities::slugs_for( $pk_item );
+														$pk_on    = in_array( $pk_item['id'], $pk_amenity_on, true );
+														?>
+														<label class="pk-chip" data-amenity="<?php echo esc_attr( $pk_item['id'] ); ?>" data-types="<?php echo esc_attr( $pk_slugs ? implode( ' ', $pk_slugs ) : '*' ); ?>">
+																<input class="pk-chip-input" type="checkbox" name="pk_amenities[]" value="<?php echo esc_attr( $pk_item['id'] ); ?>" <?php checked( $pk_on ); ?>>
+																<span><?php echo esc_html( Partikulier_Amenities::label( $pk_item ) ); ?></span>
+														</label>
+												<?php endforeach; ?>
 										</div>
-										<input type="hidden" name="pk_terrace" value="Non">
 								</div>
+								<p class="pk-amenity-hint"><?php echo esc_html( class_exists( 'Partikulier_Amenities' ) ? Partikulier_Amenities::copy( 'hint' ) : '' ); ?></p>
+								<input type="hidden" name="pk_amenities_present" value="1">
+								<?php foreach ( class_exists( 'Partikulier_Amenities' ) ? Partikulier_Amenities::legacy_map() : array() as $pk_aid => $pk_achamp ) : ?>
+										<input type="hidden" name="<?php echo esc_attr( $pk_achamp ); ?>" value="<?php echo in_array( $pk_aid, $pk_amenity_on, true ) ? 'Oui' : 'Non'; ?>" data-legacy-input="<?php echo esc_attr( $pk_aid ); ?>">
+								<?php endforeach; ?>
+						</div>
 
-								<div data-pk-field="pk_terrace_surface" class="pk-field" id="pk-terrace-surface-field" hidden>
+								<div data-pk-field="pk_terrace_surface" class="pk-field" id="pk-terrace-surface-field" <?php echo in_array( 'terrace', $pk_amenity_on, true ) ? '' : 'hidden'; ?>>
 										<label class="pk-label" for="pk-terrace-surface"><?php esc_html_e( 'Superficie de la terrasse (m²)', 'partikulier' ); ?></label>
 										<input type="number" id="pk-terrace-surface" name="pk_terrace_surface" min="1" inputmode="numeric">
 								</div>
@@ -498,10 +498,43 @@ $types = get_terms( array(
 										form.querySelectorAll( '.pk-step' ).forEach( function ( step ) {
 											var actions = step.querySelector( '.pk-step-actions' );
 											var legal   = step.querySelector( '.pk-step-legal' );
-											if ( actions ) { step.appendChild( actions ); }
-											if ( legal ) { step.appendChild( legal ); }
-										} );
-									}
+							if ( actions ) { step.appendChild( actions ); }
+							if ( legal ) { step.appendChild( legal ); }
+						} );
+						var amenity = form.querySelector( '[data-pk-amenities]' );
+						var surface = document.getElementById( 'pk-terrace-surface-field' );
+						if ( amenity && surface && surface.parentNode ) {
+							surface.parentNode.insertBefore( amenity, surface );
+						}
+						form.querySelectorAll( '.pk-chip' ).forEach( function ( chip ) {
+							var types = ( chip.getAttribute( 'data-types' ) || '' ).split( ' ' );
+							var cache = types.indexOf( '*' ) === -1 && types.indexOf( slug ) === -1;
+							chip.hidden = cache;
+							if ( cache ) {
+								var box = chip.querySelector( '.pk-chip-input' );
+								if ( box ) { box.checked = false; }
+							}
+						} );
+						syncPastilles();
+					}
+					function syncPastilles() {
+						form.querySelectorAll( '[data-legacy-input]' ).forEach( function ( hidden ) {
+							var id = hidden.getAttribute( 'data-legacy-input' );
+							var box = form.querySelector( '.pk-chip-input[value="' + id + '"]' );
+							var on = box && box.checked && ! box.closest( '.pk-chip' ).hidden;
+							hidden.value = on ? 'Oui' : 'Non';
+							if ( 'pk_terrace' === hidden.name ) {
+								var surfaceField = document.getElementById( 'pk-terrace-surface-field' );
+								if ( surfaceField ) { surfaceField.hidden = ! on; }
+								hidden.dispatchEvent( new Event( 'change', { bubbles: true } ) );
+							}
+						} );
+					}
+					form.addEventListener( 'change', function ( e ) {
+						if ( e.target && e.target.classList && e.target.classList.contains( 'pk-chip-input' ) ) {
+							syncPastilles();
+						}
+					} );
 
 									document.addEventListener( 'change', function ( e ) {
 										if ( e.target && e.target.id === 'pk-type' ) { appliquer(); }

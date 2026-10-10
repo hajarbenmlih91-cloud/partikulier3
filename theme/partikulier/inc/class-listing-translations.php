@@ -293,7 +293,7 @@ class Partikulier_Listing_Translations {
 			'es_property_bedrooms', 'es_property_bathrooms', 'es_property_gallery',
 			'_pk_bedrooms_label', '_pk_living_rooms', '_pk_living_rooms_label',
 			'_pk_bathrooms_label', '_pk_terrace', '_pk_terrace_surface',
-			'_pk_vis_a_vis', '_pk_sunshine', '_pk_floor', '_pk_garage', '_pk_elevator',
+			'_pk_vis_a_vis', '_pk_amenities', '_pk_sunshine', '_pk_floor', '_pk_garage', '_pk_elevator',
 			'_pk_owner_name', '_pk_owner_email', '_pk_owner_phone', '_pk_owner_role',
 			'_pk_status', '_pk_place_status',
 		);
