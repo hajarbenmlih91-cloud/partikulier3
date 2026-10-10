@@ -4316,3 +4316,5 @@ html[dir="rtl"] .pk-single-price-note { direction: rtl; unicode-bidi: isolate; }
 @media (max-width: 560px) {
 	.pk-amenity { flex-direction: column; }
 }
+#pk-furnished-vide[hidden] { display: none; }
+#pk-furnished .pk-choice-grid:has(#pk-furnished-vide[hidden]) { grid-template-columns: 1fr; }

@@ -228,16 +228,49 @@
 			form.querySelectorAll('.pk-choice input[name="' + radio.name + '"]').forEach(function (r) {
 				r.closest(".pk-choice").classList.toggle("is-active", r.checked);
 			});
-			if (radio.name === "pk_transaction") {
-				document.getElementById("pk-action-mode").value = radio.value;
-			}
-			if (radio.name === "pk_role" && refreshAgentRefusal()) {
-				agentRefusal.scrollIntoView({ behavior: "smooth", block: "center" });
-			}
+		if (radio.name === "pk_transaction") {
+			document.getElementById("pk-action-mode").value = radio.value;
+		}
+		if (radio.name === "pk_transaction" || radio.name === "pk_rent_kind") {
+			refreshRent();
+		}
+		if (radio.name === "pk_role" && refreshAgentRefusal()) {
+			agentRefusal.scrollIntoView({ behavior: "smooth", block: "center" });
+		}
 		});
 	});
 
+	function refreshRent() {
+		var tx = form.querySelector('input[name="pk_transaction"]:checked');
+		var kind = form.querySelector('input[name="pk_rent_kind"]:checked');
+		var rent = document.getElementById("pk-rent-kind");
+		var furn = document.getElementById("pk-furnished");
+		var vide = document.getElementById("pk-furnished-vide");
+		var locked = document.getElementById("pk-furnished-locked");
+		var meuble = form.querySelector('input[name="pk_furnished"][value="meuble"]');
+		var isRent = tx && tx.value === "louer";
+		var seasonal = isRent && kind && kind.value === "saisonnier";
+		if (rent) rent.hidden = ! isRent;
+		if (furn) furn.hidden = ! isRent;
+		if (vide) {
+			vide.hidden = seasonal;
+			var input = vide.querySelector("input");
+			if (input) {
+				input.disabled = seasonal;
+				if (seasonal && meuble) {
+					meuble.checked = true;
+					meuble.closest(".pk-choice").classList.add("is-active");
+					input.checked = false;
+					input.closest(".pk-choice").classList.remove("is-active");
+				}
+			}
+		}
+		if (locked) locked.hidden = ! seasonal;
+		if (meuble) meuble.required = isRent && ! seasonal;
+	}
+
 	refreshAgentRefusal();
+	refreshRent();
 
 	/* ------------------------------------------------ autocompletion */
 

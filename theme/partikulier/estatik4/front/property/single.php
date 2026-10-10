@@ -373,8 +373,10 @@ $gallery_ids = array();
 							'es_property_lot_size' => array( $pk_lot_size, Partikulier_Localization::translate_polylang_string( 'Terrain', 'Terrain', 'partikulier' ), Partikulier_Localization::translate_polylang_string( 'm²', 'm²', 'partikulier' ), '' ),
 							'es_property_year_built' => array( $pk_year, Partikulier_Localization::translate_polylang_string( 'Année de construction', 'Année de construction', 'partikulier' ), '', '', 'brut' ),
 							'es_property_year_remodeled' => array( $pk_renovated, Partikulier_Localization::translate_polylang_string( 'Rénovation', 'Rénovation', 'partikulier' ), '', '', 'brut' ),
-							'es_garages' => array( $pk_parking, Partikulier_Localization::translate_polylang_string( 'Parkings', 'Parkings', 'partikulier' ), '', '' ),
-						);
+						'es_garages' => array( $pk_parking, Partikulier_Localization::translate_polylang_string( 'Parkings', 'Parkings', 'partikulier' ), '', '' ),
+						'_pk_rent' => array( 'saisonnier' === get_post_meta( $post->ID, '_pk_rent', true ) ? __( 'Saisonnière', 'partikulier' ) : '', __( 'Location', 'partikulier' ), '', '' ),
+						'_pk_furnished' => array( class_exists( 'Partikulier_Amenities' ) && in_array( get_post_meta( $post->ID, '_pk_furnished', true ), array( 'meuble', 'vide' ), true ) ? Partikulier_Amenities::furnish_label( get_post_meta( $post->ID, '_pk_furnished', true ) ) : '', class_exists( 'Partikulier_Amenities' ) ? Partikulier_Amenities::furnish_label( 'title' ) : '', '', '' ),
+					);
 						foreach ( $fields as $key => $f ) {
 							if ( '' !== $f[0] && null !== $f[0] ) {
 								printf(

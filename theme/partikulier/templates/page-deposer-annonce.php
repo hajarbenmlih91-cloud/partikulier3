@@ -99,7 +99,30 @@ $types = get_terms( array(
 
 								<input type="hidden" name="pk_city_name" id="pk-city-name" value="">
 						<input type="hidden" name="pk_district_name" id="pk-district-name" value="">
-						<input type="hidden" name="pk_action_mode" id="pk-action-mode" value="vendre">
+						<?php
+						$pk_edit_tx   = 'vendre';
+						$pk_edit_rent = 'longue';
+						$pk_edit_furn = '';
+						if ( $editing_post ) {
+							$pk_status = wp_get_object_terms( $editing_post->ID, 'es_status' );
+							if ( $pk_status && ! is_wp_error( $pk_status ) ) {
+								$pk_status_name = function_exists( 'remove_accents' ) ? remove_accents( $pk_status[0]->name ) : $pk_status[0]->name;
+								$pk_status_name = strtolower( $pk_status_name );
+								if ( false !== strpos( $pk_status_name, 'lou' ) || false !== strpos( $pk_status_name, 'rent' ) ) {
+									$pk_edit_tx = 'louer';
+								}
+							}
+							if ( 'saisonnier' === get_post_meta( $editing_post->ID, '_pk_rent', true ) ) {
+								$pk_edit_tx   = 'louer';
+								$pk_edit_rent = 'saisonnier';
+							}
+							$pk_saved_furn = get_post_meta( $editing_post->ID, '_pk_furnished', true );
+							if ( in_array( $pk_saved_furn, array( 'meuble', 'vide' ), true ) ) {
+								$pk_edit_furn = $pk_saved_furn;
+							}
+						}
+						?>
+						<input type="hidden" name="pk_action_mode" id="pk-action-mode" value="<?php echo esc_attr( $pk_edit_tx ); ?>">
 
 						<!-- ============ ETAPE 1 ============ -->
 						<section class="pk-card pk-step" data-step="1">
@@ -135,18 +158,50 @@ $types = get_terms( array(
 								<div class="pk-field">
 										<label class="pk-label"><?php esc_html_e( 'Je souhaite', 'partikulier' ); ?> <span class="pk-req">*</span></label>
 										<div class="pk-choice-grid" role="group">
-												<label class="pk-choice is-active">
-														<input type="radio" name="pk_transaction" value="vendre" checked>
-														<strong><?php esc_html_e( 'Vendre', 'partikulier' ); ?></strong>
-														<span><?php esc_html_e( 'Recevoir des contacts d’acheteurs.', 'partikulier' ); ?></span>
-												</label>
-												<label class="pk-choice">
-														<input type="radio" name="pk_transaction" value="louer">
-														<strong><?php esc_html_e( 'Louer', 'partikulier' ); ?></strong>
-														<span><?php esc_html_e( 'Recevoir des demandes de visite.', 'partikulier' ); ?></span>
-												</label>
-										</div>
-								</div>
+								<label class="pk-choice<?php echo 'vendre' === $pk_edit_tx ? ' is-active' : ''; ?>">
+										<input type="radio" name="pk_transaction" value="vendre" <?php checked( $pk_edit_tx, 'vendre' ); ?>>
+										<strong><?php esc_html_e( 'Vendre', 'partikulier' ); ?></strong>
+										<span><?php esc_html_e( 'Recevoir des contacts d’acheteurs.', 'partikulier' ); ?></span>
+								</label>
+								<label class="pk-choice<?php echo 'louer' === $pk_edit_tx ? ' is-active' : ''; ?>">
+										<input type="radio" name="pk_transaction" value="louer" <?php checked( $pk_edit_tx, 'louer' ); ?>>
+										<strong><?php esc_html_e( 'Louer', 'partikulier' ); ?></strong>
+										<span><?php esc_html_e( 'Recevoir des demandes de visite.', 'partikulier' ); ?></span>
+								</label>
+						</div>
+				</div>
+
+				<div class="pk-field" id="pk-rent-kind" <?php echo 'louer' === $pk_edit_tx ? '' : 'hidden'; ?>>
+						<label class="pk-label"><?php esc_html_e( 'Location', 'partikulier' ); ?></label>
+						<div class="pk-choice-grid" role="group">
+								<label class="pk-choice<?php echo 'longue' === $pk_edit_rent ? ' is-active' : ''; ?>">
+										<input type="radio" name="pk_rent_kind" value="longue" <?php checked( $pk_edit_rent, 'longue' ); ?>>
+										<strong><?php echo esc_html( __( 'Longue durée', 'partikulier' ) ); ?></strong>
+										<span><?php echo esc_html( class_exists( 'Partikulier_Amenities' ) ? Partikulier_Amenities::furnish_label( 'meuble' ) . ' / ' . Partikulier_Amenities::furnish_label( 'vide' ) : '' ); ?></span>
+								</label>
+								<label class="pk-choice<?php echo 'saisonnier' === $pk_edit_rent ? ' is-active' : ''; ?>">
+										<input type="radio" name="pk_rent_kind" value="saisonnier" <?php checked( $pk_edit_rent, 'saisonnier' ); ?>>
+										<strong><?php echo esc_html( __( 'Saisonnière', 'partikulier' ) ); ?></strong>
+										<span><?php echo esc_html( class_exists( 'Partikulier_Amenities' ) ? Partikulier_Amenities::furnish_label( 'meuble' ) : '' ); ?></span>
+								</label>
+						</div>
+				</div>
+
+				<div class="pk-field" id="pk-furnished" <?php echo 'louer' === $pk_edit_tx ? '' : 'hidden'; ?>>
+						<input type="hidden" name="pk_rent_present" value="1">
+						<label class="pk-label"><?php echo esc_html( class_exists( 'Partikulier_Amenities' ) ? Partikulier_Amenities::furnish_label( 'title' ) : __( 'Ameublement', 'partikulier' ) ); ?></label>
+						<div class="pk-choice-grid" role="group">
+								<label class="pk-choice<?php echo 'meuble' === $pk_edit_furn ? ' is-active' : ''; ?>">
+										<input type="radio" name="pk_furnished" value="meuble" <?php checked( $pk_edit_furn, 'meuble' ); ?> <?php echo ( 'louer' === $pk_edit_tx && 'saisonnier' !== $pk_edit_rent ) ? 'required' : ''; ?>>
+										<strong><?php echo esc_html( class_exists( 'Partikulier_Amenities' ) ? Partikulier_Amenities::furnish_label( 'meuble' ) : __( 'Meublé', 'partikulier' ) ); ?></strong>
+								</label>
+								<label class="pk-choice<?php echo 'vide' === $pk_edit_furn ? ' is-active' : ''; ?>" id="pk-furnished-vide" <?php echo 'saisonnier' === $pk_edit_rent ? 'hidden' : ''; ?>>
+										<input type="radio" name="pk_furnished" value="vide" <?php checked( $pk_edit_furn, 'vide' ); ?>>
+										<strong><?php echo esc_html( class_exists( 'Partikulier_Amenities' ) ? Partikulier_Amenities::furnish_label( 'vide' ) : __( 'Vide', 'partikulier' ) ); ?></strong>
+								</label>
+						</div>
+						<p class="pk-amenity-hint" id="pk-furnished-locked" <?php echo 'saisonnier' === $pk_edit_rent ? '' : 'hidden'; ?>><?php echo esc_html( class_exists( 'Partikulier_Amenities' ) ? Partikulier_Amenities::furnish_label( 'note' ) : '' ); ?></p>
+				</div>
 
 								<div data-pk-field="pk_type" class="pk-field">
 										<label class="pk-label" for="pk-type"><?php esc_html_e( 'Type de bien', 'partikulier' ); ?> <span class="pk-req">*</span></label>
