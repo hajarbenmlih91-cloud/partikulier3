@@ -293,6 +293,7 @@ $partikulier_modules = array(
 		'/inc/class-automation-bridge.php',
 		'/inc/class-payment-foundation.php',
 		'/inc/class-page-templates.php',
+		'/inc/class-tunnel-preview.php',
 		'/inc/class-required-page-translations.php',
 		'/inc/class-required-pages.php',
 		'/inc/class-morocco-places.php',
