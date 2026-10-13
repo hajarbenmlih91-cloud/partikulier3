@@ -141,9 +141,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 										<?php
 										$pk_raw_langs = function_exists( 'pll_the_languages' ) ? pll_the_languages( array( 'raw' => 1 ) ) : array();
 										$pk_is_listings = defined( 'PARTIKULIER_ESTATIK_POST_TYPE' ) && is_post_type_archive( PARTIKULIER_ESTATIK_POST_TYPE );
+										$pk_on_deposit  = class_exists( 'Partikulier_Tunnel_Preview' ) && Partikulier_Tunnel_Preview::is_deposit_request();
 										foreach ( array( 'fr', 'ar', 'en' ) as $pk_slug ) :
 												$pk_target_url = function_exists( 'pk_localized_home_url' ) ? pk_localized_home_url( $pk_slug ) : home_url( '/' . $pk_slug . '/' );
-												if ( $pk_is_listings ) {
+												if ( $pk_on_deposit ) {
+														$pk_target_url = Partikulier_Tunnel_Preview::deposit_url( $pk_slug );
+												} elseif ( $pk_is_listings ) {
 														$pk_target_url = trailingslashit( $pk_target_url ) . 'annonces/';
 												} elseif ( ! empty( $pk_raw_langs[ $pk_slug ]['url'] ) && false === strpos( (string) $pk_raw_langs[ $pk_slug ]['url'], '/accueil-' ) ) {
 														$pk_target_url = $pk_raw_langs[ $pk_slug ]['url'];
