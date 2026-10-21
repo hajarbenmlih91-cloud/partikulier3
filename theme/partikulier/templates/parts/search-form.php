@@ -1,8 +1,8 @@
 <?php
 /**
- * Barre de recherche : onglets vente / location au-dessus, bouton Filtres
- * qui ouvre le panneau (surface, prix, chambres, salles de bain, équipements).
- * Charte tuk.ma. Les libellés passent par le dictionnaire déjà validé.
+ * Barre de recherche : trois onglets (vente, location, saisonnière).
+ * Le panneau Filtres ne s'ouvre qu'après un type de bien. Son contenu
+ * suit la transaction et le type. Charte tuk.ma. Libellés déjà validés.
  *
  * @package Partikulier
  * @var string $variant 'hero'|'archive'|'compact'
@@ -41,6 +41,7 @@ $pk_t = static function ( $fr ) use ( $pk_find_lang ) {
 	$extra = array(
 		'À vendre'            => array( 'en' => 'For sale', 'ar' => 'للبيع' ),
 		'À louer'             => array( 'en' => 'For rent', 'ar' => 'للكراء' ),
+		'Saisonnière'         => array( 'en' => 'Seasonal', 'ar' => 'موسمية' ),
 		'Prix'                => array( 'en' => 'Price', 'ar' => 'السعر' ),
 		'Voir les résultats'  => array( 'en' => 'Show results', 'ar' => 'عرض النتائج' ),
 		'Équipements'         => array( 'en' => 'Amenities', 'ar' => 'التجهيزات' ),
@@ -71,7 +72,57 @@ $pk_action = $pk_scalar( 'es_action' );
 if ( ! in_array( $pk_action, array( 'a-vendre', 'a-louer' ), true ) ) {
 	$pk_action = 'a-vendre';
 }
-$pk_is_rent   = ( 'a-louer' === $pk_action );
+$pk_intent_raw = $pk_scalar( 'pk_intent' );
+if ( in_array( $pk_intent_raw, array( 'a-vendre', 'a-louer', 'saisonnier' ), true ) ) {
+	$pk_intent = $pk_intent_raw;
+} elseif ( 'saisonnier' === $pk_scalar( 'pk_rent' ) ) {
+	$pk_intent = 'saisonnier';
+} elseif ( 'a-louer' === $pk_action ) {
+	$pk_intent = 'a-louer';
+} else {
+	$pk_intent = 'a-vendre';
+}
+$pk_is_rent      = in_array( $pk_intent, array( 'a-louer', 'saisonnier' ), true );
+$pk_action_value = $pk_is_rent ? 'a-louer' : 'a-vendre';
+$pk_rent_value   = ( 'saisonnier' === $pk_intent ) ? 'saisonnier' : '';
+$pk_family_of    = static function ( $slug ) {
+	$slug = sanitize_title( (string) $slug );
+	$slug = preg_replace( '/-(fr|en|ar)$/', '', $slug );
+	if ( 'terrain' === $slug ) {
+		return 'terrain';
+	}
+	if ( 'studio' === $slug ) {
+		return 'studio';
+	}
+	if ( 'immeuble' === $slug ) {
+		return 'immeuble';
+	}
+	return '' === $slug ? '' : 'logement';
+};
+$pk_tx_codes = static function ( $item ) {
+	$liste = isset( $item['ctx'] ) && is_array( $item['ctx'] ) ? $item['ctx'] : array();
+	$codes = array();
+	if ( in_array( 'vente', $liste, true ) ) {
+		$codes[] = 'vente';
+	}
+	if ( array_intersect( $liste, array( 'vide', 'meuble' ) ) ) {
+		$codes[] = 'louer';
+	}
+	if ( in_array( 'saisonnier', $liste, true ) || in_array( 'meuble', $liste, true ) ) {
+		$codes[] = 'saisonnier';
+	}
+	return $codes;
+};
+$pk_chip_types = static function ( $id ) {
+	$building = array( 'elevator', 'garage', 'garage_m', 'security', 'pool', 'gym', 'concierge', 'facade', 'pets' );
+	if ( in_array( $id, $building, true ) ) {
+		return 'logement studio immeuble';
+	}
+	if ( 'garden' === $id ) {
+		return 'logement';
+	}
+	return 'logement studio';
+};
 $pk_price_cap = $pk_is_rent ? $pk_rent_max : $pk_sale_max;
 $pk_price_step = $pk_is_rent ? $pk_rent_step : $pk_sale_step;
 
@@ -120,7 +171,7 @@ $pk_fmt = static function ( $n ) {
 };
 $pk_unit_sale = ( 'ar' === $pk_find_lang ) ? 'درهم' : 'DH';
 $pk_unit_rent = ( 'ar' === $pk_find_lang ) ? 'درهم / شهر' : ( 'en' === $pk_find_lang ? 'DH/month' : 'DH / mois' );
-$pk_price_unit = $pk_is_rent ? $pk_unit_rent : $pk_unit_sale;
+$pk_price_unit = ( 'saisonnier' === $pk_intent ) ? $pk_unit_sale : ( $pk_is_rent ? $pk_unit_rent : $pk_unit_sale );
 $pk_fill = static function ( $min, $max, $cap ) {
 	$span = max( 1, (int) $cap );
 	$start = max( 0, min( 100, ( $min / $span ) * 100 ) );
@@ -132,37 +183,46 @@ $pk_types = get_terms( array( 'taxonomy' => PARTIKULIER_ESTATIK_TYPE_TAXONOMY, '
 $pk_types = is_wp_error( $pk_types ) ? array() : $pk_types;
 
 $pk_amenities = array();
+$pk_tx_now    = ( 'saisonnier' === $pk_intent ) ? 'saisonnier' : ( 'a-louer' === $pk_intent ? 'louer' : 'vente' );
+$pk_family_now = $pk_family_of( $pk_type );
 if ( class_exists( 'Partikulier_Amenities' ) ) {
 	foreach ( Partikulier_Amenities::items() as $pk_item ) {
 		if ( ! is_array( $pk_item ) || empty( $pk_item['id'] ) ) {
 			continue;
 		}
-		$pk_ctx = isset( $pk_item['ctx'] ) && is_array( $pk_item['ctx'] ) ? $pk_item['ctx'] : array();
-		if ( $pk_ctx && ! array_intersect( $pk_ctx, array( 'vente', 'vide' ) ) ) {
-			continue;
-		}
-		$pk_amenities[] = $pk_item;
+		$pk_item['pk_tx']    = $pk_tx_codes( $pk_item );
+		$pk_item['pk_types'] = $pk_chip_types( $pk_item['id'] );
+		$pk_amenities[]      = $pk_item;
 	}
 }
 $pk_amenity_title = class_exists( 'Partikulier_Amenities' ) ? Partikulier_Amenities::copy( 'group' ) : $pk_t( 'Équipements' );
-
-$pk_panel_open = ( $pk_price_min > 0 || $pk_price_max_val < $pk_price_cap || $pk_area_min > 0 || $pk_area_max_val < $pk_area_max || $pk_beds > 0 || $pk_baths > 0 || ! empty( $pk_selected_amenities ) );
-$pk_clear = add_query_arg( 'es_action', $pk_action, $archive );
-if ( '' !== $pk_rent ) {
-	$pk_clear = add_query_arg( 'pk_rent', $pk_rent, $pk_clear );
+$pk_amenity_visible = false;
+foreach ( $pk_amenities as $pk_item ) {
+	if ( $pk_filter_ready && in_array( $pk_tx_now, (array) $pk_item['pk_tx'], true ) && false !== strpos( ' ' . $pk_item['pk_types'] . ' ', ' ' . $pk_family_now . ' ' ) ) {
+		$pk_amenity_visible = true;
+		break;
+	}
 }
+
+$pk_filter_ready = ( '' !== $pk_type );
+$pk_panel_open = $pk_filter_ready && ( $pk_price_min > 0 || $pk_price_max_val < $pk_price_cap || $pk_area_min > 0 || $pk_area_max_val < $pk_area_max || $pk_beds > 0 || $pk_baths > 0 || ! empty( $pk_selected_amenities ) );
+$pk_clear = add_query_arg( 'pk_intent', $pk_intent, $archive );
 
 $pk_city_placeholder = class_exists( 'Partikulier_Localization' )
 	? Partikulier_Localization::translate_polylang_string( 'Ville, quartier…', 'Ville, quartier…', 'partikulier' )
 	: 'Ville, quartier…';
 ?>
-<form class="pk-search pk-search-<?php echo esc_attr( $variant ); ?> pk-find" action="<?php echo esc_url( $archive ); ?>" method="get" role="search" data-pk-live="<?php echo esc_attr( $variant ); ?>" aria-label="<?php echo esc_attr( $pk_t( 'Rechercher' ) ); ?>">
-	<div class="pk-find-tabs" role="radiogroup" aria-label="<?php echo esc_attr( $pk_t( 'À vendre' ) . ' / ' . $pk_t( 'À louer' ) ); ?>">
-		<input class="screen-reader-text pk-find-tab-input" type="radio" name="es_action" id="pk-find-sale" value="a-vendre" <?php checked( $pk_action, 'a-vendre' ); ?>>
+<form class="pk-search pk-search-<?php echo esc_attr( $variant ); ?> pk-find<?php echo $pk_filter_ready ? '' : ' is-filter-locked'; ?>" action="<?php echo esc_url( $archive ); ?>" method="get" role="search" data-pk-live="<?php echo esc_attr( $variant ); ?>" aria-label="<?php echo esc_attr( $pk_t( 'Rechercher' ) ); ?>">
+	<div class="pk-find-tabs" role="radiogroup" aria-label="<?php echo esc_attr( $pk_t( 'À vendre' ) . ' / ' . $pk_t( 'À louer' ) . ' / ' . $pk_t( 'Saisonnière' ) ); ?>">
+		<input class="screen-reader-text pk-find-tab-input" type="radio" name="pk_intent" id="pk-find-sale" value="a-vendre" <?php checked( $pk_intent, 'a-vendre' ); ?>>
 		<label class="pk-find-tab" for="pk-find-sale"><?php echo esc_html( $pk_t( 'À vendre' ) ); ?></label>
-		<input class="screen-reader-text pk-find-tab-input" type="radio" name="es_action" id="pk-find-rent" value="a-louer" <?php checked( $pk_action, 'a-louer' ); ?>>
+		<input class="screen-reader-text pk-find-tab-input" type="radio" name="pk_intent" id="pk-find-rent" value="a-louer" <?php checked( $pk_intent, 'a-louer' ); ?>>
 		<label class="pk-find-tab" for="pk-find-rent"><?php echo esc_html( $pk_t( 'À louer' ) ); ?></label>
+		<input class="screen-reader-text pk-find-tab-input" type="radio" name="pk_intent" id="pk-find-season" value="saisonnier" <?php checked( $pk_intent, 'saisonnier' ); ?>>
+		<label class="pk-find-tab" for="pk-find-season"><?php echo esc_html( $pk_t( 'Saisonnière' ) ); ?></label>
 	</div>
+	<input type="hidden" name="es_action" value="<?php echo esc_attr( $pk_action_value ); ?>">
+	<input type="hidden" name="pk_rent" value="<?php echo esc_attr( $pk_rent_value ); ?>">
 
 	<input class="pk-find-open" type="checkbox" id="pk-find-open" aria-controls="pk-find-panel" <?php checked( $pk_panel_open ); ?>>
 	<label class="pk-find-backdrop" for="pk-find-open"></label>
@@ -183,7 +243,7 @@ $pk_city_placeholder = class_exists( 'Partikulier_Localization' )
 				<option value=""><?php echo esc_html( $pk_t( 'Tous' ) ); ?></option>
 				<?php foreach ( (array) $pk_types as $pk_term ) : ?>
 					<?php if ( ! $pk_term instanceof WP_Term ) { continue; } ?>
-					<option value="<?php echo esc_attr( $pk_term->slug ); ?>" <?php selected( $pk_type, $pk_term->slug ); ?>><?php echo esc_html( class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_taxonomy_label( $pk_term->name ) : $pk_term->name ); ?></option>
+					<option value="<?php echo esc_attr( $pk_term->slug ); ?>" data-family="<?php echo esc_attr( $pk_family_of( $pk_term->slug ) ); ?>" <?php selected( $pk_type, $pk_term->slug ); ?>><?php echo esc_html( class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_taxonomy_label( $pk_term->name ) : $pk_term->name ); ?></option>
 				<?php endforeach; ?>
 			</select>
 			<div class="pk-find-type-ui">
@@ -196,13 +256,13 @@ $pk_city_placeholder = class_exists( 'Partikulier_Localization' )
 					<button type="button" class="pk-find-type-opt" role="option" data-value=""><?php echo esc_html( $pk_t( 'Tous' ) ); ?></button>
 					<?php foreach ( (array) $pk_types as $pk_term ) : ?>
 						<?php if ( ! $pk_term instanceof WP_Term ) { continue; } ?>
-						<button type="button" class="pk-find-type-opt" role="option" data-value="<?php echo esc_attr( $pk_term->slug ); ?>"><?php echo esc_html( class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_taxonomy_label( $pk_term->name ) : $pk_term->name ); ?></button>
+						<button type="button" class="pk-find-type-opt" role="option" data-value="<?php echo esc_attr( $pk_term->slug ); ?>" data-family="<?php echo esc_attr( $pk_family_of( $pk_term->slug ) ); ?>"><?php echo esc_html( class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_taxonomy_label( $pk_term->name ) : $pk_term->name ); ?></button>
 					<?php endforeach; ?>
 				</div>
 			</div>
 		</div>
 
-		<label class="pk-find-filter" for="pk-find-open">
+		<label class="pk-find-filter" for="pk-find-open"<?php echo $pk_filter_ready ? '' : ' aria-disabled="true"'; ?>>
 			<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M4 7h16M4 12h16M4 17h16"/><circle cx="9" cy="7" r="2.2" fill="currentColor"/><circle cx="15" cy="12" r="2.2" fill="currentColor"/><circle cx="8" cy="17" r="2.2" fill="currentColor"/></svg>
 			<span><?php echo esc_html( $pk_t( 'Filtres' ) ); ?></span>
 		</label>
@@ -212,7 +272,7 @@ $pk_city_placeholder = class_exists( 'Partikulier_Localization' )
 
 	<div class="pk-find-panel" id="pk-find-panel">
 		<div class="pk-find-split">
-			<div class="pk-find-range" data-pk-range data-pk-price data-unit="<?php echo esc_attr( $pk_price_unit ); ?>" data-sale-max="<?php echo esc_attr( $pk_sale_max ); ?>" data-rent-max="<?php echo esc_attr( $pk_rent_max ); ?>" data-sale-step="<?php echo esc_attr( $pk_sale_step ); ?>" data-rent-step="<?php echo esc_attr( $pk_rent_step ); ?>" data-sale-unit="<?php echo esc_attr( $pk_unit_sale ); ?>" data-rent-unit="<?php echo esc_attr( $pk_unit_rent ); ?>">
+			<div class="pk-find-range" data-pk-range data-pk-price data-unit="<?php echo esc_attr( $pk_price_unit ); ?>" data-sale-max="<?php echo esc_attr( $pk_sale_max ); ?>" data-rent-max="<?php echo esc_attr( $pk_rent_max ); ?>" data-sale-step="<?php echo esc_attr( $pk_sale_step ); ?>" data-rent-step="<?php echo esc_attr( $pk_rent_step ); ?>" data-sale-unit="<?php echo esc_attr( $pk_unit_sale ); ?>" data-rent-unit="<?php echo esc_attr( $pk_unit_rent ); ?>" data-season-max="<?php echo esc_attr( $pk_rent_max ); ?>" data-season-step="<?php echo esc_attr( $pk_rent_step ); ?>" data-season-unit="<?php echo esc_attr( $pk_unit_sale ); ?>">
 				<div class="pk-find-range-head">
 					<span class="pk-find-range-name"><?php echo esc_html( $pk_t( 'Prix' ) ); ?></span>
 					<span class="pk-find-readout" dir="ltr"><?php echo esc_html( $pk_fmt( $pk_price_min ) . ' – ' . $pk_fmt( $pk_price_max_val ) . ' ' . $pk_price_unit ); ?></span>
@@ -239,8 +299,8 @@ $pk_city_placeholder = class_exists( 'Partikulier_Localization' )
 			</div>
 		</div>
 
-		<div class="pk-find-split pk-find-rooms">
-			<fieldset class="pk-find-pills">
+		<div class="pk-find-split pk-find-rooms"<?php echo ( $pk_filter_ready && in_array( $pk_family_now, array( 'logement', 'studio', 'immeuble' ), true ) ) ? '' : ' hidden'; ?>>
+			<fieldset class="pk-find-pills" data-pk-field="bedrooms" data-pk-types="logement immeuble"<?php echo ( $pk_filter_ready && false !== strpos( ' logement immeuble ', ' ' . $pk_family_now . ' ' ) ) ? '' : ' hidden'; ?>>
 				<legend><?php echo esc_html( $pk_t( 'Chambres' ) ); ?></legend>
 				<input class="screen-reader-text" type="radio" name="es_bedrooms_min" value="" <?php checked( $pk_beds, 0 ); ?>>
 				<?php foreach ( array( 1, 2, 3, 4 ) as $pk_n ) : ?>
@@ -250,7 +310,7 @@ $pk_city_placeholder = class_exists( 'Partikulier_Localization' )
 						</label>
 					<?php endforeach; ?>
 				</fieldset>
-			<fieldset class="pk-find-pills">
+			<fieldset class="pk-find-pills" data-pk-field="bathrooms" data-pk-types="logement studio immeuble"<?php echo ( $pk_filter_ready && false !== strpos( ' logement studio immeuble ', ' ' . $pk_family_now . ' ' ) ) ? '' : ' hidden'; ?>>
 				<legend><?php echo esc_html( $pk_t( 'Salles de bains' ) ); ?></legend>
 				<input class="screen-reader-text" type="radio" name="es_bathrooms_min" value="" <?php checked( $pk_baths, 0 ); ?>>
 				<?php foreach ( array( 1, 2, 3, 4 ) as $pk_n ) : ?>
@@ -263,13 +323,16 @@ $pk_city_placeholder = class_exists( 'Partikulier_Localization' )
 		</div>
 
 		<?php if ( $pk_amenities ) : ?>
-			<div class="pk-find-amenities">
+			<div class="pk-find-amenities"<?php echo $pk_amenity_visible ? '' : ' hidden'; ?>>
 				<p class="pk-find-label"><?php echo esc_html( $pk_amenity_title ); ?></p>
 				<div class="pk-find-chips">
 					<?php foreach ( $pk_amenities as $pk_item ) : ?>
-						<?php $pk_id = sanitize_key( $pk_item['id'] ); ?>
-						<label class="pk-find-chip">
-							<input type="checkbox" name="pk_amenity[]" value="<?php echo esc_attr( $pk_id ); ?>" <?php checked( in_array( $pk_id, $pk_selected_amenities, true ) ); ?>>
+						<?php
+						$pk_id = sanitize_key( $pk_item['id'] );
+						$pk_chip_on = $pk_filter_ready && in_array( $pk_tx_now, (array) $pk_item['pk_tx'], true ) && false !== strpos( ' ' . $pk_item['pk_types'] . ' ', ' ' . $pk_family_now . ' ' );
+						?>
+						<label class="pk-find-chip" data-pk-tx="<?php echo esc_attr( implode( ' ', $pk_item['pk_tx'] ) ); ?>" data-pk-types="<?php echo esc_attr( $pk_item['pk_types'] ); ?>"<?php echo $pk_chip_on ? '' : ' hidden'; ?>>
+							<input type="checkbox" name="pk_amenity[]" value="<?php echo esc_attr( $pk_id ); ?>" <?php checked( $pk_chip_on && in_array( $pk_id, $pk_selected_amenities, true ) ); ?>>
 							<span><?php echo esc_html( Partikulier_Amenities::label( $pk_item ) ); ?></span>
 						</label>
 					<?php endforeach; ?>
@@ -283,7 +346,4 @@ $pk_city_placeholder = class_exists( 'Partikulier_Localization' )
 		</div>
 	</div>
 
-	<?php if ( '' !== $pk_rent ) : ?>
-		<input type="hidden" name="pk_rent" value="<?php echo esc_attr( $pk_rent ); ?>">
-	<?php endif; ?>
-</form>
+	</form>

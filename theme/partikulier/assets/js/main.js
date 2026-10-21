@@ -1255,14 +1255,21 @@
 			out.textContent = group(lo) + " – " + group(hi) + (unit ? " " + unit : "");
 		}
 	}
-	function setPriceScale(isRent, keep) {
+	function priceMode() {
+		var input = root.querySelector(".pk-find-tab-input:checked");
+		var value = input ? input.value : "a-vendre";
+		if (value === "saisonnier") return "season";
+		if (value === "a-louer") return "rent";
+		return "sale";
+	}
+	function setPriceScale(mode, keep) {
 		var box = root.querySelector("[data-pk-price]");
 		if (!box) return;
 		var min = box.querySelector(".pk-find-range-min");
 		var max = box.querySelector(".pk-find-range-max");
-		var cap = Number(isRent ? box.getAttribute("data-rent-max") : box.getAttribute("data-sale-max"));
-		var step = Number(isRent ? box.getAttribute("data-rent-step") : box.getAttribute("data-sale-step"));
-		var unit = isRent ? (box.getAttribute("data-rent-unit") || "") : (box.getAttribute("data-sale-unit") || "");
+		var cap = Number(mode === "sale" ? box.getAttribute("data-sale-max") : (mode === "season" ? box.getAttribute("data-season-max") : box.getAttribute("data-rent-max")));
+		var step = Number(mode === "sale" ? box.getAttribute("data-sale-step") : (mode === "season" ? box.getAttribute("data-season-step") : box.getAttribute("data-rent-step")));
+		var unit = mode === "rent" ? (box.getAttribute("data-rent-unit") || "") : (mode === "season" ? (box.getAttribute("data-season-unit") || "") : (box.getAttribute("data-sale-unit") || ""));
 		box.setAttribute("data-unit", unit);
 		[min, max].forEach(function (input) {
 			if (!input) return;
@@ -1272,8 +1279,77 @@
 		if (!keep) {
 			min.value = "0";
 			max.value = String(cap);
+		} else if (max && Number(max.value) > cap) {
+			max.value = String(cap);
 		}
 		syncRange(box);
+	}
+	function currentFamily() {
+		if (!typeSelect || !typeSelect.value) return "";
+		var chosen = typeSelect.options[typeSelect.selectedIndex];
+		return chosen ? (chosen.getAttribute("data-family") || "") : "";
+	}
+	function txCode() {
+		var mode = priceMode();
+		if (mode === "season") return "saisonnier";
+		if (mode === "rent") return "louer";
+		return "vente";
+	}
+	function hasToken(list, token) {
+		return (" " + (list || "") + " ").indexOf(" " + token + " ") !== -1;
+	}
+	function syncHiddenIntent() {
+		var intent = root.querySelector(".pk-find-tab-input:checked");
+		var action = root.querySelector("input[name='es_action']");
+		var rent = root.querySelector("input[name='pk_rent']");
+		var value = intent ? intent.value : "a-vendre";
+		if (action) action.value = value === "a-vendre" ? "a-vendre" : "a-louer";
+		if (rent) rent.value = value === "saisonnier" ? "saisonnier" : "";
+	}
+	function applyContext(keepPrice) {
+		var family = currentFamily();
+		var code = txCode();
+		root.querySelectorAll(".pk-find-chip").forEach(function (chip) {
+			var show = family && hasToken(chip.getAttribute("data-pk-tx"), code) && hasToken(chip.getAttribute("data-pk-types"), family);
+			chip.hidden = !show;
+			if (!show) {
+				var box = chip.querySelector("input");
+				if (box) box.checked = false;
+			}
+		});
+		root.querySelectorAll("[data-pk-field]").forEach(function (field) {
+			var show = family && hasToken(field.getAttribute("data-pk-types"), family);
+			field.hidden = !show;
+			if (!show) {
+				field.querySelectorAll("input").forEach(function (input) {
+					if (input.type === "radio") input.checked = input.value === "";
+					else input.checked = false;
+				});
+			}
+		});
+		var rooms = root.querySelector(".pk-find-rooms");
+		if (rooms) {
+			var anyRoom = false;
+			rooms.querySelectorAll("[data-pk-field]").forEach(function (field) {
+				if (!field.hidden) anyRoom = true;
+			});
+			rooms.hidden = !anyRoom;
+		}
+		var amenities = root.querySelector(".pk-find-amenities");
+		if (amenities) amenities.hidden = !amenities.querySelector(".pk-find-chip:not([hidden])");
+		syncHiddenIntent();
+		setPriceScale(priceMode(), keepPrice);
+		lockFilters();
+	}
+	function lockFilters() {
+		var locked = !typeSelect || !typeSelect.value;
+		root.classList.toggle("is-filter-locked", locked);
+		var filter = root.querySelector(".pk-find-filter");
+		if (filter) filter.setAttribute("aria-disabled", locked ? "true" : "false");
+		if (locked && opener && opener.checked) {
+			opener.checked = false;
+			if (typeof setExpanded === "function") setExpanded();
+		}
 	}
 	root.querySelectorAll("[data-pk-range]").forEach(function (box) {
 		syncRange(box);
@@ -1289,10 +1365,15 @@
 		root.querySelectorAll("input[name='es_bedrooms_min'], input[name='es_bathrooms_min']").forEach(function (input) {
 			if (!input.value) input.disabled = true;
 		});
+		root.querySelectorAll(".pk-find-chip[hidden] input, [data-pk-field][hidden] input").forEach(function (input) {
+			input.disabled = true;
+		});
+		var rent = root.querySelector("input[name='pk_rent']");
+		if (rent && !rent.value) rent.disabled = true;
 	});
 	root.querySelectorAll(".pk-find-tab-input").forEach(function (input) {
 		input.addEventListener("change", function () {
-			setPriceScale(input.value === "a-louer", false);
+			applyContext(false);
 			if (root.getAttribute("data-pk-live") === "archive") {
 				if (typeof root.requestSubmit === "function") root.requestSubmit();
 				else root.submit();
@@ -1391,6 +1472,7 @@
 		if (typeBackdrop) typeBackdrop.hidden = false;
 		placeTypeMenu();
 	}
+	if (typeSelect) typeSelect.addEventListener("change", function () { applyContext(true); });
 	if (typeSelect && typeBtn && typeMenu) {
 		root.classList.add("is-type");
 		syncTypeLabel();
@@ -1405,19 +1487,28 @@
 				typeSelect.value = opt.getAttribute("data-value") || "";
 				syncTypeLabel();
 				closeType();
+				applyContext(true);
 			});
 		});
 		if (typeBackdrop) typeBackdrop.addEventListener("click", closeType);
 		window.addEventListener("resize", placeTypeMenu);
 	}
 
-	var opener = document.getElementById("pk-find-open");
+	var opener = root.querySelector(".pk-find-open");
 	function setExpanded() {
+		if (opener && opener.checked && root.classList.contains("is-filter-locked")) opener.checked = false;
 		if (opener) opener.setAttribute("aria-expanded", opener.checked ? "true" : "false");
 		if (opener && opener.checked) closeType();
 	}
 	setExpanded();
+	var filterBtn = root.querySelector(".pk-find-filter");
+	if (filterBtn) {
+		filterBtn.addEventListener("click", function (event) {
+			if (root.classList.contains("is-filter-locked")) event.preventDefault();
+		});
+	}
 	if (opener) opener.addEventListener("change", setExpanded);
+	applyContext(true);
 	document.addEventListener("keydown", function (event) {
 		if (event.key === "Escape") {
 			if (opener && opener.checked) opener.checked = false;

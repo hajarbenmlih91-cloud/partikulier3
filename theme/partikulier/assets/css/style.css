@@ -4405,6 +4405,7 @@ form.pk-search.pk-find {
 .pk-find-tabs {
 	display: flex;
 	justify-content: center;
+	flex-wrap: nowrap;
 	gap: .35rem;
 	margin: 0 0 -1px;
 	position: relative;
@@ -4414,9 +4415,12 @@ form.pk-search.pk-find {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	min-width: 7.4rem;
+	flex: 1 1 0;
+	min-width: 0;
+	max-width: 11rem;
 	min-height: 42px;
-	padding: .55rem 1.15rem;
+	padding: .55rem .7rem;
+	white-space: nowrap;
 	border: 1px solid #e6e5df;
 	border-bottom: 0;
 	background: #f4f4f0;
@@ -4531,6 +4535,14 @@ html[dir="rtl"] .pk-find-field select { background-position: left .1rem center; 
 }
 .pk-find-open:checked ~ .pk-find-card .pk-find-filter,
 .pk-find-open:focus-visible ~ .pk-find-card .pk-find-filter { color: #de4141; }
+.pk-find.is-filter-locked .pk-find-filter {
+	opacity: .4;
+	cursor: not-allowed;
+}
+.pk-find-pills[hidden],
+.pk-find-chip[hidden],
+.pk-find-rooms[hidden],
+.pk-find-amenities[hidden] { display: none !important; }
 .pk-find-submit, .pk-find-results {
 	border: 0;
 	border-radius: 0;
@@ -4707,7 +4719,7 @@ html[dir="rtl"] .pk-find-field select { background-position: left .1rem center; 
 	.pk-find-filter { flex: 1 1 auto; min-height: 48px; border-inline-end: 0; }
 	.pk-find-submit { flex: 1 1 46%; min-height: 48px; }
 	.pk-find-split { grid-template-columns: 1fr; }
-	.pk-find-tab { min-width: 6.2rem; padding-inline: .7rem; }
+	.pk-find-tab { max-width: none; padding-inline: .35rem; font-size: .82rem; }
 	.pk-find-panel { position: static; max-height: none; margin-top: .55rem; }
 }
 

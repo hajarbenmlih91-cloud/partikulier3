@@ -300,7 +300,31 @@ class Partikulier_Search_Filters {
 		 *
 		 * @param WP_Query $query Requete WordPress.
 		 */
+	/**
+	 * Le formulaire envoie pk_intent (vente, location, saisonnière).
+	 * La saisonnière reste une location : es_action=a-louer et pk_rent=saisonnier.
+	 *
+	 * @return void
+	 */
+	private static function normalize_intent() {
+		if ( ! isset( $_GET['pk_intent'] ) || ! is_scalar( $_GET['pk_intent'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			return;
+		}
+		$intent = sanitize_key( wp_unslash( $_GET['pk_intent'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( 'saisonnier' === $intent ) {
+			$_GET['es_action'] = 'a-louer';
+			$_GET['pk_rent']   = 'saisonnier';
+		} elseif ( 'a-louer' === $intent ) {
+			$_GET['es_action'] = 'a-louer';
+			$_GET['pk_rent']   = '';
+		} elseif ( 'a-vendre' === $intent ) {
+			$_GET['es_action'] = 'a-vendre';
+			unset( $_GET['pk_rent'] );
+		}
+	}
+
 	public static function apply_filters( $query ) {
+		self::normalize_intent();
 		if ( is_admin() || ! $query->is_main_query() || $query->is_singular() ) {
 				return;
 		}
@@ -924,6 +948,7 @@ class Partikulier_Search_Filters {
 	 * @return array<int,int> term_id => nombre d'annonces publish.
 	 */
 	public static function facet_type_counts() {
+		self::normalize_intent();
 		$counts    = array();
 		$tax_query = array();
 
