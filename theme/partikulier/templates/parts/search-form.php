@@ -42,6 +42,7 @@ $pk_t = static function ( $fr ) use ( $pk_find_lang ) {
 		'À vendre'            => array( 'en' => 'For sale', 'ar' => 'للبيع' ),
 		'À louer'             => array( 'en' => 'For rent', 'ar' => 'للكراء' ),
 		'Saisonnière'         => array( 'en' => 'Seasonal', 'ar' => 'موسمية' ),
+		'Veuillez vérifier les champs obligatoires.' => array( 'en' => 'Please check the required fields.', 'ar' => 'يرجى التحقق من الحقول المطلوبة.' ),
 		'Prix'                => array( 'en' => 'Price', 'ar' => 'السعر' ),
 		'Voir les résultats'  => array( 'en' => 'Show results', 'ar' => 'عرض النتائج' ),
 		'Équipements'         => array( 'en' => 'Amenities', 'ar' => 'التجهيزات' ),
@@ -68,22 +69,18 @@ $pk_rent_step = class_exists( 'Partikulier_Search_Filters' ) ? Partikulier_Searc
 $pk_area_max  = class_exists( 'Partikulier_Search_Filters' ) ? Partikulier_Search_Filters::AREA_MAX : 5000;
 $pk_area_step = class_exists( 'Partikulier_Search_Filters' ) ? Partikulier_Search_Filters::AREA_STEP : 10;
 
-$pk_action = $pk_scalar( 'es_action' );
-if ( ! in_array( $pk_action, array( 'a-vendre', 'a-louer' ), true ) ) {
-	$pk_action = 'a-vendre';
-}
+$pk_action_raw = $pk_scalar( 'es_action' );
 $pk_intent_raw = $pk_scalar( 'pk_intent' );
+$pk_intent     = '';
 if ( in_array( $pk_intent_raw, array( 'a-vendre', 'a-louer', 'saisonnier' ), true ) ) {
 	$pk_intent = $pk_intent_raw;
 } elseif ( 'saisonnier' === $pk_scalar( 'pk_rent' ) ) {
 	$pk_intent = 'saisonnier';
-} elseif ( 'a-louer' === $pk_action ) {
-	$pk_intent = 'a-louer';
-} else {
-	$pk_intent = 'a-vendre';
+} elseif ( in_array( $pk_action_raw, array( 'a-vendre', 'a-louer' ), true ) ) {
+	$pk_intent = $pk_action_raw;
 }
 $pk_is_rent      = in_array( $pk_intent, array( 'a-louer', 'saisonnier' ), true );
-$pk_action_value = $pk_is_rent ? 'a-louer' : 'a-vendre';
+$pk_action_value = 'saisonnier' === $pk_intent || 'a-louer' === $pk_intent ? 'a-louer' : ( 'a-vendre' === $pk_intent ? 'a-vendre' : '' );
 $pk_rent_value   = ( 'saisonnier' === $pk_intent ) ? 'saisonnier' : '';
 $pk_family_of    = static function ( $slug ) {
 	$slug = sanitize_title( (string) $slug );
@@ -206,13 +203,13 @@ foreach ( $pk_amenities as $pk_item ) {
 
 $pk_filter_ready = ( '' !== $pk_type );
 $pk_panel_open = $pk_filter_ready && ( $pk_price_min > 0 || $pk_price_max_val < $pk_price_cap || $pk_area_min > 0 || $pk_area_max_val < $pk_area_max || $pk_beds > 0 || $pk_baths > 0 || ! empty( $pk_selected_amenities ) );
-$pk_clear = add_query_arg( 'pk_intent', $pk_intent, $archive );
+$pk_clear = '' !== $pk_intent ? add_query_arg( 'pk_intent', $pk_intent, $archive ) : $archive;
 
 $pk_city_placeholder = class_exists( 'Partikulier_Localization' )
 	? Partikulier_Localization::translate_polylang_string( 'Ville, quartier…', 'Ville, quartier…', 'partikulier' )
 	: 'Ville, quartier…';
 ?>
-<form class="pk-search pk-search-<?php echo esc_attr( $variant ); ?> pk-find<?php echo $pk_filter_ready ? '' : ' is-filter-locked'; ?>" action="<?php echo esc_url( $archive ); ?>" method="get" role="search" data-pk-live="<?php echo esc_attr( $variant ); ?>" aria-label="<?php echo esc_attr( $pk_t( 'Rechercher' ) ); ?>">
+<form class="pk-search pk-search-<?php echo esc_attr( $variant ); ?> pk-find" action="<?php echo esc_url( $archive ); ?>" method="get" role="search" data-pk-live="<?php echo esc_attr( $variant ); ?>" aria-label="<?php echo esc_attr( $pk_t( 'Rechercher' ) ); ?>">
 	<div class="pk-find-tabs" role="radiogroup" aria-label="<?php echo esc_attr( $pk_t( 'À vendre' ) . ' / ' . $pk_t( 'À louer' ) . ' / ' . $pk_t( 'Saisonnière' ) ); ?>">
 		<input class="screen-reader-text pk-find-tab-input" type="radio" name="pk_intent" id="pk-find-sale" value="a-vendre" <?php checked( $pk_intent, 'a-vendre' ); ?>>
 		<label class="pk-find-tab" for="pk-find-sale"><?php echo esc_html( $pk_t( 'À vendre' ) ); ?></label>
@@ -262,13 +259,15 @@ $pk_city_placeholder = class_exists( 'Partikulier_Localization' )
 			</div>
 		</div>
 
-		<label class="pk-find-filter" for="pk-find-open"<?php echo $pk_filter_ready ? '' : ' aria-disabled="true"'; ?>>
+		<label class="pk-find-filter" for="pk-find-open">
 			<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M4 7h16M4 12h16M4 17h16"/><circle cx="9" cy="7" r="2.2" fill="currentColor"/><circle cx="15" cy="12" r="2.2" fill="currentColor"/><circle cx="8" cy="17" r="2.2" fill="currentColor"/></svg>
 			<span><?php echo esc_html( $pk_t( 'Filtres' ) ); ?></span>
 		</label>
 
 		<button type="submit" class="pk-find-submit"><?php echo esc_html( $pk_t( 'Rechercher' ) ); ?></button>
 	</div>
+
+	<p class="pk-find-need" id="pk-find-need" role="alert" aria-live="assertive" hidden><?php echo esc_html( $pk_t( 'Veuillez vérifier les champs obligatoires.' ) ); ?></p>
 
 	<div class="pk-find-panel" id="pk-find-panel">
 		<div class="pk-find-split">

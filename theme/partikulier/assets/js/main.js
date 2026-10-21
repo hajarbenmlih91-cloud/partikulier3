@@ -1339,17 +1339,34 @@
 		if (amenities) amenities.hidden = !amenities.querySelector(".pk-find-chip:not([hidden])");
 		syncHiddenIntent();
 		setPriceScale(priceMode(), keepPrice);
-		lockFilters();
+		guardFilters();
 	}
-	function lockFilters() {
-		var locked = !typeSelect || !typeSelect.value;
-		root.classList.toggle("is-filter-locked", locked);
+	function intentChosen() {
+		return !!root.querySelector(".pk-find-tab-input:checked");
+	}
+	function typeChosen() {
+		return !!(typeSelect && typeSelect.value);
+	}
+	function filtersReady() {
+		return intentChosen() && typeChosen();
+	}
+	function showNeed(on) {
+		var note = root.querySelector(".pk-find-need");
+		if (note) note.hidden = !on;
+		root.classList.toggle("is-need-tx", !!on && !intentChosen());
+		root.classList.toggle("is-need-type", !!on && !typeChosen());
+	}
+	function guardFilters() {
+		root.classList.remove("is-filter-locked");
 		var filter = root.querySelector(".pk-find-filter");
-		if (filter) filter.setAttribute("aria-disabled", locked ? "true" : "false");
-		if (locked && opener && opener.checked) {
+		if (filter) filter.removeAttribute("aria-disabled");
+		if (!filtersReady() && opener && opener.checked) {
 			opener.checked = false;
 			if (typeof setExpanded === "function") setExpanded();
+			showNeed(true);
+			return;
 		}
+		if (filtersReady()) showNeed(false);
 	}
 	root.querySelectorAll("[data-pk-range]").forEach(function (box) {
 		syncRange(box);
@@ -1496,7 +1513,6 @@
 
 	var opener = root.querySelector(".pk-find-open");
 	function setExpanded() {
-		if (opener && opener.checked && root.classList.contains("is-filter-locked")) opener.checked = false;
 		if (opener) opener.setAttribute("aria-expanded", opener.checked ? "true" : "false");
 		if (opener && opener.checked) closeType();
 	}
@@ -1504,7 +1520,14 @@
 	var filterBtn = root.querySelector(".pk-find-filter");
 	if (filterBtn) {
 		filterBtn.addEventListener("click", function (event) {
-			if (root.classList.contains("is-filter-locked")) event.preventDefault();
+			if (filtersReady()) {
+				showNeed(false);
+				return;
+			}
+			event.preventDefault();
+			if (opener) opener.checked = false;
+			setExpanded();
+			showNeed(true);
 		});
 	}
 	if (opener) opener.addEventListener("change", setExpanded);
