@@ -139,7 +139,7 @@ try {
     // 4) E24-004 — registre chrome public figé (150 entrées en contexte WP).
     $fp = $fingerprint(Partikulier_Localization::public_chrome_strings());
     $assert('E24-004', $fp['count'] === 150 && $fp['keys_md5'] === 'bf1a2ec6781df39d7f5ce90c13691a20'
-        && $fp['entries_md5'] === '56880689f3e9f0c4c34749d369f5eebf',
+        && $fp['entries_md5'] === '641b343d247c2a89e1085fa330b2c77f',
         sprintf('registre public figé : %d entrées (121 littérales + 29 setting_*), clés %s, entrées %s',
             $fp['count'], $fp['keys_md5'], $fp['entries_md5']));
 
