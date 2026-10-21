@@ -96,21 +96,42 @@ for (const [engineName, engine] of Object.entries({ chromium, firefox, webkit })
               }
               return route.continue();
             });
-            await page.evaluate(() => {
-              for (const section of document.querySelectorAll('.pk-step')) section.hidden = section.dataset.step !== '3';
-            });
-            await page.locator('#pk-name').fill('A');
-            await page.locator('#pk-phone').fill('0612345678');
-            await page.locator('#pk-submit-btn').click();
-            assert.equal(submits, 0, 'Invalid minlength cannot submit');
-            await page.waitForFunction(text => document.querySelector('#pk-form-status').textContent.includes(text), required[language]);
-            const original = await page.locator('#pk-submit-btn').textContent();
-            await page.locator('#pk-name').fill('Fixture Owner');
-            await page.locator('#pk-submit-btn').click();
-            await page.waitForFunction(() => document.querySelector('#pk-form-status').textContent.includes('Fixture rejection'));
-            assert.equal(submits, 1, 'Valid visible fields submit once');
-            assert.equal(await page.locator('#pk-submit-btn').isEnabled(), true, 'Application error re-enables submit');
-            assert.equal(await page.locator('#pk-submit-btn').textContent(), original, 'Application error restores original CTA');
+            const legacyForm = await page.locator('#pk-name').count();
+            if (legacyForm) {
+              await page.evaluate(() => {
+                for (const section of document.querySelectorAll('.pk-step')) section.hidden = section.dataset.step !== '3';
+              });
+              await page.locator('#pk-name').fill('A');
+              await page.locator('#pk-phone').fill('0612345678');
+              await page.locator('#pk-submit-btn').click();
+              assert.equal(submits, 0, 'Invalid minlength cannot submit');
+              await page.waitForFunction(text => document.querySelector('#pk-form-status').textContent.includes(text), required[language]);
+              const original = await page.locator('#pk-submit-btn').textContent();
+              await page.locator('#pk-name').fill('Fixture Owner');
+              await page.locator('#pk-submit-btn').click();
+              await page.waitForFunction(() => document.querySelector('#pk-form-status').textContent.includes('Fixture rejection'));
+              assert.equal(submits, 1, 'Valid visible fields submit once');
+              assert.equal(await page.locator('#pk-submit-btn').isEnabled(), true, 'Application error re-enables submit');
+              assert.equal(await page.locator('#pk-submit-btn').textContent(), original, 'Application error restores original CTA');
+            } else {
+              assert.equal(await page.locator('#next').count(), 1, 'Deposit page shows the owner tunnel');
+              await page.locator('#next').click();
+              assert.equal(submits, 0, 'Incomplete tunnel cannot submit a listing');
+              await page.waitForFunction(() => {
+                const err = document.querySelector('#err');
+                return Boolean(err && !err.hidden && err.textContent.includes('Propriétaire'));
+              });
+              const original = await page.locator('#next').textContent();
+              await page.locator('#role [data-val="proprietaire"]').click();
+              await page.locator('#next').click();
+              await page.waitForFunction(() => {
+                const err = document.querySelector('#err');
+                return Boolean(err && err.textContent.includes('vendre ou louer'));
+              });
+              assert.equal(submits, 0, 'Partial tunnel still does not submit');
+              assert.equal(await page.locator('#next').isEnabled(), true, 'Validation error keeps the CTA usable');
+              assert.equal(await page.locator('#next').textContent(), original, 'Validation error keeps the original CTA');
+            }
             assert.deepEqual(errors, [], `No browser JavaScript errors: ${engineName}/${width}/${language}`);
             results.push({ engine: engineName, width, language, check: 'localized validation/error recovery', status: 'PASS' });
           } finally {
