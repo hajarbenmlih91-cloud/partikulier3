@@ -2,7 +2,8 @@
 /**
  * Le tunnel remplace la page WordPress « Déposer une annonce ».
  *
- * La page garde l'en-tête et le pied de page du thème, donc le choix de langue.
+ * Le formulaire préparé est servi seul : pas d'en-tête ni de pied du site.
+ * Sa barre de langue change la version, et /en/ ou /ar/ ouvre cette version.
  * /apercu-tunnel/ redirige vers /deposer/.
  *
  * @package Partikulier
@@ -93,7 +94,34 @@ class Partikulier_Tunnel_Preview {
 	}
 
 	/**
-	 * Imprime le formulaire dans la zone principale, sans remplacer l'en-tête.
+	 * Sert le document préparé, sans en-tête ni pied du thème.
+	 */
+	public static function serve_document() {
+		$file = get_theme_file_path( 'apercu-tunnel.html' );
+		if ( ! is_readable( $file ) ) {
+			status_header( 500 );
+			exit;
+		}
+		$html = file_get_contents( $file ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- fichier du thème, pas une entrée utilisateur.
+		if ( ! is_string( $html ) || '' === $html ) {
+			status_header( 500 );
+			exit;
+		}
+		if ( false === strpos( $html, 'name="robots"' ) ) {
+			$html = preg_replace( '#<head>#', "<head>\n<meta name=\"robots\" content=\"noindex, nofollow\">", $html, 1 );
+		}
+		status_header( 200 );
+		if ( ! headers_sent() ) {
+			header( 'Content-Type: text/html; charset=UTF-8' );
+			header( 'Cache-Control: private, no-store, max-age=0' );
+			header( 'X-LiteSpeed-Cache-Control: no-cache' );
+		}
+		echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- document HTML autonome du thème, déjà figé.
+		exit;
+	}
+
+	/**
+	 * Ancien rendu dans le thème. La page publique n'utilise plus cette voie.
 	 */
 	public static function render() {
 		$file = get_theme_file_path( 'apercu-tunnel.html' );
