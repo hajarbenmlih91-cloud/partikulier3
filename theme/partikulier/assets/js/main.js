@@ -1219,3 +1219,146 @@
 		link.addEventListener("click", setChosen);
 	});
 }());
+
+/* Barre de recherche : curseurs, onglet location, second clic, fermeture. */
+(function () {
+	"use strict";
+	var root = document.querySelector(".pk-find");
+	if (!root) return;
+
+	function group(n) {
+		return String(Math.round(Number(n) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+	}
+	function syncRange(box) {
+		var min = box.querySelector(".pk-find-range-min");
+		var max = box.querySelector(".pk-find-range-max");
+		var fill = box.querySelector(".pk-find-fill");
+		var out = box.querySelector(".pk-find-readout");
+		if (!min || !max) return;
+		var lo = Number(min.value);
+		var hi = Number(max.value);
+		if (lo > hi) {
+			if (document.activeElement === min) { max.value = String(lo); hi = lo; }
+			else { min.value = String(hi); lo = hi; }
+		}
+		var scaleMin = Number(min.min || 0);
+		var scaleMax = Number(min.max || 1);
+		var span = Math.max(1, scaleMax - scaleMin);
+		var start = ((lo - scaleMin) / span) * 100;
+		var width = ((hi - lo) / span) * 100;
+		if (fill) {
+			fill.style.left = start + "%";
+			fill.style.width = Math.max(0, width) + "%";
+		}
+		if (out) {
+			var unit = box.getAttribute("data-unit") || "";
+			out.textContent = group(lo) + " – " + group(hi) + (unit ? " " + unit : "");
+		}
+	}
+	function setPriceScale(isRent, keep) {
+		var box = root.querySelector("[data-pk-price]");
+		if (!box) return;
+		var min = box.querySelector(".pk-find-range-min");
+		var max = box.querySelector(".pk-find-range-max");
+		var cap = Number(isRent ? box.getAttribute("data-rent-max") : box.getAttribute("data-sale-max"));
+		var step = Number(isRent ? box.getAttribute("data-rent-step") : box.getAttribute("data-sale-step"));
+		var unit = isRent ? (box.getAttribute("data-rent-unit") || "") : (box.getAttribute("data-sale-unit") || "");
+		box.setAttribute("data-unit", unit);
+		[min, max].forEach(function (input) {
+			if (!input) return;
+			input.max = String(cap);
+			input.step = String(step);
+		});
+		if (!keep) {
+			min.value = "0";
+			max.value = String(cap);
+		}
+		syncRange(box);
+	}
+	root.querySelectorAll("[data-pk-range]").forEach(function (box) {
+		syncRange(box);
+		box.addEventListener("input", function () { syncRange(box); });
+	});
+	root.addEventListener("submit", function () {
+		root.querySelectorAll("[data-pk-range]").forEach(function (box) {
+			var min = box.querySelector(".pk-find-range-min");
+			var max = box.querySelector(".pk-find-range-max");
+			if (min && Number(min.value) <= Number(min.min || 0)) min.disabled = true;
+			if (max && Number(max.value) >= Number(max.max || 0)) max.disabled = true;
+		});
+		root.querySelectorAll("input[name='es_bedrooms_min'], input[name='es_bathrooms_min']").forEach(function (input) {
+			if (!input.value) input.disabled = true;
+		});
+	});
+	root.querySelectorAll(".pk-find-tab-input").forEach(function (input) {
+		input.addEventListener("change", function () {
+			setPriceScale(input.value === "a-louer", false);
+			if (root.getAttribute("data-pk-live") === "archive") {
+				if (typeof root.requestSubmit === "function") root.requestSubmit();
+				else root.submit();
+			}
+		});
+	});
+	root.querySelectorAll(".pk-find-pill input[value]").forEach(function (input) {
+		if (!input.value) return;
+		input.setAttribute("data-pk-on", input.checked ? "1" : "0");
+		input.addEventListener("click", function () {
+			if (input.getAttribute("data-pk-on") === "1") {
+				var none = root.querySelector("input[name='" + input.name + "'][value='']");
+				if (none) none.checked = true;
+				input.checked = false;
+				input.setAttribute("data-pk-on", "0");
+			}
+		});
+		input.addEventListener("change", function () {
+			root.querySelectorAll("input[name='" + input.name + "']").forEach(function (other) {
+				other.setAttribute("data-pk-on", other.checked && other.value ? "1" : "0");
+			});
+		});
+	});
+	var clearer = root.querySelector(".pk-find-clear");
+	if (clearer) {
+		clearer.addEventListener("click", function (event) {
+			event.preventDefault();
+			var type = root.querySelector("[name='es_type']");
+			if (type) type.value = "";
+			var city = root.querySelector("[data-pk-place-input]");
+			var cityValue = document.getElementById("pk-s-city-value");
+			if (city) city.value = "";
+			if (cityValue) cityValue.value = "";
+			root.querySelectorAll(".pk-find-chip input").forEach(function (box) { box.checked = false; });
+			root.querySelectorAll(".pk-find-pill input, input[name='es_bedrooms_min'], input[name='es_bathrooms_min']").forEach(function (box) {
+				box.checked = box.value === "";
+				box.setAttribute("data-pk-on", "0");
+			});
+			var sale = root.querySelector(".pk-find-tab-input:checked");
+			setPriceScale(sale && sale.value === "a-louer", false);
+			var area = root.querySelector("[data-pk-area]");
+			if (area) {
+				var amin = area.querySelector(".pk-find-range-min");
+				var amax = area.querySelector(".pk-find-range-max");
+				if (amin) amin.value = amin.min || "0";
+				if (amax) amax.value = amax.max;
+				syncRange(area);
+			}
+			if (typeof root.requestSubmit === "function") root.requestSubmit();
+			else root.submit();
+		});
+	}
+	var opener = document.getElementById("pk-find-open");
+	function setExpanded() {
+		if (opener) opener.setAttribute("aria-expanded", opener.checked ? "true" : "false");
+	}
+	setExpanded();
+	if (opener) opener.addEventListener("change", setExpanded);
+	document.addEventListener("keydown", function (event) {
+		if (event.key === "Escape" && opener && opener.checked) opener.checked = false;
+		setExpanded();
+	});
+	document.addEventListener("click", function (event) {
+		if (!opener || !opener.checked) return;
+		if (root.contains(event.target)) return;
+		opener.checked = false;
+		setExpanded();
+	});
+}());
