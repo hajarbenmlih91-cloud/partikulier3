@@ -5,7 +5,7 @@
 	barre de recherche centrale, nav uppercase, hero plein cadre,
 	cartes "produit" fond gris clair avec prix au-dessus du titre,
 	badge cognac en haut a droite, footer sombre multi-colonnes.
-	Palette : cognac #9b6a3d, fond #f5f5f0, textes #161715/#3d403b.
+	Palette : rouge #de4141, fond #f5f5f0, textes #161715/#3d403b.
 	Zero framework. Mobile-first. Zero jQuery.
 	============================================================ */
 
@@ -51,12 +51,12 @@ html[dir="rtl"] [lang="ar"] {
 
 /* ---------- Variables (charte unique) ---------- */
 :root {
-		/* Charte unique : portail editorial cognac (validee sur le preview).
-			Les deux :root precedents (orange "Woo Shop" #f85525 et brun #9b6a3d)
+		/* Charte unique : portail editorial rouge #de4141.
+			Les deux :root precedents (orange "Woo Shop" #f85525 et brun #de4141)
 			ont ete fusionnes ici : ils se contredisaient et le rendu dependait
 			de l'ordre de cascade au lieu d'une intention de design. */
-		--pk-primary: #9b6a3d;
-		--pk-primary-dark: #7e4f25;
+		--pk-primary: #de4141;
+		--pk-primary-dark: #c8242b;
 		--pk-ink: #161715;
 		--pk-dark: #0f100e;
 		--pk-text: #3d403b;
@@ -65,7 +65,7 @@ html[dir="rtl"] [lang="ar"] {
 		--pk-line: #e6e5df;
 		--pk-white: #fffefa;
 		--pk-sand: #e8e4db;
-		--pk-hero-accent: #e3c2a3;
+		--pk-hero-accent: #c8242b;
 		--pk-sage: #dfe6de;
 		--pk-radius: 0;
 		--pk-shadow-sm: 0 5px 16px rgba(22, 23, 21, .07);
@@ -1000,7 +1000,7 @@ html[dir="rtl"] .pk-card-price {
 	Ces classes etaient presentes dans le HTML des templates mais
 	n'avaient JAMAIS ete ecrites dans la feuille de style : les
 	grilles s'effondraient (formulaire de depot, fiche annonce,
-	footer, espace proprietaire). Charte cognac respectee.
+	footer, espace proprietaire). Charte rouge respectee.
 	============================================================ */
 
 /* --- Conteneur principal --- */
@@ -1207,7 +1207,7 @@ html[dir="rtl"] .pk-card-price {
 
 /* ============================================================
 	Alignement sur le preview React (mesures pixel des captures).
-	Accent #9b6a3d, encre #161715, 2e ligne du H1 en italique
+	Accent #de4141, encre #161715, 2e ligne du H1 en italique
 	serif sable #e3c2a3, ligne de reassurance sous le moteur.
 	============================================================ */
 
@@ -3574,7 +3574,7 @@ html:not([dir="rtl"]) em {
 	font-weight: 400;
 	color: var(--pk-primary);
 }
-/* Hero : même sable que le kicker « Annonces 100%… », pas le cognac. */
+/* Hero : même sable que le kicker « Annonces 100%… », pas le rouge. */
 html:not([dir="rtl"]) .pk-editorial-hero h1 .pk-hero-accent,
 .pk-editorial-hero h1 .pk-hero-accent {
 	font-family: "Instrument Serif", Georgia, serif;
@@ -4250,11 +4250,11 @@ body.pk-lang-gate-open { overflow: hidden; }
 /* ==========================================================================
    Dépôt d'annonce — finition v2 (validée sur maquettes audit-ux/maquettes/).
    Bloc isolé, CSS uniquement, tokens existants. Le noir des états actifs
-   passe au cognac ; le cadre vide du hero devient une carte finie ;
+   passe au rouge ; le cadre vide du hero devient une carte finie ;
    masqué sous 900 px.
    ========================================================================== */
 
-/* Sélection = filet cognac + coche, plus de bloc noir. */
+/* Sélection = filet rouge + coche, plus de bloc noir. */
 .pk-choice.is-active { background: #fff; border: 2px solid var(--pk-primary); padding: calc(1.15rem - .5px) calc(1.25rem - .5px); }
 .pk-choice.is-active strong { color: var(--pk-ink); }
 .pk-choice.is-active span { color: var(--pk-muted); }
@@ -4272,15 +4272,15 @@ body.pk-lang-gate-open { overflow: hidden; }
 	text-align: center;
 }
 
-/* Toggles Oui/Non : segments séparés, actif en outline cognac. */
+/* Toggles Oui/Non : segments séparés, actif en outline rouge. */
 .pk-toggle-btn { background: #fff; }
 .pk-toggle-btn + .pk-toggle-btn { border-left: 1px solid var(--pk-line); margin-inline-start: .5rem; }
 .pk-toggle-btn.is-on { background: #fff; border: 2px solid var(--pk-primary); color: var(--pk-ink); padding: calc(.78rem - 1px) calc(1rem - 1px); }
 
-/* Stepper : étape courante cognac au lieu du noir. */
+/* Stepper : étape courante rouge au lieu du noir. */
 .pk-stepper-item.is-current .pk-stepper-number { border-color: var(--pk-primary); background: var(--pk-primary); color: #fff; }
 
-/* Aperçu (étape 3) : carte posée, double filet cognac. */
+/* Aperçu (étape 3) : carte posée, double filet rouge. */
 .pk-preview { position: relative; box-shadow: 0 24px 48px -28px rgba(22, 23, 21, .25); }
 .pk-preview::before { content: ""; position: absolute; inset: 8px; border: 1px solid rgba(155, 106, 61, .35); pointer-events: none; }
 
@@ -4301,20 +4301,84 @@ html[dir="rtl"] .pk-single-price-note { direction: rtl; unicode-bidi: isolate; }
 .pk-stepper { max-width: 760px; margin-inline: auto; }
 .pk-stepper-status { text-align: center; }
 
-/* Pastilles d'équipements : contour cognac, pas le fond encré des anciens Oui/Non. */
+/* Pastilles d'équipements : contour rouge, pas le fond encré des anciens Oui/Non. */
 .pk-amenity { display: flex; flex-wrap: wrap; align-items: flex-start; gap: .55rem .75rem; }
 .pk-amenity .pk-label { margin: .55rem 0 0; }
 .pk-chips { display: flex; flex-wrap: wrap; gap: .45rem; flex: 1; min-width: 0; }
 .pk-chip { position: relative; display: inline-flex; align-items: center; min-height: 44px; padding: .45rem .85rem; border: 1px solid #d9d6ce; border-radius: 10px; background: #fff; color: var(--pk-ink); font-size: .9rem; line-height: 1.35; cursor: pointer; }
 .pk-chip-input { position: absolute; opacity: 0; width: 1px; height: 1px; }
-.pk-chip:has(.pk-chip-input:checked) { background: #fff; border: 2px solid #9b6a3d; color: var(--pk-primary-dark); font-weight: 600; }
+.pk-chip:has(.pk-chip-input:checked) { background: #fff; border: 2px solid #de4141; color: var(--pk-primary-dark); font-weight: 600; }
 .pk-chip:has(.pk-chip-input:focus-visible) { outline: 2px solid var(--pk-primary); outline-offset: 2px; }
 .pk-chip[hidden] { display: none; }
 .pk-amenity-hint { margin: .35rem 0 0; color: #6b675f; font-size: .82rem; }
 .pk-amenity-row { display: flex; flex-wrap: wrap; gap: .45rem; list-style: none; margin: 1rem 0 0; padding: 0; }
-.pk-amenity-row li { padding: .4rem .75rem; border: 2px solid #9b6a3d; border-radius: 10px; background: #fff; color: var(--pk-primary-dark); font-size: .88rem; font-weight: 600; }
+.pk-amenity-row li { padding: .4rem .75rem; border: 2px solid #de4141; border-radius: 10px; background: #fff; color: var(--pk-primary-dark); font-size: .88rem; font-weight: 600; }
 @media (max-width: 560px) {
 	.pk-amenity { flex-direction: column; }
 }
 #pk-furnished-vide[hidden] { display: none; }
 #pk-furnished .pk-choice-grid:has(#pk-furnished-vide[hidden]) { grid-template-columns: 1fr; }
+
+
+/* Charte rouge #de4141. L'ancienne charte cognac reste sur le tag pre-release-2.10.16-6.20.85. */
+body { background: #fff; }
+.pk-topbar { background: #de4141; color: #fff; }
+.pk-topbar-promo, .pk-topbar-contact, .pk-topbar-contact a { color: #fff; background: transparent; }
+.pk-topbar-contact a:hover { color: #fff; }
+.pk-logo-text, .pk-logo-text:hover { color: #de4141; }
+.pk-logo-tld {
+	display: inline-block;
+	margin-inline-start: .28rem;
+	padding: .12rem .28rem .08rem;
+	background: #000;
+	color: #fff;
+	font-size: .72em;
+	letter-spacing: 0;
+	line-height: 1;
+	vertical-align: 1px;
+}
+.pk-editorial-kicker { color: #c8242b; }
+.pk-editorial-hero {
+	position: relative;
+	min-height: 0;
+	overflow: visible;
+	background: #fff;
+	color: #161715;
+}
+.pk-editorial-hero__media, .pk-editorial-hero__veil { display: none; }
+.pk-editorial-hero__inner { position: relative; z-index: 2; padding-top: 2.2rem; padding-bottom: 2.4rem; }
+.pk-editorial-hero h1, .pk-editorial-hero h1 .pk-hero-accent { color: #161715; }
+.pk-editorial-hero h1 .pk-hero-accent, .pk-editorial-hero .pk-editorial-kicker { color: #c8242b; }
+.pk-editorial-hero__intro, .pk-editorial-hero .pk-editorial-search__hint, .pk-editorial-hero .pk-hero-trust, .pk-editorial-hero .pk-hero-trust li { color: #3d403b; }
+.pk-editorial-hero .pk-btn-light { background: #fff; color: #c8242b; border-color: #de4141; }
+.pk-editorial-hero .pk-btn-light:hover { background: #de4141; color: #fff; }
+.pk-btn-dark, .pk-btn-primary { background: #de4141; color: #fff; border-color: #de4141; }
+.pk-btn-dark:hover, .pk-btn-primary:hover { background: #c8242b; border-color: #c8242b; color: #fff; }
+.pk-site-footer { background: #fff; color: #3d403b; border-top: 1px solid #e8e0e0; }
+.pk-footer-title, .pk-site-footer h3 { color: #161715; }
+.pk-footer-about, .pk-site-footer a, .pk-site-footer li, .pk-site-footer p { color: #3d403b; }
+.pk-site-footer a:hover { color: #c8242b; }
+.pk-editorial-region-band { background: #de4141; color: #fff; }
+.pk-editorial-region-band h2, .pk-editorial-region-band a, .pk-editorial-region-band .pk-editorial-kicker { color: #fff !important; }
+.pk-editorial-section--rental, .pk-editorial-rental { background: #de4141; color: #fff; }
+.pk-editorial-section--rental .pk-editorial-kicker, .pk-editorial-section--rental .pk-editorial-rental h2, .pk-editorial-section--rental .pk-editorial-rental p { color: #fff; }
+.pk-editorial-rental .pk-btn, .pk-editorial-rental .pk-btn:hover { background: #fff; color: #de4141; border-color: #fff; }
+.pk-editorial-type { background: #de4141; color: #fff; border: 1px solid #de4141; }
+.pk-editorial-type:hover { background: #c8242b; color: #fff; border-color: #c8242b; }
+.pk-editorial-type .pk-editorial-type__icon, .pk-editorial-type strong, .pk-editorial-type small, .pk-editorial-type:hover .pk-editorial-type__icon, .pk-editorial-type:hover strong, .pk-editorial-type:hover small { color: #fff; }
+.pk-card-badge.pk-badge-louer, .pk-card-badge.pk-badge-rent, .pk-card-badge.pk-badge-a-louer { background: #fff; color: #c8242b; }
+a:hover { color: #c8242b; }
+.pk-menu-item > a, .pk-menu-item.pk-current > a, .pk-card-title a, .pk-card-cta-top, .pk-editorial-link, a.pk-editorial-link, .pk-editorial-place-list a { color: #161715; }
+.pk-menu-item > a:hover, .pk-menu-item.pk-current > a:hover, .pk-submenu .pk-menu-item > a:hover, .pk-menu-mobile .pk-menu-item > a:hover, .pk-card-title a:hover, .pk-card-cta-top:hover, .pk-editorial-link:hover, a.pk-editorial-link:hover, .pk-editorial-place-list a:hover, .pk-footer-links a:hover, .pk-footer-contact a:hover, .pk-site-footer a:hover, .pk-breadcrumb a:hover, .pk-filter-list a:hover, .pk-header-icon:hover, .pk-card-action:hover, .pk-pagination-list li a:hover { color: #c8242b; }
+.pk-btn:hover, .pk-btn-primary:hover, .pk-btn-dark:hover, .pk-card-cta:hover, .pk-editorial-hero .pk-btn-light:hover, .pk-editorial-hero .pk-btn-primary:hover { color: #fff; }
+.pk-topbar a, .pk-topbar a:hover, .pk-editorial-region-band a, .pk-editorial-region-band a:hover { color: #fff; }
+.pk-editorial-feature { display: block; position: relative; min-height: 0 !important; height: auto; overflow: visible; background: transparent; color: #fff; }
+.pk-editorial-feature > img { position: relative !important; inset: auto !important; display: block; width: 100%; height: 440px; object-fit: cover; }
+.pk-editorial-feature__veil { display: none !important; background: none !important; }
+.pk-editorial-feature__content { position: relative !important; inset: auto !important; left: auto; right: auto; bottom: auto; z-index: 1; max-width: none; width: 100%; margin: -28px 0 0; padding: 18px 24px 20px; background: #de4141; color: #fff; }
+.pk-editorial-feature__kicker, .pk-editorial-feature__content, .pk-editorial-feature__content strong, .pk-editorial-feature__content small, .pk-editorial-feature:hover, .pk-editorial-feature:hover .pk-editorial-feature__kicker, .pk-editorial-feature:hover .pk-editorial-feature__content, .pk-editorial-feature:hover .pk-editorial-feature__content strong, .pk-editorial-feature:hover .pk-editorial-feature__content small { color: #fff !important; }
+.pk-editorial-feature__price { background: transparent; color: #fff; padding: 0; margin-top: .55rem; font-size: 1.15rem; }
+@media (max-width: 640px) {
+	.pk-editorial-feature > img { height: 260px; }
+	.pk-editorial-feature__content { margin-top: -18px; }
+}

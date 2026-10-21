@@ -112,6 +112,13 @@ class Partikulier_Tunnel_Preview {
 		if ( preg_match( '#<body[^>]*>(.*)</body>#s', $html, $inner ) ) {
 			$body = $inner[1];
 		}
+		$home = function_exists( 'pk_localized_home_url' ) ? pk_localized_home_url() : home_url( '/' );
+		$body = preg_replace(
+			'#(<a class="pk-submit-back" href=")[^"]*(">)#',
+			'$1' . esc_url( $home ) . '$2',
+			$body,
+			1
+		);
 		echo '<div class="pk-tunnel">';
 		if ( '' !== $css ) {
 			echo '<style>' . $css . '</style>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- CSS du thème, déjà figé.
