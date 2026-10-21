@@ -165,6 +165,7 @@ $pk_city_placeholder = class_exists( 'Partikulier_Localization' )
 	</div>
 
 	<input class="pk-find-open" type="checkbox" id="pk-find-open" aria-controls="pk-find-panel" <?php checked( $pk_panel_open ); ?>>
+	<label class="pk-find-backdrop" for="pk-find-open"></label>
 
 	<div class="pk-find-card">
 		<div class="pk-find-field pk-find-city pk-place-autocomplete">
@@ -176,15 +177,29 @@ $pk_city_placeholder = class_exists( 'Partikulier_Localization' )
 			</div>
 		</div>
 
-		<div class="pk-find-field">
-			<label class="pk-find-label" for="pk-find-type"><?php echo esc_html( $pk_t( 'Type de bien' ) ); ?></label>
-			<select name="es_type" id="pk-find-type">
+		<div class="pk-find-field pk-find-typefield">
+			<span class="pk-find-label" id="pk-find-type-label"><?php echo esc_html( $pk_t( 'Type de bien' ) ); ?></span>
+			<select class="pk-find-type-native" name="es_type" id="pk-find-type" aria-labelledby="pk-find-type-label">
 				<option value=""><?php echo esc_html( $pk_t( 'Tous' ) ); ?></option>
 				<?php foreach ( (array) $pk_types as $pk_term ) : ?>
 					<?php if ( ! $pk_term instanceof WP_Term ) { continue; } ?>
 					<option value="<?php echo esc_attr( $pk_term->slug ); ?>" <?php selected( $pk_type, $pk_term->slug ); ?>><?php echo esc_html( class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_taxonomy_label( $pk_term->name ) : $pk_term->name ); ?></option>
 				<?php endforeach; ?>
 			</select>
+			<div class="pk-find-type-ui">
+				<button type="button" class="pk-find-type-btn" aria-haspopup="listbox" aria-expanded="false" aria-controls="pk-find-type-menu" aria-labelledby="pk-find-type-label">
+					<span class="pk-find-type-current"><?php echo esc_html( $pk_t( 'Tous' ) ); ?></span>
+				</button>
+				<div class="pk-find-type-backdrop" hidden></div>
+				<div class="pk-find-type-menu" id="pk-find-type-menu" role="listbox" aria-labelledby="pk-find-type-label" hidden>
+					<p class="pk-find-type-kicker"><?php echo esc_html( $pk_t( 'Type de bien' ) ); ?></p>
+					<button type="button" class="pk-find-type-opt" role="option" data-value=""><?php echo esc_html( $pk_t( 'Tous' ) ); ?></button>
+					<?php foreach ( (array) $pk_types as $pk_term ) : ?>
+						<?php if ( ! $pk_term instanceof WP_Term ) { continue; } ?>
+						<button type="button" class="pk-find-type-opt" role="option" data-value="<?php echo esc_attr( $pk_term->slug ); ?>"><?php echo esc_html( class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_taxonomy_label( $pk_term->name ) : $pk_term->name ); ?></button>
+					<?php endforeach; ?>
+				</div>
+			</div>
 		</div>
 
 		<label class="pk-find-filter" for="pk-find-open">

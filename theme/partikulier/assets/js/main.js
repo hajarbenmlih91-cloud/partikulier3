@@ -1062,7 +1062,7 @@
 		});
 	}
 	root.querySelectorAll("select").forEach(function (select) {
-		if (select.closest(".pk-select")) return;
+		if (select.closest(".pk-select") || select.classList.contains("pk-find-type-native")) return;
 		var wrap = document.createElement("div");
 		wrap.className = "pk-select";
 		select.parentNode.insertBefore(wrap, select);
@@ -1321,7 +1321,10 @@
 		clearer.addEventListener("click", function (event) {
 			event.preventDefault();
 			var type = root.querySelector("[name='es_type']");
-			if (type) type.value = "";
+			if (type) {
+				type.value = "";
+				if (typeof syncTypeLabel === "function") syncTypeLabel();
+			}
 			var city = root.querySelector("[data-pk-place-input]");
 			var cityValue = document.getElementById("pk-s-city-value");
 			if (city) city.value = "";
@@ -1345,14 +1348,81 @@
 			else root.submit();
 		});
 	}
+	var typeSelect = root.querySelector(".pk-find-type-native");
+	var typeBtn = root.querySelector(".pk-find-type-btn");
+	var typeMenu = root.querySelector(".pk-find-type-menu");
+	var typeBackdrop = root.querySelector(".pk-find-type-backdrop");
+	function syncTypeLabel() {
+		if (!typeSelect) return;
+		var current = root.querySelector(".pk-find-type-current");
+		var chosen = typeSelect.options[typeSelect.selectedIndex];
+		if (current && chosen) current.textContent = chosen.textContent.replace(/^\s+|\s+$/g, "");
+		root.querySelectorAll(".pk-find-type-opt").forEach(function (opt) {
+			opt.setAttribute("aria-selected", opt.getAttribute("data-value") === typeSelect.value ? "true" : "false");
+		});
+	}
+	function closeType() {
+		root.classList.remove("is-type-open");
+		if (typeBtn) typeBtn.setAttribute("aria-expanded", "false");
+		if (typeMenu) typeMenu.hidden = true;
+		if (typeBackdrop) typeBackdrop.hidden = true;
+	}
+	function placeTypeMenu() {
+		if (!typeMenu || typeMenu.hidden) return;
+		var header = document.querySelector(".pk-site-header");
+		if (header) document.documentElement.style.setProperty("--pk-header-h", header.offsetHeight + "px");
+		if (window.matchMedia("(max-width: 1100px)").matches) return;
+		typeMenu.style.insetInlineStart = "0";
+		typeMenu.style.insetInlineEnd = "auto";
+		var rect = typeMenu.getBoundingClientRect();
+		if (rect.right > window.innerWidth - 12 || rect.left < 12) {
+			typeMenu.style.insetInlineStart = "auto";
+			typeMenu.style.insetInlineEnd = "0";
+		}
+	}
+	function openType() {
+		if (opener && opener.checked) {
+			opener.checked = false;
+			setExpanded();
+		}
+		root.classList.add("is-type-open");
+		if (typeBtn) typeBtn.setAttribute("aria-expanded", "true");
+		if (typeMenu) typeMenu.hidden = false;
+		if (typeBackdrop) typeBackdrop.hidden = false;
+		placeTypeMenu();
+	}
+	if (typeSelect && typeBtn && typeMenu) {
+		root.classList.add("is-type");
+		syncTypeLabel();
+		typeBtn.addEventListener("click", function (event) {
+			event.preventDefault();
+			event.stopPropagation();
+			if (root.classList.contains("is-type-open")) closeType();
+			else openType();
+		});
+		root.querySelectorAll(".pk-find-type-opt").forEach(function (opt) {
+			opt.addEventListener("click", function () {
+				typeSelect.value = opt.getAttribute("data-value") || "";
+				syncTypeLabel();
+				closeType();
+			});
+		});
+		if (typeBackdrop) typeBackdrop.addEventListener("click", closeType);
+		window.addEventListener("resize", placeTypeMenu);
+	}
+
 	var opener = document.getElementById("pk-find-open");
 	function setExpanded() {
 		if (opener) opener.setAttribute("aria-expanded", opener.checked ? "true" : "false");
+		if (opener && opener.checked) closeType();
 	}
 	setExpanded();
 	if (opener) opener.addEventListener("change", setExpanded);
 	document.addEventListener("keydown", function (event) {
-		if (event.key === "Escape" && opener && opener.checked) opener.checked = false;
+		if (event.key === "Escape") {
+			if (opener && opener.checked) opener.checked = false;
+			closeType();
+		}
 		setExpanded();
 	});
 	document.addEventListener("click", function (event) {
@@ -1361,4 +1431,21 @@
 		opener.checked = false;
 		setExpanded();
 	});
+}());
+
+/* Boutons dépôt / annonces : hors du hero, visibles seulement après la barre. */
+(function () {
+	"use strict";
+	var bar = document.querySelector("[data-pk-scroll-actions]");
+	var search = document.querySelector(".pk-editorial-search");
+	if (!bar || !search) return;
+	function sync() {
+		var header = document.querySelector(".pk-site-header");
+		if (header) document.documentElement.style.setProperty("--pk-header-h", header.offsetHeight + "px");
+		var past = search.getBoundingClientRect().bottom < 8;
+		bar.classList.toggle("is-on", past);
+	}
+	sync();
+	window.addEventListener("scroll", sync, { passive: true });
+	window.addEventListener("resize", sync);
 }());

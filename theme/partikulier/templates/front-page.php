@@ -43,8 +43,6 @@ get_header();
 	<style>
 	@media (max-width:767px){
 		body.home .pk-header-search{display:none!important}
-		body.home .pk-editorial-actions{display:flex!important;flex-wrap:nowrap!important;gap:8px}
-		body.home .pk-editorial-actions .pk-btn{flex:1 1 0;min-width:0;min-height:44px;margin:0;font-size:12px;font-weight:800;white-space:nowrap}
 		body.home .pk-editorial-hero__inner{padding:1.1rem 20px 1.4rem!important;gap:1rem}
 	}
 	</style>
@@ -67,11 +65,18 @@ get_header();
 			}
 			?></h1>
 			<p class="pk-editorial-hero__intro"><?php echo wp_kses( $intro, array( 'a' => array( 'href' => true, 'title' => true ), 'strong' => array(), 'em' => array(), 'br' => array() ) ); ?></p>
-			<div class="pk-editorial-actions"><a class="pk-btn pk-btn-primary" href="<?php echo esc_url( $deposit ); ?>"><?php echo esc_html( Partikulier_Settings::get( 'btn_deposit' ) ); ?><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a><a class="pk-btn pk-btn-light" href="<?php echo esc_url( $archive ); ?>"><?php echo esc_html( Partikulier_Settings::get( 'btn_listings' ) ); ?><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></a></div>
 		</div>
 		<div class="pk-editorial-search"><p class="pk-editorial-search__hint"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Commencez par une ville, un quartier ou un code postal.', 'Commencez par une ville, un quartier ou un code postal.', 'partikulier' ) ); ?></p><?php $variant = 'hero'; require PARTIKULIER_DIR . '/templates/parts/search-form.php'; ?><ul class="pk-hero-trust"><li><?php echo esc_html( $badge_1 ); ?></li><li><?php echo esc_html( $badge_2 ); ?></li><li><?php echo esc_html( $badge_3 ); ?></li></ul></div>
 	</div>
 </section>
+
+	<noscript><style>.pk-scroll-actions{display:block;padding:1rem 0}</style></noscript>
+	<div class="pk-scroll-actions" data-pk-scroll-actions>
+		<div class="pk-container pk-scroll-actions__inner">
+			<a class="pk-btn pk-btn-primary" href="<?php echo esc_url( $deposit ); ?>"><?php echo esc_html( Partikulier_Settings::get( 'btn_deposit' ) ); ?><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+			<a class="pk-btn pk-btn-light" href="<?php echo esc_url( $archive ); ?>"><?php echo esc_html( Partikulier_Settings::get( 'btn_listings' ) ); ?><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></a>
+		</div>
+	</div>
 
 	<section class="pk-editorial-section pk-editorial-section--tint"><div class="pk-container"><div class="pk-editorial-heading pk-editorial-heading--row"><div><p class="pk-editorial-kicker"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Fraîchement publiées', 'Fraîchement publiées', 'partikulier' ) ); ?></p><h2><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Les dernières annonces', 'Les dernières annonces', 'partikulier' ) ); ?></h2><p><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Des biens ajoutés récemment par leurs propriétaires.', 'Des biens ajoutés récemment par leurs propriétaires.', 'partikulier' ) ); ?></p></div><a class="pk-editorial-link" href="<?php echo esc_url( $archive ); ?>"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Voir toutes les annonces', 'Voir toutes les annonces', 'partikulier' ) ); ?> <span aria-hidden="true">→</span></a></div><?php if ( $recent ) : ?><div class="pk-editorial-cards"><?php $pk_card_index = 0; foreach ( $recent as $property ) { $pk_card_index++; require PARTIKULIER_DIR . '/templates/parts/card-property.php'; } unset( $pk_card_index ); wp_reset_postdata(); ?></div><?php else : ?><div class="pk-editorial-empty pk-editorial-empty--compact"><strong><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Aucune annonce publiée pour le moment.', 'Aucune annonce publiée pour le moment.', 'partikulier' ) ); ?></strong><a class="pk-editorial-link" href="<?php echo esc_url( $deposit ); ?>"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Publier gratuitement', 'Publier gratuitement', 'partikulier' ) ); ?> <span aria-hidden="true">→</span></a></div><?php endif; ?></div></section>
 
