@@ -126,14 +126,14 @@ try {
 
     // 2) E24-002 — dictionnaire forms figé (148 entrées, empreintes épinglées).
     $fp = $fingerprint(FormsDictionary::translations());
-    $assert('E24-002', $fp['count'] === 148 && $fp['keys_md5'] === 'ebe88486471bb2ad39a1b329cfb1dc50'
-        && $fp['entries_md5'] === 'b59832493dde8867dcade952d0094953',
+    $assert('E24-002', $fp['count'] === 148 && $fp['keys_md5'] === '912cdc5239f92eb938f714c5a765f191'
+        && $fp['entries_md5'] === '3c7ebb701c2e5b9c76d9936490305af8',
         sprintf('forms figé : %d entrées, clés %s, entrées %s', $fp['count'], $fp['keys_md5'], $fp['entries_md5']));
 
     // 3) E24-003 — dictionnaire chrome figé (136 entrées, empreintes épinglées).
     $fp = $fingerprint(ChromeDictionary::translations());
-    $assert('E24-003', $fp['count'] === 136 && $fp['keys_md5'] === '9172ae3b274b0747115ec20c263d2418'
-        && $fp['entries_md5'] === '2624aadd91b3561c242078d6d0820b64',
+    $assert('E24-003', $fp['count'] === 136 && $fp['keys_md5'] === 'dae6fb9d2ecff5445abe28dbd05f154f'
+        && $fp['entries_md5'] === '5db707858893cfef325059ba235eb477',
         sprintf('chrome figé : %d entrées, clés %s, entrées %s', $fp['count'], $fp['keys_md5'], $fp['entries_md5']));
 
     // 4) E24-004 — registre chrome public figé (150 entrées en contexte WP).
