@@ -2857,7 +2857,7 @@ var PK_EN = {"R+1": "R+1", "R+2": "R+2", "R+3": "R+3", "R+4": "R+4", "R+5": "R+5
 var PK_LANG = "fr";
 try {
   var pathLang = (location.pathname.match(/^\/(fr|en|ar)(?=\/)/) || [])[1];
-  PK_LANG = pathLang || sessionStorage.getItem("pk-review-lang") || "fr";
+  PK_LANG = pathLang || window.PK_FORCE_LANG || sessionStorage.getItem("pk-review-lang") || "fr";
 } catch (e) {}
 if (PK_LANG !== "fr" && PK_LANG !== "ar" && PK_LANG !== "en") PK_LANG = "fr";
 function pkNorm(s) {

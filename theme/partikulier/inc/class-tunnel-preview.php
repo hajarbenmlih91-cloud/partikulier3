@@ -20,6 +20,7 @@ class Partikulier_Tunnel_Preview {
 	 */
 	public static function init() {
 		add_action( 'init', array( __CLASS__, 'maybe_redirect' ), 0 );
+		add_action( 'template_redirect', array( __CLASS__, 'maybe_serve' ), 0 );
 		add_filter( 'template_include', array( __CLASS__, 'load_template' ), 99 );
 	}
 
@@ -31,7 +32,60 @@ class Partikulier_Tunnel_Preview {
 	public static function is_deposit_request() {
 		$path = isset( $_SERVER['REQUEST_URI'] ) ? (string) wp_unslash( $_SERVER['REQUEST_URI'] ) : '/'; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- chemin comparé à un motif fixe.
 		$path = (string) wp_parse_url( $path, PHP_URL_PATH );
-		return (bool) preg_match( '#^/(?:(?:fr|en|ar)/)?(?:deposer|deposer-une-annonce|deposer-annonce|publier-une-annonce)/?$#', $path );
+		return (bool) preg_match( '#^/(?:(?:fr|en|ar)/)?(?:deposer(?:-\d+)?|deposer-une-annonce|deposer-annonce|publier-une-annonce)/?$#', $path );
+	}
+
+	/**
+	 * Vrai si la page demandée est un dépôt, même avec un slug dupliqué.
+	 *
+	 * @return bool
+	 */
+	public static function is_deposit_page() {
+		if ( ! is_page() ) {
+			return false;
+		}
+		$post = get_queried_object();
+		if ( ! $post instanceof WP_Post ) {
+			return false;
+		}
+		if ( preg_match( '/^deposer(?:-\d+)?$/', (string) $post->post_name ) ) {
+			return true;
+		}
+		$template = (string) get_page_template_slug( $post->ID );
+		return in_array( $template, array( 'templates/page-deposer-annonce.php', 'templates/page-deposer-tunnel.php' ), true );
+	}
+
+	/**
+	 * Sert le formulaire avant que le thème n'imprime son en-tête.
+	 */
+	public static function maybe_serve() {
+		if ( is_admin() || wp_doing_ajax() || ( defined( 'REST_REQUEST' ) && REST_REQUEST ) || ( defined( 'WP_CLI' ) && WP_CLI ) ) {
+			return;
+		}
+		if ( ! self::is_deposit_request() && ! self::is_deposit_page() ) {
+			return;
+		}
+		self::serve_document();
+	}
+
+	/**
+	 * Langue du document : l'adresse d'abord, sinon la langue de la page.
+	 *
+	 * @return string
+	 */
+	private static function document_lang() {
+		$path = isset( $_SERVER['REQUEST_URI'] ) ? (string) wp_unslash( $_SERVER['REQUEST_URI'] ) : '/'; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- chemin comparé à un motif fixe.
+		$path = (string) wp_parse_url( $path, PHP_URL_PATH );
+		if ( preg_match( '#^/(fr|en|ar)(?:/|$)#', $path, $match ) ) {
+			return $match[1];
+		}
+		if ( function_exists( 'pll_current_language' ) ) {
+			$lang = pll_current_language( 'slug' );
+			if ( in_array( $lang, array( 'fr', 'en', 'ar' ), true ) ) {
+				return $lang;
+			}
+		}
+		return 'fr';
 	}
 
 	/**
@@ -107,8 +161,11 @@ class Partikulier_Tunnel_Preview {
 			status_header( 500 );
 			exit;
 		}
+		$boot = '<script>window.PK_FORCE_LANG=' . wp_json_encode( self::document_lang() ) . ';</script>';
 		if ( false === strpos( $html, 'name="robots"' ) ) {
-			$html = preg_replace( '#<head>#', "<head>\n<meta name=\"robots\" content=\"noindex, nofollow\">", $html, 1 );
+			$html = preg_replace( '#<head>#', "<head>\n<meta name=\"robots\" content=\"noindex, nofollow\">\n" . $boot, $html, 1 );
+		} else {
+			$html = preg_replace( '#<head>#', '<head>' . $boot, $html, 1 );
 		}
 		status_header( 200 );
 		if ( ! headers_sent() ) {

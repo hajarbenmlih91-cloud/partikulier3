@@ -59,7 +59,7 @@ for (const [engineName, engine] of Object.entries({ chromium, firefox, webkit })
                   lang: document.documentElement.lang,
                   heading: document.querySelector('.pk-submit-title')?.textContent || '',
                 }));
-                assert.equal(deposit.siteChrome, 0, 'Deposit form has no site header, footer, or search');
+                assert.equal(deposit.siteChrome, 0, `Deposit form has no site header, footer, or search: ${url}`);
                 assert.equal(deposit.formBar, 1, 'Deposit form keeps its own language bar');
                 assert.equal(deposit.lang, language, `Deposit form language follows the URL: ${deposit.lang}`);
                 const headings = { fr: 'Votre bien mérite', en: 'Your property deserves', ar: 'عقارك يستحق' };
