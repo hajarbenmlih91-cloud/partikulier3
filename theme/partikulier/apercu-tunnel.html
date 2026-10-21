@@ -6,16 +6,16 @@
 <title>Déposer une annonce</title>
 <style>
   :root {
-    --pk-primary: #9b6a3d;
-    --pk-primary-dark: #7e4f25;
+    --pk-primary: #de4141;
+    --pk-primary-dark: #c8242b;
     --pk-ink: #161715;
     --pk-text: #3d403b;
     --pk-muted: #8a877f;
-    --pk-line: #e7e2da;
-    --pk-white: #fffcf8;
-    --pk-wash: #f7f1ea;
-    --pk-peach: #ead8c2;
-    --pk-canvas: #f3efe8;
+    --pk-line: #e8e0e0;
+    --pk-white: #ffffff;
+    --pk-wash: #fdf2f2;
+    --pk-peach: #f0d0d0;
+    --pk-canvas: #ffffff;
     --pk-font: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   }
   * { box-sizing: border-box; }
@@ -46,7 +46,7 @@
     font-weight: 650;
     letter-spacing: .16em;
     text-transform: uppercase;
-    color: var(--pk-primary);
+    color: var(--pk-primary-dark);
   }
   .pk-submit-title {
     margin: 0;
@@ -55,7 +55,7 @@
     letter-spacing: -.045em;
     line-height: 1.02;
   }
-  .pk-hero-accent { display: block; color: #c4a07a; font-weight: 500; }
+  .pk-hero-accent { display: block; color: #c8242b; font-weight: 500; }
   .pk-submit-subtitle { margin: .9rem 0 0; color: var(--pk-muted); max-width: 34rem; font-size: 1.02rem; }
   .pk-stepper { margin: 2.1rem 0 1.8rem; }
   .pk-stepper-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin: 0; padding: 0; list-style: none; }
@@ -98,7 +98,7 @@
   .pk-stepper-item.is-current { color: var(--pk-ink); }
   .pk-stepper-item.is-current .pk-stepper-number { border-color: var(--pk-primary); background: var(--pk-primary); color: #fff; }
   .pk-stepper-item.is-complete { color: var(--pk-primary-dark); }
-  .pk-stepper-item.is-complete .pk-stepper-number { border-color: var(--pk-primary); color: var(--pk-primary); background: #fff; }
+  .pk-stepper-item.is-complete .pk-stepper-number { border-color: var(--pk-primary); color: var(--pk-primary-dark); background: #fff; }
   .pk-stepper-status { margin: .8rem 0 0; color: var(--pk-muted); font-size: .75rem; font-weight: 600; letter-spacing: .02em; }
   section > h1 { margin: 0 0 .35rem; font-size: 1.45rem; font-weight: 600; letter-spacing: -.03em; }
   .card {
@@ -117,7 +117,7 @@
   .lead, .pk-card-note { margin: 0 0 1.2rem; font-size: .92rem; }
   .hint { margin: .45rem 0 0; font-size: .82rem; }
   .lbl, .pk-label { display: block; margin: 1.15rem 0 .5rem; font-weight: 600; font-size: .78rem; letter-spacing: .01em; }
-  .pk-req { color: var(--pk-primary); font-weight: 650; }
+  .pk-req { color: var(--pk-primary-dark); font-weight: 650; }
   .choices, .pk-choice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .7rem; }
   .choice {
     position: relative;
@@ -135,9 +135,9 @@
   }
   .choice b { display: block; font-size: 1.02rem; font-weight: 600; margin-bottom: .2rem; letter-spacing: -.02em; }
   .choice small { display: block; font-size: .78rem; color: var(--pk-muted); line-height: 1.35; }
-  .choice[aria-pressed="true"] { background: #fff; border: 1.5px solid var(--pk-primary); box-shadow: 0 0 0 4px rgba(155, 106, 61, .08); }
-  .choice[aria-pressed="true"] b { color: var(--pk-ink); }
-  .choice[aria-pressed="true"] small { color: var(--pk-muted); }
+  .choice[aria-pressed="true"] { background: var(--pk-primary); border: 1.5px solid var(--pk-primary); box-shadow: none; color: #fff; }
+  .choice[aria-pressed="true"] b,
+  .choice[aria-pressed="true"] small { color: #fff; }
   .choice[aria-pressed="true"]::after {
     content: "✓";
     position: absolute;
@@ -146,8 +146,8 @@
     width: 18px;
     height: 18px;
     border-radius: 50%;
-    background: var(--pk-primary);
-    color: #fff;
+    background: #fff;
+    color: var(--pk-primary);
     font: 700 .68rem/18px var(--pk-font);
     text-align: center;
   }
@@ -157,18 +157,18 @@
     align-items: center;
     min-height: 36px;
     padding: .35rem .8rem;
-    border: 1px solid #e4ddd4;
+    border: 1px solid #e8dcdc;
     border-radius: 999px;
     background: #fff;
     color: var(--pk-ink);
     font-size: .86rem;
     cursor: pointer;
   }
-  .pill:hover, .chip:hover, .choice:hover { border-color: #c9b39a; }
+  .pill:hover, .chip:hover, .choice:hover { border-color: #e3b0b0; }
   .pill[aria-pressed="true"], .chip[aria-pressed="true"] {
     border: 1.5px solid var(--pk-primary);
-    background: var(--pk-wash);
-    color: var(--pk-primary-dark);
+    background: var(--pk-primary);
+    color: #fff;
     font-weight: 600;
   }
   .pills { display: flex; flex-wrap: wrap; gap: .45rem; }
@@ -177,13 +177,13 @@
   .info {
     position: absolute; top: -7px; right: -7px;
     width: 1.15rem; height: 1.15rem;
-    border: 1px solid #e4ddd4; border-radius: 99px;
+    border: 1px solid #e8dcdc; border-radius: 99px;
     background: #fff; color: var(--pk-primary-dark);
     font-size: .68rem; font-weight: 700; cursor: pointer;
   }
   .info.is-inline { position: static; display: inline-flex; align-items: center; justify-content: center; margin-left: .35rem; vertical-align: middle; }
   .tip, .alert { margin: .6rem 0 0; padding: .75rem .85rem; background: var(--pk-wash); border-radius: 12px; font-size: .84rem; }
-  .alert { color: #8a3b2a; }
+  .alert { color: #c8242b; }
   .drop {
     position: relative;
     display: flex;
@@ -204,7 +204,7 @@
   .drop span { color: var(--pk-muted); font-size: .84rem; }
   .drop input { position: absolute; width: 1px; height: 1px; opacity: 0; }
   .photos { display: grid; grid-template-columns: repeat(4, 1fr); gap: .6rem; margin-top: 1rem; }
-  .photo { position: relative; border: 1px solid var(--pk-line); border-radius: 12px; overflow: hidden; background: #f6efe6; }
+  .photo { position: relative; border: 1px solid var(--pk-line); border-radius: 12px; overflow: hidden; background: #f8f1f1; }
   .photo.is-cover { border: 1.5px solid var(--pk-primary); }
   .photo img { width: 100%; height: 92px; object-fit: cover; display: block; }
   .photo-actions { display: flex; gap: .25rem; padding: .35rem; }
@@ -232,7 +232,7 @@
     font: inherit;
     line-height: 1.45;
   }
-  .field textarea:focus { outline: none; border-color: var(--pk-primary); box-shadow: 0 0 0 4px rgba(155, 106, 61, .12); }
+  .field textarea:focus { outline: none; border-color: var(--pk-primary); box-shadow: 0 0 0 4px rgba(222, 65, 65, .14); }
   .field input, .suffix input {
     width: 100%;
     min-height: 48px;
@@ -241,7 +241,7 @@
     padding: .78rem .95rem;
     background: #fff;
   }
-  .field input:focus, .suffix input:focus { outline: none; border-color: var(--pk-primary); box-shadow: 0 0 0 4px rgba(155, 106, 61, .12); }
+  .field input:focus, .suffix input:focus { outline: none; border-color: var(--pk-primary); box-shadow: 0 0 0 4px rgba(222, 65, 65, .14); }
   .pk-autocomplete { position: relative; z-index: 4; }
   .pk-autocomplete:focus-within { z-index: 30; }
   .pk-lieu { position: relative; display: block; }
@@ -270,7 +270,7 @@
     margin: 0;
     padding: .72rem .95rem;
     border: 0;
-    border-bottom: 1px solid #f2f1ec;
+    border-bottom: 1px solid #f3eeee;
     border-radius: 0;
     background: #fff;
     color: var(--pk-ink);
@@ -280,22 +280,25 @@
   }
   .pk-suggest-item:last-child { border-bottom: 0; }
   .pk-suggest-item:hover, .pk-suggest-item:focus, .pk-suggest-item.is-active {
-    background: #faf8f4;
+    background: #faf6f6;
     color: var(--pk-primary-dark);
     outline: none;
   }
   .pk-suggest-label { font-weight: 650; }
   .pk-suggest-meta { flex-shrink: 0; font-size: .76rem; color: var(--pk-muted); font-weight: 500; }
 
-  .suffix { display: flex; align-items: center; border: 1px solid var(--pk-line); border-radius: 12px; background: #fff; }
-  .suffix:focus-within { border-color: var(--pk-primary); box-shadow: 0 0 0 4px rgba(155, 106, 61, .12); }
-  .suffix input { border: 0; box-shadow: none; }
-  .suffix span { padding-right: .85rem; color: var(--pk-muted); font-size: .84rem; }
+  .suffix { display: flex; align-items: center; flex-wrap: nowrap; border: 1px solid var(--pk-line); border-radius: 12px; background: #fff; }
+  .suffix:focus-within { border-color: var(--pk-primary); box-shadow: 0 0 0 4px rgba(222, 65, 65, .14); }
+  .suffix input { border: 0; box-shadow: none; min-width: 0; flex: 1 1 auto; }
+  .suffix span { padding-right: .85rem; color: var(--pk-muted); font-size: .84rem; white-space: nowrap; flex-shrink: 0; }
+  .prix-une-ligne { display: flex; align-items: center; gap: .75rem; flex-wrap: nowrap; }
+  .prix-une-ligne .lbl { margin: 0; flex: 0 0 auto; white-space: nowrap; }
+  .prix-une-ligne .suffix { flex: 1 1 auto; min-width: 0; }
   .counts, .price-grid, .lo-surfaces, .prix-ligne { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem 1.1rem; margin-top: 1rem; }
   .prix-ligne { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .prix-ligne .suffix span { white-space: nowrap; }
   .count-name { display: block; margin-bottom: .4rem; font-weight: 600; font-size: .78rem; }
-  .optional { font-weight: 500; color: var(--pk-primary); font-size: .76rem; }
+  .optional { font-weight: 500; color: var(--pk-primary-dark); font-size: .76rem; }
   .pk-preview {
     display: grid;
     grid-template-columns: 168px 1fr;
@@ -305,9 +308,9 @@
     margin: .4rem 0 1.4rem;
     background: #fff;
   }
-  .pk-preview-media { background: linear-gradient(160deg, #f6efe6, #ead8c2); min-height: 148px; }
+  .pk-preview-media { background: linear-gradient(160deg, #f8f1f1, #f0d0d0); min-height: 148px; }
   .pk-preview-body { padding: 1.15rem 1.25rem; }
-  .pk-preview-kicker { margin: 0 0 .35rem; font-size: .68rem; font-weight: 650; letter-spacing: .14em; text-transform: uppercase; color: var(--pk-primary); }
+  .pk-preview-kicker { margin: 0 0 .35rem; font-size: .68rem; font-weight: 650; letter-spacing: .14em; text-transform: uppercase; color: var(--pk-primary-dark); }
   .pk-preview-name, .pk-preview-texte, .pk-preview-title { overflow-wrap: anywhere; }
   .pk-preview-name { margin: 0 0 .7rem; font-size: 1rem; font-weight: 650; line-height: 1.35; text-transform: none; letter-spacing: 0; }
   .pk-preview-texte { margin: 0 0 .7rem; font-size: .92rem; line-height: 1.55; text-transform: none; letter-spacing: 0; white-space: pre-line; }
@@ -334,7 +337,7 @@
   .pk-step-legal { text-align: center; color: var(--pk-muted); font-size: .75rem; margin: 1rem 0 0; }
   .choices.pk-invalid, .pills.pk-invalid, .suffix.pk-invalid, #surface-champ.pk-invalid { outline: 2px solid #c0392b; outline-offset: 4px; }
   input.pk-invalid, .suffix.pk-invalid { border-color: #c0392b; box-shadow: 0 0 0 4px rgba(192, 57, 43, .1); }
-  .err { margin: .55rem 0 0; color: #8a3b2a; font-weight: 650; font-size: .84rem; }
+  .err { margin: .55rem 0 0; color: #c8242b; font-weight: 650; font-size: .84rem; }
 
   .stepper { display: flex; align-items: center; gap: .7rem; }
   .step {
@@ -365,6 +368,12 @@
   .pk-fold[open] .pk-fold-closed { display: none; }
   .pk-fold[open] .pk-fold-open { display: inline; }
   .pk-fold summary small { color: var(--pk-text); font-size: .86rem; font-weight: 500; }
+  #lieu-proposition .pk-fold-title { font-size: 1.08rem; font-weight: 750; color: #fff; }
+  #lieu-proposition .pk-fold-closed, #lieu-proposition .pk-fold-open { font-size: .86rem; font-weight: 500; color: #fff; }
+  #lieu-proposition summary,
+  #lieu-proposition[open] summary { background: #de4141; color: #fff; }
+  #lieu-proposition summary small { color: #fff; }
+  #lieu-proposition .pk-fold-mark { background: #fff; border-color: #fff; color: #de4141; }
   .pk-fold-mark {
     flex: 0 0 48px; width: 48px; height: 48px; display: grid; place-items: center;
     border: 2px solid var(--pk-primary); background: #fff; color: var(--pk-primary-dark);
@@ -372,7 +381,7 @@
   }
   .pk-fold-mark::before { content: "+"; }
   .pk-fold[open] .pk-fold-mark::before { content: "−"; }
-  .pk-fold[open] summary { background: #faf8f4; }
+  .pk-fold[open] summary { background: #faf6f6; }
   .pk-fold-body { padding: .2rem 1.05rem 1.15rem; }
   [hidden] { display: none !important; }
   @media (max-width: 767px) {
@@ -389,10 +398,10 @@
 </head>
 <body>
 <main class="pk-submit">
-  <a class="pk-submit-back" href="#top">← Retour à l’accueil</a>
+  <a class="pk-submit-back" href="/">← Retour à l’accueil</a>
   <p class="pk-editorial-kicker">Publication directe</p>
   <h1 class="pk-submit-title">Votre bien mérite<span class="pk-hero-accent">une annonce claire.</span></h1>
-  <p class="pk-submit-subtitle">Décrivez le bien, choisissez sa localisation et validez votre numéro. La publication reste gratuite et sans commission.</p>
+  <p class="pk-submit-subtitle">Décrivez le bien et choisissez sa localisation. La publication reste gratuite et sans commission.</p>
   <nav class="pk-stepper" aria-label="Étapes de publication">
     <ol class="pk-stepper-list">
       <li><button class="pk-stepper-item step-pill is-current" type="button" data-goto="1" aria-current="step"><span class="pk-stepper-number">1</span><span class="pk-stepper-label">Qui publie l’annonce ?</span></button></li>
@@ -403,7 +412,6 @@
   </nav>
   <section id="page-1">
     <h1>Qui publie l’annonce ?</h1>
-    <p class="lead">Propriétaire, vente ou location, le type de bien, puis la ville et le quartier.</p>
     <section class="card">
       <h2>Vous êtes <span class="pk-req" aria-hidden="true">*</span></h2>
       <div class="choices" style="margin-top:.85rem" data-single id="role">
@@ -477,7 +485,6 @@
         <p class="tip" id="tip-lot-residence" hidden>Grand terrain pour plusieurs villas ou une résidence fermée. Sur le cahier des charges, cela s’appelle souvent un groupement d’habitation.</p>
         <p class="tip" id="tip-lot-industriel" hidden>Terrain nu. Ce n’est pas un entrepôt déjà construit.</p>
         <p class="tip" id="tip-lot-agricole" hidden>La terre, même s’il y a une maison, un gardien ou une villa dessus. Cela ne devient pas une villa, ni une maison, ni une ferme.</p>
-        <p class="hint" id="note-vente-seule" hidden>En location, seul le terrain agricole apparaît. Les autres se vendent.</p>
       </div>
       <div class="suite-choix" id="suite-entrepot" hidden>
         <p class="lbl">Type d’entrepôt <span class="pk-req" aria-hidden="true">*</span></p>
@@ -495,29 +502,50 @@
         </div>
       </div>
       <label class="field pk-autocomplete" id="ville-champ">
-        <span class="lbl">Ville <span class="pk-req" aria-hidden="true">*</span></span>
+        <span class="lbl">Ville <span class="pk-req" id="ville-req" aria-hidden="true">*</span></span>
         <span class="pk-lieu">
           <input id="ville" aria-required="true" autocomplete="off" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="ville-list" placeholder="Tapez les premières lettres">
           <ul class="pk-suggest" id="ville-list" role="listbox" hidden></ul>
         </span>
-        <p class="hint">Les propositions apparaissent dès la première lettre, comme sur le site.</p>
       </label>
       <label class="field pk-autocomplete" id="quartier-champ">
-        <span class="lbl">Quartier <span class="pk-req" aria-hidden="true">*</span></span>
+        <span class="lbl">Quartier <span class="pk-req" id="quartier-req" aria-hidden="true">*</span></span>
         <span class="pk-lieu">
           <input id="quartier" aria-required="true" autocomplete="off" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="quartier-list" placeholder="Tapez les premières lettres">
           <ul class="pk-suggest" id="quartier-list" role="listbox" hidden></ul>
         </span>
       </label>
+      <details class="pk-fold" id="lieu-proposition">
+        <summary>
+          <span class="pk-fold-face">
+            <span class="pk-fold-title">Je ne trouve pas ma ville ou mon quartier</span>
+            <small>
+              <span class="pk-fold-closed">Appuyez ici pour ouvrir</span>
+              <span class="pk-fold-open">Appuyez ici pour fermer</span>
+            </small>
+          </span>
+          <span class="pk-fold-mark" aria-hidden="true"></span>
+        </summary>
+        <div class="pk-fold-body">
+          <p>Indiquez le lieu exact de votre bien. Il sera vérifié par notre équipe avant d’être ajouté.</p>
+          <p class="alert">Attention : votre annonce ne sera mise en ligne qu’après validation de ce lieu par notre équipe. Si vous trouvez votre ville dans la liste ci-dessus, préférez-la : la publication sera immédiate.</p>
+          <label class="field" id="pk-proposed-city-champ">
+            <span class="lbl">Ville <span class="pk-req" aria-hidden="true">*</span></span>
+            <input id="pk-proposed-city" name="pk_proposed_city" maxlength="60" autocomplete="off" aria-required="true" placeholder="Nom de la ville">
+          </label>
+          <label class="field">
+            <span class="lbl">Quartier <span class="optional">facultatif</span></span>
+            <input id="pk-proposed-district" name="pk_proposed_district" maxlength="60" autocomplete="off" placeholder="Nom du quartier (facultatif)">
+          </label>
+        </div>
+      </details>
     </section>
   </section>
 
   <section id="page-2" hidden>
-    <p class="recap" id="recap-type"></p>
     <h1 id="page2-titre">Le local</h1>
     <section class="card" id="bloc-photos">
       <h2>Photos du bien <span class="pk-req" aria-hidden="true">*</span></h2>
-      <p class="hint">Obligatoire, en dernier. JPG, PNG ou WebP, de 1 à 8 photos. La photo principale se choisit sur l’aperçu.</p>
       <label class="drop">
         <strong>Ajoutez vos photos</strong>
         <span>JPG, PNG, WebP · 1 à 8 photos</span>
@@ -533,7 +561,6 @@
 
     <div id="fiches-pro" hidden>
       <div id="fiche-immeuble" hidden>
-        <p class="lead">Immeuble déjà construit. Ce n’est pas un terrain pour en construire un.</p>
         <section class="card">
           <h2>L’immeuble</h2>
           <p class="lbl">Usage <span class="pk-req" aria-hidden="true">*</span></p>
@@ -543,7 +570,6 @@
             <button class="pill" type="button" data-val="mixte" data-court="mixte">Mixte</button>
           </div>
           <p class="lbl">Niveaux construits <span class="pk-req" aria-hidden="true">*</span></p>
-          <p class="hint">Plain-pied = rez-de-chaussée seul. 3 = rez-de-chaussée et deux étages.</p>
           <div class="pills" data-single id="im-niveaux">
             <button class="pill" type="button" data-val="plain" data-court="plain-pied">Plain-pied</button>
             <button class="pill" type="button" data-val="2" data-court="2 niveaux">2</button>
@@ -557,7 +583,6 @@
             <div class="suffix" style="max-width:240px"><input id="im-niveaux-num" type="number" min="6" inputmode="numeric" placeholder="Ex. 8" aria-label="Nombre exact de niveaux"><span>niveaux</span></div>
           </div>
           <p class="lbl">Sous-sol <span class="pk-req" aria-hidden="true">*</span></p>
-          <p class="hint">Il ne compte pas dans les niveaux construits.</p>
           <div class="pills" data-single id="im-soussol">
             <button class="pill" type="button" data-val="non" data-court="non">Non</button>
             <button class="pill" type="button" id="im-soussol-oui" data-val="oui" data-court="oui">Oui</button>
@@ -568,7 +593,6 @@
           </div>
           <div data-only="vente" id="im-auto-bloc">
             <p class="lbl">Autorisation maximale <span class="pk-req" aria-hidden="true">*</span></p>
-            <p class="hint">Le droit du plan. Pas les niveaux déjà construits.</p>
             <div class="pills" data-single id="im-auto">
               <button class="pill" type="button" data-val="2" data-court="R+2">R+2</button>
               <button class="pill" type="button" data-val="3" data-court="R+3">R+3</button>
@@ -588,7 +612,6 @@
           </div>
           <div id="im-reliquat" hidden>
             <p class="lbl">Il reste de la constructibilité <span class="pk-req" aria-hidden="true">*</span></p>
-            <p class="hint">Le construit est inférieur à l’autorisation.</p>
             <div class="pills" data-single id="im-reliquat-choix">
               <button class="pill" type="button" data-val="oui" data-court="oui">Oui</button>
               <button class="pill" type="button" data-val="non" data-court="non">Non</button>
@@ -621,7 +644,6 @@
                 <span class="count-value">0</span>
                 <button class="step" type="button" data-dir="1" aria-label="Plus de logements">+</button>
               </div>
-              <p class="hint">Touchez + ou −, même pour zéro.</p>
             </div>
           </div>
         </section>
@@ -657,19 +679,40 @@
             <span class="pk-fold-mark" aria-hidden="true"></span>
           </summary>
           <div class="pk-fold-body">
+          <p class="lbl">Hauteur utile sous plafond <span class="optional">facultatif</span> <button class="info is-inline" type="button" aria-controls="tip-en-hauteur">i</button></p>
+          <p class="tip" id="tip-en-hauteur" hidden>Hauteur intérieure utile, du sol au point le plus bas des poutres. Pas jusqu’au toit extérieur.</p>
+          <div class="pills" data-single id="en-hauteur">
+            <button class="pill" type="button" data-court="moins de 6 m">Moins de 6 m</button>
+            <button class="pill" type="button" data-court="6 à 8 m">6 à 8 m</button>
+            <button class="pill" type="button" data-court="8 à 10 m">8 à 10 m</button>
+            <button class="pill" type="button" data-court="plus de 10 m">Plus de 10 m</button>
+          </div>
+          <div class="follow" id="en-hauteur-suite" hidden>
+            <p>Nombre de mètres</p>
+            <div class="suffix"><input id="en-hauteur-libre" type="number" min="10" step="0.01" inputmode="decimal" placeholder="Ex. 12" aria-label="Nombre de mètres"><span>m</span></div>
+          </div>
+          <div class="counts">
+            <div>
+              <span class="count-name">Nombre de quais de déchargement <span class="optional">facultatif</span></span>
+              <div class="stepper" id="en-quais" data-stepper data-min="0" data-value="0" data-set="false" data-confirm-zero>
+                <button class="step" type="button" data-dir="-1" aria-label="Moins de quais">−</button>
+                <span class="count-value">0</span>
+                <button class="step" type="button" data-dir="1" aria-label="Plus de quais">+</button>
+              </div>
+            </div>
+          </div>
             <p class="lbl">Statut foncier</p>
             <div class="pills" data-single id="im-foncier">
               <button class="pill" type="button" data-court="titré">Titré</button>
               <button class="pill" type="button" data-court="en cours de titrage">En cours</button>
               <span class="with-info">
-                <button class="pill" type="button" data-court="melk">Melk</button>
+                <button class="pill" type="button" data-court="melk">Adlia</button>
                 <button class="info" type="button" aria-controls="tip-im-melk">i</button>
               </span>
             </div>
             <p class="tip" id="tip-im-melk" hidden>Pas de titre. La propriété repose sur un acte adoulaire.</p>
             <div data-only="vente">
               <p class="lbl">À démolir pour reconstruire <span class="optional">facultatif</span></p>
-              <p class="hint">Seulement si le propriétaire le dit. On ne le devine pas.</p>
               <div class="pills" id="im-demolir">
                 <button class="chip" type="button" id="im-demolir-btn">À démolir pour reconstruire</button>
               </div>
@@ -684,34 +727,10 @@
       </div>
 
       <div id="fiche-entrepot" hidden>
-        <p class="lead">Stockage, logistique, transit. On ne fabrique rien ici. Le type est choisi à l’étape précédente.</p>
         <section class="card">
           <h2>L’essentiel</h2>
           <p class="lbl">Surface couverte <span class="pk-req" aria-hidden="true">*</span></p>
           <div class="suffix" style="max-width:280px"><input id="en-surface" type="number" min="1" inputmode="decimal" placeholder="Ex. 1200" aria-label="Surface couverte"><span>m²</span></div>
-          <p class="lbl">Hauteur utile sous plafond <span class="pk-req" aria-hidden="true">*</span> <button class="info is-inline" type="button" aria-controls="tip-en-hauteur">i</button></p>
-          <p class="tip" id="tip-en-hauteur" hidden>Hauteur intérieure utile, du sol au point le plus bas des poutres. Pas jusqu’au toit extérieur.</p>
-          <div class="pills" data-single id="en-hauteur">
-            <button class="pill" type="button" data-court="moins de 6 m">Moins de 6 m</button>
-            <button class="pill" type="button" data-court="6 à 8 m">6 à 8 m</button>
-            <button class="pill" type="button" data-court="8 à 10 m">8 à 10 m</button>
-            <button class="pill" type="button" data-court="plus de 10 m">Plus de 10 m</button>
-          </div>
-          <div class="follow" id="en-hauteur-suite" hidden>
-            <p>Nombre de mètres</p>
-            <div class="suffix"><input id="en-hauteur-libre" type="number" min="10" step="0.01" inputmode="decimal" placeholder="Ex. 12" aria-label="Nombre de mètres"><span>m</span></div>
-          </div>
-          <div class="counts">
-            <div>
-              <span class="count-name">Nombre de quais de déchargement <span class="pk-req" aria-hidden="true">*</span></span>
-              <div class="stepper" id="en-quais" data-stepper data-min="0" data-value="0" data-set="false" data-confirm-zero>
-                <button class="step" type="button" data-dir="-1" aria-label="Moins de quais">−</button>
-                <span class="count-value">0</span>
-                <button class="step" type="button" data-dir="1" aria-label="Plus de quais">+</button>
-              </div>
-              <p class="hint">Touchez + ou −, même pour zéro.</p>
-            </div>
-          </div>
         </section>
         <section class="card">
           <h2>Prix</h2>
@@ -751,7 +770,7 @@
             <div class="pills" data-single id="en-titre">
               <button class="pill" type="button" data-court="titré">Titré</button>
               <button class="pill" type="button" data-court="en cours de titrage">En cours de titrage</button>
-              <button class="pill" type="button" data-court="melk">Melk</button>
+              <button class="pill" type="button" data-court="melk">Adlia</button>
             </div>
             <p class="lbl">Résistance de la dalle</p>
             <div class="suffix" style="max-width:280px"><input id="en-dalle" type="number" min="0" step="0.5" inputmode="decimal" placeholder="Ex. 5" aria-label="Résistance de la dalle"><span>t/m²</span></div>
@@ -779,7 +798,6 @@
       </div>
 
       <div id="fiche-batiment" hidden>
-        <p class="lead">Production, usine, manufacture. Ce n’est pas un entrepôt de stockage. Le type est choisi à l’étape précédente.</p>
         <section class="card">
           <h2>L’essentiel</h2>
           <p class="lbl">Surface couverte <span class="pk-req" aria-hidden="true">*</span></p>
@@ -790,16 +808,6 @@
             <button class="pill" type="button" data-court="Zone I1">Zone I1</button>
             <button class="pill" type="button" data-court="Zone I2 / I2s1">Zone I2 / I2s1</button>
             <button class="pill" type="button" data-court="Zone I3">Zone I3</button>
-          </div>
-          <p class="lbl">Électricité <span class="pk-req" aria-hidden="true">*</span></p>
-          <div class="pills" data-single id="bi-elec">
-            <button class="pill" type="button" data-val="basse" data-court="Basse tension">Basse tension</button>
-            <button class="pill" type="button" data-val="moyenne" data-court="Moyenne tension">Moyenne tension</button>
-          </div>
-          <div class="follow" id="bi-kva-suite" hidden>
-            <p class="lbl">Puissance du transformateur <span class="pk-req" aria-hidden="true">*</span> <button class="info is-inline" type="button" aria-controls="tip-bi-kva">i</button></p>
-            <p class="tip" id="tip-bi-kva" hidden>Puissance du transformateur dédié, en kVA. Courant : 160, 250, 400, 630 ou 1 000.</p>
-            <div class="suffix"><input id="bi-kva" type="number" min="1" inputmode="decimal" placeholder="Ex. 630" aria-label="Puissance du poste"><span>kVA</span></div>
           </div>
         </section>
         <section class="card">
@@ -836,6 +844,16 @@
             <span class="pk-fold-mark" aria-hidden="true"></span>
           </summary>
           <div class="pk-fold-body">
+          <p class="lbl">Électricité <span class="optional">facultatif</span></p>
+          <div class="pills" data-single id="bi-elec">
+            <button class="pill" type="button" data-val="basse" data-court="Basse tension">Basse tension</button>
+            <button class="pill" type="button" data-val="moyenne" data-court="Moyenne tension">Moyenne tension</button>
+          </div>
+          <div class="follow" id="bi-kva-suite" hidden>
+            <p class="lbl">Puissance du transformateur <span class="optional">facultatif</span> <button class="info is-inline" type="button" aria-controls="tip-bi-kva">i</button></p>
+            <p class="tip" id="tip-bi-kva" hidden>Puissance du transformateur dédié, en kVA. Courant : 160, 250, 400, 630 ou 1 000.</p>
+            <div class="suffix"><input id="bi-kva" type="number" min="1" inputmode="decimal" placeholder="Ex. 630" aria-label="Puissance du poste"><span>kVA</span></div>
+          </div>
             <p class="lbl">Hauteur utile <span class="optional">facultatif</span></p>
             <div class="suffix" style="max-width:280px"><input id="bi-hauteur" type="number" min="1" step="0.01" inputmode="decimal" placeholder="Ex. 8" aria-label="Hauteur utile"><span>m</span></div>
             <p class="lbl">Bureaux ou mezzanine</p>
@@ -859,7 +877,6 @@
       </div>
 
       <div id="fiche-ferme" hidden>
-        <p class="lead">Une ferme est un outil de production. Ce n’est pas un terrain agricole nu.</p>
         <section class="card">
           <h2>L’essentiel</h2>
           <p class="lbl">Exploitation <span class="pk-req" aria-hidden="true">*</span></p>
@@ -887,7 +904,7 @@
               <button class="info" type="button" aria-controls="tip-fe-titre">i</button>
             </span>
             <span class="with-info">
-              <button class="pill" type="button" data-court="en melk">Melk, acte adoulaire</button>
+              <button class="pill" type="button" data-court="en melk">Adlia</button>
               <button class="info" type="button" aria-controls="tip-fe-melk">i</button>
             </span>
             <span class="with-info">
@@ -896,9 +913,9 @@
             </span>
           </div>
           <p class="tip" id="tip-fe-titre" hidden>Numéro de titre à la Conservation foncière.</p>
-          <p class="tip" id="tip-fe-melk" hidden>Pas de titre. Moulkia rédigée par des adouls. Vérifier l’indivision et purger la chafâa avant de payer.</p>
+          <p class="tip" id="tip-fe-melk" hidden>Pas de titre. Adlia rédigée par des adouls. Vérifier l’indivision et purger la chafâa avant de payer.</p>
           <p class="tip" id="tip-fe-soulalie" hidden>Terre collective. La vente à un particulier est interdite. Seule une location de longue durée, validée par l’État, est possible.</p>
-          <p class="alert" id="fe-alerte-melk" hidden><strong>Melk.</strong> Vérifier l’origine, l’indivision et la chafâa.</p>
+          <p class="alert" id="fe-alerte-melk" hidden><strong>Adlia.</strong> Vérifier l’origine, l’indivision et la chafâa.</p>
           <p class="alert" id="fe-alerte-soulalie" hidden><strong>Terre soulalie.</strong> La vente est bloquée. Seule la location reste possible.</p>
         </section>
         <section class="card">
@@ -930,7 +947,7 @@
             <div class="pills" data-single id="fe-bail">
               <button class="pill" type="button" id="fe-bail-court" data-court="bail de 1 à 2 ans">Bail saisonnier / maraîcher, 1 à 2 ans</button>
               <button class="pill" type="button" id="fe-bail-standard" data-court="bail de 3 à 9 ans">Bail agricole standard, 3 à 9 ans</button>
-              <button class="pill" type="button" id="fe-bail-long" data-court="bail de longue durée">Bail de longue durée / emphytéotique</button>
+              <button class="pill" type="button" id="fe-bail-long" data-court="bail de longue durée">Bail de longue durée</button>
             </div>
             <p class="alert" id="fe-alerte-bail" hidden><strong>Bail long obligatoire.</strong> Terre soulalie : les baux courts sont retirés.</p>
             <p class="lbl">Base du loyer <span class="optional">facultatif</span></p>
@@ -1013,10 +1030,8 @@
 
     <div id="fiches-lot" hidden>
       <div id="fiche-lot-villa" hidden>
-        <p class="lead">Une seule villa à construire. Pas de pièces. Ce n’est pas une villa déjà bâtie.</p>
         <section class="card">
           <h2>Type de villa autorisé <span class="pk-req" aria-hidden="true">*</span></h2>
-          <p class="hint">Fixé par le plan d’aménagement, par rapport aux voisins.</p>
           <div class="pills" data-single id="lv-type">
             <button class="pill" type="button">Villa isolée, 4 façades</button>
             <button class="pill" type="button">Villa jumelée, 3 façades</button>
@@ -1065,7 +1080,6 @@
         </section>
         <section class="card">
           <h2>Règlement d’urbanisme</h2>
-          <p class="hint">Recopié de la note de renseignements, ou du cahier des charges du lotissement.</p>
           <p class="lbl">Zonage officiel</p>
           <div class="pills" data-single id="lv-zonage">
             <button class="pill" type="button">Zone D, villas</button>
@@ -1104,7 +1118,6 @@
         </section>
         <section class="card">
           <h2>Viabilisation</h2>
-          <p class="hint">Seulement ce qui est déjà là. Tout peut rester décoché.</p>
           <div class="pills" id="lv-via">
             <button class="chip" type="button">Eau et électricité</button>
             <button class="chip" type="button">Assainissement</button>
@@ -1122,10 +1135,8 @@
       </div>
 
       <div id="fiche-lot-immeuble" hidden>
-        <p class="lead">Pour construire un immeuble. Ce n’est pas un immeuble déjà bâti. La hauteur fixe ce qu’on peut revendre.</p>
         <section class="card">
           <h2>Hauteur réglementaire <span class="pk-req" aria-hidden="true">*</span></h2>
-          <p class="hint">Le premier critère du plan d’aménagement.</p>
           <div class="pills" data-single id="li-hauteur">
             <button class="pill" type="button">Zone R+2</button>
             <button class="pill" type="button">Zone R+3</button>
@@ -1181,7 +1192,6 @@
           <div class="pk-fold-body">
         <section class="card">
           <h2>Zonage et densité</h2>
-          <p class="hint">Le code officiel du plan d’aménagement. Rien n’est choisi.</p>
           <div class="counts">
             <div>
               <span class="count-name">COS, occupation du sol <button class="info is-inline" type="button" aria-controls="tip-li-cos">i</button></span>
@@ -1201,12 +1211,12 @@
           <p class="lbl">Rez-de-chaussée</p>
           <div class="pills" data-single id="li-rdc">
             <span class="with-info">
-              <button class="pill" type="button">RDC commercial, alignement</button>
+              <button class="pill" type="button" data-court="RDC commercial">RDC commercial</button>
               <button class="info" type="button" aria-controls="tip-li-rdc">i</button>
             </span>
             <button class="pill" type="button">RDC résidentiel</button>
           </div>
-          <p class="tip" id="tip-li-rdc" hidden>À cocher seulement si la rue a un alignement commercial validé. Un magasin en rez-de-chaussée est souvent la partie la plus rentable du projet.</p>
+          <p class="tip" id="tip-li-rdc" hidden>Un magasin en rez-de-chaussée est souvent la partie la plus rentable du projet.</p>
           <p class="lbl">Sous-sols obligatoires</p>
           <div class="pills" data-single id="li-soussol">
             <button class="pill" type="button">1 niveau de sous-sol</button>
@@ -1226,7 +1236,7 @@
           <p class="lbl">Configuration</p>
           <div class="pills" data-single id="li-config">
             <button class="pill" type="button">Terrain en angle</button>
-            <button class="pill" type="button">Terrain en ligne</button>
+            <button class="pill" type="button">Terrain normal</button>
           </div>
           <p class="lbl">État actuel</p>
           <div class="pills" data-single id="li-etat">
@@ -1247,7 +1257,6 @@
         </section>
         <section class="card">
           <h2>Viabilisation</h2>
-          <p class="hint">Seulement ce qui est déjà prêt. Tout peut rester décoché.</p>
           <div class="pills" id="li-via">
             <button class="chip" type="button">Eau, électricité et assainissement</button>
             <span class="with-info">
@@ -1271,10 +1280,8 @@
       </div>
 
       <div id="fiche-lot-urbain" hidden>
-        <p class="lead" id="tu-lead">Terrain nu. Le type est déjà choisi.</p>
         <section class="card">
           <h2>Constructibilité <span class="pk-req" aria-hidden="true">*</span></h2>
-          <p class="hint">Ce qu’on a le droit de construire. Pas de pièces, pas d’étage du logement.</p>
           <div class="pills" data-single id="tu-hauteur">
             <button class="pill" type="button">Plain-pied</button>
             <button class="pill" type="button">R+1</button>
@@ -1319,17 +1326,8 @@
             <span class="pk-fold-mark" aria-hidden="true"></span>
           </summary>
           <div class="pk-fold-body">
-        <section class="card" id="tu-commercial" hidden>
-          <h2>Alignement</h2>
-          <p class="hint">Facultatif. Ne bloque pas Continuer.</p>
-          <div class="pills" data-single id="tu-alignement">
-            <button class="pill" type="button" data-val="oui" data-court="alignement commercial validé">Validé par l’Agence urbaine</button>
-            <button class="pill" type="button" data-val="non" data-court="sans alignement commercial">Non</button>
-          </div>
-        </section>
         <section class="card" id="tu-residence" hidden>
           <h2>Cahier des charges</h2>
-          <p class="hint">Facultatif. Ne bloque pas Continuer.</p>
           <div class="pills" data-single id="tu-cahier">
             <button class="pill" type="button" data-val="oui" data-court="cahier des charges approuvé">Approuvé</button>
             <button class="pill" type="button" data-val="non" data-court="cahier des charges non approuvé">Non</button>
@@ -1344,7 +1342,6 @@
           </div>
         <section class="card">
           <h2>Accès</h2>
-          <p class="hint">Seulement s’ils sont déjà là. Rien n’est obligatoire.</p>
           <div class="pills" id="tu-acces">
             <button class="chip" type="button">Eau</button>
             <button class="chip" type="button">Électricité</button>
@@ -1358,7 +1355,6 @@
       </div>
 
       <div id="fiche-lot-industriel" hidden>
-        <p class="lead">Terrain nu. La hauteur est en mètres, pas en étages. Ce n’est pas un entrepôt déjà construit.</p>
         <section class="card">
           <h2>Le terrain</h2>
           <div class="counts">
@@ -1376,7 +1372,6 @@
         </section>
         <section class="card">
           <h2>Note urbanistique</h2>
-          <p class="hint">Recopiée de la note de renseignements. La hauteur se donne en mètres, jamais en étages.</p>
           <p class="lbl">Zonage officiel <span class="pk-req" aria-hidden="true">*</span> <button class="info is-inline" type="button" aria-controls="tip-ti-zonage">i</button></p>
           <p class="tip" id="tip-ti-zonage" hidden>Regardez « Affectation de la zone » ou « Secteur » sur la note de renseignements. Les zones industrielles portent la lettre I : I1, I2, I2s1, I3, I5.</p>
           <div class="pills" data-single id="ti-zonage">
@@ -1430,7 +1425,6 @@
           <div class="suffix" style="max-width:280px"><input id="ti-cus" type="number" min="1" max="100" placeholder="Ex. 50" aria-label="Coefficient d’emprise au sol"><span>%</span></div>
         <section class="card">
           <h2>Viabilisation</h2>
-          <p class="hint">Seulement ce qui est déjà en place. Rien n’est obligatoire.</p>
           <div class="pills" id="ti-via">
             <button class="chip" type="button">Eau potable</button>
             <button class="chip" type="button">Eaux usées industrielles</button>
@@ -1442,7 +1436,6 @@
         </section>
         <section class="card">
           <h2>Accès et logistique</h2>
-          <p class="hint">La moyenne tension suppose un poste transformateur. Le semi-remorque, un accès 40 tonnes.</p>
           <div class="pills" id="ti-acces">
             <button class="chip" type="button">Voie goudronnée</button>
             <button class="chip" type="button">Semi-remorques, 40 t</button>
@@ -1453,17 +1446,15 @@
       </div>
 
       <div id="fiche-lot-agricole" hidden>
-        <p class="lead">La terre, même s’il y a une maison dessus. Cela ne devient pas une villa, ni une maison, ni une ferme.</p>
         <section class="card">
           <h2>Statut foncier <span class="pk-req" aria-hidden="true">*</span></h2>
-          <p class="hint">La nature du droit, pas seulement « titré ou non ».</p>
           <div class="pills" data-single id="ta-statut">
             <span class="with-info">
               <button class="pill" type="button">Titré</button>
               <button class="info" type="button" aria-controls="tip-ta-titre">i</button>
             </span>
             <span class="with-info">
-              <button class="pill" type="button">Melk, acte adoulaire</button>
+              <button class="pill" type="button" data-court="Melk, acte adoulaire">Adlia</button>
               <button class="info" type="button" aria-controls="tip-ta-melk">i</button>
             </span>
             <span class="with-info">
@@ -1476,10 +1467,10 @@
             </span>
           </div>
           <p class="tip" id="tip-ta-titre" hidden>Le plus sûr. Numéro de titre à la Conservation foncière, plan précis. C’est ce statut qui ouvre le crédit, l’assurance et les subventions.</p>
-          <p class="tip" id="tip-ta-melk" hidden>Pas de titre. La propriété repose sur une moulkia rédigée par des adouls. Après une vente en melk, un proche peut exercer la chafâa et racheter au même prix.</p>
+          <p class="tip" id="tip-ta-melk" hidden>Pas de titre. La propriété repose sur une Adlia rédigée par des adouls. Après une vente en Adlia, un proche peut exercer la chafâa et racheter au même prix.</p>
           <p class="tip" id="tip-ta-soulalie" hidden>Terre collective, sous tutelle du ministère de l’Intérieur. La vente à un particulier est interdite et nulle. Seule une location de longue durée, validée par l’État, est possible.</p>
           <p class="tip" id="tip-ta-domaine" hidden>Terre de l’État. Un particulier ne peut pas la vendre. Seule la location est possible.</p>
-          <p class="alert" id="ta-alerte-melk" hidden><strong>Melk.</strong> Plus long à vérifier. S’assurer qu’il n’y a ni indivision, ni litige familial, et que la chafâa est purgée.</p>
+          <p class="alert" id="ta-alerte-melk" hidden><strong>Adlia.</strong> Plus long à vérifier. S’assurer qu’il n’y a ni indivision, ni litige familial, et que la chafâa est purgée.</p>
           <p class="alert" id="ta-alerte-soulalie" hidden><strong>Terre soulalie.</strong> La vente est bloquée. Seule la location de longue durée, validée par l’État, est possible.</p>
           <p class="alert" id="ta-alerte-domaine" hidden><strong>Domaine privé de l’État.</strong> La vente est bloquée. Seule la location est possible.</p>
           <p class="lbl">Bour ou irrigué <span class="pk-req" aria-hidden="true">*</span></p>
@@ -1515,7 +1506,7 @@
           <div class="pills" data-single id="ta-bail">
             <button class="pill" type="button" id="ta-bail-court">Bail saisonnier / maraîcher, 1 à 2 ans</button>
             <button class="pill" type="button" id="ta-bail-standard">Bail agricole standard, 3 à 9 ans</button>
-            <button class="pill" type="button" id="ta-bail-long">Bail de longue durée / emphytéotique</button>
+            <button class="pill" type="button" id="ta-bail-long" data-court="bail de longue durée">Bail de longue durée</button>
           </div>
           <p class="alert" id="ta-alerte-bail" hidden><strong>Bail long obligatoire.</strong> Terre soulalie ou domaine de l’État : les baux courts sont retirés.</p>
           <p class="lbl">Fréquence de paiement <span class="pk-req" aria-hidden="true">*</span> <button class="info is-inline" type="button" aria-controls="tip-ta-freq">i</button></p>
@@ -1538,7 +1529,6 @@
             <button class="pill" type="button">Par mois</button>
             <button class="pill" type="button">Par an</button>
           </div>
-          <p class="hint">Par an est le choix recommandé pour les grands terrains.</p>
           <p class="calc" id="ta-calc-location" hidden></p>
         </section>
         <details class="pk-fold">
@@ -1553,7 +1543,6 @@
           <div class="pk-fold-body">
         <section class="card">
           <h2>Eau et irrigation</h2>
-          <p class="hint">Le forage et le réseau restent facultatifs.</p>
           <p class="lbl">Déjà en place</p>
           <div class="pills" id="ta-eau">
             <button class="chip" type="button" id="ta-puits">Puits fonctionnel</button>
@@ -1590,7 +1579,6 @@
             <button class="pill" type="button">Élevage</button>
           </div>
           <p class="lbl">Habitation sur place</p>
-          <p class="hint">Une maison ici ne change pas le type. Cela reste un terrain agricole.</p>
           <div class="pills" data-single id="ta-logement">
             <button class="pill" type="button">Aucune</button>
             <button class="pill" type="button">Maison de gardien</button>
@@ -1611,7 +1599,6 @@
     </div>
 
     <div id="fiche-appartement" hidden>
-      <p class="lead">Chambres, salon et salles de bain se règlent avec + et −. L’étage commence au RDC. Une maison ne s’écrit pas ici.</p>
       <section class="card" data-only="location">
         <h2>Contrat <span class="pk-req" aria-hidden="true">*</span></h2>
         <div class="pills" data-single id="ap-contrat">
@@ -1705,19 +1692,17 @@
           <p class="tip" id="tip-triplex" hidden>Un triplex occupe trois niveaux. On précise s’il part du rez-de-chaussée ou d’étages supérieurs.</p>
         </div>
         <p class="wording" id="ap-wording" hidden>Dans le texte : <strong>Appartement</strong></p>
-        <p class="hint" id="ap-plus-studio" hidden>2 chambres ou plus : ce n’est plus un studio.</p>
       </section>
       <div id="ap-home-qualites"></div>
       <section class="card" id="ap-meuble-card" hidden>
         <h2>Ameublement <span class="pk-req" id="ap-meuble-req" aria-hidden="true">*</span></h2>
-        <p class="hint" id="ap-meuble-hint">Meublé ou vide.</p>
         <div class="pills" data-single id="ap-meuble">
           <button class="pill" type="button" data-court="meublé">Meublé</button>
           <button class="pill" type="button" data-court="vide">Vide</button>
         </div>
       </section>
       <section class="card" id="ap-standing-card">
-        <h2>Standing <span class="pk-req" aria-hidden="true">*</span></h2>
+        <h2>Standing <span class="optional">facultatif</span></h2>
         <div class="pills" data-single id="ap-standing">
           <button class="pill" type="button">Économique</button>
           <button class="pill" type="button">Moyen standing</button>
@@ -1725,8 +1710,8 @@
         </div>
       </section>
       <section class="card" id="ap-soleil-bloc">
-        <h2>Ensoleillement <span class="pk-req" aria-hidden="true">*</span></h2>
-        <select class="box" id="ap-soleil" aria-label="Ensoleillement" aria-required="true">
+        <h2>Ensoleillement <span class="optional">facultatif</span></h2>
+        <select class="box" id="ap-soleil" aria-label="Ensoleillement">
           <option value="">Choisir</option>
           <option>Ensoleillé le matin</option>
           <option>Ensoleillé l’après-midi</option>
@@ -1791,41 +1776,8 @@
             <span class="pk-fold-mark" aria-hidden="true"></span>
           </summary>
         <div class="pk-fold-body">
-      <section class="card">
-        <h2>Caractéristiques générales</h2>
-        <p class="hint">Ce qui appartient à la résidence. Un garage titré demande sa surface. Un espace commun, non.</p>
-        <div class="pills">
-          <button class="chip" type="button">Résidence fermée</button>
-          <button class="chip" type="button">Jardin de la résidence</button>
-          <button class="chip" type="button">Piscine de la résidence</button>
-          <button class="chip" type="button">Concierge</button>
-          <button class="chip" type="button">Conciergerie de luxe</button>
-          <button class="chip" type="button">Agents de sécurité</button>
-          <button class="chip" type="button">Ascenseur</button>
-          <button class="chip" type="button">Box</button>
-          <button class="chip" type="button" id="ap-garage">Garage</button>
-          <button class="chip" type="button">Salle de sport</button>
-          <button class="chip" type="button">Aire de jeux</button>
-        </div>
-        <div class="follow" id="ap-garage-suite" hidden>
-          <p>Ce garage est-il titré, ou un espace commun ?</p>
-          <div class="pills" data-single id="ap-garage-type">
-            <span class="with-info">
-              <button class="pill" type="button">Place de parking / Garage titré</button>
-              <button class="info" type="button" aria-controls="tip-garage">i</button>
-            </span>
-            <button class="pill" type="button">Espace commun</button>
-          </div>
-          <p class="tip" id="tip-garage" hidden>À cocher seulement si la place a sa propre part sur le titre foncier. Une place titrée ajoute souvent 80 000 à 120 000 DH à la valeur du bien.</p>
-          <div id="ap-garage-surface" hidden style="margin-top:.8rem">
-            <p>Superficie du garage</p>
-            <div class="suffix"><input type="number" min="1" placeholder="Ex. 14" aria-label="Superficie du garage"><span>m²</span></div>
-          </div>
-        </div>
-      </section>
-      <section class="card">
-        <h2>Intérieur</h2>
-        <p class="hint">Ce qui est dans l’appartement. Les salons marocain et européen n’apparaissent qu’en location.</p>
+      <section class="card" id="ap-sec-interieur">
+        <h2>Intérieur <span class="optional">facultatif</span></h2>
         <p class="sub">Aménagement</p>
         <div class="pills">
           <button class="chip" type="button" data-only="location">Salon Marocain</button>
@@ -1849,13 +1801,18 @@
             <button class="chip" type="button" id="ap-cuisine">Cuisine américaine</button>
             <button class="info" type="button" aria-controls="tip-cuisine-us">i</button>
           </span>
+          <button class="chip" type="button">Suite parentale</button>
+          <span class="with-info">
+            <button class="chip" type="button">Dressing</button>
+            <button class="info" type="button" aria-controls="tip-ap-dressing">i</button>
+          </span>
           <button class="chip" type="button" data-only="location">Wifi</button>
         </div>
+        <p class="tip" id="tip-ap-dressing" hidden>Pièce ou grand placard pour les vêtements. Ce n’est pas une chambre.</p>
         <p class="tip" id="tip-cuisine-us" hidden>Cuisine ouverte sur le salon.</p>
         <p class="tip" id="tip-cuisine-fermee" hidden>Beaucoup de familles préfèrent une cuisine fermée, pour que les odeurs de cuisson ne passent pas dans le salon.</p>
         <div data-only="location">
           <p class="sub">Équipements</p>
-          <p class="hint">En vente, ces appareils ne sont pas proposés : ils ne partent pas avec l’appartement.</p>
           <div class="pills">
             <button class="chip" type="button">Réfrigérateur</button>
             <button class="chip" type="button">Four</button>
@@ -1866,29 +1823,64 @@
           </div>
         </div>
       </section>
-      <section class="card">
-        <h2>Options supplémentaires</h2>
-        <p class="hint">Ce qui distingue cet appartement. Une terrasse cochée demande sa surface.</p>
+<section class="card" id="ap-sec-hors">
+        <h2>Extérieur <span class="optional">facultatif</span></h2>
         <div class="pills">
+          <button class="chip" type="button">Résidence fermée</button>
+          <button class="chip" type="button">Jardin de la résidence</button>
+          <button class="chip" type="button">Piscine de la résidence</button>
+          <button class="chip" type="button">Concierge</button>
+          <button class="chip" type="button">Conciergerie de luxe</button>
+          <button class="chip" type="button">Agents de sécurité</button>
+          <button class="chip" type="button">Ascenseur</button>
+          <button class="chip" type="button">Box</button>
+          <button class="chip" type="button" id="ap-garage">Garage</button>
+          <button class="chip" type="button">Salle de sport</button>
+          <button class="chip" type="button">Aire de jeux</button>
+                  <button class="chip" type="button" id="ap-terrasse">Terrasse</button>
+          <button class="chip" type="button">Balcon</button>
+          <button class="chip" type="button" id="ap-jardin" hidden>Jardin privatif</button>
+          <button class="chip" type="button">Piscine privative</button>
+</div>
+        <div class="follow" id="ap-garage-suite" hidden>
+          <p>Ce garage est-il titré, ou un espace commun ?</p>
+          <div class="pills" data-single id="ap-garage-type">
+            <span class="with-info">
+              <button class="pill" type="button">Place de parking / Garage titré</button>
+              <button class="info" type="button" aria-controls="tip-garage">i</button>
+            </span>
+            <button class="pill" type="button">Espace commun</button>
+          </div>
+          <p class="tip" id="tip-garage" hidden>À cocher seulement si la place a sa propre part sur le titre foncier. Une place titrée ajoute souvent 80 000 à 120 000 DH à la valeur du bien.</p>
+          <div id="ap-garage-surface" hidden style="margin-top:.8rem">
+            <p>Superficie du garage</p>
+            <div class="suffix"><input type="number" min="1" placeholder="Ex. 14" aria-label="Superficie du garage"><span>m²</span></div>
+          </div>
+        </div>
+      <div class="follow" id="ap-terrasse-suite" hidden>
+          <p>Superficie de la terrasse</p>
+          <div class="suffix"><input type="number" min="1" placeholder="Ex. 12" aria-label="Superficie de la terrasse"><span>m²</span></div>
+        </div>
+</section>
+<section class="card" id="ap-sec-valeur">
+        <h2>Atouts d’exception <span class="optional">facultatif</span></h2>
+        <div class="pills">
+<span class="with-info">
+          <button class="chip" type="button" id="ap-front-mer">Front de mer</button>
+          <button class="info" type="button" aria-controls="tip-ap-front-mer">i</button>
+        </span>
           <button class="chip" type="button">Vue sur mer</button>
           <button class="chip" type="button">Vue sur piscine</button>
           <button class="chip" type="button">Vue sur les montagnes</button>
           <button class="chip" type="button">Vue forêt</button>
           <button class="chip" type="button">Vue sur la nature</button>
           <button class="chip" type="button">Sans vis-à-vis</button>
-          <button class="chip" type="button" id="ap-terrasse">Terrasse</button>
-          <button class="chip" type="button">Balcon</button>
-          <button class="chip" type="button" id="ap-jardin" hidden>Jardin privatif</button>
           <button class="chip" type="button">Dernier étage</button>
-          <button class="chip" type="button">Piscine privative</button>
-          <button class="chip" type="button">Suite parentale</button>
           <button class="chip" type="button">Jamais habitée</button>
         </div>
-        <div class="follow" id="ap-terrasse-suite" hidden>
-          <p>Superficie de la terrasse</p>
-          <div class="suffix"><input type="number" min="1" placeholder="Ex. 12" aria-label="Superficie de la terrasse"><span>m²</span></div>
-        </div>
-      </section>
+        <p class="tip" id="tip-ap-front-mer" hidden>Directement sur la mer, pas seulement une vue.</p>
+              </section>
+
         <div id="ap-syndic-fold">
         <p class="lbl">Charges de syndic</p>
         <div class="pills" data-single id="ap-syndic-choix">
@@ -1905,48 +1897,27 @@
       <div id="ap-photos-slot"></div>
     </div>
     <div id="fiche-maison" hidden>
-      <p class="lead" id="ma-lead">On demande le nombre d’étages. Une maison ne s’écrit jamais Studio.</p>
       <section class="card" id="ma-etages-card">
         <h2>Nombre d’étages <span class="pk-req" aria-hidden="true">*</span></h2>
         <div class="pills" data-single id="ma-niveaux">
-          <button class="pill" type="button">Plain-pied</button>
+          <button class="pill" type="button">RDC</button>
           <button class="pill" type="button">2 niveaux</button>
           <button class="pill" type="button">3 niveaux</button>
-          <button class="pill" type="button" id="ma-etages-plus">4+ ou configuration en cascade</button>
+          <button class="pill" type="button" id="ma-etages-plus">4+</button>
         </div>
         <div class="field" id="ma-etages-suite" hidden>
           <span class="lbl">Combien d’étages <span class="pk-req" aria-hidden="true">*</span></span>
           <div class="suffix" style="max-width:220px"><input id="ma-etages-num" type="number" min="4" inputmode="numeric" placeholder="Ex. 5" aria-label="Nombre d’étages"></div>
         </div>
       </section>
-      <section class="card" id="ma-titre-card">
-        <h2>Titre <span class="pk-req" aria-hidden="true">*</span></h2>
-        <div class="pills" data-single id="ma-titre">
-          <button class="pill" type="button" data-court="titré">Titré</button>
-          <span class="with-info">
-            <button class="pill" type="button" data-court="adlia">Adlia</button>
-            <button class="info" type="button" aria-controls="tip-ma-adlia">i</button>
-          </span>
-        </div>
-        <p class="tip" id="tip-ma-adlia" hidden>Acte adoulaire. Pas de titre foncier.</p>
-      </section>
-      <section class="card" id="ma-standing-card">
-        <h2>Standing <span class="pk-req" aria-hidden="true">*</span></h2>
-        <div class="pills" data-single id="ma-standing">
-          <button class="pill" type="button">Économique</button>
-          <button class="pill" type="button">Moyen standing</button>
-          <button class="pill" type="button">Haut standing</button>
-        </div>
-      </section>
       <section class="card" id="ma-meuble-card" data-only="location">
         <h2>Ameublement <span class="pk-req" aria-hidden="true">*</span></h2>
-        <p class="hint" id="ma-meuble-hint">Meublé ou vide.</p>
         <div class="pills" data-single id="ma-meuble">
           <button class="pill" type="button" data-court="meublé">Meublé</button>
           <button class="pill" type="button" data-court="vide">Vide</button>
         </div>
       </section>
-      <section class="card">
+      <section class="card" id="ma-logement">
         <h2>Le logement</h2>
         <div class="counts">
           <div>
@@ -1979,26 +1950,10 @@
             <span class="count-name">Surface habitable <span class="pk-req" aria-hidden="true">*</span></span>
             <div class="suffix"><input id="ma-surface" type="number" min="1" inputmode="decimal" placeholder="Ex. 180" aria-label="Surface habitable"><span>m²</span></div>
           </div>
-          <div>
+          <div data-only="vente">
             <span class="count-name">Surface du terrain <span class="optional">facultatif</span></span>
             <div class="suffix"><input id="ma-terrain" type="number" min="1" inputmode="decimal" placeholder="Ex. 240" aria-label="Surface du terrain"><span>m²</span></div>
           </div>
-        </div>
-        <p class="lbl">Rez-de-chaussée <span class="pk-req" aria-hidden="true">*</span></p>
-        <div class="pills" data-single id="ma-rdc">
-          <button class="pill" type="button" data-court="habitation">Habitation</button>
-          <button class="pill" type="button" data-court="garage">Garage</button>
-          <button class="pill" type="button" data-court="commerce">Commerce</button>
-        </div>
-        <div id="ma-soleil-bloc">
-          <p class="lbl">Ensoleillement <span class="pk-req" aria-hidden="true">*</span></p>
-          <select class="box" id="ma-soleil" aria-label="Ensoleillement" aria-required="true">
-            <option value="">Choisir</option>
-            <option>Ensoleillé le matin</option>
-            <option>Ensoleillé l’après-midi</option>
-            <option>Toute la journée</option>
-            <option>Très peu</option>
-          </select>
         </div>
         <p class="wording" id="ma-wording" hidden>Dans le texte : <strong>Maison</strong></p>
       </section>
@@ -2012,6 +1967,35 @@
           <span class="pk-fold-mark" aria-hidden="true"></span>
         </summary>
         <div class="pk-fold-body">
+      <section class="card" id="ma-titre-card" data-only="vente">
+        <h2>Titre <span class="optional">facultatif</span></h2>
+        <div class="pills" data-single id="ma-titre">
+          <button class="pill" type="button" data-court="titré">Titré</button>
+          <span class="with-info">
+            <button class="pill" type="button" data-court="adlia">Adlia</button>
+            <button class="info" type="button" aria-controls="tip-ma-adlia">i</button>
+          </span>
+        </div>
+        <p class="tip" id="tip-ma-adlia" hidden>Acte adoulaire. Pas de titre foncier.</p>
+      </section>
+        <div data-only="vente" id="ma-rdc-bloc">
+          <p class="lbl">Rez-de-chaussée <span class="optional">facultatif</span></p>
+          <div class="pills" data-single id="ma-rdc">
+            <button class="pill" type="button" data-court="habitation">Habitation</button>
+            <button class="pill" type="button" data-court="garage">Garage</button>
+            <button class="pill" type="button" data-court="commerce">Commerce</button>
+          </div>
+        </div>
+<div id="ma-soleil-bloc">
+            <p class="lbl">Ensoleillement <span class="optional">facultatif</span></p>
+            <select class="box" id="ma-soleil" aria-label="Ensoleillement">
+              <option value="">Choisir</option>
+              <option>Ensoleillé le matin</option>
+              <option>Ensoleillé l’après-midi</option>
+              <option>Toute la journée</option>
+              <option>Très peu</option>
+            </select>
+          </div>
           <div data-only="vente">
             <p class="lbl">Occupation <span class="optional">facultatif</span></p>
             <div class="pills" data-single id="ma-occupation">
@@ -2023,27 +2007,8 @@
               <div class="suffix" style="max-width:280px"><input id="ma-loyer-percu" type="number" min="1" inputmode="decimal" placeholder="Ex. 4500" aria-label="Loyer perçu"><span>DH / mois</span></div>
             </div>
           </div>
-          <section class="card">
-            <h2>Caractéristiques générales</h2>
-            <p class="hint" id="ma-hint-ext">L’extérieur de la maison. Un garage ou une terrasse cochés demandent leur surface. Pas de garage titré : ici, le garage est au bien.</p>
-            <div class="pills">
-              <button class="chip" type="button" id="ma-garage">Garage</button>
-              <button class="chip" type="button" id="ma-terrasse">Terrasse</button>
-              <button class="chip" type="button">Balcon</button>
-              <button class="chip" type="button">Ascenseur</button>
-            </div>
-            <div class="follow" id="ma-garage-suite" hidden>
-              <p>Superficie du garage</p>
-              <div class="suffix"><input type="number" min="1" placeholder="Ex. 18" aria-label="Superficie du garage"><span>m²</span></div>
-            </div>
-            <div class="follow" id="ma-terrasse-suite" hidden>
-              <p>Superficie de la terrasse</p>
-              <div class="suffix"><input type="number" min="1" placeholder="Ex. 22" aria-label="Superficie de la terrasse"><span>m²</span></div>
-            </div>
-          </section>
-          <section class="card">
-            <h2>Intérieur</h2>
-            <p class="hint">Les salons marocain et européen n’apparaissent qu’en location.</p>
+          <section class="card" id="ma-sec-interieur">
+            <h2>Intérieur <span class="optional">facultatif</span></h2>
             <p class="sub">Aménagement</p>
             <div class="pills">
               <button class="chip" type="button" data-only="location">Salon Marocain</button>
@@ -2057,10 +2022,14 @@
               <button class="chip" type="button">Double vitrage</button>
               <button class="chip" type="button">Porte blindée</button>
               <button class="chip" type="button">Cuisine équipée</button>
+              <button class="chip" type="button">Suite parentale</button>
+              <span class="with-info">
+                <button class="chip" type="button">Dressing</button>
+                <button class="info" type="button" aria-controls="tip-ma-dressing">i</button>
+              </span>
             </div>
             <div data-only="location">
               <p class="sub">Équipements</p>
-              <p class="hint" id="ma-hint-eq">En vente, ces appareils ne sont pas proposés : ils ne partent pas avec la maison.</p>
               <div class="pills">
                 <button class="chip" type="button">Réfrigérateur</button>
                 <button class="chip" type="button">Four</button>
@@ -2071,23 +2040,48 @@
                 <button class="chip" type="button">Wifi</button>
               </div>
             </div>
+                      <p class="tip" id="tip-ma-dressing" hidden>Pièce ou grand placard pour les vêtements. Ce n’est pas une chambre.</p>
           </section>
-          <section class="card">
-            <h2>Options supplémentaires</h2>
-            <p class="hint" id="ma-hint-opt">Ce qui distingue cette maison.</p>
+<section class="card" id="ma-sec-hors">
+            <h2>Extérieur <span class="optional">facultatif</span></h2>
+            <div class="pills">
+              <button class="chip" type="button" id="ma-garage">Garage</button>
+              <button class="chip" type="button" id="ma-terrasse">Terrasse</button>
+              <button class="chip" type="button">Balcon</button>
+              <button class="chip" type="button">Ascenseur</button>
+                          <button class="chip" type="button">Jardin privatif</button>
+              <button class="chip" type="button">Terrasse sur le toit</button>
+</div>
+            <div class="follow" id="ma-garage-suite" hidden>
+              <p>Superficie du garage</p>
+              <div class="suffix"><input type="number" min="1" placeholder="Ex. 18" aria-label="Superficie du garage"><span>m²</span></div>
+            </div>
+            <div class="follow" id="ma-terrasse-suite" hidden>
+              <p>Superficie de la terrasse</p>
+              <div class="suffix"><input type="number" min="1" placeholder="Ex. 22" aria-label="Superficie de la terrasse"><span>m²</span></div>
+            </div>
+          <p class="sub">La résidence</p>
+            <div class="pills">
+              <button class="chip" type="button">Piscine de la résidence</button>
+              <button class="chip" type="button">Salle de sport</button>
+              <button class="chip" type="button">Jardin de la résidence</button>
+            </div>
+          </section>
+<section class="card" id="ma-sec-valeur">
+            <h2>Atouts d’exception <span class="optional">facultatif</span></h2>
             <div class="pills">
               <button class="chip" type="button">Sans vis-à-vis</button>
-              <button class="chip" type="button">Suite parentale</button>
               <button class="chip" type="button">Jamais habitée</button>
             </div>
           </section>
+
         </div>
       </details>
       <section class="card" id="ma-prix-card">
         <h2>Prix</h2>
-        <div>
+        <div class="prix-une-ligne">
           <label class="lbl" id="ma-prix-label" for="ma-prix">Prix <span class="pk-req" aria-hidden="true">*</span></label>
-          <div class="suffix" style="max-width:280px"><input id="ma-prix" type="number" min="0" inputmode="decimal" placeholder="Ex. 2450000"><span id="ma-prix-unit">DH</span></div>
+          <div class="suffix"><input id="ma-prix" type="number" min="0" inputmode="decimal" placeholder="Ex. 2450000"><span id="ma-prix-unit">DH</span></div>
         </div>
         <div data-only="location">
           <p class="lbl">Caution <span class="optional">facultatif</span></p>
@@ -2167,18 +2161,11 @@
             <div class="suffix"><input id="vi-terrain" type="number" min="1" placeholder="Ex. 240" aria-label="Surface du terrain"><span>m²</span></div>
           </div>
         </div>
-        <p class="lbl">Standing <span class="pk-req" aria-hidden="true">*</span></p>
-        <div class="pills" data-single id="vi-standing">
-          <button class="pill" type="button" data-court="économique">Économique</button>
-          <button class="pill" type="button" data-court="moyen standing">Moyen standing</button>
-          <button class="pill" type="button" data-court="haut standing">Haut standing</button>
-        </div>
         <p class="wording" id="vi-wording" hidden>Dans le texte : <strong>Villa</strong></p>
         <p class="wording" id="vi-titre" hidden>Titre : <strong>Villa</strong></p>
       </section>
       <section class="card" data-only="location">
         <h2>Ameublement <span class="pk-req" aria-hidden="true">*</span></h2>
-        <p class="hint">Meublé ou vide.</p>
         <div class="pills" data-single id="vi-meuble">
           <button class="pill" type="button" data-court="meublé">Meublé</button>
           <button class="pill" type="button" data-court="vide">Vide</button>
@@ -2231,22 +2218,38 @@
           <span class="pk-fold-mark" aria-hidden="true"></span>
         </summary>
         <div class="pk-fold-body">
+        <p class="lbl">Standing <span class="optional">facultatif</span></p>
+        <div class="pills" data-single id="vi-standing">
+          <button class="pill" type="button" data-court="économique">Économique</button>
+          <button class="pill" type="button" data-court="moyen standing">Moyen standing</button>
+          <button class="pill" type="button" data-court="haut standing">Haut standing</button>
+        </div>
         <p class="lbl">Type de villa <span class="optional">facultatif</span></p>
         <div class="pills" data-single id="vi-type">
           <button class="pill" type="button" data-val="isolee" data-court="isolée">Isolée</button>
           <button class="pill" type="button" data-val="jumelee" data-court="jumelée">Jumelée</button>
           <button class="pill" type="button" data-val="bande" data-court="en bande">En bande</button>
         </div>
-        <p class="hint">Facultatif. Isolée : seule sur son terrain. Jumelée : un seul voisin. En bande : un voisin de chaque côté.</p>
-      <section class="card">
-        <h2>Options et extérieurs</h2>
-        <p class="hint">Facultatif. Un clic ajoute, un second clic retire.</p>
+      <section class="card" id="vi-sec-interieur">
+        <h2>Intérieur <span class="optional">facultatif</span></h2>
         <div class="pills">
-          <button class="chip" type="button" id="vi-boulevard" hidden>En plein boulevard</button>
-          <button class="chip" type="button" id="vi-mer">Vue sur mer</button>
-          <button class="chip" type="button" id="vi-montagne">Vue sur les montagnes</button>
-          <button class="chip" type="button" id="vi-nature">Vue sur la nature</button>
-          <button class="chip" type="button" id="vi-golf">Vue sur golf</button>
+          <button class="chip" type="button" id="vi-cuisine">Cuisine équipée</button>
+          <button class="chip" type="button" id="vi-cheminee">Cheminée</button>
+          <button class="chip" type="button" id="vi-clim">Climatisation</button>
+          <button class="chip" type="button" id="vi-vitre">Double vitrage</button>
+          <button class="chip" type="button" id="vi-porte">Porte blindée</button>
+          <button class="chip" type="button" id="vi-suite">Suite parentale</button>
+          <span class="with-info">
+            <button class="chip" type="button" id="vi-dressing">Dressing</button>
+            <button class="info" type="button" aria-controls="tip-vi-dressing">i</button>
+          </span>
+          <button class="chip" type="button" id="vi-ascenseur">Ascenseur intérieur</button>
+        </div>
+              <p class="tip" id="tip-vi-dressing" hidden>Pièce ou grand placard pour les vêtements. Ce n’est pas une chambre.</p>
+      </section>
+      <section class="card" id="vi-sec-hors">
+        <h2>Extérieur <span class="optional">facultatif</span></h2>
+        <div class="pills">
           <button class="chip" type="button" id="vi-piscine">Piscine privative</button>
           <span class="with-info">
             <button class="chip" type="button" id="vi-puits">Puits fonctionnel / Forage</button>
@@ -2254,26 +2257,39 @@
           </span>
           <button class="chip" type="button" id="vi-jardin">Jardin privatif</button>
           <button class="chip" type="button" id="vi-garage">Garage privé</button>
-          <button class="chip" type="button" id="vi-visavis">Sans vis-à-vis</button>
-          <button class="chip" type="button" id="vi-suite">Suite parentale</button>
-          <button class="chip" type="button" id="vi-cuisine">Cuisine équipée</button>
-          <button class="chip" type="button" id="vi-cheminee">Cheminée</button>
-          <button class="chip" type="button" id="vi-clim">Climatisation</button>
-          <button class="chip" type="button" id="vi-vitre">Double vitrage</button>
-          <button class="chip" type="button" id="vi-porte">Porte blindée</button>
-          <button class="chip" type="button" id="vi-ascenseur">Ascenseur intérieur</button>
         </div>
         <p class="tip" id="tip-vi-puits" hidden>Un puits ou un forage déjà en eau sur le terrain. Ce n’est pas l’eau du réseau.</p>
         <div class="follow" id="vi-garage-suite" hidden>
           <p>Nombre de places</p>
           <div class="suffix"><input id="vi-places" type="number" min="1" placeholder="Ex. 2" aria-label="Nombre de places de garage"><span>places</span></div>
         </div>
+        <p class="sub">La résidence</p>
+        <div class="pills">
+          <button class="chip" type="button" id="vi-res-piscine">Piscine de la résidence</button>
+          <button class="chip" type="button" id="vi-res-sport">Salle de sport</button>
+          <button class="chip" type="button" id="vi-res-jardin">Jardin de la résidence</button>
+        </div>
+      </section>
+      <section class="card" id="vi-sec-valeur">
+        <h2>Atouts d’exception <span class="optional">facultatif</span></h2>
+        <div class="pills">
+          <span class="with-info">
+            <button class="chip" type="button" id="vi-front-mer">Front de mer</button>
+            <button class="info" type="button" aria-controls="tip-vi-front-mer">i</button>
+          </span>
+          <button class="chip" type="button" id="vi-mer">Vue sur mer</button>
+          <button class="chip" type="button" id="vi-montagne">Vue sur les montagnes</button>
+          <button class="chip" type="button" id="vi-golf">Vue sur golf</button>
+          <button class="chip" type="button" id="vi-nature">Vue sur la nature</button>
+          <button class="chip" type="button" id="vi-visavis">Sans vis-à-vis</button>
+          <button class="chip" type="button" id="vi-boulevard" hidden>En plein boulevard</button>
+        </div>
+        <p class="tip" id="tip-vi-front-mer" hidden>Directement sur la mer, pas seulement une vue.</p>
       </section>
         </div>
       </details>
     </div>
     <div id="fiche-local">
-    <p class="lead">Tout est sur cette page. Un second clic retire le choix.</p>
 
     <section class="card" data-only="vente" id="lo-carte-vendu">
       <h2>Ce qui est vendu <span class="pk-req" aria-hidden="true">*</span></h2>
@@ -2293,7 +2309,6 @@
           <button class="pill" type="button" data-court="vide">Vide</button>
           <button class="pill" type="button" data-court="déjà loué">Déjà loué</button>
         </div>
-        <p class="hint">Déjà loué : le fonds n’est pas à lui, et il n’est pas vendu. Il perçoit un loyer.</p>
       </div>
       <div id="lo-slot-batiment-vente">
         <div id="lo-batiment">
@@ -2323,7 +2338,6 @@
         </span>
       </div>
       <p class="tip" id="tip-gerance" hidden>On loue les murs et le fonds équipé. Le gérant exploite à ses risques, contre une redevance.</p>
-      <p class="hint" id="activite-attente">Choisissez le mode pour afficher l’activité.</p>
       <div id="lo-slot-activite"></div>
     </section>
 
@@ -2370,12 +2384,23 @@
       </div>
     </section>
 
+    <details class="pk-fold" id="lo-options-fold">
+      <summary>
+        <span class="pk-fold-face">
+          <span class="pk-fold-closed">Appuyez ici pour ouvrir</span>
+          <span class="pk-fold-open">Appuyez ici pour fermer</span>
+          <small>Ce n’est pas obligatoire. Vous pouvez continuer sans.</small>
+        </span>
+        <span class="pk-fold-mark" aria-hidden="true"></span>
+      </summary>
+      <div class="pk-fold-body">
     <section class="card">
-      <h2>Options</h2>
-      <p class="hint">Tout peut rester décoché.</p>
+      <h2>Options <span class="optional">facultatif</span></h2>
       <div class="pills" id="options"></div>
     </section>
 
+      </div>
+    </details>
     <section class="card">
       <h2>Prix</h2>
       <div class="price-grid">
@@ -2431,12 +2456,10 @@
       <div class="pk-fold-body" id="lo-fold-body">
         <div id="bloc-cours">
           <p class="lbl" id="label-cours">Activité en cours <span class="pk-req" aria-hidden="true">*</span></p>
-          <p class="hint" id="hint-cours">Une seule. L’activité ne change pas.</p>
           <div class="pills" data-max="1" id="cours"></div>
         </div>
         <div id="bloc-ideal">
           <p class="lbl" id="label-ideal">Idéal pour <span class="pk-req" aria-hidden="true">*</span></p>
-          <p class="hint">Jusqu’à 4.</p>
           <div class="pills" data-max="4" id="ideal"></div>
         </div>
         <div id="bloc-auto" hidden>
@@ -2453,7 +2476,6 @@
     <div id="local-photos-slot"></div>
     </div>
     <div id="fiche-riad" hidden>
-      <p class="lead">Un riad ne s’écrit jamais Studio. La ville et le quartier de la médina se remplissent à l’étape précédente.</p>
       <section class="card">
         <h2>Le riad</h2>
         <p class="lbl">Usage <span class="pk-req" aria-hidden="true">*</span></p>
@@ -2470,7 +2492,7 @@
         <div class="pills" data-single id="ri-foncier">
           <button class="pill" type="button" data-val="titre" data-court="titré">Titré</button>
           <span class="with-info">
-            <button class="pill" type="button" data-val="melk" data-court="melk">Melk</button>
+            <button class="pill" type="button" data-val="melk" data-court="melk">Adlia</button>
             <button class="info" type="button" aria-controls="tip-ri-melk">i</button>
           </span>
         </div>
@@ -2509,7 +2531,6 @@
             </div>
           </div>
         </div>
-        <p class="hint">Touchez + ou −, même si une suite est à zéro.</p>
         <p class="lbl">Niveaux <span class="pk-req" aria-hidden="true">*</span></p>
         <div class="pills" data-single id="ri-niveaux">
           <button class="pill" type="button" data-val="rdc1" data-court="rez-de-chaussée et un étage">Rez-de-chaussée + 1</button>
@@ -2564,11 +2585,10 @@
         <div class="pills" id="ri-patio">
           <button class="chip" type="button">Patio ouvert</button>
           <button class="chip" type="button">Verrière</button>
-          <button class="chip" type="button">Bassin</button>
+          <button class="chip" type="button">Fontaine</button>
           <button class="chip" type="button">Terrasse sur le toit</button>
           <button class="chip" type="button">Vue panoramique</button>
         </div>
-        <p class="hint">La vue peut être la Koutoubia, l’Atlas ou la mer, selon la ville.</p>
         <p class="lbl">Architecture d’origine <span class="optional">facultatif</span></p>
         <div class="pills" id="ri-origine">
           <button class="chip" type="button">Zelliges</button>
@@ -2582,7 +2602,6 @@
       </details>
     </div>
     <div id="fiche-bureau" hidden>
-      <p class="lead">Plateau dans un immeuble d’entreprises, bureau dans un immeuble résidentiel, ou immeuble de bureaux entier.</p>
       <section class="card">
         <h2>L’espace <span class="pk-req" aria-hidden="true">*</span></h2>
         <div class="pills" data-single id="bu-type">
@@ -2604,16 +2623,6 @@
             <div class="suffix"><input id="bu-surface" type="number" min="1" aria-required="true" placeholder="Ex. 120" aria-label="Surface totale"><span>m²</span></div>
           </div>
         </div>
-        <p class="lbl">État de livraison <span class="pk-req" aria-hidden="true">*</span></p>
-        <div class="pills" data-single id="bu-livraison">
-          <span class="with-info">
-            <button class="pill" type="button" data-court="brut de béton">Brut de béton</button>
-            <button class="info" type="button" aria-controls="tip-bu-brut">i</button>
-          </span>
-          <button class="pill" type="button" data-court="semi-aménagé">Semi-aménagé</button>
-          <button class="pill" type="button" data-court="clé en main">Clé en main</button>
-        </div>
-        <p class="tip" id="tip-bu-brut" hidden>Livré nu : murs bruts, chape de béton, sans faux plafond ni câblage. L’acheteur ou le locataire fait le second œuvre. C’est le standard des immeubles tertiaires neufs.</p>
       </section>
       <section class="card">
         <h2>L’immeuble</h2>
@@ -2633,6 +2642,12 @@
             <div class="suffix" style="max-width:240px"><input id="bu-etage-num" type="number" min="6" inputmode="numeric" placeholder="Ex. 8" aria-label="Numéro d’étage"><span>étage</span></div>
           </div>
         </div>
+        <div class="prix-ligne">
+          <div id="bu-niveaux-bloc" hidden>
+            <p class="lbl">Nombre d’étages <span class="pk-req" aria-hidden="true">*</span></p>
+            <div class="suffix"><input id="bu-niveaux" type="number" min="1" inputmode="numeric" placeholder="Ex. 6" aria-label="Nombre d’étages" aria-required="true"></div>
+          </div>
+          <div>
         <p class="lbl">Places de parking attribuées <span class="pk-req" aria-hidden="true">*</span> <button class="info is-inline" type="button" aria-controls="tip-bu-parking">i</button></p>
         <p class="tip" id="tip-bu-parking" hidden>Dans les quartiers d’affaires denses, le stationnement décide souvent. Indiquez le nombre de places réservées, même s’il est à zéro.</p>
         <div class="stepper" id="bu-places" data-stepper data-min="0" data-value="0" data-set="false" data-confirm-zero>
@@ -2640,7 +2655,8 @@
           <span class="count-value">0</span>
           <button class="step" type="button" data-dir="1" aria-label="Plus de places">+</button>
         </div>
-        <p class="hint">Touchez + ou −, même pour zéro place.</p>
+          </div>
+        </div>
         <p class="lbl">Aménagement actuel <span class="pk-req" aria-hidden="true">*</span></p>
         <div class="pills" data-single id="bu-amenagement">
           <button class="pill" type="button" data-val="ouvert" data-court="open space">Open space</button>
@@ -2703,7 +2719,6 @@
         <div class="pk-fold-body">
       <section class="card">
         <h2>Services</h2>
-        <p class="hint">Facultatif. Un second clic retire le choix.</p>
         <div class="pills" id="bu-options">
           <button class="chip" type="button">Accueil centralisé</button>
           <button class="chip" type="button">Sécurité 24h/24</button>
@@ -2752,7 +2767,6 @@
         </div>
       </div>
       <p class="lbl">Photo principale</p>
-      <p class="hint">Cliquez une photo pour la choisir. C’est celle qui s’affiche au-dessus.</p>
       <label class="drop">
         <strong>Ajoutez vos photos</strong>
         <span>JPG, PNG, WebP · 1 à 8 photos</span>
@@ -2764,11 +2778,8 @@
       <label class="field"><span class="lbl">Nom du propriétaire <span class="pk-req" aria-hidden="true">*</span></span><input id="annonce-nom" aria-required="true" placeholder="Ex. Sara Bennani" autocomplete="name"></label>
       <p class="lbl">Texte</p>
       <p class="wording" id="texte-fixe">Le texte généré s’affiche ici. Il ne se modifie pas.</p>
-      <p class="hint">Ce texte est généré à partir des informations du bien. Vous ne pouvez pas le changer.</p>
-      <label class="field"><span class="lbl">Texte en plus <span class="optional">facultatif</span></span><textarea id="annonce-plus" placeholder="Ajoutez un complément. Le texte ci-dessus reste inchangé."></textarea></label>
+      <label class="field"><span class="lbl">Texte en plus <span class="optional">facultatif</span></span><textarea id="annonce-plus" placeholder="Vous pouvez ajouter du texte ou des informations spécifiques qui n'ont pas été mentionnés dans le texte écrit par le site"></textarea></label>
       <label class="field"><span class="lbl">Adresse du bien <span class="optional">facultatif</span></span><input id="annonce-adresse" placeholder="Ex. 12 rue des Orangers"></label>
-      <label class="field"><span class="pk-label">Votre numéro de téléphone <span class="pk-req" aria-hidden="true">*</span></span><input id="phone" inputmode="tel" aria-required="true" placeholder="06 00 00 00 00"></label>
-      <p class="pk-step-legal">Aucune inscription obligatoire. Votre numéro sert uniquement à confirmer que l’annonce vient d’une vraie personne.</p>
     </section>
   </section>
   <p class="err" id="err" role="alert" hidden></p>
@@ -2855,7 +2866,16 @@
     var type = choisi("vi-type");
     return type ? "Villa " + type : "Villa";
   }
+  function propositionOuverte() {
+    var box = document.getElementById("lieu-proposition");
+    return !!(box && box.open);
+  }
   function lieuVilla() {
+    if (propositionOuverte()) {
+      var villeProposee = document.getElementById("pk-proposed-city");
+      var quartierPropose = document.getElementById("pk-proposed-district");
+      return [quartierPropose ? quartierPropose.value.trim() : "", villeProposee ? villeProposee.value.trim() : ""].filter(Boolean).join(", ");
+    }
     return [document.getElementById("quartier").value.trim(), document.getElementById("ville").value.trim()].filter(Boolean).join(", ");
   }
   function nombreVilla(id) {
@@ -2912,8 +2932,11 @@
     var surf = nombreVilla("vi-surface");
     var lieu = lieuPropre();
     if (surf) title += " de " + nombre(surf) + " m²";
-    if (chipOn("vi-visavis")) title += " sans vis-à-vis";
-    if (chipOn("vi-piscine")) title += " avec piscine";
+    if (chipOn("vi-front-mer")) title += " en front de mer";
+    else if (chipOn("vi-mer")) title += " avec vue sur mer";
+    else if (chipOn("vi-golf")) title += " avec vue sur golf";
+    else if (chipOn("vi-visavis")) title += " sans vis-à-vis";
+    else if (chipOn("vi-piscine")) title += " avec piscine";
     else if (chipOn("vi-jardin")) title += " avec jardin";
     if (val("vi-usage") === "commercial" && chipOn("vi-boulevard")) title += " en plein boulevard";
     title += venteOn() ? " à vendre" : " à louer";
@@ -2961,26 +2984,12 @@
   }
   function phrasesOptionsVilla() {
     var out = [];
-    if (chipOn("vi-jardin")) out.push("Jardin privatif.");
-    if (chipOn("vi-piscine")) out.push("Une piscine privative est aménagée.");
-    if (chipOn("vi-puits")) out.push("Un puits ou un forage est déjà en eau sur le terrain.");
     if (chipOn("vi-mer")) out.push("Elle offre une vue sur mer.");
     if (chipOn("vi-montagne")) out.push("Elle offre une vue sur les montagnes.");
     if (chipOn("vi-nature")) out.push("Elle offre une vue sur la nature.");
     if (chipOn("vi-golf")) out.push("Elle offre une vue sur golf.");
-    if (chipOn("vi-cuisine")) out.push("La cuisine est équipée.");
-    if (chipOn("vi-cheminee")) out.push("Une cheminée est installée.");
-    if (chipOn("vi-clim")) out.push("La villa est climatisée.");
-    if (chipOn("vi-vitre")) out.push("Les fenêtres sont en double vitrage.");
-    if (chipOn("vi-porte")) out.push("La porte d’entrée est blindée.");
-    if (chipOn("vi-suite")) out.push("Une suite parentale est prévue.");
     if (chipOn("vi-visavis")) out.push("La villa est sans vis-à-vis.");
-    if (chipOn("vi-ascenseur")) out.push("Un ascenseur intérieur dessert les niveaux.");
     if (val("vi-usage") === "commercial" && chipOn("vi-boulevard")) out.push("Elle est située en plein boulevard.");
-    if (chipOn("vi-garage")) {
-      var places = nombreVilla("vi-places");
-      out.push(places === 1 ? "Un garage privé d’une place est prévu." : (places ? "Un garage privé de " + places + " places est prévu." : "Un garage privé est prévu."));
-    }
     return out;
   }
   function texteVillaCourt() {
@@ -2992,13 +3001,15 @@
     else if (commercial) add("Villa à usage commercial.");
     else if (forme) add("Villa " + forme + ".");
     else add("Villa.");
+    phrasesMiseEnValeur().forEach(add);
     var surf = nombreVilla("vi-surface");
     if (surf) add(nombre(surf) + " m² habitables.");
     var ter = nombreVilla("vi-terrain");
     if (ter) add("Terrain " + nombre(ter) + " m².");
     if (commercial && chipOn("vi-boulevard")) add("Située en plein boulevard.");
-    if (!venteOn() && choisi("vi-meuble") === "meublé") add("Meublée.");
     if (!venteOn() && choisi("vi-meuble") === "vide") add("Vide.");
+    if (meubleListeDejaDit()) { /* l’intro de la liste dit déjà meublée */ }
+    else if (!venteOn() && choisi("vi-meuble") === "meublé") add("La villa est meublée.");
     phrasesPiecesVilla().forEach(add);
     phrasesCadreVilla().forEach(function (phrase) {
       if (phrase.indexOf("Le terrain fait") === 0) return;
@@ -3006,8 +3017,10 @@
     });
     phrasesOptionsVilla().forEach(function (phrase) {
       if (phrase === "Elle est située en plein boulevard.") return;
+      if (phrase.indexOf("front de mer") !== -1 || phrase.indexOf("vue sur mer") !== -1 || phrase.indexOf("vue sur golf") !== -1 || phrase.indexOf("sans vis-à-vis") !== -1) return;
       add(phrase);
     });
+    listesCaracteristiques().forEach(add);
     var prix = nombreVilla(venteOn() ? "vi-prix" : "vi-loyer");
     if (prix) add(venteOn() ? "Prix : " + nombre(prix) + " DH." : "Loyer : " + nombre(prix) + " DH / mois.");
     var syndicVilla = phraseSyndicAssemble();
@@ -3136,8 +3149,8 @@
     if (!etat) return "";
     if (etat.indexOf("titr") === 0) return sujet + " est titr" + (feminin ? "ée." : "é.");
     if (etat.indexOf("en cours") === 0) return "Le titre est en cours.";
-    if (etat.indexOf("non titr") === 0) return sujet + " n’est pas titr" + (feminin ? "ée." : "é.");
-    if (etat.indexOf("melk") !== -1) return "Le statut est Melk.";
+    if (etat.indexOf("non titr") === 0) return "Le statut est Adlia.";
+    if (etat.indexOf("melk") !== -1) return "Le statut est Adlia.";
     if (etat.indexOf("soulalie") !== -1) return "La terre est soulalie.";
     if (etat.indexOf("domaine") !== -1) return "C’est le domaine privé de l’État.";
     return "";
@@ -3148,7 +3161,7 @@
       out.push((btn.getAttribute("data-court") || btn.textContent).trim());
     });
     var titre = document.querySelector("#garage-titre [aria-pressed='true']");
-    if (titre && out.indexOf("Garage en sous-sol") !== -1) out.push(titre.getAttribute("data-court") === "titre" ? "garage titré" : "garage non titré");
+    if (titre && out.indexOf("Garage en sous-sol") !== -1 && titre.getAttribute("data-court") === "titre") out.push("garage titré");
     return out;
   }
   function nomsActivite(ids) {
@@ -3213,8 +3226,7 @@
       "Sanitaires": "Les sanitaires sont déjà en place.",
       "Accès livraisons": "Un accès livraisons est prévu.",
       "Rideau de fer": "Un rideau de fer ferme le local.",
-      "garage titré": "Ce garage est titré.",
-      "garage non titré": "Ce garage n’est pas titré."
+      "garage titré": "Ce garage est titré."
     };
     return phrases[nom] || "";
   }
@@ -3429,12 +3441,12 @@
   }
   function phraseNiveauxAssemble() {
     if (!estMaison()) return "";
-    var t = pillVisible(["Plain-pied", "2 niveaux", "3 niveaux", "4+ ou configuration en cascade"]);
+    var t = pillVisible(["RDC", "2 niveaux", "3 niveaux", "4+"]);
     var p = pronomBien();
-    if (t === "Plain-pied") return p + " est de plain-pied.";
+    if (t === "RDC") return p + " est de plain-pied.";
     if (t === "2 niveaux") return p + " s’élève sur 2 étages.";
     if (t === "3 niveaux") return p + " s’élève sur 3 étages.";
-    if (t === "4+ ou configuration en cascade") {
+    if (t === "4+") {
       var combien = nombreVilla("ma-etages-num");
       return combien >= 4 ? p + " s’élève sur " + combien + " étages." : "";
     }
@@ -3470,11 +3482,31 @@
     if (v === "Ensoleillé le matin") return f ? p + " est ensoleillée le matin." : p + " est ensoleillé le matin.";
     if (v === "Ensoleillé l’après-midi") return f ? p + " est ensoleillée l’après-midi." : p + " est ensoleillé l’après-midi.";
     if (v === "Toute la journée") return f ? p + " est ensoleillée toute la journée." : p + " est ensoleillé toute la journée.";
-    if (v === "Très peu") return p + " est très peu ensoleillé.";
     return "";
   }
+  function ordreMaison() {
+    var fiche = document.getElementById("fiche-maison");
+    var prix = document.getElementById("ma-prix-card");
+    if (!fiche || !prix) return;
+    var ids = venteOn()
+      ? ["ma-etages-card", "ma-meuble-card", "ma-logement", "ma-plus"]
+      : ["ma-meuble-card", "ma-etages-card", "ma-logement", "ma-plus"];
+    ids.forEach(function (id) {
+      var node = document.getElementById(id);
+      if (node) fiche.insertBefore(node, prix);
+    });
+  }
+  function synchroniserPaire(button) {
+    if (!button || !button.getAttribute) return;
+    var pair = button.getAttribute("data-pair");
+    if (!pair) return;
+    var pressed = button.getAttribute("aria-pressed");
+    document.querySelectorAll('[data-pair="' + pair + '"]').forEach(function (other) {
+      if (other !== button) other.setAttribute("aria-pressed", pressed);
+    });
+  }
   function phraseTerrainAssemble() {
-    if (!estMaison()) return "";
+    if (!estMaison() || !venteOn()) return "";
     var t = nombreVilla("ma-terrain");
     return t ? "Le terrain fait " + nombre(t) + " m²." : "";
   }
@@ -3523,11 +3555,13 @@
       "Vue forêt": p + " offre une vue sur la forêt.",
       "Vue sur la nature": p + " offre une vue sur la nature.",
       "Sans vis-à-vis": p + " est sans vis-à-vis.",
+      "Front de mer": "Le bien est en front de mer.",
       "Balcon": "Un balcon est aménagé.",
       "Jardin privatif": "Un jardin privatif est attenant.",
       "Dernier étage": p + " est au dernier étage.",
       "Piscine privative": "Une piscine privative est aménagée.",
-      "Suite parentale": "Une suite parentale est prévue."
+      "Suite parentale": "Une suite parentale est prévue.",
+      "Terrasse sur le toit": "Une grande terrasse est aménagée sur le toit."
     };
     return map[label] || "";
   }
@@ -3549,13 +3583,178 @@
     var m = nombreSuite(suite);
     return m ? "Une terrasse de " + nombre(m) + " m² est aménagée." : "Une terrasse est aménagée.";
   }
+  function phrasesMiseEnValeur() {
+    var fiche = ficheActive();
+    if (!fiche) return [];
+    var p = val("famille") === "villa" || estFemininBien() ? "Elle" : "Il";
+    var voulu = ["Front de mer", "Vue sur mer", "Vue sur golf", "Sans vis-à-vis"];
+    var out = [];
+    voulu.forEach(function (label) {
+      var on = false;
+      fiche.querySelectorAll(".chip[aria-pressed='true']").forEach(function (btn) {
+        if (estCache(btn, fiche)) return;
+        if (btn.textContent.replace(/\s+/g, " ").trim() === label) on = true;
+      });
+      if (!on) return;
+      if (label === "Front de mer") out.push("Le bien est en front de mer.");
+      else if (label === "Vue sur mer") out.push(p + " offre une vue sur mer.");
+      else if (label === "Vue sur golf") out.push(p + " offre une vue sur golf.");
+      else out.push(p + " est sans vis-à-vis.");
+    });
+    return out;
+  }
+  function articleLogement() {
+    if (val("famille") === "villa") return "La villa";
+    if (estMaison()) return "La maison";
+    var sous = nomTitre() || "Appartement";
+    if (sous === "Appartement") return "L’appartement";
+    if (sous === "Studio") return "Le studio";
+    if (sous === "Duplex") return "Le duplex";
+    if (sous === "Triplex") return "Le triplex";
+    return "Le " + sous.charAt(0).toLowerCase() + sous.slice(1);
+  }
+  function logementFeminin() {
+    return val("famille") === "villa" || estMaison();
+  }
+  function meublePourListe() {
+    if (val("famille") === "villa") return venteOn() ? "" : (choisi("vi-meuble") || "");
+    if (val("famille") === "appartement") return choisi("ap-meuble") || "";
+    if (estMaison()) return venteOn() ? "" : (choisi("ma-meuble") || "");
+    return "";
+  }
+  function estPuceResidence(label) {
+    if (label === "Ascenseur" && val("famille") === "appartement") return true;
+    return label === "Jardin de la résidence" || label === "Piscine de la résidence" || label === "Salle de sport" || label === "Aire de jeux" || label === "Concierge" || label === "Conciergerie de luxe" || label === "Agents de sécurité";
+  }
+  function estPuceLogement(label) {
+    var hors = {
+      "Résidence fermée": 1,
+      "Dernier étage": 1,
+      "Jamais habitée": 1,
+      "En plein boulevard": 1,
+      "Vue sur mer": 1,
+      "Vue sur golf": 1,
+      "Vue sur piscine": 1,
+      "Vue sur les montagnes": 1,
+      "Vue forêt": 1,
+      "Vue sur la nature": 1,
+      "Front de mer": 1,
+      "Sans vis-à-vis": 1
+    };
+    if (hors[label] || estPuceResidence(label)) return false;
+    var dans = {
+      "Salon Marocain": 1,
+      "Salon européen": 1,
+      "Antenne parabolique": 1,
+      "Cheminée": 1,
+      "Climatisation": 1,
+      "Chauffage": 1,
+      "Isolation phonique": 1,
+      "Isolation thermique": 1,
+      "Double vitrage": 1,
+      "Porte blindée": 1,
+      "Cuisine équipée": 1,
+      "Cuisine fermée": 1,
+      "Cuisine américaine": 1,
+      "Wifi": 1,
+      "Réfrigérateur": 1,
+      "Four": 1,
+      "TV": 1,
+      "Machine à laver": 1,
+      "Lave-vaisselle": 1,
+      "Micro-ondes": 1,
+      "Suite parentale": 1,
+      "Dressing": 1,
+      "Balcon": 1,
+      "Jardin privatif": 1,
+      "Piscine privative": 1,
+      "Box": 1,
+      "Terrasse sur le toit": 1,
+      "Terrasse": 1,
+      "Garage": 1,
+      "Garage privé": 1,
+      "Puits fonctionnel / Forage": 1,
+      "Ascenseur intérieur": 1,
+      "Ascenseur": 1
+    };
+    return dans[label] === 1;
+  }
+  function puceListe(texte) {
+    if (!texte) return "";
+    if (texte === "TV") return "TV";
+    return texte.charAt(0).toLowerCase() + texte.slice(1);
+  }
+  function libelleGarageListe() {
+    if (val("famille") === "appartement") {
+      var typeBtn = document.querySelector("#ap-garage-type [aria-pressed='true']");
+      var fiche = ficheActive();
+      var type = typeBtn && !estCache(typeBtn, fiche) ? typeBtn.textContent.replace(/\s+/g, " ").trim() : "";
+      var m = nombreSuite("ap-garage-surface");
+      if (type.indexOf("titré") !== -1) return m ? "Garage titré de " + nombre(m) + " m²" : "Garage titré";
+      if (type.indexOf("commun") !== -1) return "Place de garage en espace commun";
+      return "Garage";
+    }
+    if (val("famille") === "villa") {
+      var places = nombreVilla("vi-places");
+      if (places === 1) return "Garage privé d’une place";
+      if (places) return "Garage privé de " + places + " places";
+      return "Garage privé";
+    }
+    var m2 = nombreSuite("ma-garage-suite");
+    return m2 ? "Garage de " + nombre(m2) + " m²" : "Garage";
+  }
+  function libellePuceListe(label, id) {
+    if (id === "ap-garage" || id === "ma-garage" || id === "vi-garage" || label === "Garage" || label === "Garage privé") return libelleGarageListe();
+    if (id === "ap-terrasse" || id === "ma-terrasse" || label === "Terrasse") {
+      var suite = val("famille") === "appartement" ? "ap-terrasse-suite" : "ma-terrasse-suite";
+      var m = nombreSuite(suite);
+      return m ? "Terrasse de " + nombre(m) + " m²" : "Terrasse";
+    }
+    return label;
+  }
+  function blocListe(intro, items) {
+    if (!items.length) return "";
+    return "\n" + intro + "\n- " + items.join("\n- ");
+  }
+  function listesCaracteristiques() {
+    var fiche = ficheActive();
+    if (!fiche) return [];
+    var residence = [];
+    var logement = [];
+    fiche.querySelectorAll(".chip[aria-pressed='true']").forEach(function (btn) {
+      if (btn.getAttribute("data-echo") === "1") return;
+      if (estCache(btn, fiche)) return;
+      var label = btn.textContent.replace(/\s+/g, " ").trim();
+      if (estPuceResidence(label)) residence.push(puceListe(label));
+      else if (estPuceLogement(label)) logement.push(puceListe(libellePuceListe(label, btn.id)));
+    });
+    var blocs = [];
+    var res = blocListe("La résidence dispose de :", residence);
+    if (res) blocs.push(res);
+    if (logement.length) {
+      var nom = articleLogement();
+      var meuble = meublePourListe();
+      var intro = meuble === "meublé"
+        ? nom + " est meublé" + (logementFeminin() ? "e" : "") + " et dispose de :"
+        : nom + " dispose de :";
+      blocs.push(blocListe(intro, logement));
+    }
+    return blocs;
+  }
+  function meubleListeDejaDit() {
+    return listesCaracteristiques().some(function (bloc) { return bloc.indexOf("est meublé") !== -1; });
+  }
   function phrasesPucesAssemble() {
     var fiche = ficheActive();
     if (!fiche) return [];
     var out = [];
     fiche.querySelectorAll(".chip[aria-pressed='true']").forEach(function (btn) {
+      if (btn.getAttribute("data-echo") === "1") return;
       if (estCache(btn, fiche)) return;
-      var phrase = phrasePuceAssemble(btn.textContent.replace(/\s+/g, " ").trim(), btn.id);
+      var nomPuce = btn.textContent.replace(/\s+/g, " ").trim();
+      if (nomPuce === "Front de mer" || nomPuce === "Vue sur mer" || nomPuce === "Vue sur golf" || nomPuce === "Sans vis-à-vis") return;
+      if (estPuceResidence(nomPuce) || estPuceLogement(nomPuce)) return;
+      var phrase = phrasePuceAssemble(nomPuce, btn.id);
       if (phrase) out.push(phrase);
     });
     return out;
@@ -3665,14 +3864,23 @@
   function atoutTitreAssemble() {
     var fiche = ficheActive();
     if (!fiche) return "";
+    var front = false;
+    var mer = false;
+    var golf = false;
     var sans = false;
     var terrasse = false;
     fiche.querySelectorAll(".chip[aria-pressed='true']").forEach(function (btn) {
       if (estCache(btn, fiche)) return;
       var t = btn.textContent.replace(/\s+/g, " ").trim().toLowerCase();
+      if (t === "front de mer") front = true;
+      if (t === "vue sur mer") mer = true;
+      if (t === "vue sur golf") golf = true;
       if (t === "sans vis-à-vis") sans = true;
       if (t === "terrasse") terrasse = true;
     });
+    if (front) return " en front de mer";
+    if (mer) return " avec vue sur mer";
+    if (golf) return " avec vue sur golf";
     if (sans) return " sans vis-à-vis";
     if (terrasse) {
       var m = nombreSuite(val("famille") === "appartement" ? "ap-terrasse-suite" : "ma-terrasse-suite");
@@ -3693,7 +3901,13 @@
     var loyerPorte = document.getElementById("ap-loyer-porte");
     var caution = document.getElementById("ap-caution-bloc");
     if (capital) capital.hidden = venteOn() || !special;
-    if (duree) duree.hidden = !special;
+    if (duree) {
+      duree.hidden = !estRhinaAppart();
+      if (duree.hidden) {
+        var champDuree = document.getElementById("ap-duree");
+        if (champDuree) champDuree.value = "";
+      }
+    }
     if (loyerPorte) loyerPorte.hidden = !(venteOn() && estPorteAppart());
     if (caution && !venteOn()) caution.hidden = special;
     var lab = document.getElementById("ap-prix-label");
@@ -3741,7 +3955,7 @@
     var reste = nombreVilla("ap-loyer-associe");
     if (reste && venteOn() && estPorteAppart()) add("Loyer : " + nombre(reste) + " DH / mois.");
     var duree = nombreVilla("ap-duree");
-    if (duree) add("Durée : " + duree + " mois.");
+    if (duree && estRhinaAppart()) add("Durée : " + duree + " mois.");
     var caution = (estRhinaAppart() || (!venteOn() && estPorteAppart())) ? "" : phraseCautionTexte();
     if (caution) add(caution);
     var syndic = phraseSyndicAssemble();
@@ -3764,13 +3978,15 @@
       if (surf) add(nombre(surf) + " m².");
     }
     add(type + ".");
-    add(phraseStandingAssemble());
+    phrasesMiseEnValeur().forEach(add);
     add(phraseSoleilAssemble());
-    if (meuble === "meublé") add(pronomBien() + " est proposé meublé.");
+    add(phraseStandingAssemble());
     if (meuble === "vide") add(pronomBien() + " est proposé vide.");
+    else if (meuble === "meublé" && !meubleListeDejaDit()) add(articleLogement() + " est meublé.");
     pieces();
     if (etage) add(etage);
     phrasesPucesAssemble().forEach(add);
+    listesCaracteristiques().forEach(add);
     ajouterPrixAppart(add);
     var fin = "Annonce de particulier à particulier. Le contact se fait directement avec le propriétaire, sans commission ni intermédiaire.";
     return [faits.join(" "), fin].filter(function (p) { return p && p.trim(); }).join("\n\n");
@@ -3803,7 +4019,7 @@
       var duree = nombreVilla("ap-duree");
       if (capital && estRhinaAppart()) prixPar.push("Le capital à déposer est de " + nombre(capital) + " DH. Il est rendu à la fin du contrat.");
       if (capital && !venteOn() && estPorteAppart()) prixPar.push("Le capital du pas-de-porte est de " + nombre(capital) + " DH. Il n’est pas remboursé.");
-      if (duree) prixPar.push("La durée proposée est de " + duree + " mois.");
+      if (duree && estRhinaAppart()) prixPar.push("La durée proposée est de " + duree + " mois.");
     }
     var caution = (estRhinaAppart() || (!venteOn() && estPorteAppart())) ? "" : phraseCautionAssemble();
     if (caution) prixPar.push(caution);
@@ -3828,7 +4044,11 @@
     return "un bureau";
   }
   function phraseEtageBureau() {
-    if (val("bu-type") === "entier") return "";
+    if (val("bu-type") === "entier") {
+      var nEtages = nombreVilla("bu-niveaux");
+      if (!nEtages) return "";
+      return nEtages === 1 ? "Il est sur 1 niveau." : "Il est sur " + nEtages + " niveaux.";
+    }
     var btn = document.querySelector("#bu-etage [aria-pressed='true']");
     if (!btn) return "";
     var court = (btn.getAttribute("data-court") || btn.textContent).replace(/\s+/g, " ").trim();
@@ -3844,7 +4064,7 @@
   function phraseParkingBureau() {
     var n = lireCompteur("bu-places");
     if (n === null) return "";
-    if (n === 0) return "Aucune place de parking n’est attribuée.";
+    if (n === 0) return "";
     if (n === 1) return "Une place de parking est attribuée.";
     if (n === 2) return "Deux places de parking sont attribuées.";
     return n + " places de parking sont attribuées.";
@@ -3965,7 +4185,7 @@
     else if (niveaux === "rdc2") out.push(p + " s’élève sur un rez-de-chaussée et deux étages.");
     else if (niveaux === "rdc") out.push(p + " occupe seulement le rez-de-chaussée.");
     if (val("ri-foncier") === "titre") out.push(riadFeminin() ? "Elle est titrée à la Conservation foncière." : "Il est titré à la Conservation foncière.");
-    else if (val("ri-foncier") === "melk") out.push("Le statut est Melk, sur acte adoulaire.");
+    else if (val("ri-foncier") === "melk") out.push("Le statut est Adlia.");
     return out;
   }
   function phrasesCharmeRiad() {
@@ -3975,7 +4195,7 @@
     else if (val("ri-acces") === "pied") out.push("On n’y accède qu’à pied.");
     if (puceRiad("ri-patio", "Patio ouvert")) out.push("Le patio est ouvert.");
     if (puceRiad("ri-patio", "Verrière")) out.push("Le patio est fermé par une verrière.");
-    if (puceRiad("ri-patio", "Bassin")) out.push("Un bassin est aménagé dans le patio.");
+    if (puceRiad("ri-patio", "Fontaine")) out.push("Une fontaine est aménagée dans le patio.");
     if (puceRiad("ri-patio", "Terrasse sur le toit")) out.push("Une grande terrasse est aménagée sur le toit.");
     if (puceRiad("ri-patio", "Vue panoramique")) out.push(p + " offre une vue panoramique.");
     if (puceRiad("ri-origine", "Zelliges")) out.push("Il y a des zelliges.");
@@ -3990,7 +4210,7 @@
     var surf = nombreVilla("ri-habitable");
     if (surf) title += " de " + nombre(surf) + " m²";
     if (val("ri-acces") === "voiture") title += " avec accès voiture";
-    else if (puceRiad("ri-patio", "Bassin")) title += " avec bassin";
+    else if (puceRiad("ri-patio", "Fontaine")) title += " avec fontaine";
     title += venteOn() ? " à vendre" : " à louer";
     var lieu = lieuPropre();
     if (lieu) title += " à " + lieu;
@@ -4348,14 +4568,14 @@
       if (cos) add("Le COS indiqué est " + String(cos).replace(".", ",") + ".");
       if (cusI) add("Le CUS indiqué est " + cusI + " %.");
       var rdc = choisi("li-rdc");
-      if (rdc) add(rdc.indexOf("commercial") !== -1 ? "Le rez-de-chaussée est en alignement commercial." : "Le rez-de-chaussée est résidentiel.");
+      if (rdc) add(rdc.indexOf("commercial") !== -1 ? "Le rez-de-chaussée est un commerce." : "Le rez-de-chaussée est résidentiel.");
       var sous = choisi("li-soussol");
       if (sous === "2 niveaux ou plus") {
         var sousExact = lirePlus("li-soussol-plus", "li-soussol-num", 2);
         if (sousExact) add("Les sous-sols prévus sont de " + sousExact + " niveaux.");
       } else if (sous) add("Les sous-sols prévus : " + sous.charAt(0).toLowerCase() + sous.slice(1) + ".");
       var config = choisi("li-config");
-      if (config) add("Le terrain est " + config.replace("Terrain ", "").toLowerCase() + ".");
+      if (config === "Terrain en angle") add("Le terrain est en angle.");
       var etat = choisi("li-etat");
       if (etat) add("L’état actuel : " + etat.charAt(0).toLowerCase() + etat.slice(1) + ".");
       var occ = choisi("li-occupation");
@@ -4373,11 +4593,9 @@
       var titre = choisi("tu-foncier");
       if (titre) add(phraseBienTitre("Le terrain", false, titre));
       var loti = choisi("tu-lotissement");
-      if (loti) add(loti === "Loti" ? "Le terrain est loti." : "Le terrain n’est pas loti.");
-      var alignement = choisi("tu-alignement");
-      if (type === "commercial" && alignement) add(val("tu-alignement") === "oui" ? "L’alignement commercial est validé par l’Agence urbaine." : "L’alignement commercial n’est pas validé.");
+      if (loti === "Loti") add("Le terrain est loti.");
       var cahier = choisi("tu-cahier");
-      if (type === "groupement" && cahier) add(val("tu-cahier") === "oui" ? "Le cahier des charges du lotissement est approuvé." : "Le cahier des charges du lotissement n’est pas approuvé.");
+      if (type === "groupement" && val("tu-cahier") === "oui") add("Le cahier des charges du lotissement est approuvé.");
       var faceU = document.getElementById("tu-facade").value;
       if (faceU) add("La largeur sur rue est de " + faceU.replace(".", ",") + " m.");
       pucesDans("tu-acces").forEach(function (puce) { add(puce + "."); });
@@ -4555,10 +4773,8 @@
     if (froid) froid.hidden = val("en-type") !== "frigo";
     var zonageReq = document.getElementById("bi-zonage-req");
     if (zonageReq) zonageReq.hidden = val("bat-type") === "atelier";
-    var com = document.getElementById("tu-commercial");
     var res = document.getElementById("tu-residence");
     var lot = lotType();
-    if (com) com.hidden = lot !== "commercial";
     if (res) res.hidden = lot !== "groupement";
     var unite = choisi("fe-unite");
     var uniteLabel = document.getElementById("fe-surface-unit");
@@ -4739,7 +4955,6 @@
       var nQuais = lireCompteur("en-quais");
       if (nQuais === 1) add("1 quai de déchargement.");
       else if (nQuais > 1) add(nQuais + " quais de déchargement.");
-      else if (nQuais === 0) add("Aucun quai de déchargement.");
       var temp = choisi("en-temp");
       if (temp) add(temp === "Négatif" ? "Le froid est négatif." : "Le froid est positif.");
       var foncier = choisi("en-titre");
@@ -4958,23 +5173,11 @@
     }
     if (famille === "entrepot") {
       if (manqueNombre("en-surface", "Indiquez la surface couverte.")) return true;
-      if (manqueChoix("en-hauteur", "Choisissez la hauteur utile.")) return true;
-      var quais = document.getElementById("en-quais");
-      if (!quais || quais.getAttribute("data-set") !== "true") {
-        aller(quais, "Indiquez le nombre de quais, même zéro.");
-        return true;
-      }
       return venteOn() ? manqueNombre("en-prix", "Indiquez le prix.") : manqueNombre("en-loyer", "Indiquez le loyer.");
     }
     if (famille === "batiment") {
       if (manqueNombre("bi-surface", "Indiquez la surface couverte.")) return true;
       if (val("bat-type") !== "atelier" && manqueChoix("bi-zonage", "Choisissez le zonage.")) return true;
-      if (manqueChoix("bi-elec", "Choisissez l’électricité.")) return true;
-      if (choisi("bi-elec") === "Moyenne tension") {
-        var suiteKva = document.getElementById("bi-kva-suite");
-        if (suiteKva) suiteKva.hidden = false;
-        if (manqueNombre("bi-kva", "Indiquez la puissance du transformateur.")) return true;
-      }
       return venteOn() ? manqueNombre("bi-prix", "Indiquez le prix.") : manqueNombre("bi-loyer", "Indiquez le loyer.");
     }
     if (famille === "ferme") {
@@ -5007,23 +5210,23 @@
     var faits = [];
     function add(phrase) { if (phrase) faits.push(phrase); }
     add("Maison.");
+    phrasesMiseEnValeur().forEach(add);
+    add(phraseSoleilAssemble());
     add(phraseNiveauxAssemble());
-    var titreMaison = choisi("ma-titre");
+    var titreMaison = venteOn() ? choisi("ma-titre") : "";
     if (titreMaison === "titré") add("Elle est titrée.");
     if (titreMaison === "adlia") add("Le statut est Adlia.");
-    add(phraseStandingAssemble());
     var meuble = meubleTexte();
-    if (meuble === "meublé") add("Elle est proposée meublée.");
     if (meuble === "vide") add("Elle est proposée vide.");
+    else if (meuble === "meublé" && !meubleListeDejaDit()) add("La maison est meublée.");
     add(phrasePiecesAssemble());
     var surf = surfaceAnnonce();
     if (surf) add(nombre(surf) + " m² habitables.");
     add(phraseTerrainAssemble());
-    var rdc = choisi("ma-rdc");
+    var rdc = venteOn() ? choisi("ma-rdc") : "";
     if (rdc === "habitation") add("Le rez-de-chaussée est une habitation.");
     if (rdc === "garage") add("Le rez-de-chaussée est un garage.");
     if (rdc === "commerce") add("Le rez-de-chaussée est un commerce.");
-    add(phraseSoleilAssemble());
     if (venteOn()) {
       var occ = choisi("ma-occupation");
       if (occ === "vide") add("La maison est vide.");
@@ -5034,6 +5237,7 @@
       }
     }
     phrasesPucesAssemble().forEach(add);
+    listesCaracteristiques().forEach(add);
     var prix = prixAnnonce();
     if (prix) add(venteOn() ? "Prix : " + nombre(prix) + " DH." : "Loyer : " + nombre(prix) + " DH / mois.");
     var caution = phraseCautionTexte();
@@ -5063,11 +5267,11 @@
       if (!commercial) boulevard.setAttribute("aria-pressed", "false");
     }
     var syndic = document.getElementById("vi-syndic-bloc");
-    var sansSyndicVilla = !venteOn() && val("vi-cadre") === "ouvert";
-    if (syndic) syndic.hidden = sansSyndicVilla;
+    var fraisSyndicVilla = venteOn() && val("vi-cadre") === "fermee";
+    if (syndic) syndic.hidden = !fraisSyndicVilla;
     var modeSyndicVilla = document.getElementById("vi-syndic-mode");
-    if (sansSyndicVilla) {
-      if (modeSyndicVilla) modeSyndicVilla.hidden = true;
+    if (modeSyndicVilla) modeSyndicVilla.hidden = true;
+    if (!fraisSyndicVilla) {
       var montantSyndicVilla = document.getElementById("vi-syndic");
       if (montantSyndicVilla) montantSyndicVilla.value = "";
       document.querySelectorAll("#vi-syndic-lieu [aria-pressed='true']").forEach(function (btn) {
@@ -5110,10 +5314,13 @@
   }
   function poserRecap() {
     var nom = (typeof texteLogement === "function" && texteLogement()) || libelleType();
-    var lieu = [document.getElementById("quartier").value.trim(), document.getElementById("ville").value.trim()].filter(Boolean).join(", ");
+    var lieu = lieuVilla();
     var recap = document.getElementById("recap-type");
     var kick = document.getElementById("apercu-kicker");
-    if (recap) recap.textContent = [nom, lieu].filter(Boolean).join(" — ");
+    if (recap) {
+      recap.textContent = "";
+      recap.hidden = true;
+    }
     if (kick && nom) kick.textContent = val("famille") === "villa" ? nomVilla() : nom;
   }
   function sync() {
@@ -5172,6 +5379,7 @@
     var isLocation = transaction() === "location";
     document.querySelectorAll("[data-only='vente']").forEach(function (node) { node.hidden = !isVente; });
     document.querySelectorAll("[data-only='location']").forEach(function (node) { node.hidden = !isLocation; });
+    ordreMaison();
     syncLots();
     syncPro();
     syncAppartRegime();
@@ -5218,7 +5426,7 @@
     var hintCours = document.getElementById("hint-cours");
     if (hintCours) hintCours.textContent = "Une seule. L’activité ne change pas.";
     var noteFold = document.getElementById("lo-fold-note");
-    if (noteFold) noteFold.textContent = vendu === "murs seuls" ? "Idéal pour est obligatoire." : "L’activité est obligatoire.";
+    if (noteFold) noteFold.textContent = vendu === "murs seuls" ? "" : "L’activité est obligatoire.";
     var autreSuite = document.getElementById("autre-suite");
     if (autreSuite) autreSuite.hidden = true;
     var mursSeuls = isVente && vendu === "murs seuls";
@@ -5252,6 +5460,8 @@
     var fermesBureau = document.getElementById("bu-fermes-suite");
     var calcBureau = document.getElementById("bu-calc");
     if (etageBureau) etageBureau.hidden = val("bu-type") === "entier";
+    var niveauxBureau = document.getElementById("bu-niveaux-bloc");
+    if (niveauxBureau) niveauxBureau.hidden = val("bu-type") !== "entier";
     if (fermesBureau) fermesBureau.hidden = val("bu-amenagement") !== "cloisonne";
     var labelBureau = document.getElementById("bu-prix-label");
     var unitBureau = document.getElementById("bu-prix-unit");
@@ -5377,7 +5587,10 @@
       var vu = annonce();
       var titreInput = document.getElementById("annonce-titre");
       var texteFixe = document.getElementById("texte-fixe");
-      if (titreInput && titreInput.getAttribute("data-touched") !== "true") titreInput.value = vu.texte;
+      if (titreInput && titreInput.getAttribute("data-touched") !== "true") {
+        titreInput.setAttribute("data-pk-fr", vu.texte);
+        titreInput.value = (typeof pkShow === "function") ? pkShow(vu.texte) : vu.texte;
+      }
       if (texteFixe) texteFixe.textContent = texteCorpsBien();
       document.getElementById("apercu-prix").innerHTML = (vu.prix || "—") + " <small>" + (venteOn() ? "prix affiché" : "loyer affiché") + "</small>";
       var capLigne = document.getElementById("apercu-capital");
@@ -5584,6 +5797,7 @@
     if (!group) {
       if (button.classList.contains("chip") && button.closest("#fiche-appartement, #fiche-maison, #fiche-villa, #fiche-bureau, #fiche-riad, #fiches-lot, #fiches-pro")) {
         button.setAttribute("aria-pressed", button.getAttribute("aria-pressed") === "true" ? "false" : "true");
+        synchroniserPaire(button);
         if (button.closest("#fiche-bureau, #fiche-riad, #fiches-lot, #fiches-pro")) sync();
         else syncLogement();
       }
@@ -5618,7 +5832,7 @@
       peindreApercu();
     });
   });
-  ["ville", "quartier", "surface", "prix", "loyer", "autre", "phone", "soupente", "cave", "lo-facade", "bu-surface", "bu-prix", "bu-charges", "ri-sol", "ri-habitable", "ri-prix", "ap-capital", "ap-duree", "ap-loyer-associe", "ap-prix", "ap-etage-num", "ap-syndic-montant", "ma-etages-num", "ma-loyer-percu", "vi-syndic", "im-niveaux-num", "im-soussol-num", "im-auto-num", "im-revenus", "li-hauteur-num", "li-soussol-num", "tu-hauteur-num", "vi-niveaux-num", "lo-hangar-num", "bu-etage-num"].forEach(function (id) {
+  ["ville", "quartier", "surface", "prix", "loyer", "autre", "soupente", "cave", "lo-facade", "bu-surface", "bu-prix", "bu-charges", "ri-sol", "ri-habitable", "ri-prix", "ap-capital", "ap-duree", "ap-loyer-associe", "ap-prix", "ap-etage-num", "ap-syndic-montant", "ma-etages-num", "ma-loyer-percu", "vi-syndic", "im-niveaux-num", "im-soussol-num", "im-auto-num", "im-revenus", "li-hauteur-num", "li-soussol-num", "tu-hauteur-num", "vi-niveaux-num", "lo-hangar-num", "bu-etage-num"].forEach(function (id) {
     document.getElementById(id).addEventListener("input", function () {
       nettoyer(document.getElementById(id));
       sync();
@@ -5645,11 +5859,13 @@
     var totale = villa || hangar || bat === "en centre commercial";
     var label = document.getElementById("surface-label");
     if (label) label.innerHTML = (totale ? "Surface totale" : "Surface au sol") + " <span class=\"pk-req\" aria-hidden=\"true\">*</span>";
-    ["lo-soupente-champ", "lo-cave-champ", "lo-facade-champ"].forEach(function (id) {
+    ["lo-soupente-champ", "lo-cave-champ"].forEach(function (id) {
       var el = document.getElementById(id);
-      if (el) el.hidden = !magasin;
+      if (el) el.hidden = false;
     });
-    if (!magasin) ["soupente", "cave", "lo-facade"].forEach(viderChamp);
+    var facadeChamp = document.getElementById("lo-facade-champ");
+    if (facadeChamp) facadeChamp.hidden = !magasin;
+    if (!magasin) viderChamp("lo-facade");
     var villaBloc = document.getElementById("lo-niveaux-villa");
     var hangarBloc = document.getElementById("lo-niveaux-hangar");
     if (villaBloc) villaBloc.hidden = !villa;
@@ -5677,12 +5893,12 @@
   function activiteRequise() {
     if (!venteOn()) {
       if (choisi("mode-bail") === "gérance libre") return { id: "cours", msg: "Choisissez l’activité en cours." };
-      if (choisi("mode-bail") === "bail commercial") return { id: "ideal", msg: "Choisissez à qui le local est idéal." };
+      if (choisi("mode-bail") === "bail commercial") return { id: "ideal", msg: "Le local est idéal pour" };
       return null;
     }
     if (choisi("vente-type") === "murs seuls" && choisi("lo-occupation") === "déjà loué") return null;
     if (choisi("vente-type") !== "murs seuls" && !liste("cours").length) return { id: "cours", msg: "Choisissez l’activité en cours." };
-    if (!liste("ideal").length) return { id: "ideal", msg: "Choisissez à qui le local est idéal." };
+    if (!liste("ideal").length) return { id: "ideal", msg: "Le local est idéal pour" };
     return null;
   }
   function saisiPositif(id) {
@@ -5712,8 +5928,16 @@
         document.getElementById("suite-batiment").hidden = false;
         return aller(document.getElementById("bat-type"), "Choisissez le type de bâtiment.");
       }
-      if (!document.getElementById("ville").value.trim()) return aller(document.getElementById("ville"), "Indiquez la ville.");
-      if (!document.getElementById("quartier").value.trim()) return aller(document.getElementById("quartier"), "Indiquez le quartier.");
+      if (propositionOuverte() && document.getElementById("pk-proposed-city").value.trim()) {
+        document.getElementById("ville").value = "";
+        document.getElementById("quartier").value = "";
+      } else if (!villeOfficielle(document.getElementById("ville").value) || !quartierDansListe()) {
+        if (propositionOuverte()) return aller(document.getElementById("pk-proposed-city"), "Indiquez au moins la ville de votre bien.");
+        if (!villeOfficielle(document.getElementById("ville").value)) return aller(document.getElementById("ville"), "Choisissez une ville ou un quartier dans la liste proposée.");
+        return aller(document.getElementById("quartier"), "Choisissez une ville ou un quartier dans la liste proposée.");
+      } else if (propositionOuverte()) {
+        document.getElementById("lieu-proposition").open = false;
+      }
       try { sync(); } catch (e) {}
       montrer(2);
       return;
@@ -5722,8 +5946,6 @@
       if (val("famille") === "appartement") {
         if (!venteOn() && !val("ap-contrat")) return aller(document.getElementById("ap-contrat"), "Choisissez le contrat.");
         if (venteOn() && !val("ap-vente-regime")) return aller(document.getElementById("ap-vente-regime"), "Choisissez ce qui est vendu.");
-        if (!choisi("ap-standing")) return aller(document.getElementById("ap-standing"), "Choisissez le standing.");
-        if (!document.getElementById("ap-soleil").value) return aller(document.getElementById("ap-soleil"), "Choisissez l’ensoleillement.");
         if (!choisi("ap-meuble")) {
           document.getElementById("ap-meuble-card").hidden = false;
           return aller(document.getElementById("ap-meuble"), estStudio() ? "Indiquez si le studio est meublé ou vide." : "Indiquez si le logement est meublé ou vide.");
@@ -5756,7 +5978,7 @@
           var loy = champ("ap-loyer-associe");
           return aller(loy.boite, "Indiquez le loyer associé.", loy.focus);
         }
-        if ((estRhinaAppart() || estPorteAppart()) && !saisiPositif("ap-duree")) {
+        if (estRhinaAppart() && !saisiPositif("ap-duree")) {
           var dur = champ("ap-duree");
           return aller(dur.boite, "Indiquez la durée en mois.", dur.focus);
         }
@@ -5781,7 +6003,6 @@
           var vt = champ("vi-terrain");
           return aller(vt.boite, "Indiquez la surface du terrain.", vt.focus);
         }
-        if (!choisi("vi-standing")) return aller(document.getElementById("vi-standing"), "Choisissez le standing.");
         if (!venteOn() && !choisi("vi-meuble")) return aller(document.getElementById("vi-meuble"), "Indiquez si la villa est meublée ou vide.");
         if (venteOn() && !saisiPositif("vi-prix")) {
           var vp = champ("vi-prix");
@@ -5791,11 +6012,11 @@
           var vl = champ("vi-loyer");
           return aller(vl.boite, "Indiquez le loyer.", vl.focus);
         }
-        if (!venteOn() && val("vi-cadre") !== "ouvert" && !choisi("vi-syndic-lieu")) return aller(document.getElementById("vi-syndic-lieu"), "Indiquez si les charges de syndic sont incluses ou en supplément.");
         versApercu();
         return;
       }
       if (estMaison()) {
+        if (!venteOn() && !choisi("ma-meuble")) return aller(document.getElementById("ma-meuble"), "Indiquez si la maison est meublée ou vide.");
         if (!choisi("ma-niveaux")) return aller(document.getElementById("ma-niveaux"), "Choisissez le nombre d’étages.");
         var plusEtages = document.getElementById("ma-etages-plus") && document.getElementById("ma-etages-plus").getAttribute("aria-pressed") === "true";
         var brutEtages = plusEtages ? (document.getElementById("ma-etages-num").value || "").trim() : "";
@@ -5803,16 +6024,11 @@
           var numEtages = champ("ma-etages-num");
           return aller(numEtages.boite, "Indiquez le nombre d’étages.", numEtages.focus);
         }
-        if (!choisi("ma-titre")) return aller(document.getElementById("ma-titre"), "Choisissez Titré ou Adlia.");
-        if (!choisi("ma-standing")) return aller(document.getElementById("ma-standing"), "Choisissez le standing.");
-        if (!venteOn() && !choisi("ma-meuble")) return aller(document.getElementById("ma-meuble"), "Indiquez si la maison est meublée ou vide.");
         if (!(lireCompteur("ma-chambres") > 0)) return aller(document.getElementById("ma-chambres"), "Indiquez le nombre de chambres.");
         if (!saisiPositif("ma-surface")) {
           var sm = champ("ma-surface");
           return aller(sm.boite, "Indiquez la surface.", sm.focus);
         }
-        if (!choisi("ma-rdc")) return aller(document.getElementById("ma-rdc"), "Choisissez le rez-de-chaussée.");
-        if (!document.getElementById("ma-soleil").value) return aller(document.getElementById("ma-soleil"), "Choisissez l’ensoleillement.");
         if (!saisiPositif("ma-prix")) {
           var pm = champ("ma-prix");
           return aller(pm.boite, "Indiquez le prix.", pm.focus);
@@ -5854,7 +6070,10 @@
           var bs = champ("bu-surface");
           return aller(bs.boite, "Indiquez la surface.", bs.focus);
         }
-        if (!choisi("bu-livraison")) return aller(document.getElementById("bu-livraison"), "Choisissez l’état de livraison.");
+        if (val("bu-type") === "entier" && !saisiPositif("bu-niveaux")) {
+          var bn = champ("bu-niveaux");
+          return aller(bn.boite, "Indiquez le nombre d’étages.", bn.focus);
+        }
         if (val("bu-type") !== "entier" && !document.querySelector("#bu-etage [aria-pressed='true']")) {
           return aller(document.getElementById("bu-etage"), "Choisissez l’étage.");
         }
@@ -5906,12 +6125,12 @@
           return aller(loyer.boite, loue ? "Indiquez le loyer perçu." : "Indiquez le loyer mensuel associé.", loyer.focus);
         }
         if (vendu !== "murs seuls" && !liste("cours").length) return aller(document.getElementById("cours"), "Choisissez l’activité en cours.");
-        if (!loue && !liste("ideal").length) return aller(document.getElementById("ideal"), "Choisissez à qui le local est idéal.");
+        if (!loue && !liste("ideal").length) return aller(document.getElementById("ideal"), "Le local est idéal pour");
       } else {
         if (!choisi("batiment")) return aller(document.getElementById("batiment"), "Choisissez le bâtiment.");
         if (!choisi("mode-bail")) return aller(document.getElementById("mode-bail"), "Choisissez le mode de location.");
         if (choisi("mode-bail") === "gérance libre" && !liste("cours").length) return aller(document.getElementById("cours"), "Choisissez l’activité en cours.");
-        if (choisi("mode-bail") === "bail commercial" && !liste("ideal").length) return aller(document.getElementById("ideal"), "Choisissez à qui le local est idéal.");
+        if (choisi("mode-bail") === "bail commercial" && !liste("ideal").length) return aller(document.getElementById("ideal"), "Le local est idéal pour");
         if (!saisiPositif("surface")) {
           var surfaceL = champ("surface");
           return aller(surfaceL.boite, "Indiquez la surface.", surfaceL.focus);
@@ -5930,8 +6149,6 @@
     if (!photos.length) return aller(document.getElementById("photos-apercu"), "Ajoutez au moins une photo du bien.");
     if (!document.getElementById("annonce-nom").value.trim()) return aller(document.getElementById("annonce-nom"), "Indiquez le nom du propriétaire.");
     if (!document.getElementById("annonce-titre").value.trim()) return aller(document.getElementById("annonce-titre"), "Indiquez le titre.");
-    if (document.getElementById("phone").value.replace(/\D/g, "").length < 8) return aller(document.getElementById("phone"), "Indiquez un numéro de téléphone.");
-    document.getElementById("next").textContent = "Numéro enregistré";
     document.getElementById("next").disabled = true;
   });
   document.getElementById("back").addEventListener("click", function () {
@@ -6003,18 +6220,6 @@
     var msa = lireCompteur("ma-salons");
     var maw = document.getElementById("ma-wording");
     if (maw && mch !== null && msa !== null) maw.innerHTML = "Dans le texte : <strong>" + nomHabitation() + ", " + motCompte(mch, "chambre", "chambres") + ", " + motCompte(msa, "salon", "salons") + "</strong>";
-    var nom = nomHabitation();
-    var article = nom === "Riad" ? "un riad" : "une " + nom.toLowerCase();
-    var de = nom === "Riad" ? "du riad" : "de la " + nom.toLowerCase();
-    var ce = nom === "Riad" ? "ce riad" : "cette " + nom.toLowerCase();
-    var lead = document.getElementById("ma-lead");
-    if (lead) lead.textContent = "On demande le nombre d’étages. " + article.charAt(0).toUpperCase() + article.slice(1) + " ne s’écrit jamais Studio.";
-    var ext = document.getElementById("ma-hint-ext");
-    if (ext) ext.textContent = "L’extérieur " + de + ". Un garage ou une terrasse cochés demandent leur surface. Pas de garage titré : ici, le garage est au bien.";
-    var eq = document.getElementById("ma-hint-eq");
-    if (eq) eq.textContent = "En vente, ces appareils ne sont pas proposés : ils ne partent pas avec " + (nom === "Riad" ? "le riad" : "la " + nom.toLowerCase()) + ".";
-    var opt = document.getElementById("ma-hint-opt");
-    if (opt) opt.textContent = "Ce qui distingue " + ce + ".";
   }
   function syncLogement() {
     var garage = document.getElementById("ap-garage");
@@ -6035,8 +6240,20 @@
     ["ap", "ma"].forEach(function (prefix) {
       var lab = document.getElementById(prefix + "-prix-label");
       var unit = document.getElementById(prefix + "-prix-unit");
+      var input = document.getElementById(prefix + "-prix");
       if (lab) lab.innerHTML = (venteOn() ? "Prix" : "Loyer") + " <span class=\"pk-req\" aria-hidden=\"true\">*</span>";
-      if (unit) unit.textContent = venteOn() ? "DH" : "DH / mois";
+      if (prefix === "ma") {
+        if (unit) {
+          var unite = venteOn() ? "DH" : "DH/mois";
+          unit.setAttribute("data-fr", unite);
+          unit.textContent = (typeof pkShow === "function") ? pkShow(unite) : unite;
+        }
+        if (input) {
+          var exemple = venteOn() ? "Ex. 2450000" : "Ex. 2500";
+          input.setAttribute("data-pk-placeholder", exemple);
+          input.placeholder = (typeof pkShow === "function") ? pkShow(exemple) : exemple;
+        }
+      } else if (unit) unit.textContent = venteOn() ? "DH" : "DH / mois";
     });
     var studio = estStudio();
     var carte = document.getElementById("ap-meuble-card");
@@ -6058,8 +6275,9 @@
     var prixCard = document.getElementById("ap-prix-card");
     var soleilBloc = document.getElementById("ap-soleil-bloc");
     var slotQualites = document.getElementById("ap-slot-qualites");
-    poserStudio(standingCard, slotQualites);
-    poserStudio(soleilBloc, slotQualites);
+    var pliApp = foldApp ? foldApp.querySelector(".pk-fold-body") : null;
+    poserStudio(standingCard, pliApp);
+    poserStudio(soleilBloc, pliApp);
     poserStudio(carte, slotQualites);
     poserStudio(foldApp, document.getElementById("ap-slot-fold"));
     if (soleilBloc) soleilBloc.hidden = false;
@@ -6084,9 +6302,6 @@
     var etageOuvert = plusEtage && plusEtage.getAttribute("aria-pressed") === "true" && document.getElementById("ap-bloc-etage") && !document.getElementById("ap-bloc-etage").hidden;
     if (suiteEtage) suiteEtage.hidden = !etageOuvert;
     if (!etageOuvert && document.getElementById("ap-etage-num")) document.getElementById("ap-etage-num").value = "";
-    if (hint) hint.textContent = studio
-      ? "Un studio se dit meublé ou vide, même en vente."
-      : "Meublé ou vide.";
     if (cuisine) cuisine.hidden = false;
     if (cuisinesStudio) {
       cuisinesStudio.hidden = !studio;
@@ -6144,10 +6359,25 @@
   });
 
   var LIEUX = {"Casablanca":["Maarif","Gauthier","Anfa","Ain Diab","Bourgogne","Racine","Californie","Oasis","Sidi Maarouf","Ain Sebaa","Hay Hassani","Derb Sultan","Belvédère","CIL","Beauséjour","Sidi Bernoussi","Mers Sultan","Habous"],"Rabat":["Agdal","Hay Riad","Hassan","Souissi","Les Orangers","Yacoub El Mansour","Médina","Océan","Aviation","Témara","Akkari","El Menzeh"],"Marrakech":["Guéliz","Hivernage","Médina","Palmeraie","Targa","Semlalia","Massira","Route de Fès","Agdal","Amerchich","Sidi Ghanem","M’Hamid"],"Tanger":["Malabata","Centre-ville","Marshan","Iberia","Achakar","Boubana","Branes","Souani","Cap Spartel","Val Fleuri","Mesnana"],"Fès":["Médina","Ville Nouvelle","Atlas","Saiss","Narjiss","Montfleuri","Zouagha","Route d’Immouzer","Agdal","Jnan Adarissa"],"Agadir":["Founty","Talborjt","Hay Mohammadi","Charaf","Dakhla","Anza","Sonaba","Cité Suisse","Illigh","Tikiouine"],"Meknès":["Hamria","Médina","Marjane","Bassatine","Riad","Ville Nouvelle","Toulal","Sidi Bouzekri"],"Oujda":["Centre-ville","Hay Al Qods","Sidi Yahya","Al Andalous","Lazaret","Hay Salam"],"Kénitra":["Maamora","Bir Rami","Ouled Oujih","Val Fleuri","Mimosas","Saknia"],"Tétouan":["Centre-ville","Martil","Cabo Negro","M’Diq","Touilaa","Sania Ramel"],"Salé":["Hay Karima","Tabriquet","Bettana","Sala Al Jadida","Hay Salam","Laayayda"],"Mohammedia":["Centre-ville","Alia","Kasbah","Parc","Hassania","El Wahda"],"El Jadida":["Centre-ville","Cité Portugaise","Sidi Bouzid","Hay Salam","Essalam"],"Essaouira":["Médina","Borj","Ghazoua","Diabat","Quartier des Dunes"],"Beni Mellal":["Centre-ville","Ouled Hamdane","Hay Al Massira","Riad Salam"],"Nador":["Centre-ville","Ihaddadene","Al Aroui","Selouane"],"Ifrane":["Centre-ville","Hay Riad","Timdiqine","Zaouiat"],"Ouarzazate":["Centre-ville","Tabounte","Hay El Wahda","Sidi Daoud"],"Safi":["Centre-ville","Biada","Jerifat","Trab Lahjar"],"Dakhla":["Centre-ville","Hay El Massira","Moulay Rachid"],"Laâyoune":["Centre-ville","Hay Essalam","Colomina Nueva"],"Berrechid":["Centre-ville","Hay Al Amal","Riad"],"Settat":["Centre-ville","Hay Salam","Riad"],"Khouribga":["Centre-ville","Hay Al Amal","Sidi Chennane"],"Taza":["Centre-ville","Koucha","Hay Ennahda"],"Larache":["Centre-ville","Ksar El Kebir","Hay Essalam"],"Al Hoceima":["Centre-ville","Ajdir","Calabonita"],"Chefchaouen":["Médina","Andalous","Sidi Bouzra"],"Bouznika":["Centre-ville","Plage","Bouznika Bay"],"Skhirat":["Centre-ville","Plage","Témara"]};
+  var LIEUX_AR = {"Casablanca":{"nom":"الدار البيضاء","quartiers":{"Maarif":"المعاريف","Gauthier":"غوتييه","Anfa":"أنفا","Ain Diab":"عين دياب","Bourgogne":"بورگون","Racine":"راسين","Californie":"كاليفورنيا","Oasis":"الواحة","Sidi Maarouf":"سيدي معروف","Ain Sebaa":"عين السبع","Hay Hassani":"حي الحسني","Derb Sultan":"درب السلطان","Belvédère":"بلفيدار","CIL":"السيل","Beauséjour":"بو سيجور","Sidi Bernoussi":"سيدي برنوصي","Mers Sultan":"مرس السلطان","Habous":"الحبوس"}},"Rabat":{"nom":"الرباط","quartiers":{"Agdal":"أكدال","Hay Riad":"حي الرياض","Hassan":"حسان","Souissi":"السويسي","Les Orangers":"الأورانجيه","Yacoub El Mansour":"يعقوب المنصور","Médina":"المدينة القديمة","Océan":"أوشان","Aviation":"الأفياسيون","Témara":"تمارة","Akkari":"القري","El Menzeh":"المنزه"}},"Marrakech":{"nom":"مراكش","quartiers":{"Guéliz":"جيليز","Hivernage":"هيفيرناژ","Médina":"المدينة القديمة","Palmeraie":"النخيل","Targa":"تارغة","Semlalia":"سملالة","Massira":"المسيرة","Route de Fès":"طريق فاس","Agdal":"أكدال","Amerchich":"أمزشيش","Sidi Ghanem":"سيدي غانم","M’Hamid":"المحاميد"}},"Tanger":{"nom":"طنجة","quartiers":{"Malabata":"مالاباطا","Centre-ville":"وسط المدينة","Marshan":"مرشان","Iberia":"إيبيريا","Achakar":"أشكار","Boubana":"بوبانا","Branes":"برانش","Souani":"السواني","Cap Spartel":"رأس سبارطيل","Val Fleuri":"فال فلوري","Mesnana":"مسنانة"}},"Fès":{"nom":"فاس","quartiers":{"Médina":"المدينة القديمة","Ville Nouvelle":"المدينة الجديدة","Atlas":"أطلس","Saiss":"سايس","Narjiss":"النرجس","Montfleuri":"مونفلوري","Zouagha":"زواغة","Route d’Immouzer":"طريق إيموزار","Agdal":"أكدال","Jnan Adarissa":"جنان أدريسة"}},"Agadir":{"nom":"أكادير","quartiers":{"Founty":"فونتي","Talborjt":"تلبرجت","Hay Mohammadi":"حي المحمدي","Charaf":"الشرف","Dakhla":"الداخلة","Anza":"أنزة","Sonaba":"صونابا","Cité Suisse":"المدينة السويسرية","Illigh":"إيليغ","Tikiouine":"تيكيوين"}},"Meknès":{"nom":"مكناس","quartiers":{"Hamria":"الحمرية","Médina":"المدينة القديمة","Marjane":"مرجان","Bassatine":"البساتين","Riad":"رياض","Ville Nouvelle":"المدينة الجديدة","Toulal":"تولال","Sidi Bouzekri":"سيدي بوزكري"}},"Oujda":{"nom":"وجدة","quartiers":{"Centre-ville":"وسط المدينة","Hay Al Qods":"حي القدس","Sidi Yahya":"سيدي يحيى","Al Andalous":"الأندلس","Lazaret":"اللازاريت","Hay Salam":"حي السلام"}},"Kénitra":{"nom":"القنيطرة","quartiers":{"Maamora":"المعمورة","Bir Rami":"بير رامي","Ouled Oujih":"أولاد أوجيه","Val Fleuri":"فال فلوري","Mimosas":"الميموزا","Saknia":"ساكنية"}},"Tétouan":{"nom":"تطوان","quartiers":{"Centre-ville":"وسط المدينة","Martil":"مرتيل","Cabo Negro":"كابو نيغرو","M’Diq":"المضيق","Touilaa":"الطويعة","Sania Ramel":"سانية رمل"}},"Salé":{"nom":"سلا","quartiers":{"Hay Karima":"حي كريمة","Tabriquet":"تابريكت","Bettana":"بطانة","Sala Al Jadida":"سلا الجديدة","Hay Salam":"حي السلام","Laayayda":"العيايدة"}},"Mohammedia":{"nom":"المحمدية","quartiers":{"Centre-ville":"وسط المدينة","Alia":"عالية","Kasbah":"القصبة","Parc":"الحديقة","Hassania":"الحسنية","El Wahda":"الوحدة"}},"El Jadida":{"nom":"الجديدة","quartiers":{"Centre-ville":"وسط المدينة","Cité Portugaise":"المدينة البرتغالية","Sidi Bouzid":"سيدي بوزيد","Hay Salam":"حي السلام","Essalam":"السلام"}},"Essaouira":{"nom":"الصويرة","quartiers":{"Médina":"المدينة القديمة","Borj":"البرج","Ghazoua":"غزوة","Diabat":"ديابات","Quartier des Dunes":"حي الكثبان"}},"Beni Mellal":{"nom":"بني ملال","quartiers":{"Centre-ville":"وسط المدينة","Ouled Hamdane":"أولاد حمدان","Hay Al Massira":"حي المسيرة","Riad Salam":"رياض السلام"}},"Nador":{"nom":"الناظور","quartiers":{"Centre-ville":"وسط المدينة","Ihaddadene":"إحدادن","Al Aroui":"العروي","Selouane":"سلوان"}},"Ifrane":{"nom":"إفران","quartiers":{"Centre-ville":"وسط المدينة","Hay Riad":"حي الرياض","Timdiqine":"تيمديقين","Zaouiat":"زاوية"}},"Ouarzazate":{"nom":"ورزازات","quartiers":{"Centre-ville":"وسط المدينة","Tabounte":"تابونت","Hay El Wahda":"حي الوحدة","Sidi Daoud":"سيدي داود"}},"Safi":{"nom":"آسفي","quartiers":{"Centre-ville":"وسط المدينة","Biada":"البياضة","Jerifat":"جريفات","Trab Lahjar":"تراب الحجر"}},"Dakhla":{"nom":"الداخلة","quartiers":{"Centre-ville":"وسط المدينة","Hay El Massira":"حي المسيرة","Moulay Rachid":"مولاي رشيد"}},"Laâyoune":{"nom":"العيون","quartiers":{"Centre-ville":"وسط المدينة","Hay Essalam":"حي السلام","Colomina Nueva":"كولومينا نويفا"}},"Berrechid":{"nom":"برشيد","quartiers":{"Centre-ville":"وسط المدينة","Hay Al Amal":"حي الأمل","Riad":"رياض"}},"Settat":{"nom":"سطات","quartiers":{"Centre-ville":"وسط المدينة","Hay Salam":"حي السلام","Riad":"رياض"}},"Khouribga":{"nom":"خريبكة","quartiers":{"Centre-ville":"وسط المدينة","Hay Al Amal":"حي الأمل","Sidi Chennane":"سيدي الشنون"}},"Taza":{"nom":"تازة","quartiers":{"Centre-ville":"وسط المدينة","Koucha":"كوشة","Hay Ennahda":"حي النهضة"}},"Larache":{"nom":"العرائش","quartiers":{"Centre-ville":"وسط المدينة","Ksar El Kebir":"القصر الكبير","Hay Essalam":"حي السلام"}},"Al Hoceima":{"nom":"الحسيمة","quartiers":{"Centre-ville":"وسط المدينة","Ajdir":"أجدير","Calabonita":"كالابونيتا"}},"Chefchaouen":{"nom":"شفشاون","quartiers":{"Médina":"المدينة القديمة","Andalous":"الأندلس","Sidi Bouzra":"سيدي بوزرة"}},"Bouznika":{"nom":"بوزنيقة","quartiers":{"Centre-ville":"وسط المدينة","Plage":"الشاطئ","Bouznika Bay":"بوزنيقة باي"}},"Skhirat":{"nom":"الصخيرات","quartiers":{"Centre-ville":"وسط المدينة","Plage":"الشاطئ","Témara":"تمارة"}}};
   var ALIAS_LIEUX = { casa: "Casablanca", kech: "Marrakech" };
   var silenceLieux = false;
   function cleLieu(valeur) {
-    return String(valeur || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[’']/g, "").toLowerCase().trim();
+    return String(valeur || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[’']/g, "").replace(/[أإآٱ]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه").replace(/\u0640/g, "").replace(/[\u064B-\u065F\u0670]/g, "").toLowerCase().trim();
+  }
+  function texteArabe(valeur) {
+    return /[\u0600-\u06FF]/.test(String(valeur || ""));
+  }
+  function proposerArabe(saisie, ville) {
+    if (texteArabe(saisie) || texteArabe(ville)) return true;
+    return typeof PK_LANG !== "undefined" && PK_LANG === "ar";
+  }
+  function arVille(fr) {
+    return (LIEUX_AR[fr] && LIEUX_AR[fr].nom) || fr;
+  }
+  function arQuartier(villeFr, quartierFr) {
+    var bloc = LIEUX_AR[villeFr];
+    return (bloc && bloc.quartiers && bloc.quartiers[quartierFr]) || quartierFr;
   }
   function villeOfficielle(valeur) {
     var cle = cleLieu(valeur);
@@ -6155,18 +6385,46 @@
     if (ALIAS_LIEUX[cle]) return ALIAS_LIEUX[cle];
     var nom = "";
     Object.keys(LIEUX).forEach(function (ville) {
-      if (cleLieu(ville) === cle) nom = ville;
+      if (cleLieu(ville) === cle || cleLieu(arVille(ville)) === cle) nom = ville;
     });
     return nom;
+  }
+  function quartierDansListe() {
+    var ville = villeOfficielle(document.getElementById("ville").value);
+    var quartier = document.getElementById("quartier").value.trim();
+    if (!ville || !quartier || !LIEUX[ville]) return false;
+    var cle = cleLieu(quartier);
+    return LIEUX[ville].some(function (nom) {
+      return cleLieu(nom) === cle || cleLieu(arQuartier(ville, nom)) === cle;
+    });
+  }
+  function reglerAsterisquesLieu() {
+    var ouvert = propositionOuverte();
+    ["ville-req", "quartier-req"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.hidden = ouvert;
+    });
+    document.getElementById("ville").setAttribute("aria-required", ouvert ? "false" : "true");
+    document.getElementById("quartier").setAttribute("aria-required", ouvert ? "false" : "true");
   }
   function scoreLieu(saisie, nom) {
     var n = cleLieu(saisie);
     var t = cleLieu(nom);
     if (!n) return 2;
     if (ALIAS_LIEUX[n] && cleLieu(ALIAS_LIEUX[n]) === t) return 2;
-    if (t.indexOf(n) === 0) return 2;
-    if (t.indexOf(n) !== -1) return 1;
+    var tu = texteArabe(t) && t.indexOf("ال") === 0 ? t.slice(2) : t;
+    var nu = texteArabe(n) && n.indexOf("ال") === 0 ? n.slice(2) : n;
+    if (t.indexOf(n) === 0 || tu.indexOf(n) === 0 || tu.indexOf(nu) === 0) return 2;
+    if (t.indexOf(n) !== -1 || tu.indexOf(nu) !== -1) return 1;
     return 0;
+  }
+  function scoreNoms(saisie, noms) {
+    var best = 0;
+    noms.forEach(function (nom) {
+      var score = nom ? scoreLieu(saisie, nom) : 0;
+      if (score > best) best = score;
+    });
+    return best;
   }
   function trierLieux(liste) {
     return liste.sort(function (a, b) {
@@ -6175,11 +6433,13 @@
     });
   }
   function chercherVilles(saisie) {
+    var ar = proposerArabe(saisie, "");
     var starts = [];
     var contains = [];
     Object.keys(LIEUX).forEach(function (ville) {
-      var score = scoreLieu(saisie, ville);
-      var item = { city: ville, district: "", label: ville, meta: "Ville", score: score };
+      var affiche = ar ? arVille(ville) : ville;
+      var score = scoreNoms(saisie, [ville, arVille(ville)]);
+      var item = { city: affiche, district: "", label: affiche, meta: ar ? "مدينة" : "Ville", score: score };
       if (score === 2) starts.push(item);
       else if (score === 1) contains.push(item);
     });
@@ -6187,21 +6447,27 @@
     var quartiers = [];
     Object.keys(LIEUX).forEach(function (ville) {
       LIEUX[ville].forEach(function (quartier) {
-        var score = scoreLieu(saisie, quartier);
-        if (score) quartiers.push({ city: ville, district: quartier, label: quartier, meta: ville, score: score });
+        var score = scoreNoms(saisie, [quartier, arQuartier(ville, quartier)]);
+        if (!score) return;
+        var affiche = ar ? arQuartier(ville, quartier) : quartier;
+        var villeAffiche = ar ? arVille(ville) : ville;
+        quartiers.push({ city: villeAffiche, district: affiche, label: affiche, meta: villeAffiche, score: score });
       });
     });
     return villes.concat(trierLieux(quartiers).slice(0, 4));
   }
   function chercherQuartiers(ville, saisie) {
     var officielle = villeOfficielle(ville);
+    var ar = proposerArabe(saisie, ville);
     var liste = [];
     var source = officielle ? [officielle] : Object.keys(LIEUX);
     source.forEach(function (nom) {
       LIEUX[nom].forEach(function (quartier) {
-        var score = saisie ? scoreLieu(saisie, quartier) : 2;
+        var score = saisie ? scoreNoms(saisie, [quartier, arQuartier(nom, quartier)]) : 2;
         if (!score) return;
-        liste.push({ city: nom, district: quartier, label: quartier, meta: nom, score: score });
+        var affiche = ar ? arQuartier(nom, quartier) : quartier;
+        var villeAffiche = ar ? arVille(nom) : nom;
+        liste.push({ city: villeAffiche, district: affiche, label: affiche, meta: villeAffiche, score: score });
       });
     });
     return trierLieux(liste).slice(0, officielle && !saisie ? 40 : 8);
@@ -6260,6 +6526,8 @@
     input.setAttribute("aria-activedescendant", "");
   }
   function poserLieu(id, valeur) {
+    var proposition = document.getElementById("lieu-proposition");
+    if (proposition && proposition.open) proposition.open = false;
     silenceLieux = true;
     var input = document.getElementById(id);
     input.value = valeur;
@@ -6276,7 +6544,7 @@
     }
     var quartier = document.getElementById("quartier").value.trim();
     var connu = villeOfficielle(item.city);
-    var garde = connu && LIEUX[connu].some(function (nom) { return cleLieu(nom) === cleLieu(quartier); });
+    var garde = connu && LIEUX[connu].some(function (nom) { return cleLieu(nom) === cleLieu(quartier) || cleLieu(arQuartier(connu, nom)) === cleLieu(quartier); });
     poserLieu("ville", item.city);
     if (!garde) poserLieu("quartier", "");
     var champQuartier = document.getElementById("quartier");
@@ -6341,6 +6609,20 @@
         champQuartier.setAttribute("aria-expanded", "false");
       }
     }, 160);
+  });
+
+
+  document.getElementById("lieu-proposition").addEventListener("toggle", function () {
+    reglerAsterisquesLieu();
+    if (this.open) {
+      document.getElementById("ville").value = "";
+      document.getElementById("quartier").value = "";
+      fermerListes();
+      document.getElementById("pk-proposed-city").focus();
+    } else {
+      document.getElementById("pk-proposed-city").value = "";
+      document.getElementById("pk-proposed-district").value = "";
+    }
   });
 
   sync();
