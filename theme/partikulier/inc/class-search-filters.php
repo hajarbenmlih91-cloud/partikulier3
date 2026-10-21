@@ -21,9 +21,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class Partikulier_Search_Filters {
 
-		/**
-		 * Correspondance parametre GET -> taxonomie.
-		 */
+	const PRICE_SALE_MAX  = 30000000;
+	const PRICE_RENT_MAX  = 50000;
+	const PRICE_SALE_STEP = 100000;
+	const PRICE_RENT_STEP = 500;
+	const AREA_MAX        = 5000;
+	const AREA_STEP       = 10;
+
+	/**
+	 * Correspondance parametre GET -> taxonomie.
+	 */
 	private static function taxonomy_map() {
 			return array(
 					'es_action' => PARTIKULIER_ESTATIK_STATUS_TAXONOMY,
@@ -607,9 +614,19 @@ class Partikulier_Search_Filters {
 						une clause ; on neutralise aussi la query var pour que core ne relance pas
 						une recherche plein texte residuelle. */
 
-					// --- Budget maximum ---
-					$price_max = isset( $_GET['es_price_max'] ) ? (int) $_GET['es_price_max'] : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-					$price_min = isset( $_GET['es_price_min'] ) ? (int) $_GET['es_price_min'] : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			// --- Budget : un tableau GET n'est pas un nombre (E-5105). Le curseur
+			// au plafond du formulaire veut dire « sans limite », pas un plafond. ---
+			$price_max = self::query_int( 'es_price_max' );
+			$price_min = self::query_int( 'es_price_min' );
+			$price_cap = ( 'a-louer' === self::query_key( 'es_action' ) ) ? self::PRICE_RENT_MAX : self::PRICE_SALE_MAX;
+			if ( $price_max >= $price_cap ) {
+				$price_max = 0;
+			}
+			if ( $price_min > 0 && $price_max > 0 && $price_min > $price_max ) {
+				$pk_swap   = $price_min;
+				$price_min = $price_max;
+				$price_max = $pk_swap;
+			}
 
 		if ( $price_max > 0 || $price_min > 0 ) {
 			$meta_query = (array) $query->get( 'meta_query' );
@@ -673,10 +690,206 @@ class Partikulier_Search_Filters {
 			}
 			$query->set( 'meta_query', $rent_meta );
 		}
+		self::apply_detail_filters( $query );
 	}
 
-		/**
-		 * La requete porte-t-elle sur les annonces ?
+	/**
+	 * Entier de query string, ou 0 si absent, vide, ou non scalaire.
+	 *
+	 * @param string $key Parametre GET.
+	 * @return int
+	 */
+	private static function query_int( $key ) {
+		if ( ! isset( $_GET[ $key ] ) || ! is_scalar( $_GET[ $key ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			return 0;
+		}
+		$raw = wp_unslash( $_GET[ $key ] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( ! is_scalar( $raw ) ) {
+			return 0;
+		}
+		$raw = (string) $raw;
+		if ( '' === $raw || ! preg_match( '/^\d+$/', $raw ) ) {
+			return 0;
+		}
+		return (int) $raw;
+	}
+
+	/**
+	 * Cle GET scalaire, sinon chaine vide.
+	 *
+	 * @param string $key Parametre GET.
+	 * @return string
+	 */
+	private static function query_key( $key ) {
+		if ( ! isset( $_GET[ $key ] ) || ! is_scalar( $_GET[ $key ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			return '';
+		}
+		return sanitize_key( wp_unslash( $_GET[ $key ] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+	}
+
+	/**
+	 * Surface, chambres, salles de bain, equipements. Le plafond du curseur
+	 * n'est pas un filtre : il veut dire « sans limite ».
+	 *
+	 * @param WP_Query $query Requete.
+	 */
+	private static function apply_detail_filters( $query ) {
+		$size_min = self::query_int( 'es_size_min' );
+		$size_max = self::query_int( 'es_size_max' );
+		if ( $size_max >= self::AREA_MAX ) {
+			$size_max = 0;
+		}
+		if ( $size_min > 0 && $size_max > 0 && $size_min > $size_max ) {
+			$swap     = $size_min;
+			$size_min = $size_max;
+			$size_max = $swap;
+		}
+		if ( $size_min > 0 || $size_max > 0 ) {
+			self::push_meta( $query, self::range_clause( 'es_property_area', $size_min, $size_max ) );
+		}
+
+		$bedrooms = self::query_int( 'es_bedrooms_min' );
+		if ( $bedrooms > 0 ) {
+			self::push_meta( $query, array(
+				'key'     => 'es_property_bedrooms',
+				'value'   => $bedrooms,
+				'type'    => 'NUMERIC',
+				'compare' => '>=',
+			) );
+		}
+
+		$bathrooms = self::query_int( 'es_bathrooms_min' );
+		if ( $bathrooms > 0 ) {
+			self::push_meta( $query, array(
+				'key'     => 'es_property_bathrooms',
+				'value'   => $bathrooms,
+				'type'    => 'NUMERIC',
+				'compare' => '>=',
+			) );
+		}
+
+		$known = self::amenity_catalog();
+		foreach ( self::amenity_request() as $id ) {
+			if ( ! isset( $known[ $id ] ) ) {
+				continue;
+			}
+			$clause = array(
+				'relation' => 'OR',
+				array(
+					'key'     => '_pk_amenities',
+					'value'   => '"' . self::like_id( $id ) . '"',
+					'compare' => 'LIKE',
+				),
+			);
+			$legacy = isset( $known[ $id ]['legacy'] ) ? sanitize_key( (string) $known[ $id ]['legacy'] ) : '';
+			if ( '' !== $legacy ) {
+				$clause[] = array(
+					'key'     => '_' . $legacy,
+					'value'   => 'Oui',
+					'compare' => '=',
+				);
+			}
+			self::push_meta( $query, $clause );
+		}
+	}
+
+	/**
+	 * @param string $key  Meta.
+	 * @param int    $min  Minimum, 0 = ignore.
+	 * @param int    $max  Maximum, 0 = ignore.
+	 * @return array<string,mixed>
+	 */
+	private static function range_clause( $key, $min, $max ) {
+		if ( $min > 0 && $max > 0 ) {
+			return array(
+				'key'     => $key,
+				'value'   => array( $min, $max ),
+				'type'    => 'NUMERIC',
+				'compare' => 'BETWEEN',
+			);
+		}
+		if ( $max > 0 ) {
+			return array(
+				'key'     => $key,
+				'value'   => $max,
+				'type'    => 'NUMERIC',
+				'compare' => '<=',
+			);
+		}
+		return array(
+			'key'     => $key,
+			'value'   => $min,
+			'type'    => 'NUMERIC',
+			'compare' => '>=',
+		);
+	}
+
+	/**
+	 * @param WP_Query         $query  Requete.
+	 * @param array<string,mixed> $clause Clause meta.
+	 */
+	private static function push_meta( $query, array $clause ) {
+		$meta = $query->get( 'meta_query' );
+		if ( ! is_array( $meta ) ) {
+			$meta = array();
+		}
+		unset( $meta['relation'] );
+		$meta[] = $clause;
+		if ( count( $meta ) > 1 ) {
+			$meta['relation'] = 'AND';
+		}
+		$query->set( 'meta_query', $meta );
+	}
+
+	/**
+	 * @return array<int,string>
+	 */
+	private static function amenity_request() {
+		if ( ! isset( $_GET['pk_amenity'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			return array();
+		}
+		$raw = wp_unslash( $_GET['pk_amenity'] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$list = is_array( $raw ) ? $raw : ( is_scalar( $raw ) ? array( $raw ) : array() );
+		$ids  = array();
+		foreach ( $list as $item ) {
+			if ( ! is_scalar( $item ) ) {
+				continue;
+			}
+			$id = sanitize_key( (string) $item );
+			if ( '' !== $id ) {
+				$ids[] = $id;
+			}
+		}
+		return array_values( array_unique( $ids ) );
+	}
+
+	/**
+	 * @return array<string,array<string,mixed>>
+	 */
+	private static function amenity_catalog() {
+		if ( ! class_exists( 'Partikulier_Amenities' ) ) {
+			return array();
+		}
+		$out = array();
+		foreach ( Partikulier_Amenities::items() as $item ) {
+			if ( is_array( $item ) && ! empty( $item['id'] ) ) {
+				$out[ sanitize_key( (string) $item['id'] ) ] = $item;
+			}
+		}
+		return $out;
+	}
+
+	/**
+	 * @param string $id Identifiant deja passe par sanitize_key.
+	 * @return string
+	 */
+	private static function like_id( $id ) {
+		global $wpdb;
+		return $wpdb->esc_like( $id );
+	}
+
+	/**
+	 * La requete porte-t-elle sur les annonces ?
 		 *
 		 * @param WP_Query $query Requete.
 		 * @return bool
@@ -747,7 +960,11 @@ class Partikulier_Search_Filters {
 			}
 		}
 
-		$price_max  = isset( $_GET['es_price_max'] ) ? (int) $_GET['es_price_max'] : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$price_max = self::query_int( 'es_price_max' );
+		$facet_cap = ( 'a-louer' === self::query_key( 'es_action' ) ) ? self::PRICE_RENT_MAX : self::PRICE_SALE_MAX;
+		if ( $price_max >= $facet_cap ) {
+			$price_max = 0;
+		}
 		$meta_query = $price_max > 0 ? array( array( 'key' => 'es_property_price', 'value' => $price_max, 'type' => 'NUMERIC', 'compare' => '<=' ) ) : array();
 
 		$types = get_terms( array( 'taxonomy' => PARTIKULIER_ESTATIK_TYPE_TAXONOMY, 'hide_empty' => true ) );
