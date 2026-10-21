@@ -1441,8 +1441,13 @@
 	if (!bar || !search) return;
 	function sync() {
 		var header = document.querySelector(".pk-site-header");
-		if (header) document.documentElement.style.setProperty("--pk-header-h", header.offsetHeight + "px");
-		var past = search.getBoundingClientRect().bottom < 8;
+		var top = 0;
+		if (header) {
+			var box = header.getBoundingClientRect();
+			top = Math.max(0, Math.round(box.bottom));
+		}
+		document.documentElement.style.setProperty("--pk-header-h", top + "px");
+		var past = search.getBoundingClientRect().bottom < top + 4;
 		bar.classList.toggle("is-on", past);
 	}
 	sync();

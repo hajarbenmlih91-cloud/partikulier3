@@ -66,15 +66,13 @@ get_header();
 			?></h1>
 			<p class="pk-editorial-hero__intro"><?php echo wp_kses( $intro, array( 'a' => array( 'href' => true, 'title' => true ), 'strong' => array(), 'em' => array(), 'br' => array() ) ); ?></p>
 		</div>
-		<div class="pk-editorial-search"><p class="pk-editorial-search__hint"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Commencez par une ville, un quartier ou un code postal.', 'Commencez par une ville, un quartier ou un code postal.', 'partikulier' ) ); ?></p><?php $variant = 'hero'; require PARTIKULIER_DIR . '/templates/parts/search-form.php'; ?><ul class="pk-hero-trust"><li><?php echo esc_html( $badge_1 ); ?></li><li><?php echo esc_html( $badge_2 ); ?></li><li><?php echo esc_html( $badge_3 ); ?></li></ul></div>
+		<div class="pk-editorial-search"><p class="pk-editorial-search__hint"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/></svg><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Commencez par une ville ou un quartier.', 'Commencez par une ville ou un quartier.', 'partikulier' ) ); ?></p><?php $variant = 'hero'; require PARTIKULIER_DIR . '/templates/parts/search-form.php'; ?><ul class="pk-hero-trust"><li><?php echo esc_html( $badge_1 ); ?></li><li><?php echo esc_html( $badge_2 ); ?></li><li><?php echo esc_html( $badge_3 ); ?></li></ul></div>
 	</div>
 </section>
 
-	<noscript><style>.pk-scroll-actions{display:block;padding:1rem 0}</style></noscript>
 	<div class="pk-scroll-actions" data-pk-scroll-actions>
 		<div class="pk-container pk-scroll-actions__inner">
-			<a class="pk-btn pk-btn-primary" href="<?php echo esc_url( $deposit ); ?>"><?php echo esc_html( Partikulier_Settings::get( 'btn_deposit' ) ); ?><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
-			<a class="pk-btn pk-btn-light" href="<?php echo esc_url( $archive ); ?>"><?php echo esc_html( Partikulier_Settings::get( 'btn_listings' ) ); ?><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></a>
+			<a class="pk-btn pk-scroll-city" href="<?php echo esc_url( $archive ); ?>"><?php echo esc_html( Partikulier_Settings::get( 'btn_listings' ) ); ?></a>
 		</div>
 	</div>
 

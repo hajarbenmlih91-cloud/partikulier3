@@ -122,7 +122,7 @@ trait Partikulier_Localization_Forms {
 							'Bien'                         => array( 'fr' => 'Bien', 'en' => 'Property', 'ar' => 'عقار' ),
 							'Studio'                       => array( 'fr' => 'Studio', 'en' => 'Studio', 'ar' => 'استوديو' ),
 							'Pièce principale'             => array( 'fr' => 'Pièce principale', 'en' => 'Main room', 'ar' => 'الغرفة الرئيسية' ),
-							'Commencez par une ville, un quartier ou un code postal.' => array( 'fr' => 'Commencez par une ville, un quartier ou un code postal.', 'en' => 'Start with a city, neighborhood, or zip code.', 'ar' => 'ابدأ بمدينة أو حي أو رمز بريدي.' ),
+							'Commencez par une ville ou un quartier.' => array( 'fr' => 'Commencez par une ville ou un quartier.', 'en' => 'Start with a city or neighborhood.', 'ar' => 'ابدأ بمدينة أو حي.' ),
 							'annonces'                     => array( 'fr' => 'annonces', 'en' => 'listings', 'ar' => 'إعلانات' ),
 							'Questions fréquentes'         => array( 'fr' => 'Questions fréquentes', 'en' => 'FAQ', 'ar' => 'الأسئلة الشائعة' ),
 							'Contactez-nous'               => array( 'fr' => 'Contactez-nous', 'en' => 'Contact us', 'ar' => 'اتصل بنا' ),

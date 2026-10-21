@@ -4713,18 +4713,24 @@ html[dir="rtl"] .pk-find-field select { background-position: left .1rem center; 
 
 /* Hero arabe plus court, menu des types dans le cadre, filtres opaques. */
 html[dir="rtl"] body .pk-editorial-hero h1,
-html[dir="rtl"] .pk-editorial-hero h1 {
-	font-size: clamp(1.55rem, 2.1vw, 2.05rem) !important;
-	line-height: 1.45 !important;
+html[dir="rtl"] .pk-editorial-hero h1,
+html[dir="rtl"] .pk-editorial-hero h1 .pk-hero-accent {
+	font-family: "Noto Sans Arabic", "DM Sans", system-ui, sans-serif !important;
+	font-style: normal !important;
+	font-weight: 700 !important;
 	letter-spacing: 0 !important;
+}
+html[dir="rtl"] body .pk-editorial-hero h1,
+html[dir="rtl"] .pk-editorial-hero h1 {
+	font-size: clamp(1.9rem, 3.4vw, 2.75rem) !important;
+	line-height: 1.4 !important;
 	max-width: 14em;
 	margin: 0 0 .55rem !important;
 }
 html[dir="rtl"] .pk-editorial-hero h1 .pk-hero-accent {
 	display: block;
 	font-size: 1em !important;
-	line-height: 1.45 !important;
-	font-weight: 700;
+	line-height: 1.4 !important;
 }
 html[dir="rtl"] body.home .pk-editorial-hero__intro {
 	max-width: 34em;
@@ -4744,8 +4750,8 @@ html[dir="rtl"] body.home .pk-editorial-hero__inner {
 	}
 	html[dir="rtl"] body .pk-editorial-hero h1,
 	html[dir="rtl"] .pk-editorial-hero h1 {
-		font-size: clamp(1.28rem, 3.1vw, 1.6rem) !important;
-		line-height: 1.45 !important;
+		font-size: clamp(1.7rem, 4.2vw, 2.2rem) !important;
+		line-height: 1.4 !important;
 	}
 	.pk-find-card { flex-wrap: wrap; }
 	.pk-find-field.pk-find-city {
@@ -4760,8 +4766,8 @@ html[dir="rtl"] body.home .pk-editorial-hero__inner {
 @media (max-width: 720px) {
 	html[dir="rtl"] body .pk-editorial-hero h1,
 	html[dir="rtl"] .pk-editorial-hero h1 {
-		font-size: clamp(1.15rem, 5.1vw, 1.38rem) !important;
-		line-height: 1.5 !important;
+		font-size: clamp(1.55rem, 6.6vw, 1.95rem) !important;
+		line-height: 1.45 !important;
 		max-width: 16em;
 	}
 	html[dir="rtl"] body.home .pk-editorial-hero__inner {
@@ -4953,26 +4959,46 @@ body:has(.pk-find.is-type-open) .pk-card-action {
 .pk-scroll-actions { display: none; }
 .pk-scroll-actions.is-on {
 	display: block;
-	position: sticky;
-	top: var(--pk-header-h, 64px);
-	z-index: 15;
+	position: fixed;
+	top: var(--pk-header-h, 0px);
+	left: 0;
+	right: 0;
+	z-index: 900;
+	margin: 0;
+	padding: 0;
 	background: #fff;
 	border-bottom: 1px solid #e6e5df;
-	padding: .7rem 0;
+	box-shadow: none;
 }
 .pk-scroll-actions__inner {
 	display: flex;
-	flex-wrap: wrap;
-	gap: .5rem;
+	align-items: center;
 	justify-content: flex-start;
-}
-.pk-scroll-actions .pk-btn {
-	flex: 1 1 180px;
-	justify-content: center;
-	min-height: 46px;
+	gap: 0;
 	margin: 0;
+	padding: .45rem 0;
+}
+.pk-scroll-actions .pk-scroll-city {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 42px;
+	margin: 0;
+	padding: .55rem 1rem;
+	border: 1px solid #161715;
 	border-radius: 0;
+	background: #fff !important;
+	color: #161715 !important;
 	font-weight: 800;
+	line-height: 1.2;
+	text-decoration: none;
+	box-shadow: none;
+}
+.pk-scroll-actions .pk-scroll-city:hover,
+.pk-scroll-actions .pk-scroll-city:focus-visible {
+	background: #de4141 !important;
+	border-color: #de4141;
+	color: #fff !important;
 }
 body:has(.pk-find-open:checked) .pk-scroll-actions,
 body:has(.pk-find.is-type-open) .pk-scroll-actions { visibility: hidden; }

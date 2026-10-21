@@ -153,8 +153,8 @@ if ( '' !== $pk_rent ) {
 }
 
 $pk_city_placeholder = class_exists( 'Partikulier_Localization' )
-	? Partikulier_Localization::translate_polylang_string( 'Ville, code postal, quartier…', 'Ville, code postal, quartier…', 'partikulier' )
-	: 'Ville, code postal, quartier…';
+	? Partikulier_Localization::translate_polylang_string( 'Ville, quartier…', 'Ville, quartier…', 'partikulier' )
+	: 'Ville, quartier…';
 ?>
 <form class="pk-search pk-search-<?php echo esc_attr( $variant ); ?> pk-find" action="<?php echo esc_url( $archive ); ?>" method="get" role="search" data-pk-live="<?php echo esc_attr( $variant ); ?>" aria-label="<?php echo esc_attr( $pk_t( 'Rechercher' ) ); ?>">
 	<div class="pk-find-tabs" role="radiogroup" aria-label="<?php echo esc_attr( $pk_t( 'À vendre' ) . ' / ' . $pk_t( 'À louer' ) ); ?>">

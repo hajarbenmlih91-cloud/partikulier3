@@ -69,7 +69,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 										<?php echo Partikulier_Geo::property_type_options( false ); // phpcs:ignore WordPress.Security.EscapeOutput ?>
 								</select>
 								<div class="pk-place-autocomplete-wrap pk-header-place">
-										<input type="search" name="s" class="pk-place-input" id="pk-header-city" placeholder="<?php esc_attr_e( 'Ville, code postal, quartier…', 'partikulier' ); ?>" aria-label="<?php esc_attr_e( 'Rechercher une ville', 'partikulier' ); ?>" autocomplete="off" autocapitalize="off" spellcheck="false" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="pk-header-city-list" data-pk-place-input="true" data-pk-place-value="pk-header-city-value" value="<?php echo esc_attr( $pk_city_label ); ?>">
+										<input type="search" name="s" class="pk-place-input" id="pk-header-city" placeholder="<?php esc_attr_e( 'Ville, quartier…', 'partikulier' ); ?>" aria-label="<?php esc_attr_e( 'Rechercher une ville', 'partikulier' ); ?>" autocomplete="off" autocapitalize="off" spellcheck="false" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="pk-header-city-list" data-pk-place-input="true" data-pk-place-value="pk-header-city-value" value="<?php echo esc_attr( $pk_city_label ); ?>">
 										<ul class="pk-suggest pk-place-suggestions" id="pk-header-city-list" role="listbox" hidden></ul>
 								</div>
 								<input type="hidden" name="es_city" id="pk-header-city-value" value="<?php echo esc_attr( $pk_city_slug ); ?>">
