@@ -49,22 +49,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<div class="pk-container pk-header-inner">
 				<div class="pk-header-brand">
 						<?php
-						if ( function_exists( 'get_custom_logo' ) && has_custom_logo() ) {
-								$pk_logo_html         = get_custom_logo();
-								$pk_logo_home         = function_exists( 'pk_localized_home_url' ) ? pk_localized_home_url() : home_url( '/' );
-								$pk_logo_href_pattern = '/' . 'href' . '="[^"]*"' . '/';
-								$pk_logo_html         = preg_replace( $pk_logo_href_pattern, 'href' . '="' . esc_url( $pk_logo_home ) . '"', (string) $pk_logo_html, 1 );
-								echo $pk_logo_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
-						} else {
-								$pk_home = esc_url( function_exists( 'pk_localized_home_url' ) ? pk_localized_home_url() : home_url( '/' ) );
-								$pk_name = get_bloginfo( 'name' );
-							?>
-                        <a class="pk-logo-text" href="<?php echo $pk_home; // phpcs:ignore ?>" rel="home" aria-label="<?php echo esc_attr( sprintf( __( '%s, retour a l accueil', 'partikulier' ), $pk_name ) ); ?>">
-								<span class="pk-logo-name">Partikulier<span class="pk-logo-tld">.ma</span></span>
-						</a>
-								<?php
-						}
+						$pk_home = esc_url( function_exists( 'pk_localized_home_url' ) ? pk_localized_home_url() : home_url( '/' ) );
+						$pk_logo = esc_url( get_theme_file_uri( 'assets/img/tuk-ma.png' ) );
 						?>
+                        <a class="pk-logo-text" href="<?php echo $pk_home; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>" rel="home" aria-label="<?php echo esc_attr__( 'tuk.ma, retour à l’accueil', 'partikulier' ); ?>">
+								<img class="pk-logo-img" src="<?php echo $pk_logo; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>" alt="tuk.ma" width="97" height="48">
+						</a>
 				</div>
 
 				<div class="pk-header-search">

@@ -1869,6 +1869,7 @@ html[dir="rtl"] .pk-card-price {
 .pk-logo-text:focus-visible { outline: 2px solid var(--pk-primary); outline-offset: 4px; }
 .pk-logo-name { white-space: nowrap; }
 .pk-logo-tld { color: var(--pk-primary); }
+.pk-logo-img { display: block; height: 42px; width: auto; }
 @media (max-width: 640px) { .pk-logo-text { margin-inline-end: .7rem; } }
 
 /* =========================================================

@@ -86,7 +86,7 @@ if ( class_exists( 'Partikulier_Localization' ) ) {
 
 		<div class="pk-footer-bottom">
 				<div class="pk-container pk-footer-bottom-inner">
-								<p class="pk-copyright">&copy; <?php echo esc_html( date_i18n( 'Y' ) ); ?> <?php bloginfo( 'name' ); ?>. <?php echo esc_html( class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_polylang_string( 'Tous droits réservés.', 'Tous droits réservés.', 'partikulier' ) : __( 'Tous droits réservés.', 'partikulier' ) ); ?></p>
+								<p class="pk-copyright">&copy; <?php echo esc_html( date_i18n( 'Y' ) ); ?> tuk.ma. <?php echo esc_html( class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_polylang_string( 'Tous droits réservés.', 'Tous droits réservés.', 'partikulier' ) : __( 'Tous droits réservés.', 'partikulier' ) ); ?></p>
 						<nav class="pk-footer-legal" aria-label="<?php echo esc_attr( Partikulier_Localization::translate_polylang_string( 'Mentions légales', 'Mentions légales', 'partikulier' ) ); ?>">
 								<?php
 								wp_nav_menu( array(
@@ -106,7 +106,7 @@ if ( class_exists( 'Partikulier_Localization' ) ) {
 <div class="pk-lang-gate" data-pk-lang-gate hidden>
 	<div class="pk-lang-gate-card" role="dialog" aria-modal="true" aria-labelledby="pk-lang-gate-title">
 		<button type="button" class="pk-lang-gate-close" data-pk-lang-dismiss aria-label="<?php echo esc_attr( class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_polylang_string( 'Fermer', 'Fermer', 'partikulier' ) : __( 'Fermer', 'partikulier' ) ); ?>">×</button>
-		<p class="pk-lang-gate-kicker" aria-hidden="true">Partikulier.ma</p>
+		<p class="pk-lang-gate-kicker" aria-hidden="true"><img class="pk-logo-img" src="<?php echo esc_url( get_theme_file_uri( 'assets/img/tuk-ma.png' ) ); ?>" alt="" width="97" height="48"></p>
 		<p id="pk-lang-gate-title" class="pk-lang-gate-title"><span lang="fr">Bienvenue</span> · <span lang="ar">مرحباً</span> · <span lang="en">Welcome</span></p>
 		<p class="pk-lang-gate-sub"><span lang="fr">Choisissez votre langue</span> · <span lang="ar">اختر لغتك</span> · <span lang="en">Choose your language</span></p>
 		<div class="pk-lang-gate-actions">
