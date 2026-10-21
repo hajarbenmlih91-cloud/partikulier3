@@ -2,7 +2,8 @@
 /**
  * Le tunnel remplace la page WordPress « Déposer une annonce ».
  *
- * La page garde l'en-tête et le pied de page du thème, donc le choix de langue.
+ * Le formulaire préparé est servi seul : pas d'en-tête ni de pied du site.
+ * Sa barre de langue change la version, et /en/ ou /ar/ ouvre cette version.
  * /apercu-tunnel/ redirige vers /deposer/.
  *
  * @package Partikulier
@@ -19,6 +20,7 @@ class Partikulier_Tunnel_Preview {
 	 */
 	public static function init() {
 		add_action( 'init', array( __CLASS__, 'maybe_redirect' ), 0 );
+		add_action( 'template_redirect', array( __CLASS__, 'maybe_serve' ), 0 );
 		add_filter( 'template_include', array( __CLASS__, 'load_template' ), 99 );
 	}
 
@@ -30,7 +32,60 @@ class Partikulier_Tunnel_Preview {
 	public static function is_deposit_request() {
 		$path = isset( $_SERVER['REQUEST_URI'] ) ? (string) wp_unslash( $_SERVER['REQUEST_URI'] ) : '/'; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- chemin comparé à un motif fixe.
 		$path = (string) wp_parse_url( $path, PHP_URL_PATH );
-		return (bool) preg_match( '#^/(?:(?:fr|en|ar)/)?(?:deposer|deposer-une-annonce|deposer-annonce|publier-une-annonce)/?$#', $path );
+		return (bool) preg_match( '#^/(?:(?:fr|en|ar)/)?(?:deposer(?:-\d+)?|deposer-une-annonce|deposer-annonce|publier-une-annonce)/?$#', $path );
+	}
+
+	/**
+	 * Vrai si la page demandée est un dépôt, même avec un slug dupliqué.
+	 *
+	 * @return bool
+	 */
+	public static function is_deposit_page() {
+		if ( ! is_page() ) {
+			return false;
+		}
+		$post = get_queried_object();
+		if ( ! $post instanceof WP_Post ) {
+			return false;
+		}
+		if ( preg_match( '/^deposer(?:-\d+)?$/', (string) $post->post_name ) ) {
+			return true;
+		}
+		$template = (string) get_page_template_slug( $post->ID );
+		return in_array( $template, array( 'templates/page-deposer-annonce.php', 'templates/page-deposer-tunnel.php' ), true );
+	}
+
+	/**
+	 * Sert le formulaire avant que le thème n'imprime son en-tête.
+	 */
+	public static function maybe_serve() {
+		if ( is_admin() || wp_doing_ajax() || ( defined( 'REST_REQUEST' ) && REST_REQUEST ) || ( defined( 'WP_CLI' ) && WP_CLI ) ) {
+			return;
+		}
+		if ( ! self::is_deposit_request() && ! self::is_deposit_page() ) {
+			return;
+		}
+		self::serve_document();
+	}
+
+	/**
+	 * Langue du document : l'adresse d'abord, sinon la langue de la page.
+	 *
+	 * @return string
+	 */
+	private static function document_lang() {
+		$path = isset( $_SERVER['REQUEST_URI'] ) ? (string) wp_unslash( $_SERVER['REQUEST_URI'] ) : '/'; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- chemin comparé à un motif fixe.
+		$path = (string) wp_parse_url( $path, PHP_URL_PATH );
+		if ( preg_match( '#^/(fr|en|ar)(?:/|$)#', $path, $match ) ) {
+			return $match[1];
+		}
+		if ( function_exists( 'pll_current_language' ) ) {
+			$lang = pll_current_language( 'slug' );
+			if ( in_array( $lang, array( 'fr', 'en', 'ar' ), true ) ) {
+				return $lang;
+			}
+		}
+		return 'fr';
 	}
 
 	/**
@@ -93,7 +148,37 @@ class Partikulier_Tunnel_Preview {
 	}
 
 	/**
-	 * Imprime le formulaire dans la zone principale, sans remplacer l'en-tête.
+	 * Sert le document préparé, sans en-tête ni pied du thème.
+	 */
+	public static function serve_document() {
+		$file = get_theme_file_path( 'apercu-tunnel.html' );
+		if ( ! is_readable( $file ) ) {
+			status_header( 500 );
+			exit;
+		}
+		$html = file_get_contents( $file ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- fichier du thème, pas une entrée utilisateur.
+		if ( ! is_string( $html ) || '' === $html ) {
+			status_header( 500 );
+			exit;
+		}
+		$boot = '<script>window.PK_FORCE_LANG=' . wp_json_encode( self::document_lang() ) . ';</script>';
+		if ( false === strpos( $html, 'name="robots"' ) ) {
+			$html = preg_replace( '#<head>#', "<head>\n<meta name=\"robots\" content=\"noindex, nofollow\">\n" . $boot, $html, 1 );
+		} else {
+			$html = preg_replace( '#<head>#', '<head>' . $boot, $html, 1 );
+		}
+		status_header( 200 );
+		if ( ! headers_sent() ) {
+			header( 'Content-Type: text/html; charset=UTF-8' );
+			header( 'Cache-Control: private, no-store, max-age=0' );
+			header( 'X-LiteSpeed-Cache-Control: no-cache' );
+		}
+		echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- document HTML autonome du thème, déjà figé.
+		exit;
+	}
+
+	/**
+	 * Ancien rendu dans le thème. La page publique n'utilise plus cette voie.
 	 */
 	public static function render() {
 		$file = get_theme_file_path( 'apercu-tunnel.html' );

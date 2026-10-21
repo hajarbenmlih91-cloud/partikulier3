@@ -52,12 +52,25 @@ for (const [engineName, engine] of Object.entries({ chromium, firefox, webkit })
                 links: [...document.querySelectorAll('.pk-lang-menu a')].map(link => link.href),
               }));
               assert.ok(state.scrollWidth <= state.width + 1, `Horizontal overflow on ${url}: ${JSON.stringify(state)}`);
-              if (language === 'ar') assert.equal(state.rtl, 'rtl', url);
-              assert.ok(new URL(state.home).pathname.startsWith(`/${language}/`), `Language-specific logo on ${url}: ${state.home}`);
-              assert.equal(state.links.length, 3, 'All configured languages are available');
-              assert.ok(state.links.every(link => !new URL(link).searchParams.has('lang')), 'Language switcher uses canonical translated URLs');
               if (path === fixture.deposits[language]) {
-                assert.equal(await page.locator('.pk-header-search').count(), 1, 'Deposit page shows the global search (revue user 2026-10-08 : header plein, mêmes marges)');
+                const deposit = await page.evaluate(() => ({
+                  siteChrome: document.querySelectorAll('#site-header, .pk-site-header, #site-footer, .pk-site-footer, .pk-header-search').length,
+                  formBar: document.querySelectorAll('.pk-lang-bar').length,
+                  lang: document.documentElement.lang,
+                  heading: document.querySelector('.pk-submit-title')?.textContent || '',
+                }));
+                assert.equal(deposit.siteChrome, 0, `Deposit form has no site header, footer, or search: ${url}`);
+                assert.equal(deposit.formBar, 1, 'Deposit form keeps its own language bar');
+                assert.equal(deposit.lang, language, `Deposit form language follows the URL: ${deposit.lang}`);
+                const headings = { fr: 'Votre bien mérite', en: 'Your property deserves', ar: 'عقارك يستحق' };
+                assert.ok(deposit.heading.includes(headings[language]), `Deposit heading in ${language}: ${deposit.heading}`);
+                if (language !== 'fr') assert.ok(!deposit.heading.includes('Votre bien mérite'), `French heading remains on ${language}`);
+                if (language === 'ar') assert.equal(state.rtl, 'rtl', url);
+              } else {
+                if (language === 'ar') assert.equal(state.rtl, 'rtl', url);
+                assert.ok(new URL(state.home).pathname.startsWith(`/${language}/`), `Language-specific logo on ${url}: ${state.home}`);
+                assert.equal(state.links.length, 3, 'All configured languages are available');
+                assert.ok(state.links.every(link => !new URL(link).searchParams.has('lang')), 'Language switcher uses canonical translated URLs');
               }
               results.push({ engine: engineName, width, language, url, check: 'navigation/layout', status: 'PASS' });
             }
@@ -117,17 +130,22 @@ for (const [engineName, engine] of Object.entries({ chromium, firefox, webkit })
               assert.equal(await page.locator('#next').count(), 1, 'Deposit page shows the owner tunnel');
               await page.locator('#next').click();
               assert.equal(submits, 0, 'Incomplete tunnel cannot submit a listing');
-              await page.waitForFunction(() => {
+              const tunnelErrors = {
+                fr: ['Propriétaire', 'vendre ou louer'],
+                en: ['Choose Owner to continue.', 'Choose sell or rent.'],
+                ar: ['اختر المالك للمتابعة.', 'اختر البيع أو الكراء.'],
+              };
+              await page.waitForFunction(text => {
                 const err = document.querySelector('#err');
-                return Boolean(err && !err.hidden && err.textContent.includes('Propriétaire'));
-              });
+                return Boolean(err && !err.hidden && err.textContent.includes(text));
+              }, tunnelErrors[language][0]);
               const original = await page.locator('#next').textContent();
               await page.locator('#role [data-val="proprietaire"]').click();
               await page.locator('#next').click();
-              await page.waitForFunction(() => {
+              await page.waitForFunction(text => {
                 const err = document.querySelector('#err');
-                return Boolean(err && err.textContent.includes('vendre ou louer'));
-              });
+                return Boolean(err && err.textContent.includes(text));
+              }, tunnelErrors[language][1]);
               assert.equal(submits, 0, 'Partial tunnel still does not submit');
               assert.equal(await page.locator('#next').isEnabled(), true, 'Validation error keeps the CTA usable');
               assert.equal(await page.locator('#next').textContent(), original, 'Validation error keeps the original CTA');
