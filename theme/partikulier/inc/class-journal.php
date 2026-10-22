@@ -207,6 +207,58 @@ class Partikulier_Journal {
 		);
 	}
 
+	/**
+	 * Rubriques déjà écrites, dans l'ordre de la maquette acceptée.
+	 *
+	 * @param array<int,WP_Post> $posts Articles du journal.
+	 * @return array<int,array{label:string,url:string}>
+	 */
+	public static function home_nav( $posts ) {
+		$wanted = array( 'Logement', 'Villes', 'Achat', 'Conseils' );
+		$found  = array();
+		foreach ( $posts as $post ) {
+			if ( ! $post instanceof WP_Post ) {
+				continue;
+			}
+			$kicker = (string) get_post_meta( $post->ID, '_pk_kicker', true );
+			if ( '' === $kicker || isset( $found[ $kicker ] ) ) {
+				continue;
+			}
+			$found[ $kicker ] = get_permalink( $post );
+		}
+		$nav = array();
+		foreach ( $wanted as $label ) {
+			if ( empty( $found[ $label ] ) ) {
+				continue;
+			}
+			$nav[] = array(
+				'label' => $label,
+				'url'   => $found[ $label ],
+			);
+		}
+		return $nav;
+	}
+
+	/**
+	 * Date du premier article, en français. Pas une date inventée.
+	 *
+	 * @param WP_Post $post Article.
+	 * @return string
+	 */
+	public static function french_date( $post ) {
+		$raw = substr( (string) $post->post_date, 0, 10 );
+		$bits = explode( '-', $raw );
+		if ( 3 !== count( $bits ) || ! checkdate( (int) $bits[1], (int) $bits[2], (int) $bits[0] ) ) {
+			return '';
+		}
+		$stamp  = gmmktime( 12, 0, 0, (int) $bits[1], (int) $bits[2], (int) $bits[0] );
+		$days   = array( 'dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi' );
+		$months = array( 1 => 'janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre' );
+		$day    = $days[ (int) gmdate( 'w', $stamp ) ];
+		$month  = $months[ (int) $bits[1] ];
+		return ucfirst( $day ) . ' ' . (int) $bits[2] . ' ' . $month . ' ' . $bits[0];
+	}
+
 	public static function footer_links() {
 		$items = array(
 			'journal'          => array( 'fr' => 'Journal', 'en' => 'Journal' ),

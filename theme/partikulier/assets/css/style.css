@@ -5130,7 +5130,26 @@ body:has(.pk-find.is-type-open) .pk-scroll-actions { visibility: hidden; }
 .pk-journal__article { padding: 28px 0 64px; }
 .pk-journal__figure { margin: 0 0 18px; }
 .pk-footer-legal .pk-legal-links { display: flex; flex-wrap: wrap; gap: 12px 18px; list-style: none; margin: 0; padding: 0; }
+.pk-journal-mast { border-bottom: 1px solid #111; background: #fff; }
+.pk-journal-brandline, .pk-journal-nav, .pk-journal-ticker, .pk-journal-note { width: min(1120px, calc(100% - 32px)); margin-left: auto; margin-right: auto; }
+.pk-journal-brandline { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; padding-top: 14px; }
+.pk-journal-brand { display: flex; align-items: baseline; gap: 10px; }
+.pk-journal-brand .pk-logo-img { height: 34px; width: auto; }
+.pk-journal-mast .pk-journal-word { width: auto; margin: 0; padding: 0; }
+.pk-journal-date { font-family: system-ui, sans-serif; font-size: 13px; color: #5c5c5c; }
+.pk-journal-nav { display: flex; gap: 22px; flex-wrap: wrap; padding: 12px 0; font-family: system-ui, sans-serif; font-size: 14px; }
+.pk-journal-nav a[aria-current="page"] { color: #de4141; }
+.pk-journal-ticker { border-bottom: 1px solid #e6e6e6; font-family: system-ui, sans-serif; font-size: 13px; padding: 8px 0; color: #5c5c5c; }
+.pk-journal-ticker strong { color: #de4141; font-weight: 700; margin-right: 8px; }
+.pk-journal-lead figure { margin: 0 0 16px; }
+.pk-journal-lead .deck { margin: 0 0 12px; font-size: 1.2rem; line-height: 1.4; }
+.pk-journal-row { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; padding: 8px 0 48px; border-top: 1px solid #111; }
+.pk-journal-card figure { margin: 0 0 10px; }
+.pk-journal-card h2 { margin: 0; font-size: 1.35rem; line-height: 1.15; letter-spacing: -.02em; }
+.pk-journal-card p { margin: 8px 0 0; }
+.pk-journal-home { padding-bottom: 10px; }
 @media (max-width: 800px) {
 	.pk-journal-home { grid-template-columns: 1fr; }
-	.pk-journal-rail { border-left: 0; padding-left: 0; }
+	.pk-journal-rail { border-left: 0; padding-left: 0; border-top: 1px solid #e6e6e6; padding-top: 18px; }
+	.pk-journal-row { grid-template-columns: 1fr; }
 }
