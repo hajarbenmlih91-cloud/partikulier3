@@ -32,6 +32,7 @@ class Partikulier_Page_Templates {
 			'templates/page-favoris.php'         => __( 'Favoris', 'partikulier' ),
 			'templates/page-journal.php'        => __( 'Articles', 'partikulier' ),
 			'templates/page-legal.php'          => __( 'Page légale', 'partikulier' ),
+			'templates/page-contact.php'        => __( 'Contact', 'partikulier' ),
 		);
 	}
 
@@ -53,6 +54,9 @@ class Partikulier_Page_Templates {
 			'mes-favoris'         => 'templates/page-favoris.php',
 			'articles'            => 'templates/page-journal.php',
 			'journal'             => 'templates/page-journal.php',
+			'contact'             => 'templates/page-contact.php',
+			'contact-en'          => 'templates/page-contact.php',
+			'contact-ar'          => 'templates/page-contact.php',
 		);
 	}
 
@@ -83,6 +87,14 @@ class Partikulier_Page_Templates {
 		$page_id = get_queried_object_id();
 		if ( ! $page_id ) {
 			return $template;
+		}
+
+		$slug = (string) get_post_field( 'post_name', $page_id );
+		if ( in_array( $slug, array( 'contact', 'contact-en', 'contact-ar' ), true ) ) {
+			$file = get_theme_file_path( 'templates/page-contact.php' );
+			if ( file_exists( $file ) ) {
+				return $file;
+			}
 		}
 
 		// 1. Un gabarit a été assigné dans l'admin.

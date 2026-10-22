@@ -12,6 +12,12 @@ Releases ship as a **plugin-theme** pair. Up to 2.10.8-6.20.7 they were tagged `
 
 ## [Unreleased]
 
+### Fixed
+- Le nom public lu par le visiteur est Tuk, même si le réglage WordPress dit encore Partikulier.
+- La page Contact a un formulaire vers contact@tuk.ma, avec la phrase de consentement déjà écrite.
+- La racine ne choisit plus la langue selon le navigateur. Le cookie de choix reste.
+- Sur la recette, `robots.txt` doit bloquer tout visiteur. La porte par mot de passe n'est pas armée : le secret n'est pas sur le serveur, et il ne va pas dans le thème.
+
 ## [2.10.10-6.20.9] - 2026-10-04
 
 ### Added
