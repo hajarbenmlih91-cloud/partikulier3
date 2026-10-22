@@ -14,7 +14,7 @@ jobs:
   php-version:
     name: Version PHP du serveur
     runs-on: ubuntu-latest
-    environment: dev
+    environment: uat
     env:
       SSH_HOST: ${{ secrets.SSH_HOST }}
       SSH_PORT: ${{ secrets.SSH_PORT }}
