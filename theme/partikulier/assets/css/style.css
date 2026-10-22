@@ -5096,3 +5096,41 @@ body:has(.pk-find.is-type-open) .pk-card-action {
 }
 body:has(.pk-find-open:checked) .pk-scroll-actions,
 body:has(.pk-find.is-type-open) .pk-scroll-actions { visibility: hidden; }
+
+.pk-journal, .pk-price-index { padding: 2.2rem 0 4rem; background: #fff; color: #161715; }
+.pk-journal h1, .pk-price-index h1 { margin: 0 0 .6rem; color: #161715; font-size: clamp(2rem, 4vw, 3rem); letter-spacing: -.03em; line-height: 1.05; }
+.pk-journal__date, .pk-price-index__note, .pk-journal__empty { color: #3d403b; }
+.pk-journal__figure { margin: 1.4rem 0; }
+.pk-journal__figure img { display: block; width: 100%; height: auto; }
+.pk-journal__list { list-style: none; margin: 1.4rem 0 0; padding: 0; }
+.pk-journal__list li { display: flex; justify-content: space-between; gap: 1rem; padding: .9rem 0; border-bottom: 1px solid #e6e5df; }
+.pk-journal__list a { color: #161715; font-weight: 700; }
+.pk-journal__list time { color: #3d403b; white-space: nowrap; }
+.pk-price-index__table { width: 100%; border-collapse: collapse; margin-top: 1.4rem; }
+.pk-price-index__table th, .pk-price-index__table td { text-align: left; padding: .75rem .4rem; border-bottom: 1px solid #e6e5df; }
+.pk-price-index__table th { color: #161715; font-size: .85rem; }
+@media (max-width: 640px) {
+	.pk-journal__list li { display: block; }
+	.pk-price-index__table { display: block; overflow-x: auto; }
+}
+
+.pk-journal { font-family: Georgia, "Iowan Old Style", Palatino, serif; }
+.pk-journal-band { border-bottom: 1px solid #111; }
+.pk-journal-word, .pk-journal-word a { margin: 0 auto; width: min(1120px, calc(100% - 32px)); display: block; padding: 12px 0; font-family: system-ui, sans-serif; font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: #de4141; font-weight: 700; }
+.pk-journal-note { width: min(1120px, calc(100% - 32px)); margin: -8px auto 0; padding-bottom: 12px; font-family: system-ui, sans-serif; font-size: 13px; color: #5c5c5c; }
+.pk-journal .kicker { margin: 0 0 8px; color: #de4141; font-family: system-ui, sans-serif; font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+.pk-journal-home { display: grid; grid-template-columns: 1.7fr .9fr; gap: 36px; padding: 28px 0 48px; }
+.pk-journal-lead h1, .pk-journal__article h1 { margin: 0 0 12px; font-size: clamp(2rem, 4vw, 3.15rem); line-height: 1.02; letter-spacing: -.03em; }
+.pk-journal .deck, .pk-journal-rail p { font-size: 1.05rem; line-height: 1.4; }
+.pk-journal .by, .pk-journal .caption { font-family: system-ui, sans-serif; font-size: 13px; color: #5c5c5c; }
+.pk-journal-rail { border-left: 1px solid #e6e6e6; padding-left: 22px; }
+.pk-journal-rail article { padding: 0 0 16px; margin: 0 0 16px; border-bottom: 1px solid #e6e6e6; }
+.pk-journal-rail h2 { margin: 0 0 8px; font-size: 1.2rem; line-height: 1.2; }
+.pk-journal a { color: inherit; text-decoration: none; }
+.pk-journal__article { padding: 28px 0 64px; }
+.pk-journal__figure { margin: 0 0 18px; }
+.pk-footer-legal .pk-legal-links { display: flex; flex-wrap: wrap; gap: 12px 18px; list-style: none; margin: 0; padding: 0; }
+@media (max-width: 800px) {
+	.pk-journal-home { grid-template-columns: 1fr; }
+	.pk-journal-rail { border-left: 0; padding-left: 0; }
+}

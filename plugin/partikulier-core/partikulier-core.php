@@ -18,6 +18,7 @@ const PARTIKULIER_CORE_FILE    = __FILE__;
 /* Avant plugins_loaded:1 de Polylang — sinon curlang=fr et le cookie
  * est posé avant pll_preferred_language. include_once plus bas déduplique. */
 require_once __DIR__ . '/mu-plugins/partikulier-early-seo.php';
+require_once __DIR__ . '/mu-plugins/partikulier-recette-gate.php';
 
 if ( defined('PARTIKULIER_ENABLE_2FA') && PARTIKULIER_ENABLE_2FA ) {
 	require_once __DIR__ . '/mu-plugins/partikulier-2fa-light.php';

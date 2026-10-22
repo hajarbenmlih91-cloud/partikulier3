@@ -97,6 +97,10 @@ add_filter(
 add_filter(
 	'wp_redirect',
 	static function ( $location, $status ) {
+		$target_path = wp_parse_url( (string) $location, PHP_URL_PATH );
+		if ( $target_path && preg_match( '#/(fr|en|ar)/accueil-(?:fr|en|ar)/?#', (string) $target_path, $m ) ) {
+			$location = partikulier_early_language_home( $m[1] );
+		}
 		$request_path = partikulier_early_request_path();
 		if ( 302 === (int) $status && '/' === trailingslashit( (string) $request_path ) ) {
 			header( 'Cache-Control: private, no-store, max-age=0' );

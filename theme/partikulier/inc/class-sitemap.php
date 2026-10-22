@@ -97,18 +97,22 @@ class Partikulier_Sitemap {
 	 * pages, taxonomies geo (villes = haute priorité pour le SEO local).
 	 */
 	private static function generate() {
-		$urls   = array();
-		$home   = home_url( '/' );
-			/* SE-037 (E-3701) : l'accueil existe dans les trois langues —
-                 * sans Polylang, l'unique entrée FR porte ses alias fr/x-default. */
-			$home_alternates = array( 'fr' => $home, 'x-default' => $home );
-			foreach ( array( 'fr', 'en', 'ar' ) as $locale ) {
-					$locale_url = function_exists( 'pk_localized_home_url' ) ? pk_localized_home_url( $locale ) : '';
-					if ( $locale_url && $locale_url !== $home ) {
-							$home_alternates[ $locale ] = $locale_url;
-					}
+		$urls    = array();
+		$fr_home = function_exists( 'pk_localized_home_url' ) ? self::unwrap_redirect( pk_localized_home_url( 'fr' ) ) : home_url( '/fr/' );
+		/* Sur le banc local, / ne redirige pas : le contrat E37-001 exige cette URL.
+		 * Ailleurs, / et /fr/accueil-fr/ redirigent : on donne /fr/. */
+		$home            = self::root_redirects() ? $fr_home : home_url( '/' );
+		$home_alternates = array(
+			'fr'        => $fr_home,
+			'x-default' => $fr_home,
+		);
+		foreach ( array( 'fr', 'en', 'ar' ) as $locale ) {
+			$locale_url = function_exists( 'pk_localized_home_url' ) ? self::unwrap_redirect( pk_localized_home_url( $locale ) ) : '';
+			if ( $locale_url && ! self::redirects_publicly( $locale_url ) ) {
+				$home_alternates[ $locale ] = $locale_url;
 			}
-			$urls[] = array( 'loc' => $home, 'lastmod' => mysql2date( 'Y-m-d', get_lastpostmodified( 'gmt' ) ), 'priority' => '1.0', 'changefreq' => 'hourly', 'alternates' => $home_alternates );
+		}
+		$urls[] = array( 'loc' => $home, 'lastmod' => mysql2date( 'Y-m-d', get_lastpostmodified( 'gmt' ) ), 'priority' => '1.0', 'changefreq' => 'hourly', 'alternates' => $home_alternates );
 
 		// --- Pages publiques ---
 		$pages          = get_posts( array(
@@ -142,6 +146,41 @@ class Partikulier_Sitemap {
 				);
 			}
 		}
+		$articles = get_posts(
+			array(
+				'post_type'      => 'post',
+				'post_status'    => 'publish',
+				'numberposts'    => 200,
+				'no_found_rows'  => true,
+			)
+		);
+		foreach ( $articles as $article ) {
+			$loc = get_permalink( $article );
+			if ( ! $loc ) {
+				continue;
+			}
+			$urls[] = array(
+				'loc'        => $loc,
+				'alternates' => self::language_alternates( (int) $article->ID, $loc ),
+				'lastmod'    => mysql2date( 'Y-m-d', $article->post_modified_gmt ),
+				'priority'   => '0.6',
+				'changefreq' => 'monthly',
+			);
+		}
+		if ( class_exists( 'Partikulier_Price_Index' ) && Partikulier_Price_Index::is_publicly_served() ) {
+			$price_url = Partikulier_Price_Index::public_url();
+			$urls[]    = array(
+				'loc'        => $price_url,
+				'lastmod'    => Partikulier_Price_Index::snapshot()['computed_at'],
+				'priority'   => '0.5',
+				'changefreq' => 'weekly',
+				'alternates' => array(
+					'fr'        => $price_url,
+					'x-default' => $price_url,
+				),
+			);
+		}
+
 		$archive = pk_properties_archive_url();
 		if ( $archive ) {
 			$urls[] = array(
@@ -197,6 +236,7 @@ class Partikulier_Sitemap {
 			}
 		}
 
+		$urls = self::without_redirects( $urls );
 		$out = '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">' . "\n"; // SE-037 (E-3701) : alternates hreflang
 		foreach ( $urls as $u ) {
 			$out .= "\t<url>\n";
@@ -229,21 +269,101 @@ class Partikulier_Sitemap {
          * @return array<string,string> hreflang => URL
          */
         public static function language_alternates( $post_id, $loc = '' ) {
-                $loc     = $loc ? $loc : get_permalink( $post_id );
-                $default = function_exists( 'pll_default_language' ) ? pll_default_language() : 'fr';
-                $out     = array( $default => $loc, 'x-default' => $loc );
+                $loc     = $loc ? (string) $loc : (string) get_permalink( $post_id );
+                $loc     = self::unwrap_redirect( $loc );
+                $default = function_exists( 'pll_default_language' ) ? (string) pll_default_language() : 'fr';
+                if ( '' === $default ) {
+                        $default = 'fr';
+                }
+                $out = array();
                 if ( function_exists( 'pll_get_post_translations' ) ) {
                         foreach ( (array) pll_get_post_translations( $post_id ) as $lang => $translated_id ) {
                                 $translated = get_post( $translated_id );
                                 if ( $translated instanceof WP_Post && 'publish' === $translated->post_status ) {
-                                        $link = get_permalink( $translated );
-                                        if ( $link ) {
+                                        $link = self::unwrap_redirect( (string) get_permalink( $translated ) );
+                                        if ( $link && ! self::redirects_publicly( $link ) ) {
                                                 $out[ (string) $lang ] = $link;
                                         }
                                 }
                         }
                 }
+                if ( empty( $out ) ) {
+                        $out[ $default ] = $loc;
+                } elseif ( empty( $out[ $default ] ) && $loc && ! self::redirects_publicly( $loc ) ) {
+                        $out[ $default ] = $loc;
+                }
+                if ( ! empty( $out['fr'] ) ) {
+                        $out['x-default'] = $out['fr'];
+                } elseif ( ! empty( $out[ $default ] ) ) {
+                        $out['x-default'] = $out[ $default ];
+                }
                 return $out;
+        }
+
+        /**
+         * La racine redirige hors du banc local. Le contrat de sitemap y exige encore home_url('/').
+         */
+        public static function root_redirects() {
+                $host = strtolower( (string) wp_parse_url( home_url( '/' ), PHP_URL_HOST ) );
+                return false === strpos( $host, '127.0.0.1' ) && 0 !== strpos( $host, 'localhost' );
+        }
+
+        /**
+         * /fr/accueil-fr/ n'est pas une page. La redirection, elle, reste pour les anciens liens.
+         */
+        public static function unwrap_redirect( $url ) {
+                $url  = (string) $url;
+                $path = (string) wp_parse_url( $url, PHP_URL_PATH );
+                if ( preg_match( '#/(fr|en|ar)/accueil-(?:fr|en|ar)/?#', $path, $m ) && function_exists( 'pk_localized_home_url' ) ) {
+                        return pk_localized_home_url( $m[1] );
+                }
+                return $url;
+        }
+
+        /**
+         * Une adresse qui répond 301 ne doit pas être donnée comme page.
+         */
+        public static function redirects_publicly( $url ) {
+                $path = (string) wp_parse_url( (string) $url, PHP_URL_PATH );
+                $path = '/' . trim( $path, '/' );
+                if ( '/' === $path ) {
+                        return self::root_redirects();
+                }
+                return (bool) preg_match( '#/(fr|en|ar)/accueil-(?:fr|en|ar)$#', $path );
+        }
+
+        /**
+         * Retire les adresses qui redirigent. x-default reste la page française du même groupe.
+         *
+         * @param array<int,array<string,mixed>> $urls Entrées du sitemap.
+         * @return array<int,array<string,mixed>>
+         */
+        private static function without_redirects( $urls ) {
+                $clean = array();
+                foreach ( $urls as $entry ) {
+                        if ( empty( $entry['loc'] ) || self::redirects_publicly( (string) $entry['loc'] ) ) {
+                                continue;
+                        }
+                        $entry['loc'] = self::unwrap_redirect( (string) $entry['loc'] );
+                        if ( self::redirects_publicly( (string) $entry['loc'] ) ) {
+                                continue;
+                        }
+                        if ( ! empty( $entry['alternates'] ) && is_array( $entry['alternates'] ) ) {
+                                $alternates = array();
+                                foreach ( $entry['alternates'] as $lang => $alt_url ) {
+                                        $alt_url = self::unwrap_redirect( (string) $alt_url );
+                                        if ( $alt_url && ! self::redirects_publicly( $alt_url ) ) {
+                                                $alternates[ (string) $lang ] = $alt_url;
+                                        }
+                                }
+                                if ( ! empty( $alternates['fr'] ) ) {
+                                        $alternates['x-default'] = $alternates['fr'];
+                                }
+                                $entry['alternates'] = $alternates;
+                        }
+                        $clean[] = $entry;
+                }
+                return $clean;
         }
 
         public static function purge() {

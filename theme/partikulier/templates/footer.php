@@ -64,10 +64,7 @@ if ( class_exists( 'Partikulier_Localization' ) ) {
 								<h3 class="pk-footer-title"><?php echo esc_html( class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_polylang_string( 'Contact', 'Contact', 'partikulier' ) : __( 'Contact', 'partikulier' ) ); ?></h3>
 						<div class="pk-footer-contact">
 								<?php
-								$blog_email = get_option( 'admin_email' );
-								if ( $blog_email ) {
-										printf( '<p><a href="mailto:%1$s">%1$s</a></p>', esc_html( $blog_email ) );
-								}
+								printf( '<p><a href="mailto:%1$s">%1$s</a></p>', esc_html( 'contact@tuk.ma' ) );
 								?>
 								<p><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Maroc', 'Maroc', 'partikulier' ) ); ?></p>
 								<?php
@@ -89,13 +86,9 @@ if ( class_exists( 'Partikulier_Localization' ) ) {
 								<p class="pk-copyright">&copy; <?php echo esc_html( date_i18n( 'Y' ) ); ?> tuk.ma. <?php echo esc_html( class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_polylang_string( 'Tous droits réservés.', 'Tous droits réservés.', 'partikulier' ) : __( 'Tous droits réservés.', 'partikulier' ) ); ?></p>
 						<nav class="pk-footer-legal" aria-label="<?php echo esc_attr( Partikulier_Localization::translate_polylang_string( 'Mentions légales', 'Mentions légales', 'partikulier' ) ); ?>">
 								<?php
-								wp_nav_menu( array(
-										'theme_location' => 'footer',
-										'container'      => false,
-										'menu_class'     => 'pk-legal-links',
-										'fallback_cb'    => false,
-										'depth'          => 1,
-								) );
+								if ( class_exists( 'Partikulier_Journal' ) ) {
+									Partikulier_Journal::footer_links();
+								}
 								?>
 						</nav>
 				</div>

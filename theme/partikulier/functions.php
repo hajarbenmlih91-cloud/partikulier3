@@ -46,14 +46,13 @@ add_filter(
 			$language = substr( get_locale(), 0, 2 );
 		}
 		$direction = 'ar' === $language ? 'rtl' : 'ltr';
-		if ( false === strpos( $output, ' dir=' ) ) {
-			$output .= ' dir="' . esc_attr( $direction ) . '"';
-		} else {
-			$output = preg_replace( '/\s*dir=["\'][^"\']*["\']/', ' dir="' . esc_attr( $direction ) . '"', $output );
-		}
-		return $output;
+		/* dir="rtl" en tête n'est pas précédé d'un espace : l'ancien test
+		 * « dir= » le ratait et en ajoutait un second. Un seul attribut. */
+		$output = preg_replace( '/\s*dir=(?:"[^"]*"|\'[^\']*\'|[^\s>]+)/i', '', (string) $output );
+		$output = trim( (string) $output );
+		return trim( $output . ' dir="' . esc_attr( $direction ) . '"' );
 	},
-	10,
+	10000,
 	1
 );
 define( 'PARTIKULIER_DIR', get_template_directory() );
@@ -251,8 +250,12 @@ $partikulier_modules = array(
 		'/inc/class-seo.php',
 		'/inc/class-jsonld.php',
 		'/inc/class-sitemap.php',
+		'/inc/class-price-index.php',
+		'/inc/class-visit-counter.php',
 		'/inc/class-cache.php',
 		'/inc/class-security.php',
+		'/inc/class-site-hygiene.php',
+		'/inc/class-journal.php',
 		/* Lot E (SECU-1) : passerelle unique des appels système — chargée
 		 * AVANT class-avif.php qui l'utilise pour avifenc/vips. */
 		'/inc/class-exec-whitelist.php',
