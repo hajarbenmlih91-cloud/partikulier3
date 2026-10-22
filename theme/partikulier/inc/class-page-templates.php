@@ -30,6 +30,8 @@ class Partikulier_Page_Templates {
 			'templates/page-deposer-annonce.php' => __( 'Déposer une annonce', 'partikulier' ),
 			'templates/page-mes-annonces.php'    => __( 'Mes annonces', 'partikulier' ),
 			'templates/page-favoris.php'         => __( 'Favoris', 'partikulier' ),
+			'templates/page-journal.php'        => __( 'Articles', 'partikulier' ),
+			'templates/page-legal.php'          => __( 'Page légale', 'partikulier' ),
 		);
 	}
 
@@ -49,6 +51,8 @@ class Partikulier_Page_Templates {
 			'tableau-de-bord'     => 'templates/page-mes-annonces.php',
 			'favoris'             => 'templates/page-favoris.php',
 			'mes-favoris'         => 'templates/page-favoris.php',
+			'articles'            => 'templates/page-journal.php',
+			'journal'             => 'templates/page-journal.php',
 		);
 	}
 

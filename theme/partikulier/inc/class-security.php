@@ -22,6 +22,7 @@ class Partikulier_Security {
 
 	public static function init() {
 		add_filter( 'rest_endpoints', array( __CLASS__, 'restrict_user_enumeration' ) );
+		add_filter( 'rest_pre_dispatch', array( __CLASS__, 'close_public_media_list' ), 10, 3 );
 		add_action( 'template_redirect', array( __CLASS__, 'block_public_author_enumeration' ), 0 );
 		add_action( 'send_headers', array( __CLASS__, 'send_public_headers' ) );
 		add_filter( 'xmlrpc_enabled', '__return_false' );
@@ -117,8 +118,18 @@ class Partikulier_Security {
 
 		error_log( '[Partikulier auth] Admin gateway access denied.' );
 
-		wp_safe_redirect( home_url( '/' ), 302 );
+		wp_safe_redirect( self::public_home_url(), 302 );
 		exit;
+	}
+
+	/**
+	 * Accueil français public, pas /fr/accueil-fr/ qui redirige encore.
+	 */
+	public static function public_home_url() {
+		if ( function_exists( 'pk_localized_home_url' ) ) {
+			return pk_localized_home_url( 'fr' );
+		}
+		return home_url( '/fr/' );
 	}
 
 	public static function valid_admin_access_token( $token, $secret_key ) {
@@ -259,8 +270,32 @@ class Partikulier_Security {
 		if ( is_admin() || is_user_logged_in() || ! is_author() ) {
 			return;
 		}
-		wp_safe_redirect( home_url( '/' ), 302 );
+		wp_safe_redirect( self::public_home_url(), 302 );
 		exit;
+	}
+
+	/**
+	 * /wp/v2/media n'est pas une vitrine. Un visiteur non connecté reçoit 401.
+	 *
+	 * @param mixed           $result  Réponse déjà décidée.
+	 * @param WP_REST_Server  $server  Serveur REST.
+	 * @param WP_REST_Request $request Requête.
+	 * @return mixed
+	 */
+	public static function close_public_media_list( $result, $server, $request ) {
+		unset( $server );
+		if ( is_user_logged_in() || ! $request instanceof WP_REST_Request ) {
+			return $result;
+		}
+		$route = (string) $request->get_route();
+		if ( ! preg_match( '#^/wp/v2/media(?:/|$)#', $route ) ) {
+			return $result;
+		}
+		return new WP_Error(
+			'rest_not_logged_in',
+			__( 'Authentification requise.', 'partikulier' ),
+			array( 'status' => 401 )
+		);
 	}
 
 	/**
