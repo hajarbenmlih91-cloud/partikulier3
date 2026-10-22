@@ -13,6 +13,7 @@ Releases ship as a **plugin-theme** pair. Up to 2.10.8-6.20.7 they were tagged `
 ## [Unreleased]
 
 ### Fixed
+- L'accueil du journal reprend la maquette acceptée : une, deux articles à côté, deux cartes avec photo. Pas la phrase de maquette « pas encore publiés ».
 - Le nom public lu par le visiteur est Tuk, même si le réglage WordPress dit encore Partikulier.
 - La page Contact a un formulaire vers contact@tuk.ma, avec la phrase de consentement déjà écrite.
 - La racine ne choisit plus la langue selon le navigateur. Le cookie de choix reste.
