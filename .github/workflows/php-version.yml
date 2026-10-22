@@ -1,0 +1,80 @@
+name: Lecture version PHP
+
+# Lecture seule. N'affiche que la version et la date de compilation.
+# Ne déploie rien. N'imprime aucun secret.
+# Environnement dev : mêmes secrets SSH que la recette, sans tag pre-release.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  php-version:
+    name: Version PHP du serveur
+    runs-on: ubuntu-latest
+    environment: dev
+    env:
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+      SSH_PORT: ${{ secrets.SSH_PORT }}
+      SSH_USER: ${{ secrets.SSH_USER }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+      WP_PATH: ${{ secrets.WP_PATH }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Lire la version et la date de compilation
+        run: |
+          set -euo pipefail
+          : "${SSH_HOST:?secret SSH_HOST manquant}"
+          : "${SSH_PORT:?secret SSH_PORT manquant}"
+          : "${SSH_USER:?secret SSH_USER manquant}"
+          : "${SSH_PRIVATE_KEY:?secret SSH_PRIVATE_KEY manquant}"
+          : "${SSH_KNOWN_HOSTS:?secret SSH_KNOWN_HOSTS manquant}"
+          : "${WP_PATH:?secret WP_PATH manquant}"
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
+          chmod 600 "$HOME/.ssh/id_ed25519"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 644 "$HOME/.ssh/known_hosts"
+          {
+            echo "Host partikulier-hostinger"
+            echo "  HostName $SSH_HOST"
+            echo "  Port $SSH_PORT"
+            echo "  User $SSH_USER"
+            echo "  IdentityFile $HOME/.ssh/id_ed25519"
+            echo "  UserKnownHostsFile $HOME/.ssh/known_hosts"
+            echo "  StrictHostKeyChecking yes"
+            echo "  IdentitiesOnly yes"
+            echo "  BatchMode yes"
+            echo "  ConnectionAttempts 4"
+            echo "  ConnectTimeout 20"
+          } > "$HOME/.ssh/config"
+          chmod 600 "$HOME/.ssh/config"
+          ssh partikulier-hostinger 'bash -s' -- "$WP_PATH" <<'REMOTE'
+          set -euo pipefail
+          WP_PATH="$1"
+          report() {
+            bin="$1"
+            if [ -x "$bin" ]; then
+              "$bin" -v 2>/dev/null | head -n 1
+            fi
+          }
+          echo "WEB_HEADER_EXPECTED=8.5"
+          report "$(command -v php || true)"
+          if [ -d /opt/alt ]; then
+            for bin in /opt/alt/php85/usr/bin/php /opt/alt/php84/usr/bin/php /opt/alt/php83/usr/bin/php /opt/alt/php82/usr/bin/php; do
+              report "$bin"
+            done
+          fi
+          if [ -f "$HOME/.cl.selector/defaults.cfg" ]; then
+            awk -F= 'tolower($1) ~ /php/ {print "SELECTOR " $0}' "$HOME/.cl.selector/defaults.cfg"
+          fi
+          REMOTE
+
+      - name: Nettoyer la clé SSH
+        if: always()
+        run: rm -f "$HOME/.ssh/id_ed25519" "$HOME/.ssh/known_hosts" "$HOME/.ssh/config"
