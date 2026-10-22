@@ -77,42 +77,12 @@ trait Partikulier_Localization_Runtime {
 		 * conservées ci-dessous ne touchent à aucun textdomain. */
 
 				/**
-				 * Redirige uniquement la première visite humaine de la racine selon
-				 * Accept-Language lorsque Polylang browser detection est activée.
+				 * Ne redirige plus selon la langue du navigateur.
 				 */
 	public static function maybe_redirect_browser_language() {
-		if ( ! function_exists( 'pll_home_url' ) || ! self::is_root_request() || is_user_logged_in() ) {
-						return;
-		}
-			$path = isset( $_SERVER['REQUEST_URI'] ) ? wp_parse_url( wp_unslash( $_SERVER['REQUEST_URI'] ), PHP_URL_PATH ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- wp_parse_url + comparaison (SE-020)
-		if ( '/' !== trailingslashit( (string) $path ) || self::is_robot_request() ) {
-							return;
-		}
-								$browser_enabled = function_exists( 'pll_get_option' ) ? pll_get_option( 'browser' ) : false;
-		if ( ! $browser_enabled || ! empty( $_COOKIE['pll_language'] ) ) {
-				return;
-		}
-								$accept = isset( $_SERVER['HTTP_ACCEPT_LANGUAGE'] ) ? strtolower( (string) wp_unslash( $_SERVER['HTTP_ACCEPT_LANGUAGE'] ) ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- strtolower + preg_match, comparatif (SE-020)
-								$lang   = false;
-		if ( preg_match( '/(?:^|,)\\s*ar(?:[-_][a-z]+)?(?:\\s*;|,|$)/i', $accept ) ) {
-				$lang = 'ar';
-		} elseif ( preg_match( '/(?:^|,)\\s*en(?:[-_][a-z]+)?(?:\\s*;|,|$)/i', $accept ) ) {
-				$lang = 'en';
-		}
-		if ( ! $lang ) {
-				return;
-		}
-								$languages = function_exists( 'pll_languages_list' ) ? pll_languages_list() : array();
-		if ( ! in_array( $lang, array_map( 'sanitize_key', (array) $languages ), true ) ) {
-				return;
-		}
-								wp_safe_redirect( pll_home_url( $lang ), 302 );
-								exit;
-	}
-
-	private static function is_root_request() {
-			$path = isset( $_SERVER['REQUEST_URI'] ) ? wp_parse_url( wp_unslash( $_SERVER['REQUEST_URI'] ), PHP_URL_PATH ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- wp_parse_url + comparaison (SE-020)
-			return '/' === trailingslashit( (string) $path );
+		/* Le cahier interdit la redirection selon la langue du navigateur.
+		 * Le choix reste le cookie, ou le sélecteur. */
+		return;
 	}
 
 				/**

@@ -14,6 +14,7 @@ class Partikulier_SEO {
 
 	public static function init() {
 			add_filter( 'document_title_parts', array( __CLASS__, 'title' ), 10, 1 );
+		add_filter( 'bloginfo', array( __CLASS__, 'public_name' ), 10, 2 );
 			remove_action( 'wp_head', 'rel_canonical' );
 			/* La balise <meta name="generator"> imprime la version exacte du core.
 			 * Mesuree par la sonde : « balise generator (version exposee) : oui ».
@@ -28,10 +29,33 @@ class Partikulier_SEO {
 	}
 
 		/**
-		 * Titre SEO : [Contenu] — [Ville] | Partikulier.com
+		 * Nom public. Le réglage WordPress peut encore dire Partikulier.
+		 *
+		 * @param string $output Valeur.
+		 * @param string $show   Champ bloginfo.
+		 * @return string
+		 */
+	public static function public_name( $output, $show ) {
+		if ( 'name' === $show ) {
+			return 'Tuk';
+		}
+		return $output;
+	}
+
+		/**
+		 * Titre SEO. Le nom public est Tuk. L'accueil reprend la phrase déjà validée.
 		 */
 	public static function title( $parts ) {
-			$site = get_bloginfo( 'name' );
+		$site = 'Tuk';
+		if ( is_front_page() && class_exists( 'Partikulier_Customization' ) ) {
+			$hero = trim( wp_strip_all_tags( (string) Partikulier_Customization::editorial( 'home_title', '' ) ) );
+			if ( '' !== $hero ) {
+				$parts['title']   = $hero;
+				$parts['tagline'] = '';
+				$parts['site']    = $site;
+				return $parts;
+			}
+		}
 
 		if ( is_singular( PARTIKULIER_ESTATIK_POST_TYPE ) ) {
 				$post           = get_queried_object();

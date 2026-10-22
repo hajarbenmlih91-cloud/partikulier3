@@ -309,7 +309,7 @@ class Partikulier_Security {
 		$is_root = '/' === trailingslashit( (string) $path );
 		if ( $is_root ) {
 			header( 'Cache-Control: private, no-store, max-age=0' );
-			header( 'Vary: Accept-Language, Cookie', false );
+			header( 'Vary: Cookie', false );
 		}
 		header( 'X-Content-Type-Options: nosniff' );
 		header( 'X-Frame-Options: SAMEORIGIN' );

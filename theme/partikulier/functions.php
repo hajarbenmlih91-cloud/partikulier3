@@ -264,6 +264,7 @@ $partikulier_modules = array(
 		'/inc/class-geo.php',
 		'/inc/class-search-filters.php',
 		'/inc/class-form.php',
+		'/inc/class-contact.php',
 		'/inc/class-deposit-form.php',
 		'/inc/class-amenities.php',
 		'/inc/class-dashboard.php',

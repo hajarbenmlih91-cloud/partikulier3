@@ -18,6 +18,9 @@ class Partikulier_Site_Hygiene {
 
 	public static function init() {
 		add_action( 'init', array( __CLASS__, 'remove_readme' ), 1 );
+		add_action( 'init', array( __CLASS__, 'close_uat_robots' ), 1 );
+		add_action( 'init', array( __CLASS__, 'replace_known_brand_sentences' ), 1 );
+		add_action( 'init', array( __CLASS__, 'disable_browser_detection' ), 1 );
 		add_action( 'init', array( __CLASS__, 'ensure_htaccess' ), 2 );
 		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'dequeue_hostinger_chat' ), 100 );
 		add_filter( 'script_loader_tag', array( __CLASS__, 'strip_hostinger_tag' ), 10, 3 );
@@ -29,6 +32,72 @@ class Partikulier_Site_Hygiene {
 		if ( is_file( $file ) && is_writable( $file ) ) {
 			unlink( $file );
 		}
+	}
+
+	/**
+	 * Le fichier physique gagne sur le filtre WordPress. Sur la recette, il
+	 * doit bloquer tout le monde. Ce n'est pas le mot de passe.
+	 */
+	public static function close_uat_robots() {
+		if ( ! self::is_uat_host() ) {
+			return;
+		}
+		$file = ABSPATH . 'robots.txt';
+		$body = "User-agent: *\nDisallow: /\n";
+		if ( is_file( $file ) && is_readable( $file ) && $body === (string) file_get_contents( $file ) ) {
+			return;
+		}
+		if ( ( is_file( $file ) && is_writable( $file ) ) || ( ! is_file( $file ) && is_writable( ABSPATH ) ) ) {
+			file_put_contents( $file, $body, LOCK_EX );
+		}
+	}
+
+	/**
+	 * Deux phrases déjà en base. Seul le nom public change. Pas un remplacement global.
+	 */
+	public static function replace_known_brand_sentences() {
+		if ( get_transient( 'pk_tuk_brand_sentences' ) ) {
+			return;
+		}
+		global $wpdb;
+		$map = array(
+			'Oui. Partikulier met en relation les particuliers sans commission ni intermédiaire.' => 'Oui. Tuk met en relation les particuliers sans commission ni intermédiaire.',
+			'fonctionnement de Partikulier, écrivez-nous' => 'fonctionnement de Tuk, écrivez-nous',
+		);
+		foreach ( $map as $old => $new ) {
+			$wpdb->query(
+				$wpdb->prepare(
+					"UPDATE {$wpdb->posts} SET post_content = REPLACE(post_content, %s, %s) WHERE post_type = 'page' AND post_content LIKE %s",
+					$old,
+					$new,
+					'%' . $wpdb->esc_like( $old ) . '%'
+				)
+			);
+			if ( ! empty( $wpdb->last_error ) ) {
+				return;
+			}
+		}
+		set_transient( 'pk_tuk_brand_sentences', '1', DAY_IN_SECONDS );
+	}
+
+	/**
+	 * @return bool
+	 */
+	public static function disable_browser_detection() {
+		$options = get_option( 'polylang' );
+		if ( ! is_array( $options ) || empty( $options['browser'] ) ) {
+			return;
+		}
+		$options['browser'] = 0;
+		update_option( 'polylang', $options );
+	}
+
+	private static function is_uat_host() {
+		$host = isset( $_SERVER['HTTP_HOST'] ) ? strtolower( (string) wp_unslash( $_SERVER['HTTP_HOST'] ) ) : '';
+		if ( false !== strpos( $host, 'hostingersite.com' ) ) {
+			return true;
+		}
+		return false !== strpos( (string) home_url( '/' ), 'hostingersite.com' );
 	}
 
 	/**

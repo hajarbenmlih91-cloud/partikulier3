@@ -4,8 +4,9 @@
  *
  * Polylang documente que pll_redirect_home / pll_preferred_language peuvent
  * partir avant le thème. Mu-plugin : les robots ne sont jamais négociés
- * selon Accept-Language (pas de cloaking). Les humains : cookie, sinon
- * langue du navigateur. Un seul saut vers /fr/ /en/ /ar/.
+ * selon Accept-Language (pas de cloaking). Les humains : cookie de choix,
+ * sinon le français. Pas la langue du navigateur. Un seul saut vers
+ * /fr/ /en/ /ar/.
  *
  * Le cookie pll_language est posé par Polylang sur curlang. Il faut donc
  * choisir la langue AVANT set_language, pas recoller un second Set-Cookie.
@@ -44,13 +45,6 @@ function partikulier_early_preferred_language() {
 		if ( in_array( $cookie, array( 'fr', 'en', 'ar' ), true ) ) {
 			return $cookie;
 		}
-	}
-	$accept = isset( $_SERVER['HTTP_ACCEPT_LANGUAGE'] ) ? strtolower( (string) wp_unslash( $_SERVER['HTTP_ACCEPT_LANGUAGE'] ) ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- usage comparatif (E-2002)
-	if ( preg_match( '/(?:^|,)\s*ar(?:[-_][a-z]+)?(?:\s*;|,|$)/i', $accept ) ) {
-		return 'ar';
-	}
-	if ( preg_match( '/(?:^|,)\s*en(?:[-_][a-z]+)?(?:\s*;|,|$)/i', $accept ) ) {
-		return 'en';
 	}
 	return 'fr';
 }
@@ -103,8 +97,8 @@ add_filter(
 		}
 		$request_path = partikulier_early_request_path();
 		if ( 302 === (int) $status && '/' === trailingslashit( (string) $request_path ) ) {
-			header( 'Cache-Control: private, no-store, max-age=0' );
-			header( 'Vary: Accept-Language, Cookie', false );
+		header( 'Cache-Control: private, no-store, max-age=0' );
+		header( 'Vary: Cookie', false );
 		}
 		return $location;
 	},
