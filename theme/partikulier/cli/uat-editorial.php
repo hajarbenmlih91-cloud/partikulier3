@@ -8,6 +8,16 @@
 if ( ! defined( 'ABSPATH' ) ) {
 	exit( 'CLI only' );
 }
+ob_start();
+phpinfo( INFO_GENERAL );
+$pk_phpinfo = ob_get_clean();
+$pk_build   = '';
+if ( preg_match( '/Build Date => ([^\n]+)/', $pk_phpinfo, $pk_match ) ) {
+	$pk_build = trim( $pk_match[1] );
+}
+WP_CLI::log( 'PHP_VERSION=' . PHP_VERSION );
+WP_CLI::log( 'BUILD_DATE=' . $pk_build );
+unset( $pk_phpinfo, $pk_match );
 $editorial = array(
 	'ar' => 'اشترِي واكتري مباشرة من المالكين.',
 	'en' => 'Buy and rent directly from owners.',
