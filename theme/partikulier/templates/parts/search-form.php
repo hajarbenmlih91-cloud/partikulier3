@@ -43,6 +43,7 @@ $pk_t = static function ( $fr ) use ( $pk_find_lang ) {
 		'À louer'             => array( 'en' => 'For rent', 'ar' => 'للكراء' ),
 		'Saisonnière'         => array( 'en' => 'Seasonal', 'ar' => 'موسمية' ),
 		'Veuillez vérifier les champs obligatoires.' => array( 'en' => 'Please check the required fields.', 'ar' => 'يرجى التحقق من الحقول المطلوبة.' ),
+		'Fermer'              => array( 'en' => 'Close', 'ar' => 'إغلاق' ),
 		'Prix'                => array( 'en' => 'Price', 'ar' => 'السعر' ),
 		'Voir les résultats'  => array( 'en' => 'Show results', 'ar' => 'عرض النتائج' ),
 		'Équipements'         => array( 'en' => 'Amenities', 'ar' => 'التجهيزات' ),
@@ -270,6 +271,9 @@ $pk_city_placeholder = class_exists( 'Partikulier_Localization' )
 	<p class="pk-find-need" id="pk-find-need" role="alert" aria-live="assertive" hidden><?php echo esc_html( $pk_t( 'Veuillez vérifier les champs obligatoires.' ) ); ?></p>
 
 	<div class="pk-find-panel" id="pk-find-panel">
+		<div class="pk-find-panel-bar">
+			<button type="button" class="pk-find-close"><?php echo esc_html( $pk_t( 'Fermer' ) ); ?></button>
+		</div>
 		<div class="pk-find-split">
 			<div class="pk-find-range" data-pk-range data-pk-price data-unit="<?php echo esc_attr( $pk_price_unit ); ?>" data-sale-max="<?php echo esc_attr( $pk_sale_max ); ?>" data-rent-max="<?php echo esc_attr( $pk_rent_max ); ?>" data-sale-step="<?php echo esc_attr( $pk_sale_step ); ?>" data-rent-step="<?php echo esc_attr( $pk_rent_step ); ?>" data-sale-unit="<?php echo esc_attr( $pk_unit_sale ); ?>" data-rent-unit="<?php echo esc_attr( $pk_unit_rent ); ?>" data-season-max="<?php echo esc_attr( $pk_rent_max ); ?>" data-season-step="<?php echo esc_attr( $pk_rent_step ); ?>" data-season-unit="<?php echo esc_attr( $pk_unit_sale ); ?>">
 				<div class="pk-find-range-head">

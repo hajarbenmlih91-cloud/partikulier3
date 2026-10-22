@@ -4585,8 +4585,15 @@ html[dir="rtl"] .pk-find-field select { background-position: left .1rem center; 
 .pk-find-open:checked ~ .pk-find-panel { display: block; }
 .pk-find-split {
 	display: grid;
-	grid-template-columns: 1fr 1fr;
+	grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 	gap: 1.15rem 1.8rem;
+}
+.pk-find-range, .pk-find-panel, .pk-find-card, .pk-find-tabs { min-width: 0; max-width: 100%; }
+.pk-find-range-head { min-width: 0; }
+.pk-find-readout { min-width: 0; white-space: normal; text-align: end; }
+.pk-find-slider, .pk-find-slider input[type="range"] { width: 100%; max-width: 100%; min-width: 0; }
+@media (max-width: 980px) {
+	.pk-find-split { grid-template-columns: minmax(0, 1fr); }
 }
 .pk-find-rooms { margin-top: 1.15rem; }
 .pk-find-range-head {
@@ -4602,7 +4609,9 @@ html[dir="rtl"] .pk-find-field select { background-position: left .1rem center; 
 	font-weight: 800;
 	font-size: .92rem;
 	font-variant-numeric: tabular-nums;
-	white-space: nowrap;
+	min-width: 0;
+	white-space: normal;
+	text-align: end;
 }
 .pk-find-slider { position: relative; height: 28px; direction: ltr; }
 .pk-find-track, .pk-find-fill {
@@ -4617,6 +4626,8 @@ html[dir="rtl"] .pk-find-field select { background-position: left .1rem center; 
 	left: 0;
 	top: 0;
 	width: 100%;
+	max-width: 100%;
+	min-width: 0;
 	height: 28px;
 	margin: 0;
 	background: none;
@@ -4935,20 +4946,58 @@ html[dir="rtl"] body.home .pk-editorial-hero__inner {
 }
 
 .pk-find-backdrop { display: none; }
-.pk-find-open:checked ~ .pk-find-backdrop { display: none; }
+.pk-find-open:checked ~ .pk-find-backdrop {
+	display: block;
+	position: fixed;
+	inset: 0;
+	background: #fff;
+	z-index: 40;
+}
+html:has(.pk-find-open:checked),
+body:has(.pk-find-open:checked) {
+	overflow: hidden;
+	max-width: 100%;
+}
 .pk-find:has(.pk-find-open:checked) {
 	position: fixed;
-	top: 0;
-	left: 0;
-	right: 0;
+	inset: 0;
+	width: auto;
+	max-width: 100%;
+	height: 100%;
+	max-height: 100dvh;
 	z-index: 1100;
 	margin: 0;
 	padding: 0;
 	background: #fff;
-	max-height: 100vh;
-	overflow: auto;
-	box-shadow: 0 10px 28px rgba(22, 23, 21, .12);
+	overflow-x: hidden;
+	overflow-y: auto;
+	box-sizing: border-box;
+	box-shadow: none;
 }
+.pk-find-panel-bar {
+	display: flex;
+	justify-content: flex-end;
+	margin: -1.15rem -1.25rem 1rem;
+	padding: .7rem 1rem;
+	background: #fff;
+	border-bottom: 1px solid #e6e5df;
+}
+.pk-find-close {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 44px;
+	min-width: 7.5rem;
+	padding: 0 1rem;
+	border: 1px solid #de4141;
+	border-radius: 0;
+	background: #fff;
+	color: #de4141;
+	font: inherit;
+	font-weight: 800;
+	cursor: pointer;
+}
+.pk-find-close:hover, .pk-find-close:focus-visible { background: #de4141; color: #fff; }
 .pk-find-tabs { z-index: 53; }
 .pk-find:has(.pk-find-open:checked) .pk-find-tabs,
 .pk-find:has(.pk-find-open:checked) .pk-find-card {
@@ -4966,8 +5015,12 @@ html[dir="rtl"] body.home .pk-editorial-hero__inner {
 	position: relative;
 	top: auto;
 	inset-inline: 0;
+	width: 100%;
+	max-width: 100%;
 	margin-top: 0;
 	max-height: none;
+	overflow-x: hidden;
+	box-sizing: border-box;
 	z-index: 51;
 	background: #fff;
 	border-top: 0;

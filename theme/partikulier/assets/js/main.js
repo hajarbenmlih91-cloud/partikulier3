@@ -1530,6 +1530,14 @@
 			showNeed(true);
 		});
 	}
+	var closeBtn = root.querySelector(".pk-find-close");
+	if (closeBtn) {
+		closeBtn.addEventListener("click", function () {
+			if (opener) opener.checked = false;
+			setExpanded();
+			showNeed(false);
+		});
+	}
 	if (opener) opener.addEventListener("change", setExpanded);
 	applyContext(true);
 	document.addEventListener("keydown", function (event) {
