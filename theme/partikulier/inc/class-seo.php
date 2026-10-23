@@ -68,11 +68,8 @@ class Partikulier_SEO {
 	 * @param string $text Contenu.
 	 * @return string
 	 */
-	public static function dh_in_listing_text( $text ) {
+	public static function replace_mad( $text ) {
 		if ( ! is_string( $text ) || '' === $text || false === strpos( $text, 'MAD' ) ) {
-			return $text;
-		}
-		if ( ! is_singular( PARTIKULIER_ESTATIK_POST_TYPE ) && ! is_post_type_archive( PARTIKULIER_ESTATIK_POST_TYPE ) ) {
 			return $text;
 		}
 		$replaced = preg_replace_callback(
@@ -88,6 +85,19 @@ class Partikulier_SEO {
 			$text
 		);
 		return is_string( $replaced ) ? $replaced : $text;
+	}
+
+	/**
+	 * Les textes d'annonces déjà enregistrés disent encore MAD. L'écran dit DH.
+	 *
+	 * @param string $text Contenu.
+	 * @return string
+	 */
+	public static function dh_in_listing_text( $text ) {
+		if ( ! is_singular( PARTIKULIER_ESTATIK_POST_TYPE ) && ! is_post_type_archive( PARTIKULIER_ESTATIK_POST_TYPE ) ) {
+			return $text;
+		}
+		return self::replace_mad( $text );
 	}
 
 		/**
@@ -314,9 +324,9 @@ class Partikulier_SEO {
 								// gabarit localisé afin de ne jamais injecter une meta française.
 								$locale = function_exists( 'pll_current_language' ) ? pll_current_language( 'slug' ) : 'fr';
 								$stored = get_post_meta( $post->ID, '_pk_meta_description', true );
-			if ( $stored && 'fr' === $locale ) {
-					return self::normalize_description( $stored );
-			}
+		if ( $stored && 'fr' === $locale ) {
+			return self::replace_mad( self::normalize_description( $stored ) );
+		}
 			if ( 'en' === $locale || 'ar' === $locale ) {
 					return self::localized_listing_description( $post, $locale );
 			}
@@ -331,11 +341,11 @@ class Partikulier_SEO {
 			if ( ! $full ) {
 					$full = sprintf(
 							/* translators: %s: titre de l'annonce */
-							__( 'Découvrez %s, une annonce immobilière publiée gratuitement entre particuliers sur Partikulier.', 'partikulier' ),
+							__( 'Découvrez %s, une annonce immobilière publiée gratuitement entre particuliers sur Tuk.', 'partikulier' ),
 							get_the_title( $post )
 					);
 			}
-														return self::limit( self::normalize_description( $full ), 155 );
+														return self::limit( self::replace_mad( self::normalize_description( $full ) ), 155 );
 		}
 		if ( is_tax() && $queried instanceof WP_Term ) {
 			$desc = trim( term_description( $queried ) );
