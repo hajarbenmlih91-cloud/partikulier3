@@ -208,7 +208,7 @@ class Partikulier_JSONLD {
 			}
 			$listing['publisher'] = array(
 					'@type' => 'Organization',
-					'name'  => get_bloginfo( 'name' ),
+					'name'  => 'Tuk',
 					'url'   => home_url( '/' ),
 			);
 
@@ -275,12 +275,12 @@ class Partikulier_JSONLD {
 		 * WebSite + SearchAction (Sitelinks Search Box).
 		 */
 	private static function website_graph() {
-			$home = home_url( '/' );
-			return array(
-					'@type'           => 'WebSite',
-					'@id'             => $home . '#website',
-					'url'             => $home,
-					'name'            => get_bloginfo( 'name' ),
+		$home = function_exists( 'pk_localized_home_url' ) ? pk_localized_home_url() : home_url( '/' );
+		return array(
+				'@type'           => 'WebSite',
+				'@id'             => $home . '#website',
+				'url'             => $home,
+				'name'            => 'Tuk',
 					'description'     => get_bloginfo( 'description' ),
 					'inLanguage'      => get_locale(),
 					'potentialAction' => array(
@@ -298,12 +298,12 @@ class Partikulier_JSONLD {
 		 * Organisation (le portail Partikulier.com).
 		 */
 	private static function organization_graph() {
-			$home = home_url( '/' );
-			$data = array(
-					'@type'        => 'RealEstateAgent',
-					'@id'          => $home . '#organization',
-					'url'          => $home,
-					'name'         => get_bloginfo( 'name' ),
+		$home = function_exists( 'pk_localized_home_url' ) ? pk_localized_home_url() : home_url( '/' );
+		$data = array(
+				'@type'        => 'RealEstateAgent',
+				'@id'          => $home . '#organization',
+				'url'          => $home,
+				'name'         => 'Tuk',
 					'sameAs'       => array(),
 					'contactPoint' => array(
 							'@type'             => 'ContactPoint',
@@ -348,7 +348,7 @@ class Partikulier_JSONLD {
 		 */
 	public static function build_breadcrumbs() {
 			$home   = function_exists( 'pk_localized_home_url' ) ? pk_localized_home_url() : home_url( '/' );
-			$crumbs = array( array( 'name' => get_bloginfo( 'name' ), 'url' => $home ) );
+			$crumbs = array( array( 'name' => 'Tuk', 'url' => $home ) );
 
 		if ( is_singular( PARTIKULIER_ESTATIK_POST_TYPE ) ) {
 				$post      = get_queried_object();

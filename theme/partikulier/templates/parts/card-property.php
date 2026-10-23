@@ -109,10 +109,9 @@ $gallery = array_values( array_filter( $gallery, static function ( $attachment_i
 $price_html = '';
 if ( $price ) {
 		$action_slug = ( $actions && ! is_wp_error( $actions ) ) ? sanitize_title( $actions[0]->name ) : '';
-	$label           = ( 'a-louer' === $action_slug || 'location' === $action_slug || 'rent' === $action_slug ) ? sprintf( ' <span class="pk-card-price-note">%s</span>', esc_html( Partikulier_Localization::translate_polylang_string( '/ mois', '/ mois', 'partikulier' ) ) ) : '';
-		$formatted   = is_numeric( $price ) ? number_format_i18n( (float) $price ) : $price;
-		/** Devise affichee ; filtrable pour les sites hors Maroc. */
-		$currency   = apply_filters( 'partikulier_currency', 'MAD' );
+	$label           = ( 'a-louer' === $action_slug || 'location' === $action_slug || 'rent' === $action_slug ) ? sprintf( ' <span class="pk-card-price-note">%s</span>', esc_html( function_exists( 'pk_rent_suffix' ) ? pk_rent_suffix() : '/ mois' ) ) : '';
+		$formatted   = function_exists( 'pk_format_amount' ) ? pk_format_amount( $price ) : $price;
+		$currency   = apply_filters( 'partikulier_currency', 'DH' );
 		$price_html = esc_html( trim( $formatted . ' ' . $currency ) ) . $label;
 } else {
 		$price_html = esc_html( Partikulier_Localization::translate_polylang_string( 'Prix sur demande', 'Prix sur demande', 'partikulier' ) );

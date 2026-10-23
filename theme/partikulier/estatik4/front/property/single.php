@@ -166,7 +166,7 @@ $gallery_ids = array();
 					<div class="pk-single-price-wrap">
 						<p class="pk-single-price" itemprop="price"><?php echo pk_price_html( $price ); ?></p>
 						<?php if ( $action && in_array( sanitize_title( $action ), array( 'a-louer', 'location', 'rent' ), true ) ) : ?>
-							<span class="pk-single-price-note"><?php esc_html_e( '/ mois', 'partikulier' ); ?></span>
+								<span class="pk-single-price-note"><?php echo esc_html( function_exists( 'pk_rent_suffix' ) ? pk_rent_suffix() : '/ mois' ); ?></span>
 						<?php endif; ?>
 					</div>
 				<?php endif; ?>
@@ -360,7 +360,7 @@ $gallery_ids = array();
 							'es_property_floor_level' => array( $pk_floor, Partikulier_Localization::translate_polylang_string( 'Étage', 'Étage', 'partikulier' ), '', '' ),
 							'es_property_epc_class' => array( $pk_energy, Partikulier_Localization::translate_polylang_string( 'Classe énergie', 'Classe énergie', 'partikulier' ), '', 'pk-feature--lettre' ),
 							'es_property_ges_class' => array( $pk_ges, __( 'GES', 'partikulier' ), '', 'pk-feature--lettre' ),
-							'_pk_charges' => array( $pk_charges, Partikulier_Localization::translate_polylang_string( 'Charges', 'Charges', 'partikulier' ), Partikulier_Localization::translate_polylang_string( 'MAD / mois', 'MAD / mois', 'partikulier' ), '' ),
+							'_pk_charges' => array( $pk_charges, Partikulier_Localization::translate_polylang_string( 'Charges', 'Charges', 'partikulier' ), function_exists( 'pk_price_unit' ) ? pk_price_unit( true ) : 'DH / mois', '' ),
 							'_pk_availability' => array( $pk_available, Partikulier_Localization::translate_polylang_string( 'Disponibilité', 'Disponibilité', 'partikulier' ), '', '' ),
 							'es_property_bedrooms' => array( $bedrooms_display, Partikulier_Localization::translate_polylang_string( 'Chambres', 'Chambres', 'partikulier' ), '', '' ),
 							'_pk_living_rooms' => array( $living_display, Partikulier_Localization::translate_polylang_string( 'Salons', 'Salons', 'partikulier' ), '', '' ),

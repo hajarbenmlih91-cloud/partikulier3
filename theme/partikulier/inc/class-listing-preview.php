@@ -225,7 +225,7 @@ class Partikulier_Listing_Preview {
 		}
 		if ( $v['price'] ) {
 			/* translators: %s: prix formate. */
-			$details[] = sprintf( __( 'au prix de %s MAD', 'partikulier' ), number_format_i18n( $v['price'] ) );
+			$details[] = sprintf( __( 'au prix de %s DH', 'partikulier' ), function_exists( 'pk_format_amount' ) ? pk_format_amount( $v['price'] ) : $v['price'] );
 		}
 		if ( '' !== $v['floor'] ) {
 			$details[] = sprintf(
@@ -315,7 +315,7 @@ class Partikulier_Listing_Preview {
 		}
 		if ( $v['price'] ) {
 			/* translators: %s: prix. */
-			$core .= '. ' . sprintf( __( '%s MAD', 'partikulier' ), number_format_i18n( $v['price'] ) );
+			$core .= '. ' . sprintf( __( '%s DH', 'partikulier' ), function_exists( 'pk_format_amount' ) ? pk_format_amount( $v['price'] ) : $v['price'] );
 		}
 		$core .= '.';
 
@@ -511,7 +511,7 @@ class Partikulier_Listing_Preview {
 			'meta'        => self::build_meta_description( $v ),
 			'alt'         => self::build_image_alt( $v ),
 			'facts'       => $facts,
-			'price'       => $v['price'] ? number_format_i18n( $v['price'] ) . ' ' . apply_filters( 'partikulier_currency', 'MAD' ) : '',
+			'price'       => $v['price'] ? ( function_exists( 'pk_format_amount' ) ? pk_format_amount( $v['price'] ) : $v['price'] ) . ' ' . apply_filters( 'partikulier_currency', 'DH' ) : '',
 			'kicker'      => trim(
 				( 'louer' === $v['action'] ? __( 'LOUER', 'partikulier' ) : __( 'VENDRE', 'partikulier' ) )
 				. ' · '

@@ -113,7 +113,7 @@ class Partikulier_WhatsApp_Verification {
 				'{code}'  => $code,
 				'{titre}' => $post ? $post->post_title : '',
 				'{ville}' => $city,
-				'{prix}'  => $price ? number_format_i18n( (int) $price ) . ' MAD' : '',
+				'{prix}'  => $price ? ( function_exists( 'pk_format_amount' ) ? pk_format_amount( $price ) : (string) (int) $price ) . ' DH' : '',
 				'{lien}'  => $post ? get_permalink( $post ) : '',
 				'{nom}'   => $post ? (string) get_post_meta( $post->ID, '_pk_owner_name', true ) : '',
 			)
