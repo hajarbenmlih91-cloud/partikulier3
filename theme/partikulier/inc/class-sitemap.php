@@ -12,7 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class Partikulier_Sitemap {
 
-	const CACHE_KEY = 'pk_sitemap_xml';
+	const CACHE_KEY = 'pk_sitemap_xml_v2';
 	const TTL       = 86400; // 24 h
 
 	public static function init() {
@@ -221,22 +221,35 @@ class Partikulier_Sitemap {
 		);
 		foreach ( $priorities as $tax => $p ) {
 			$terms = get_terms( array( 'taxonomy' => $tax, 'hide_empty' => true, 'number' => 2000 ) );
-			if ( is_array( $terms ) ) {
-				foreach ( $terms as $term ) {
-					$link = get_term_link( $term );
-					if ( ! is_wp_error( $link ) ) {
-						$urls[] = array(
-							'loc'        => $link,
-						'lastmod'        => mysql2date( 'Y-m-d', get_lastpostmodified( 'gmt', PARTIKULIER_ESTATIK_POST_TYPE ) ),
-							'priority'   => $p[0],
-							'changefreq' => $p[1],
-						);
+				if ( is_array( $terms ) ) {
+					foreach ( $terms as $term ) {
+						$link = get_term_link( $term );
+						if ( ! is_wp_error( $link ) ) {
+							$urls[] = array(
+								'loc'        => $link,
+								'lastmod'    => mysql2date( 'Y-m-d', get_lastpostmodified( 'gmt', PARTIKULIER_ESTATIK_POST_TYPE ) ),
+								'priority'   => $p[0],
+								'changefreq' => $p[1],
+							);
+						}
+						$fr_city = ( ! is_wp_error( $link ) && is_string( $link ) ) ? $link : '';
+						foreach ( self::city_language_urls( $term ) as $city ) {
+							$urls[] = array(
+								'loc'        => $city['url'],
+								'alternates' => array(
+									$city['lang'] => $city['url'],
+									'x-default'   => '' !== $fr_city ? $fr_city : $city['url'],
+								),
+								'lastmod'    => mysql2date( 'Y-m-d', get_lastpostmodified( 'gmt', PARTIKULIER_ESTATIK_POST_TYPE ) ),
+								'priority'   => $p[0],
+								'changefreq' => $p[1],
+							);
+						}
 					}
 				}
-			}
 		}
 
-		$urls = self::without_redirects( $urls );
+		$urls = self::without_redirects( self::unique_locs( $urls ) );
 		$out = '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">' . "\n"; // SE-037 (E-3701) : alternates hreflang
 		foreach ( $urls as $u ) {
 			$out .= "\t<url>\n";
@@ -256,6 +269,111 @@ class Partikulier_Sitemap {
 		$out .= '</urlset>' . "\n";
 
 		return $out;
+	}
+
+	/**
+	 * Pages de ville anglaises et arabes qui existent déjà. On ne réécrit pas le slug.
+	 *
+	 * @param WP_Term $term Terme géographique de la langue courante.
+	 * @return array<int,array{lang:string,url:string}>
+	 */
+	private static function city_language_urls( $term ) {
+		if ( ! $term instanceof WP_Term || ! defined( 'PARTIKULIER_ESTATIK_LOCATION_TAXONOMY' ) || PARTIKULIER_ESTATIK_LOCATION_TAXONOMY !== $term->taxonomy ) {
+			return array();
+		}
+		$base = preg_replace( '/-(?:en|ar|fr)$/', '', (string) $term->slug );
+		if ( ! is_string( $base ) || '' === $base ) {
+			return array();
+		}
+		$slugs = array();
+		if ( function_exists( 'pll_get_term_translations' ) ) {
+			foreach ( (array) pll_get_term_translations( $term->term_id ) as $lang => $term_id ) {
+				if ( ! in_array( (string) $lang, array( 'en', 'ar' ), true ) ) {
+					continue;
+				}
+				$translated = self::term_any_language( (int) $term_id, $term->taxonomy );
+				if ( $translated instanceof WP_Term ) {
+					$slugs[ (string) $lang ] = (string) $translated->slug;
+				}
+			}
+		}
+		foreach ( array( 'en', 'ar' ) as $lang ) {
+			if ( ! empty( $slugs[ $lang ] ) ) {
+				continue;
+			}
+			$sibling = self::term_by_slug_any_language( $base . '-' . $lang, $term->taxonomy );
+			if ( $sibling instanceof WP_Term ) {
+				$slugs[ $lang ] = (string) $sibling->slug;
+			}
+		}
+		$urls = array();
+		foreach ( $slugs as $lang => $slug ) {
+			$urls[] = array(
+				'lang' => (string) $lang,
+				'url'  => home_url( '/' . $lang . '/location/' . $slug . '/' ),
+			);
+		}
+		return $urls;
+	}
+
+	/**
+	 * @param int    $term_id Terme.
+	 * @param string $tax     Taxonomie.
+	 * @return WP_Term|null
+	 */
+	private static function term_any_language( $term_id, $tax ) {
+		$found = get_terms(
+			array(
+				'taxonomy'   => $tax,
+				'include'    => array( (int) $term_id ),
+				'hide_empty' => false,
+				'number'     => 1,
+				'lang'       => '',
+			)
+		);
+		if ( is_wp_error( $found ) || empty( $found ) || ! $found[0] instanceof WP_Term ) {
+			return null;
+		}
+		return $found[0];
+	}
+
+	/**
+	 * @param string $slug Slug.
+	 * @param string $tax  Taxonomie.
+	 * @return WP_Term|null
+	 */
+	private static function term_by_slug_any_language( $slug, $tax ) {
+		$found = get_terms(
+			array(
+				'taxonomy'   => $tax,
+				'slug'       => $slug,
+				'hide_empty' => false,
+				'number'     => 1,
+				'lang'       => '',
+			)
+		);
+		if ( is_wp_error( $found ) || empty( $found ) || ! $found[0] instanceof WP_Term ) {
+			return null;
+		}
+		return $found[0];
+	}
+
+	/**
+	 * @param array<int,array<string,mixed>> $urls Entrées.
+	 * @return array<int,array<string,mixed>>
+	 */
+	private static function unique_locs( $urls ) {
+		$seen  = array();
+		$clean = array();
+		foreach ( $urls as $entry ) {
+			$loc = isset( $entry['loc'] ) ? (string) $entry['loc'] : '';
+			if ( '' === $loc || isset( $seen[ $loc ] ) ) {
+				continue;
+			}
+			$seen[ $loc ] = true;
+			$clean[]      = $entry;
+		}
+		return $clean;
 	}
 
         /**

@@ -455,7 +455,7 @@
 			link.textContent  = (pkConfig.i18n && pkConfig.i18n.whatsappOpen) || "Ouvrir WhatsApp et envoyer le message";
 			var note          = document.createElement("p");
 			note.className    = "pk-form-note";
-			note.textContent  = (pkConfig.i18n && pkConfig.i18n.whatsappNote) || "Conservez ce code. L’annonce sera publiée seulement après vérification manuelle du message par l’équipe Partikulier.";
+			note.textContent  = (pkConfig.i18n && pkConfig.i18n.whatsappNote) || "Conservez ce code. L’annonce sera publiée seulement après vérification manuelle du message par l’équipe Tuk.";
 
 			panel.appendChild(title);
 			panel.appendChild(intro);
@@ -1140,8 +1140,8 @@
 	var sale = parseList("data-pk-sale");
 	var rent = parseList("data-pk-rent");
 	var unlimited = budget.getAttribute("data-pk-unlimited") || "Illimité";
-	var suffixSale = budget.getAttribute("data-pk-suffix-sale") || " MAD";
-	var suffixRent = budget.getAttribute("data-pk-suffix-rent") || " MAD / mois";
+	var suffixSale = budget.getAttribute("data-pk-suffix-sale") || " DH";
+	var suffixRent = budget.getAttribute("data-pk-suffix-rent") || " DH / mois";
 	function formatNumber(n) {
 		try { return Number(n).toLocaleString("fr-FR"); }
 		catch (err) { return String(n); }

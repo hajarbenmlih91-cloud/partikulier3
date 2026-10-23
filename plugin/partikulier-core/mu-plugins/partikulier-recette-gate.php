@@ -44,8 +44,7 @@ function partikulier_recette_gate() {
 	if ( '' === $pass ) {
 		return;
 	}
-	$given_user = isset( $_SERVER['PHP_AUTH_USER'] ) ? (string) $_SERVER['PHP_AUTH_USER'] : '';
-	$given_pass = isset( $_SERVER['PHP_AUTH_PW'] ) ? (string) $_SERVER['PHP_AUTH_PW'] : '';
+	list( $given_user, $given_pass ) = partikulier_recette_given_credentials();
 	if ( '' !== $pass && hash_equals( $user, $given_user ) && hash_equals( $pass, $given_pass ) ) {
 		return;
 	}
@@ -55,6 +54,35 @@ function partikulier_recette_gate() {
 	header( 'Content-Type: text/plain; charset=UTF-8' );
 	echo "Recette fermée.\n";
 	exit;
+}
+
+/**
+ * Basic auth, y compris quand l'hébergeur ne remplit pas PHP_AUTH_*.
+ *
+ * @return array{0:string,1:string}
+ */
+function partikulier_recette_given_credentials() {
+	$user = isset( $_SERVER['PHP_AUTH_USER'] ) ? (string) $_SERVER['PHP_AUTH_USER'] : '';
+	$pass = isset( $_SERVER['PHP_AUTH_PW'] ) ? (string) $_SERVER['PHP_AUTH_PW'] : '';
+	if ( '' !== $user || '' !== $pass ) {
+		return array( $user, $pass );
+	}
+	$header = '';
+	foreach ( array( 'HTTP_AUTHORIZATION', 'REDIRECT_HTTP_AUTHORIZATION' ) as $key ) {
+		if ( ! empty( $_SERVER[ $key ] ) ) {
+			$header = (string) $_SERVER[ $key ];
+			break;
+		}
+	}
+	if ( 0 !== stripos( $header, 'Basic ' ) ) {
+		return array( '', '' );
+	}
+	$decoded = base64_decode( substr( $header, 6 ), true );
+	if ( ! is_string( $decoded ) || false === strpos( $decoded, ':' ) ) {
+		return array( '', '' );
+	}
+	$parts = explode( ':', $decoded, 2 );
+	return array( (string) $parts[0], (string) $parts[1] );
 }
 
 partikulier_recette_gate();

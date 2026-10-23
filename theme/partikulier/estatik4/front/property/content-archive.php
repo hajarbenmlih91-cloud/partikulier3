@@ -116,7 +116,7 @@ if ( ! $img_id ) {
 		<?php else : ?>
 			<div class="pk-card-placeholder" aria-hidden="true"><span><svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.6V21h14V9.6"/><path d="M9.5 21v-6h5v6"/></svg></span></div>
 		<?php endif; ?>
-			<span class="pk-card-price" itemprop="price"><?php echo $price ? esc_html( is_numeric( $price ) ? number_format_i18n( (float) $price ) . ' MAD' : $price ) : esc_html__( 'Prix sur demande', 'partikulier' ); ?></span>
+			<span class="pk-card-price" itemprop="price"><?php echo $price && function_exists( 'pk_price_html' ) ? pk_price_html( $price ) : esc_html__( 'Prix sur demande', 'partikulier' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- pk_price_html() échappe. ?></span>
 			<?php if ( $action ) : ?>
 				<span class="pk-card-badge pk-badge-<?php echo esc_attr( sanitize_title( $action ) ); ?>"><?php echo esc_html( class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_taxonomy_label( $action ) : $action ); ?></span>
 			<?php endif; ?>

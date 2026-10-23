@@ -15,6 +15,9 @@ class Partikulier_SEO {
 	public static function init() {
 			add_filter( 'document_title_parts', array( __CLASS__, 'title' ), 10, 1 );
 		add_filter( 'bloginfo', array( __CLASS__, 'public_name' ), 10, 2 );
+		add_filter( 'pre_option_blogname', array( __CLASS__, 'public_blogname' ) );
+		add_filter( 'the_content', array( __CLASS__, 'dh_in_listing_text' ), 12 );
+		add_filter( 'the_excerpt', array( __CLASS__, 'dh_in_listing_text' ), 12 );
 			remove_action( 'wp_head', 'rel_canonical' );
 			/* La balise <meta name="generator"> imprime la version exacte du core.
 			 * Mesuree par la sonde : « balise generator (version exposee) : oui ».
@@ -40,6 +43,51 @@ class Partikulier_SEO {
 			return 'Tuk';
 		}
 		return $output;
+	}
+
+	/**
+	 * get_bloginfo('name') lit l'option brute. Le filtre bloginfo ne la change pas.
+	 * On ne réécrit pas l'option stockée.
+	 *
+	 * @param mixed $pre Valeur courte-circuit.
+	 * @return mixed
+	 */
+	public static function public_blogname( $pre ) {
+		if ( is_admin() && ! wp_doing_ajax() ) {
+			return $pre;
+		}
+		if ( defined( 'WP_CLI' ) && WP_CLI ) {
+			return $pre;
+		}
+		return 'Tuk';
+	}
+
+	/**
+	 * Les textes d'annonces déjà enregistrés disent encore MAD. L'écran dit DH.
+	 *
+	 * @param string $text Contenu.
+	 * @return string
+	 */
+	public static function dh_in_listing_text( $text ) {
+		if ( ! is_string( $text ) || '' === $text || false === strpos( $text, 'MAD' ) ) {
+			return $text;
+		}
+		if ( ! is_singular( PARTIKULIER_ESTATIK_POST_TYPE ) && ! is_post_type_archive( PARTIKULIER_ESTATIK_POST_TYPE ) ) {
+			return $text;
+		}
+		$replaced = preg_replace_callback(
+			'/(\d[\d\s\x{00A0}\x{202F},.]*)\s*MAD\b/u',
+			static function ( $match ) {
+				$digits = preg_replace( '/\D/', '', $match[1] );
+				if ( '' === $digits ) {
+					return $match[0];
+				}
+				$amount = function_exists( 'pk_format_amount' ) ? pk_format_amount( $digits ) : $digits;
+				return $amount . ' DH';
+			},
+			$text
+		);
+		return is_string( $replaced ) ? $replaced : $text;
 	}
 
 		/**
@@ -183,7 +231,7 @@ class Partikulier_SEO {
 
 			// --- OG generiques ---
 			printf( '<meta property="og:url" content="%s">%s', esc_url( $url ), "\n" );
-			printf( '<meta property="og:site_name" content="%s">%s', esc_attr( get_bloginfo( 'name' ) ), "\n" );
+			printf( '<meta property="og:site_name" content="%s">%s', esc_attr( 'Tuk' ), "\n" );
 			printf( '<meta property="og:locale" content="%s">%s', esc_attr( get_locale() ), "\n" );
 
 		if ( is_singular( PARTIKULIER_ESTATIK_POST_TYPE ) ) {
@@ -197,7 +245,7 @@ class Partikulier_SEO {
 			* defaut. La fiche annonce garde sa photo quand elle existe (og_property). */
 				$pk_og_img = self::og_image_fallback();
 				printf( '<meta property="og:type" content="website">%s', "\n" );
-				printf( '<meta property="og:title" content="%s">%s', esc_attr( is_front_page() ? get_bloginfo( 'name' ) : wp_get_document_title() ), "\n" );
+				printf( '<meta property="og:title" content="%s">%s', esc_attr( wp_get_document_title() ), "\n" );
 			if ( $pk_og_img[0] ) {
 				self::emit_og_image( $pk_og_img[0], $pk_og_img[1], (int) $pk_og_img[2], (int) $pk_og_img[3], (string) $pk_og_img[4] );
 			}

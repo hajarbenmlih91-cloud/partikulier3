@@ -234,8 +234,8 @@ if ( in_array( $pk_budget_action, array( 'a-vendre', 'a-louer' ), true ) ) :
 	/* Revue user 08/10 : devise via le filtre partikulier_currency (درهم en AR)
 	   et unité par langue ; le nombre est isolé en LTR pour le bidi. */
 	$pk_budget_lang    = function_exists( 'pll_current_language' ) ? pll_current_language( 'slug' ) : 'fr';
-	$pk_budget_cur     = apply_filters( 'partikulier_currency', 'MAD' );
-	$pk_budget_suffix  = ' ' . $pk_budget_cur . ( $pk_budget_renting ? ( 'ar' === $pk_budget_lang ? ' / شهر' : ( 'en' === $pk_budget_lang ? ' / month' : ' / mois' ) ) : '' );
+	$pk_budget_cur     = apply_filters( 'partikulier_currency', 'DH' );
+	$pk_budget_suffix  = ' ' . $pk_budget_cur . ( $pk_budget_renting ? ( 'ar' === $pk_budget_lang ? ' / شهر' : ( 'en' === $pk_budget_lang ? '/month' : ' / mois' ) ) : '' );
 	$pk_budget_current = isset( $pk_cumulative_args['es_price_max'] ) ? (string) $pk_cumulative_args['es_price_max'] : '';
 	$pk_budget_clear   = $pk_cumulative_args;
 	unset( $pk_budget_clear['es_price_max'] );
@@ -254,7 +254,7 @@ foreach ( $pk_budget_values as $pk_budget_n ) :
 		esc_url( add_query_arg( $pk_budget_args, pk_properties_archive_url() ) ),
 		'',
 		$pk_budget_active, /* phpcs:ignore WordPress.Security.EscapeOutput -- constante interne aria-current */
-		esc_html( number_format_i18n( $pk_budget_n ) ),
+		esc_html( function_exists( 'pk_format_amount' ) ? pk_format_amount( $pk_budget_n ) : (string) $pk_budget_n ),
 		esc_html( $pk_budget_suffix )
 	);
 endforeach;

@@ -69,7 +69,7 @@ class Partikulier_Scripts {
 									'whatsappIntro' => __( 'Votre annonce est enregistrée, mais reste invisible tant que l’équipe n’a pas rapproché votre message WhatsApp.', 'partikulier' ),
 									'whatsappCode'  => __( 'Code de validation :', 'partikulier' ),
 									'whatsappOpen'  => __( 'Ouvrir WhatsApp et envoyer le message', 'partikulier' ),
-									'whatsappNote'  => __( 'Conservez ce code. L’annonce sera publiée seulement après vérification manuelle du message par l’équipe Partikulier.', 'partikulier' ),
+									'whatsappNote'  => __( 'Conservez ce code. L’annonce sera publiée seulement après vérification manuelle du message par l’équipe Tuk.', 'partikulier' ),
 										'photoError'    => __( "photo(s) n'ont pas pu être ajoutées :", 'partikulier' ),
 										'photoHint'     => __( 'Vous pourrez les ajouter depuis « Mes annonces » après validation.', 'partikulier' ),
 									/* SE-044 / DP-9 (revues E4 + CP5, D2) : messages de validation client du parcours

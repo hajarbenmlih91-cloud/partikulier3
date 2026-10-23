@@ -73,7 +73,7 @@ while ( have_posts() ) :
 						<div class="pk-single-price-wrap">
 							<p class="pk-single-price"><?php echo pk_price_html( $price ); // phpcs:ignore ?></p>
 							<?php if ( $single_actions && ! is_wp_error( $single_actions ) && in_array( sanitize_title( $single_actions[0]->name ), array( 'a-louer', 'location', 'rent' ), true ) ) : ?>
-								<span class="pk-single-price-note"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( '/ mois', '/ mois', 'partikulier' ) ); ?></span>
+								<span class="pk-single-price-note"><?php echo esc_html( function_exists( 'pk_rent_suffix' ) ? pk_rent_suffix() : '/ mois' ); ?></span>
 							<?php endif; ?>
 						</div>
 					<?php endif; ?>
@@ -192,7 +192,7 @@ while ( have_posts() ) :
 								'es_property_floor_level'    => array( $floor, Partikulier_Localization::translate_polylang_string( 'Étage', 'Étage', 'partikulier' ), '', '' ),
 								'es_property_epc_class'      => array( $energy, Partikulier_Localization::translate_polylang_string( 'Classe énergie', 'Classe énergie', 'partikulier' ), '', 'pk-feature--lettre' ),
 								'es_property_ges_class'      => array( $ges, __( 'GES', 'partikulier' ), '', 'pk-feature--lettre' ),
-								'_pk_charges'                => array( $charges, Partikulier_Localization::translate_polylang_string( 'Charges', 'Charges', 'partikulier' ), Partikulier_Localization::translate_polylang_string( 'MAD / mois', 'MAD / mois', 'partikulier' ), '' ),
+								'_pk_charges'                => array( $charges, Partikulier_Localization::translate_polylang_string( 'Charges', 'Charges', 'partikulier' ), function_exists( 'pk_price_unit' ) ? pk_price_unit( true ) : 'DH / mois', '' ),
 								'_pk_availability'           => array( $availability, Partikulier_Localization::translate_polylang_string( 'Disponibilité', 'Disponibilité', 'partikulier' ), '', '' ),
 								'es_bedrooms'                => array( $bedrooms, Partikulier_Localization::translate_polylang_string( 'Chambres', 'Chambres', 'partikulier' ), '', '' ),
 								'_pk_living_rooms'           => array( $living_rooms, Partikulier_Localization::translate_polylang_string( 'Salons', 'Salons', 'partikulier' ), '', '' ),

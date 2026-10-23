@@ -129,18 +129,75 @@ if ( ! function_exists( 'pk_term_url' ) ) {
 }
 
 /**
+ * Milliers avec une espace. Jamais de virgule anglaise, jamais de chiffres arabes.
+ *
+ * @param mixed $price Montant.
+ * @return string
+ */
+if ( ! function_exists( 'pk_format_amount' ) ) {
+	function pk_format_amount( $price ) {
+		if ( ! is_numeric( $price ) ) {
+			return (string) $price;
+		}
+		$negative = (float) $price < 0;
+		$digits   = preg_replace( '/\D/', '', (string) abs( (float) $price ) );
+		$digits   = ltrim( (string) $digits, '0' );
+		if ( '' === $digits ) {
+			$digits = '0';
+		}
+		$grouped = preg_replace( '/\B(?=(\d{3})+(?!\d))/', ' ', $digits );
+		return $negative ? '-' . $grouped : $grouped;
+	}
+}
+
+/**
+ * Unité complète. Location : DH / mois, DH/month, درهم / شهر.
+ *
+ * @param bool $rent Location.
+ * @return string
+ */
+if ( ! function_exists( 'pk_price_unit' ) ) {
+	function pk_price_unit( $rent = false ) {
+		$currency = apply_filters( 'partikulier_currency', 'DH' );
+		if ( ! $rent ) {
+			return $currency;
+		}
+		$lang = class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::current_language() : 'fr';
+		if ( 'ar' === $lang ) {
+			return 'درهم / شهر';
+		}
+		if ( 'en' === $lang ) {
+			return 'DH/month';
+		}
+		return 'DH / mois';
+	}
+}
+
+if ( ! function_exists( 'pk_rent_suffix' ) ) {
+	function pk_rent_suffix() {
+		$lang = class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::current_language() : 'fr';
+		if ( 'ar' === $lang ) {
+			return '/ شهر';
+		}
+		if ( 'en' === $lang ) {
+			return '/month';
+		}
+		return '/ mois';
+	}
+}
+
+/**
  * Prix formate + devise, utilise par les cartes ET la fiche.
  *
- * Constate au comparatif : la fiche affichait "850000" brut alors que les
- * cartes affichaient deja "850 000 MAD". Un helper unique evite la divergence.
+ * DH, ou درهم en arabe. Jamais MAD.
  */
 if ( ! function_exists( 'pk_price_html' ) ) {
 	function pk_price_html( $price ) {
 		if ( '' === $price || null === $price ) {
 			return esc_html__( 'Prix sur demande', 'partikulier' );
 		}
-		$formatted = is_numeric( $price ) ? number_format_i18n( (float) $price ) : $price;
-		$currency  = apply_filters( 'partikulier_currency', 'MAD' );
+		$formatted = pk_format_amount( $price );
+		$currency  = apply_filters( 'partikulier_currency', 'DH' );
 		return esc_html( trim( $formatted . ' ' . $currency ) );
 	}
 }
