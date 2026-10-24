@@ -3,7 +3,7 @@
  * Journal, cinq articles, quatre pages légales.
  *
  * Le texte vient du fichier content/journal.json. L'arabe n'est pas écrit.
- * Aucun numéro, aucun siège, aucun prix Tuk n'est ajouté ici.
+ * Aucun numéro, aucun siège, aucun prix pep.ma n'est ajouté ici.
  *
  * @package Partikulier
  */

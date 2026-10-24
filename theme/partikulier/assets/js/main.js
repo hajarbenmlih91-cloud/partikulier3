@@ -455,7 +455,7 @@
 			link.textContent  = (pkConfig.i18n && pkConfig.i18n.whatsappOpen) || "Ouvrir WhatsApp et envoyer le message";
 			var note          = document.createElement("p");
 			note.className    = "pk-form-note";
-			note.textContent  = (pkConfig.i18n && pkConfig.i18n.whatsappNote) || "Conservez ce code. L’annonce sera publiée seulement après vérification manuelle du message par l’équipe Tuk.";
+			note.textContent  = (pkConfig.i18n && pkConfig.i18n.whatsappNote) || "Conservez ce code. L’annonce sera publiée seulement après vérification manuelle du message par l’équipe pep.ma.";
 
 			panel.appendChild(title);
 			panel.appendChild(intro);

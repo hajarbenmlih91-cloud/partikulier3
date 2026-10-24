@@ -21,9 +21,9 @@ get_header();
 ?>
 <main id="main-content" class="pk-price-index">
 	<div class="pk-container pk-container-narrow">
-		<p class="pk-editorial-kicker">Tuk</p>
+		<p class="pk-editorial-kicker">pep.ma</p>
 		<h1>Prix au mètre carré</h1>
-		<p class="pk-price-index__note">Moyenne des annonces Tuk publiées depuis le <?php echo esc_html( $pk_from_3 ); ?> et depuis le <?php echo esc_html( $pk_from_6 ); ?>. Vente, location et location saisonnière sont séparées. Ce n’est pas un prix officiel. Calcul du <?php echo esc_html( $pk_price_date ); ?>.</p>
+		<p class="pk-price-index__note">Moyenne des annonces pep.ma publiées depuis le <?php echo esc_html( $pk_from_3 ); ?> et depuis le <?php echo esc_html( $pk_from_6 ); ?>. Vente, location et location saisonnière sont séparées. Ce n’est pas un prix officiel. Calcul du <?php echo esc_html( $pk_price_date ); ?>.</p>
 		<?php if ( empty( $pk_price_snapshot['slices'] ) ) : ?>
 			<p>Aucune annonce avec un prix et une surface sur les 6 derniers mois.</p>
 		<?php else : ?>

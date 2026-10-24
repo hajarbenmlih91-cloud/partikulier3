@@ -2,7 +2,7 @@
 /**
  * Barre de recherche : trois onglets (vente, location, saisonnière).
  * Le panneau Filtres ne s'ouvre qu'après un type de bien. Son contenu
- * suit la transaction et le type. Charte tuk.ma. Libellés déjà validés.
+ * suit la transaction et le type. Charte pep.ma. Libellés déjà validés.
  *
  * @package Partikulier
  * @var string $variant 'hero'|'archive'|'compact'

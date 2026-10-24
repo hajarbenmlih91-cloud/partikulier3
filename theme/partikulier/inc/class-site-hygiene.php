@@ -56,13 +56,15 @@ class Partikulier_Site_Hygiene {
 	 * Deux phrases déjà en base. Seul le nom public change. Pas un remplacement global.
 	 */
 	public static function replace_known_brand_sentences() {
-		if ( get_transient( 'pk_tuk_brand_sentences' ) ) {
+		if ( get_transient( 'pk_pep_brand_sentences' ) ) {
 			return;
 		}
 		global $wpdb;
 		$map = array(
-			'Oui. Partikulier met en relation les particuliers sans commission ni intermédiaire.' => 'Oui. Tuk met en relation les particuliers sans commission ni intermédiaire.',
-			'fonctionnement de Partikulier, écrivez-nous' => 'fonctionnement de Tuk, écrivez-nous',
+			'Oui. Partikulier met en relation les particuliers sans commission ni intermédiaire.' => 'Oui. pep.ma met en relation les particuliers sans commission ni intermédiaire.',
+			'Oui. Tuk met en relation les particuliers sans commission ni intermédiaire.' => 'Oui. pep.ma met en relation les particuliers sans commission ni intermédiaire.',
+			'fonctionnement de Partikulier, écrivez-nous' => 'fonctionnement de pep.ma, écrivez-nous',
+			'fonctionnement de Tuk, écrivez-nous' => 'fonctionnement de pep.ma, écrivez-nous',
 		);
 		foreach ( $map as $old => $new ) {
 			$wpdb->query(
@@ -77,7 +79,7 @@ class Partikulier_Site_Hygiene {
 				return;
 			}
 		}
-		set_transient( 'pk_tuk_brand_sentences', '1', DAY_IN_SECONDS );
+		set_transient( 'pk_pep_brand_sentences', '1', DAY_IN_SECONDS );
 	}
 
 	/**

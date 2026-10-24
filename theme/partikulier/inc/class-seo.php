@@ -40,7 +40,7 @@ class Partikulier_SEO {
 		 */
 	public static function public_name( $output, $show ) {
 		if ( 'name' === $show ) {
-			return 'Tuk';
+			return 'pep.ma';
 		}
 		return $output;
 	}
@@ -59,7 +59,7 @@ class Partikulier_SEO {
 		if ( defined( 'WP_CLI' ) && WP_CLI ) {
 			return $pre;
 		}
-		return 'Tuk';
+		return 'pep.ma';
 	}
 
 	/**
@@ -101,10 +101,10 @@ class Partikulier_SEO {
 	}
 
 		/**
-		 * Titre SEO. Le nom public est Tuk. L'accueil reprend la phrase déjà validée.
+		 * Titre SEO. Le nom public est pep.ma. L'accueil reprend la phrase déjà validée.
 		 */
 	public static function title( $parts ) {
-		$site = 'Tuk';
+		$site = 'pep.ma';
 		if ( is_front_page() && class_exists( 'Partikulier_Customization' ) ) {
 			$hero = trim( wp_strip_all_tags( (string) Partikulier_Customization::editorial( 'home_title', '' ) ) );
 			if ( '' !== $hero ) {
@@ -241,7 +241,7 @@ class Partikulier_SEO {
 
 			// --- OG generiques ---
 			printf( '<meta property="og:url" content="%s">%s', esc_url( $url ), "\n" );
-			printf( '<meta property="og:site_name" content="%s">%s', esc_attr( 'Tuk' ), "\n" );
+			printf( '<meta property="og:site_name" content="%s">%s', esc_attr( 'pep.ma' ), "\n" );
 			printf( '<meta property="og:locale" content="%s">%s', esc_attr( get_locale() ), "\n" );
 
 		if ( is_singular( PARTIKULIER_ESTATIK_POST_TYPE ) ) {
@@ -341,7 +341,7 @@ class Partikulier_SEO {
 			if ( ! $full ) {
 					$full = sprintf(
 							/* translators: %s: titre de l'annonce */
-							__( 'Découvrez %s, une annonce immobilière publiée gratuitement entre particuliers sur Tuk.', 'partikulier' ),
+							__( 'Découvrez %s, une annonce immobilière publiée gratuitement entre particuliers sur pep.ma.', 'partikulier' ),
 							get_the_title( $post )
 					);
 			}

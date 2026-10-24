@@ -12,6 +12,9 @@ Releases ship as a **plugin-theme** pair. Up to 2.10.8-6.20.7 they were tagged `
 
 ## [Unreleased]
 
+### Changed
+- Le nom public et le domaine affichés sont pep.ma. Le thème reste partikulier.
+
 ### Fixed
 - L'accueil du journal reprend la maquette acceptée : une, deux articles à côté, deux cartes avec photo. Pas la phrase de maquette « pas encore publiés ».
 - Les prix visibles s'écrivent en DH, avec une espace dans les milliers. Le nom public Tuk est aussi dans les balises, les fils et le JSON-LD. Les villes anglaises et arabes qui existent entrent dans le sitemap. La recette se ferme quand le mot de passe est posé hors du site.
