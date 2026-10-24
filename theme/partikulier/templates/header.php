@@ -34,7 +34,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 		<div class="pk-container pk-topbar-inner">
 				<span class="pk-topbar-promo"><?php echo esc_html( Partikulier_Customization::editorial( 'home_kicker', 'La plateforme immobilière entre particuliers' ) ); ?></span>
 				<div class="pk-topbar-contact">
-						<a href="<?php echo esc_url( pk_page_url( 'deposer', '/deposer/' ) ); ?>"><?php esc_html_e( 'Déposer une annonce', 'partikulier' ); ?></a>
 						<a href="<?php echo esc_url( pk_properties_archive_url() ); ?>"><?php esc_html_e( 'Toutes les annonces', 'partikulier' ); ?></a>
 						<?php if ( is_user_logged_in() ) : ?>
 								<a href="<?php echo esc_url( pk_page_url( 'mes-annonces', '/mes-annonces/' ) ); ?>"><?php esc_html_e( 'Mon espace', 'partikulier' ); ?></a>
@@ -205,7 +204,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 </nav>
 
 <nav class="pk-mobile-sticky-cta" aria-label="<?php echo esc_attr( Partikulier_Localization::translate_polylang_string( 'Actions rapides', 'Actions rapides', 'partikulier' ) ); ?>">
-	<a class="pk-btn pk-btn-primary" href="<?php echo esc_url( pk_page_url( 'deposer', '/deposer/' ) ); ?>"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Déposer une annonce', 'Déposer une annonce', 'partikulier' ) ); ?></a>
 	<a class="pk-btn pk-btn-light" href="<?php echo esc_url( pk_properties_archive_url() ); ?>"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Rechercher un bien', 'Rechercher un bien', 'partikulier' ) ); ?></a>
 </nav>
 
