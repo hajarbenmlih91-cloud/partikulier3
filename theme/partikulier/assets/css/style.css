@@ -60,7 +60,7 @@ html[dir="rtl"] [lang="ar"] {
 		--pk-ink: #161715;
 		--pk-dark: #0f100e;
 		--pk-text: #3d403b;
-		--pk-muted: #767a72;
+		--pk-muted: #5d615a;
 		--pk-card-bg: #f5f5f0;
 		--pk-line: #e6e5df;
 		--pk-white: #fffefa;
@@ -1187,7 +1187,7 @@ html[dir="rtl"] .pk-card-price {
 .pk-card-price-note {
 		font-size: .76rem;
 		font-weight: 500;
-		color: var(--pk-muted, #767676);
+		color: var(--pk-muted, #5d615a);
 }
 /* Les cases a cocher et boutons radio heritaient de .pk-field input{width:100%},
 	ce qui les etirait a 390px et provoquait un debordement horizontal de 41px
@@ -4323,7 +4323,7 @@ html[dir="rtl"] .pk-single-price-note { direction: rtl; unicode-bidi: isolate; }
 
 /* Charte rouge #de4141. L'ancienne charte cognac reste sur le tag pre-release-2.10.16-6.20.85. */
 body { background: #fff; }
-.pk-topbar { background: #de4141; color: #fff; }
+.pk-topbar { background: #c8242b; color: #fff; }
 .pk-topbar-promo, .pk-topbar-contact, .pk-topbar-contact a { color: #fff; background: transparent; }
 .pk-topbar-contact a:hover { color: #fff; }
 .pk-logo-text, .pk-logo-text:hover { color: #de4141; }
@@ -4352,8 +4352,8 @@ body { background: #fff; }
 .pk-editorial-hero h1 .pk-hero-accent, .pk-editorial-hero .pk-editorial-kicker { color: #c8242b; }
 .pk-editorial-hero__intro, .pk-editorial-hero .pk-editorial-search__hint, .pk-editorial-hero .pk-hero-trust, .pk-editorial-hero .pk-hero-trust li { color: #3d403b; }
 .pk-editorial-hero .pk-btn-light { background: #fff; color: #c8242b; border-color: #de4141; }
-.pk-editorial-hero .pk-btn-light:hover { background: #de4141; color: #fff; }
-.pk-btn-dark, .pk-btn-primary { background: #de4141; color: #fff; border-color: #de4141; }
+.pk-editorial-hero .pk-btn-light:hover { background: #c8242b; color: #fff; }
+.pk-btn-dark, .pk-btn-primary, .pk-btn-search, .pk-filter-apply { background: #c8242b; color: #fff; border-color: #c8242b; }
 .pk-btn-dark:hover, .pk-btn-primary:hover { background: #c8242b; border-color: #c8242b; color: #fff; }
 .pk-site-footer { background: #fff; color: #3d403b; border-top: 1px solid #e8e0e0; }
 .pk-footer-title, .pk-site-footer h3 { color: #161715; }
@@ -4485,7 +4485,7 @@ form.pk-search.pk-find {
 	margin: 0;
 	font-size: .72rem;
 	font-weight: 700;
-	color: #767a72;
+	color: #5d615a;
 	letter-spacing: 0;
 	text-transform: none;
 }
@@ -4504,7 +4504,7 @@ form.pk-search.pk-find {
 	box-shadow: none;
 }
 .pk-find input::placeholder {
-	color: #767a72 !important;
+	color: #5d615a !important;
 	font-weight: 500;
 	opacity: 1;
 }
@@ -4555,7 +4555,7 @@ html[dir="rtl"] .pk-find-field select { background-position: left .1rem center; 
 .pk-find-submit, .pk-find-results {
 	border: 0;
 	border-radius: 0;
-	background: #de4141;
+	background: #c8242b;
 	color: #fff;
 	font-family: inherit;
 	font-weight: 800;
@@ -4879,7 +4879,7 @@ html[dir="rtl"] body.home .pk-editorial-hero__inner {
 .pk-find-type-kicker {
 	margin: 0;
 	padding: .8rem 1rem .3rem;
-	color: #767a72;
+	color: #5d615a;
 	font-size: .72rem;
 	font-weight: 700;
 }
@@ -4997,7 +4997,7 @@ body:has(.pk-find-open:checked) {
 	font-weight: 800;
 	cursor: pointer;
 }
-.pk-find-close:hover, .pk-find-close:focus-visible { background: #de4141; color: #fff; }
+.pk-find-close:hover, .pk-find-close:focus-visible { background: #c8242b; color: #fff; }
 .pk-find-tabs { z-index: 53; }
 .pk-find:has(.pk-find-open:checked) .pk-find-tabs,
 .pk-find:has(.pk-find-open:checked) .pk-find-card {
@@ -5090,8 +5090,8 @@ body:has(.pk-find.is-type-open) .pk-card-action {
 }
 .pk-scroll-actions .pk-scroll-city:hover,
 .pk-scroll-actions .pk-scroll-city:focus-visible {
-	background: #de4141 !important;
-	border-color: #de4141;
+	background: #c8242b !important;
+	border-color: #c8242b;
 	color: #fff !important;
 }
 body:has(.pk-find-open:checked) .pk-scroll-actions,

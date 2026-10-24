@@ -14,6 +14,7 @@ Releases ship as a **plugin-theme** pair. Up to 2.10.8-6.20.7 they were tagged `
 
 ### Changed
 - Le nom public et le domaine affichés sont pep.ma. Le thème reste partikulier.
+- Le texte blanc des boutons et de la barre du haut est sur #c8242b. Le gris des métadonnées est #5d615a. Un seul bouton rouge « Déposer une annonce », celui du header. Une catégorie sans annonce ne s'affiche pas.
 
 ### Fixed
 - L'accueil du journal reprend la maquette acceptée : une, deux articles à côté, deux cartes avec photo. Pas la phrase de maquette « pas encore publiés ».
