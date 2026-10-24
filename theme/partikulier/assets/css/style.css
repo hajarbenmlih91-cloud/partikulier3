@@ -56,7 +56,7 @@ html[dir="rtl"] [lang="ar"] {
 			ont ete fusionnes ici : ils se contredisaient et le rendu dependait
 			de l'ordre de cascade au lieu d'une intention de design. */
 		--pk-primary: #de4141;
-		--pk-primary-dark: #c8242b;
+		--pk-primary-dark: #6515A0;
 		--pk-ink: #161715;
 		--pk-dark: #0f100e;
 		--pk-text: #3d403b;
@@ -65,7 +65,7 @@ html[dir="rtl"] [lang="ar"] {
 		--pk-line: #e6e5df;
 		--pk-white: #fffefa;
 		--pk-sand: #e8e4db;
-		--pk-hero-accent: #c8242b;
+		--pk-hero-accent: #6515A0;
 		--pk-sage: #dfe6de;
 		--pk-radius: 0;
 		--pk-shadow-sm: 0 5px 16px rgba(22, 23, 21, .07);
@@ -948,7 +948,7 @@ html[dir="rtl"] .pk-card-price {
 .pk-editorial-search { width: min(100%, 780px); margin-top: .4rem; }
 .pk-editorial-search .pk-search { box-shadow: 0 12px 34px rgba(0,0,0,.18); }
 .pk-editorial-section { padding: clamp(4rem, 8vw, 7.5rem) 0; background: #fff; }
-.pk-editorial-section--tint { background: #f4f4f0; }
+.pk-editorial-section--tint { background: #F4EDFE; }
 .pk-editorial-section--featured { background: #f8f7f3; }
 .pk-editorial-heading { max-width: 680px; margin: 0 0 2.4rem; }
 .pk-editorial-heading h2, .pk-editorial-rental h2, .pk-editorial-places h2, .pk-editorial-region-band h2 { margin: 0 0 .7rem; color: var(--pk-ink); font-size: clamp(2rem, 4vw, 3.4rem); line-height: 1.02; letter-spacing: -.035em; }
@@ -3581,7 +3581,7 @@ html:not([dir="rtl"]) .pk-editorial-hero h1 .pk-hero-accent,
 	font-family: "Instrument Serif", Georgia, serif;
 	font-style: italic;
 	font-weight: 400;
-	color: #c8242b;
+	color: #6515A0;
 }
 
 .es-powered { display: none !important; }
@@ -4323,7 +4323,7 @@ html[dir="rtl"] .pk-single-price-note { direction: rtl; unicode-bidi: isolate; }
 
 /* Charte rouge #de4141. L'ancienne charte cognac reste sur le tag pre-release-2.10.16-6.20.85. */
 body { background: #fff; }
-.pk-topbar { background: #c8242b; color: #fff; }
+.pk-topbar { background: #6515A0; color: #fff; }
 .pk-topbar-promo, .pk-topbar-contact, .pk-topbar-contact a { color: #fff; background: transparent; }
 .pk-topbar-contact a:hover { color: #fff; }
 .pk-logo-text, .pk-logo-text:hover { color: #de4141; }
@@ -4338,7 +4338,7 @@ body { background: #fff; }
 	line-height: 1;
 	vertical-align: 1px;
 }
-.pk-editorial-kicker { color: #c8242b; }
+.pk-editorial-kicker { color: #6515A0; }
 .pk-editorial-hero {
 	position: relative;
 	min-height: 0;
@@ -4349,28 +4349,28 @@ body { background: #fff; }
 .pk-editorial-hero__media, .pk-editorial-hero__veil { display: none; }
 .pk-editorial-hero__inner { position: relative; z-index: 2; padding-top: 2.2rem; padding-bottom: 2.4rem; }
 .pk-editorial-hero h1, .pk-editorial-hero h1 .pk-hero-accent { color: #161715; }
-.pk-editorial-hero h1 .pk-hero-accent, .pk-editorial-hero .pk-editorial-kicker { color: #c8242b; }
+.pk-editorial-hero h1 .pk-hero-accent, .pk-editorial-hero .pk-editorial-kicker { color: #6515A0; }
 .pk-editorial-hero__intro, .pk-editorial-hero .pk-editorial-search__hint, .pk-editorial-hero .pk-hero-trust, .pk-editorial-hero .pk-hero-trust li { color: #3d403b; }
-.pk-editorial-hero .pk-btn-light { background: #fff; color: #c8242b; border-color: #de4141; }
-.pk-editorial-hero .pk-btn-light:hover { background: #c8242b; color: #fff; }
-.pk-btn-dark, .pk-btn-primary, .pk-btn-search, .pk-filter-apply { background: #c8242b; color: #fff; border-color: #c8242b; }
-.pk-btn-dark:hover, .pk-btn-primary:hover { background: #c8242b; border-color: #c8242b; color: #fff; }
+.pk-editorial-hero .pk-btn-light { background: #fff; color: #6515A0; border-color: #de4141; }
+.pk-editorial-hero .pk-btn-light:hover { background: #6515A0; color: #fff; }
+.pk-btn-dark, .pk-btn-primary, .pk-btn-search, .pk-filter-apply { background: #6515A0; color: #fff; border-color: #6515A0; }
+.pk-btn-dark:hover, .pk-btn-primary:hover { background: #6515A0; border-color: #6515A0; color: #fff; }
 .pk-site-footer { background: #fff; color: #3d403b; border-top: 1px solid #e8e0e0; }
 .pk-footer-title, .pk-site-footer h3 { color: #161715; }
 .pk-footer-about, .pk-site-footer a, .pk-site-footer li, .pk-site-footer p { color: #3d403b; }
-.pk-site-footer a:hover { color: #c8242b; }
+.pk-site-footer a:hover { color: #6515A0; }
 .pk-editorial-region-band { background: #de4141; color: #fff; }
 .pk-editorial-region-band h2, .pk-editorial-region-band a, .pk-editorial-region-band .pk-editorial-kicker { color: #fff !important; }
 .pk-editorial-section--rental, .pk-editorial-rental { background: #de4141; color: #fff; }
 .pk-editorial-section--rental .pk-editorial-kicker, .pk-editorial-section--rental .pk-editorial-rental h2, .pk-editorial-section--rental .pk-editorial-rental p { color: #fff; }
 .pk-editorial-rental .pk-btn, .pk-editorial-rental .pk-btn:hover { background: #fff; color: #de4141; border-color: #fff; }
 .pk-editorial-type { background: #de4141; color: #fff; border: 1px solid #de4141; }
-.pk-editorial-type:hover { background: #c8242b; color: #fff; border-color: #c8242b; }
+.pk-editorial-type:hover { background: #6515A0; color: #fff; border-color: #6515A0; }
 .pk-editorial-type .pk-editorial-type__icon, .pk-editorial-type strong, .pk-editorial-type small, .pk-editorial-type:hover .pk-editorial-type__icon, .pk-editorial-type:hover strong, .pk-editorial-type:hover small { color: #fff; }
-.pk-card-badge.pk-badge-louer, .pk-card-badge.pk-badge-rent, .pk-card-badge.pk-badge-a-louer { background: #fff; color: #c8242b; }
-a:hover { color: #c8242b; }
+.pk-card-badge.pk-badge-louer, .pk-card-badge.pk-badge-rent, .pk-card-badge.pk-badge-a-louer { background: #fff; color: #6515A0; }
+a:hover { color: #6515A0; }
 .pk-menu-item > a, .pk-menu-item.pk-current > a, .pk-card-title a, .pk-card-cta-top, .pk-editorial-link, a.pk-editorial-link, .pk-editorial-place-list a { color: #161715; }
-.pk-menu-item > a:hover, .pk-menu-item.pk-current > a:hover, .pk-submenu .pk-menu-item > a:hover, .pk-menu-mobile .pk-menu-item > a:hover, .pk-card-title a:hover, .pk-card-cta-top:hover, .pk-editorial-link:hover, a.pk-editorial-link:hover, .pk-editorial-place-list a:hover, .pk-footer-links a:hover, .pk-footer-contact a:hover, .pk-site-footer a:hover, .pk-breadcrumb a:hover, .pk-filter-list a:hover, .pk-header-icon:hover, .pk-card-action:hover, .pk-pagination-list li a:hover { color: #c8242b; }
+.pk-menu-item > a:hover, .pk-menu-item.pk-current > a:hover, .pk-submenu .pk-menu-item > a:hover, .pk-menu-mobile .pk-menu-item > a:hover, .pk-card-title a:hover, .pk-card-cta-top:hover, .pk-editorial-link:hover, a.pk-editorial-link:hover, .pk-editorial-place-list a:hover, .pk-footer-links a:hover, .pk-footer-contact a:hover, .pk-site-footer a:hover, .pk-breadcrumb a:hover, .pk-filter-list a:hover, .pk-header-icon:hover, .pk-card-action:hover, .pk-pagination-list li a:hover { color: #6515A0; }
 .pk-btn:hover, .pk-btn-primary:hover, .pk-btn-dark:hover, .pk-card-cta:hover, .pk-editorial-hero .pk-btn-light:hover, .pk-editorial-hero .pk-btn-primary:hover { color: #fff; }
 .pk-topbar a, .pk-topbar a:hover, .pk-editorial-region-band a, .pk-editorial-region-band a:hover { color: #fff; }
 .pk-editorial-feature { display: block; position: relative; min-height: 0 !important; height: auto; overflow: visible; background: transparent; color: #fff; }
@@ -4555,7 +4555,7 @@ html[dir="rtl"] .pk-find-field select { background-position: left .1rem center; 
 .pk-find-submit, .pk-find-results {
 	border: 0;
 	border-radius: 0;
-	background: #c8242b;
+	background: #6515A0;
 	color: #fff;
 	font-family: inherit;
 	font-weight: 800;
@@ -4566,7 +4566,7 @@ html[dir="rtl"] .pk-find-field select { background-position: left .1rem center; 
 	padding: 0 1.15rem;
 	font-size: 1rem;
 }
-.pk-find-submit:hover, .pk-find-results:hover { background: #c8242b; color: #fff; }
+.pk-find-submit:hover, .pk-find-results:hover { background: #6515A0; color: #fff; }
 .pk-find-submit:focus-visible, .pk-find-results:focus-visible { outline: 2px solid #161715; outline-offset: 2px; }
 
 .pk-find-panel {
@@ -4997,7 +4997,7 @@ body:has(.pk-find-open:checked) {
 	font-weight: 800;
 	cursor: pointer;
 }
-.pk-find-close:hover, .pk-find-close:focus-visible { background: #c8242b; color: #fff; }
+.pk-find-close:hover, .pk-find-close:focus-visible { background: #6515A0; color: #fff; }
 .pk-find-tabs { z-index: 53; }
 .pk-find:has(.pk-find-open:checked) .pk-find-tabs,
 .pk-find:has(.pk-find-open:checked) .pk-find-card {
@@ -5090,8 +5090,8 @@ body:has(.pk-find.is-type-open) .pk-card-action {
 }
 .pk-scroll-actions .pk-scroll-city:hover,
 .pk-scroll-actions .pk-scroll-city:focus-visible {
-	background: #c8242b !important;
-	border-color: #c8242b;
+	background: #6515A0 !important;
+	border-color: #6515A0;
 	color: #fff !important;
 }
 body:has(.pk-find-open:checked) .pk-scroll-actions,
