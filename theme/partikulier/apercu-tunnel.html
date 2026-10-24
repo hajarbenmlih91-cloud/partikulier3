@@ -3209,6 +3209,21 @@ function pkArLit(t) {
   if (m) return "الدفع يتم عند الحصاد، آخر الموسم.";
   m = n.match(/^L'électricité n'est pas raccordée\.?$/);
   if (m) return "الكهرباء: غير مربوط.";
+  m = n.match(/^(Elle|Il) compte ([0-9 \u00A0]+) chambres et ([0-9 \u00A0]+) suites?\.?$/);
+  if (m) {
+    var rooms = String(m[2]).replace(/[\s\u00A0]/g, "") === "1" ? "غرفة" : num(m[2]) + " غرف";
+    var suites = String(m[3]).replace(/[\s\u00A0]/g, "") === "1" ? "جناح واحد" : num(m[3]) + " أجنحة";
+    return (m[1] === "Elle" ? "تتكون من " : "يتكون من ") + rooms + " و" + suites + ".";
+  }
+  m = n.match(/^(Elle|Il) compte ([0-9 \u00A0]+) suites?\.?$/);
+  if (m) {
+    var oneSuite = String(m[2]).replace(/[\s\u00A0]/g, "") === "1";
+    return (m[1] === "Elle" ? "تتكون من " : "يتكون من ") + (oneSuite ? "جناح واحد." : num(m[2]) + " أجنحة.");
+  }
+  m = n.match(/^Il est sur 1 niveau\.?$/);
+  if (m) return "هو على طابق واحد.";
+  m = n.match(/^Le code de zone est (.+)\.?$/);
+  if (m) return dot("رمز المنطقة هو " + tail(m[1]));
   m = n.match(/^Deux places de parking sont attribuées\.?$/);
   if (m) return "تم تخصيص 2 مواقف.";
   m = n.match(/^([0-9 \u00A0]+) places de parking sont attribuées\.?$/);
@@ -3239,7 +3254,7 @@ function pkArMeubleMark(head, src) {
   var furnished = /meublée|meublé/.test(src);
   var empty = / vide/.test(src) && !furnished;
   var fem = /شقة|فيلا/.test(head);
-  if (furnished) return fem ? " مفروشة" : " مفروش";
+  if (furnished) { if (/مفروش/.test(head)) return ""; return fem ? " مفروشة" : " مفروش"; }
   if (empty) return fem ? " غير مفروشة" : " خاوي";
   return "";
 }
@@ -3307,8 +3322,21 @@ function pkArLine(s) {
   }
   return "";
 }
+function pkArAccordAppart(t) {
+  if (!/(?:^|[.!?\s])Appartement\./.test(t)) return t;
+  return String(t)
+    .replace(/\bIl est de standing économique/g, "Elle est de standing économique")
+    .replace(/\bIl est de moyen standing/g, "Elle est de moyen standing")
+    .replace(/\bIl est de haut standing/g, "Elle est de haut standing")
+    .replace(/\bIl est au rez-de-chaussée/g, "Elle est au rez-de-chaussée")
+    .replace(/\bIl est de plain-pied/g, "Elle est de plain-pied")
+    .replace(/\bIl est au 1er étage/g, "Elle est au 1er étage")
+    .replace(/\bIl est au ([0-9]+)e étage/g, "Elle est au $1e étage")
+    .replace(/\bIl occupe /g, "Elle occupe ");
+}
 function pkArText(t) {
   if (PK_LANG !== "ar") return "";
+  t = pkArAccordAppart(t);
   var fin = "Annonce de particulier à particulier. Le contact se fait directement avec le propriétaire, sans commission ni intermédiaire.";
   if (PK_AR[fin] && t.indexOf(fin) !== -1) t = t.split(fin).join(PK_AR[fin]);
   var parts = t.split(/(?<=[.!?])\s+/);
@@ -3996,6 +4024,8 @@ function pkEnPattern(s) {
   if (m) return "That is " + pkEnNum(m[1]) + " DH per m² of living area per month.";
   m = n.match(new RegExp("^Soit " + num + " DH par hectare et par an$"));
   if (m) return "That is " + pkEnNum(m[1]) + " DH per hectare per year.";
+  m = n.match(new RegExp("^Soit " + num + " DH par hectare$"));
+  if (m) return "That is " + pkEnNum(m[1]) + " DH per hectare.";
   m = n.match(new RegExp("^Les frais de syndic s'élèvent à " + num + " DH par mois$"));
   if (m) return "Building fees are " + pkEnNum(m[1]) + " DH per month.";
   m = n.match(new RegExp("^Les charges de syndic de " + num + " DH par mois sont incluses dans le loyer$"));
@@ -4182,6 +4212,18 @@ function pkEnPattern(s) {
   if (m) return "It has " + m[1] + " trees.";
   m = n.match(/^L'irrigation est incluse dans le loyer$/);
   if (m) return "Irrigation is included in the rent.";
+  m = n.match(/^Il y a maison de gardien$/);
+  if (m) return "A caretaker's lodge is on site.";
+  m = n.match(/^Il y a villa$/);
+  if (m) return "A villa is on site.";
+  m = n.match(/^Le cadre est : (.+)$/);
+  if (m) { var cadre = pkEnGloss(m[1]); if (cadre) cadre = cadre.charAt(0).toLowerCase() + cadre.slice(1); return "The setting is: " + cadre + "."; }
+  m = n.match(/^Le zonage indiqué est la zone D, villas$/);
+  if (m) return "The stated zoning is zone D, villas.";
+  m = n.match(/^Les niveaux autorisés sont : (.+)$/);
+  if (m) { var lv = pkEnGloss(m[1]); if (lv) lv = lv.charAt(0).toLowerCase() + lv.slice(1); return "The permitted levels are: " + lv + "."; }
+  m = n.match(/^Le code de zone est (.+)$/);
+  if (m) return "The zone code is " + pkEnGloss(m[1]) + ".";
   m = n.match(/^Le loyer est payable annuellement d'avance$/);
   if (m) return "The rent is payable one year in advance.";
   m = n.match(/^Le paiement est mensuel ou trimestriel$/);
@@ -5620,7 +5662,7 @@ function pkFr(el) {
     if (val("bu-type") === "entier") {
       var nEtages = nombreVilla("bu-niveaux");
       if (!nEtages) return "";
-      return nEtages === 1 ? "Il est sur 1 niveau." : "Il est sur " + nEtages + " niveaux.";
+      return nEtages === 1 ? "Il est sur un niveau." : "Il est sur " + nEtages + " niveaux.";
     }
     var btn = document.querySelector("#bu-etage [aria-pressed='true']");
     if (!btn) return "";
@@ -6641,7 +6683,9 @@ function pkFr(el) {
       if (age) add("Les plantations sont " + age + ".");
       pucesDans("fe-agrements").forEach(function (puce) { add(puce + "."); });
       var hab = choisi("fe-habitation");
-      if (hab) add("Il y a " + hab.replace("avec ", "") + ".");
+      if (hab === "avec maison de gardien") add("Une maison de gardien est sur place.");
+      else if (hab === "avec villa") add("Une villa est sur place.");
+      else if (hab) add("Il y a " + hab.replace("avec ", "") + ".");
       pucesDans("fe-batis").forEach(function (puce) { add(puce === "Piscine" ? "Il y a une piscine." : puce + "."); });
       if (!venteOn()) {
         var bail = choisi("fe-bail");
