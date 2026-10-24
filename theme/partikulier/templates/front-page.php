@@ -52,9 +52,7 @@ get_header();
 		<div class="pk-editorial-hero__copy">
 			<p class="pk-editorial-kicker"><?php echo esc_html( Partikulier_Customization::editorial( 'home_kicker', 'La plateforme immobilière entre particuliers' ) ); ?></p>
 			<h1><?php
-			// Le preview React scinde l'accroche : 1re ligne blanche sans-serif,
-			// 2e ligne en italique serif sable. On coupe sur le dernier segment
-			// pour rester fidele sans imposer de balisage au texte administrable.
+			// Le titre se coupe sur le dernier segment. L'accent est en rouge sombre.
 			$pk_parts = preg_split( '/\s+/', trim( (string) $tagline ) );
 			if ( count( $pk_parts ) > 2 ) {
 				$pk_tail = implode( ' ', array_slice( $pk_parts, -2 ) );
