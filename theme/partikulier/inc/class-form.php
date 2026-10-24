@@ -903,7 +903,7 @@ class Partikulier_Form {
 					$verification = Partikulier_WhatsApp_Verification::pending_payload( $post_id );
 					$message      = sprintf(
 							/* translators: 1: nom, 2: lien WhatsApp, 3: code de vérification */
-							__( "Bonjour %1\$s,\n\nVotre demande de publication est enregistrée mais reste en attente de validation. Ouvrez WhatsApp et envoyez le message préparé :\n%2\$s\n\nVotre code de rapprochement : %3\$s\n\nL’équipe Tuk", 'partikulier' ),
+							__( "Bonjour %1\$s,\n\nVotre demande de publication est enregistrée mais reste en attente de validation. Ouvrez WhatsApp et envoyez le message préparé :\n%2\$s\n\nVotre code de rapprochement : %3\$s\n\nL’équipe pep.ma", 'partikulier' ),
 							$user->display_name,
 							$verification['url'],
 							$verification['code']

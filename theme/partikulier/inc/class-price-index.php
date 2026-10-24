@@ -2,7 +2,7 @@
 /**
  * Prix au mètre carré, calculé et non publié tant que l'interrupteur est fermé.
  *
- * Moyenne des annonces Tuk publiées dans les 3 derniers mois et dans les 6
+ * Moyenne des annonces pep.ma publiées dans les 3 derniers mois et dans les 6
  * derniers mois. Chaque ligne sépare la transaction, le type, la ville et,
  * s'il existe, le quartier. Pas de médiane. Pas de seuil. Les annonces de
  * démonstration et les fiches sans prix ou sans surface ne comptent pas.

@@ -4,7 +4,7 @@
  *
  * Nom, e-mail, message, case dont la phrase vient des pages légales.
  * L’arabe de cette phrase n’est pas écrit : sur une page arabe, elle reste
- * le français, marqué comme français. Le message part à contact@tuk.ma.
+ * le français, marqué comme français. Le message part à contact@pep.ma.
  * Il n’est pas enregistré dans WordPress.
  *
  * @package Partikulier
@@ -18,9 +18,9 @@ class Partikulier_Contact {
 
 	const ACTION = 'pk_site_contact';
 
-	const CONSENT_FR = 'J’accepte que Tuk utilise ce message pour me répondre.';
+	const CONSENT_FR = 'J’accepte que pep.ma utilise ce message pour me répondre.';
 
-	const CONSENT_EN = 'I agree that Tuk may use this message to reply to me.';
+	const CONSENT_EN = 'I agree that pep.ma may use this message to reply to me.';
 
 	public static function init() {
 		add_action( 'admin_post_' . self::ACTION, array( __CLASS__, 'handle' ) );
@@ -154,7 +154,7 @@ class Partikulier_Contact {
 
 		$body = "Nom: {$name}\nE-mail: {$email}\n\n{$message}\n\n" . self::CONSENT_FR . "\n";
 		$sent = wp_mail(
-			'contact@tuk.ma',
+			'contact@pep.ma',
 			'Message de contact',
 			$body,
 			array(

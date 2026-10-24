@@ -208,7 +208,7 @@ class Partikulier_JSONLD {
 			}
 			$listing['publisher'] = array(
 					'@type' => 'Organization',
-					'name'  => 'Tuk',
+					'name'  => 'pep.ma',
 					'url'   => home_url( '/' ),
 			);
 
@@ -280,7 +280,7 @@ class Partikulier_JSONLD {
 				'@type'           => 'WebSite',
 				'@id'             => $home . '#website',
 				'url'             => $home,
-				'name'            => 'Tuk',
+				'name'            => 'pep.ma',
 					'description'     => get_bloginfo( 'description' ),
 					'inLanguage'      => get_locale(),
 					'potentialAction' => array(
@@ -303,7 +303,7 @@ class Partikulier_JSONLD {
 				'@type'        => 'RealEstateAgent',
 				'@id'          => $home . '#organization',
 				'url'          => $home,
-				'name'         => 'Tuk',
+				'name'         => 'pep.ma',
 					'sameAs'       => array(),
 					'contactPoint' => array(
 							'@type'             => 'ContactPoint',
@@ -348,7 +348,7 @@ class Partikulier_JSONLD {
 		 */
 	public static function build_breadcrumbs() {
 			$home   = function_exists( 'pk_localized_home_url' ) ? pk_localized_home_url() : home_url( '/' );
-			$crumbs = array( array( 'name' => 'Tuk', 'url' => $home ) );
+			$crumbs = array( array( 'name' => 'pep.ma', 'url' => $home ) );
 
 		if ( is_singular( PARTIKULIER_ESTATIK_POST_TYPE ) ) {
 				$post      = get_queried_object();

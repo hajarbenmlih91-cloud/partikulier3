@@ -25,7 +25,7 @@ $date  = ( $lead && class_exists( 'Partikulier_Journal' ) ) ? Partikulier_Journa
 	<header class="pk-journal-mast">
 		<div class="pk-journal-brandline">
 			<a class="pk-journal-brand" href="<?php echo esc_url( $home ); ?>">
-				<img class="pk-logo-img" src="<?php echo esc_url( get_theme_file_uri( 'assets/img/tuk-ma.png' ) ); ?>" alt="tuk.ma" width="97" height="48">
+				<img class="pk-logo-img" src="<?php echo esc_url( get_theme_file_uri( 'assets/img/pep-ma.png' ) ); ?>" alt="pep.ma" width="217" height="87">
 				<span class="pk-journal-word">Journal</span>
 			</a>
 			<?php if ( $date ) : ?>
