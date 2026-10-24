@@ -3575,13 +3575,13 @@ html:not([dir="rtl"]) em {
 	font-weight: 400;
 	color: var(--pk-primary);
 }
-/* Hero : même sable que le kicker « Annonces 100%… », pas le rouge. */
+/* Hero : « entre particuliers. » en rouge sombre, lisible sur le blanc. */
 html:not([dir="rtl"]) .pk-editorial-hero h1 .pk-hero-accent,
 .pk-editorial-hero h1 .pk-hero-accent {
 	font-family: "Instrument Serif", Georgia, serif;
 	font-style: italic;
 	font-weight: 400;
-	color: #ead8c2;
+	color: #c8242b;
 }
 
 .es-powered { display: none !important; }
