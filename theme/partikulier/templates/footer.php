@@ -99,7 +99,7 @@ if ( class_exists( 'Partikulier_Localization' ) ) {
 <div class="pk-lang-gate" data-pk-lang-gate hidden>
 	<div class="pk-lang-gate-card" role="dialog" aria-modal="true" aria-labelledby="pk-lang-gate-title">
 		<button type="button" class="pk-lang-gate-close" data-pk-lang-dismiss aria-label="<?php echo esc_attr( class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_polylang_string( 'Fermer', 'Fermer', 'partikulier' ) : __( 'Fermer', 'partikulier' ) ); ?>">×</button>
-		<p class="pk-lang-gate-kicker" aria-hidden="true"><img class="pk-logo-img" src="<?php echo esc_url( get_theme_file_uri( 'assets/img/pep-ma.png' ) ); ?>" alt="" width="217" height="87"></p>
+		<p class="pk-lang-gate-kicker" aria-hidden="true"><img class="pk-logo-img" src="<?php echo esc_url( get_theme_file_uri( 'assets/img/pep-ma.png' ) ); ?>" alt="" width="1300" height="549"></p>
 		<p id="pk-lang-gate-title" class="pk-lang-gate-title"><span lang="fr">Bienvenue</span> · <span lang="ar">مرحباً</span> · <span lang="en">Welcome</span></p>
 		<p class="pk-lang-gate-sub"><span lang="fr">Choisissez votre langue</span> · <span lang="ar">اختر لغتك</span> · <span lang="en">Choose your language</span></p>
 		<div class="pk-lang-gate-actions">
