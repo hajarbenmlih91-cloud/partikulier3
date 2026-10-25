@@ -212,15 +212,16 @@ $pk_clear = '' !== $pk_intent ? add_query_arg( 'pk_intent', $pk_intent, $archive
 $pk_city_placeholder = class_exists( 'Partikulier_Localization' )
 	? Partikulier_Localization::translate_polylang_string( 'Ville, quartier…', 'Ville, quartier…', 'partikulier' )
 	: 'Ville, quartier…';
+$pk_season_label = ( 'fr' === $pk_find_lang ) ? 'Location saisonnière' : $pk_t( 'Saisonnière' );
 ?>
 <form class="pk-search pk-search-<?php echo esc_attr( $variant ); ?> pk-find" action="<?php echo esc_url( $archive ); ?>" method="get" role="search" data-pk-live="<?php echo esc_attr( $variant ); ?>" aria-label="<?php echo esc_attr( $pk_t( 'Rechercher' ) ); ?>">
-	<div class="pk-find-tabs" role="radiogroup" aria-label="<?php echo esc_attr( $pk_t( 'À vendre' ) . ' / ' . $pk_t( 'À louer' ) . ' / ' . $pk_t( 'Saisonnière' ) ); ?>">
+	<div class="pk-find-tabs" role="radiogroup" aria-label="<?php echo esc_attr( $pk_t( 'À vendre' ) . ' / ' . $pk_t( 'À louer' ) . ' / ' . $pk_season_label ); ?>">
 		<input class="screen-reader-text pk-find-tab-input" type="radio" name="pk_intent" id="pk-find-sale" value="a-vendre" <?php checked( $pk_intent, 'a-vendre' ); ?>>
 		<label class="pk-find-tab" for="pk-find-sale"><?php echo esc_html( $pk_t( 'À vendre' ) ); ?></label>
 		<input class="screen-reader-text pk-find-tab-input" type="radio" name="pk_intent" id="pk-find-rent" value="a-louer" <?php checked( $pk_intent, 'a-louer' ); ?>>
 		<label class="pk-find-tab" for="pk-find-rent"><?php echo esc_html( $pk_t( 'À louer' ) ); ?></label>
 		<input class="screen-reader-text pk-find-tab-input" type="radio" name="pk_intent" id="pk-find-season" value="saisonnier" <?php checked( $pk_intent, 'saisonnier' ); ?>>
-		<label class="pk-find-tab" for="pk-find-season"><?php echo esc_html( $pk_t( 'Saisonnière' ) ); ?></label>
+		<label class="pk-find-tab" for="pk-find-season"><?php echo esc_html( $pk_season_label ); ?></label>
 	</div>
 	<input type="hidden" name="es_action" value="<?php echo esc_attr( $pk_action_value ); ?>">
 	<input type="hidden" name="pk_rent" value="<?php echo esc_attr( $pk_rent_value ); ?>">

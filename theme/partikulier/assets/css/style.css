@@ -5473,3 +5473,11 @@ body.home .pk-editorial-section--tint .pk-editorial-heading,
 body.home .pk-editorial-section--featured .pk-editorial-heading {
 	margin-bottom: 1.25rem;
 }
+
+/* 6.20.119 — Les dernières annonces a la même taille que le titre de l'annonce à la une. */
+body.home .pk-editorial-section--tint .pk-editorial-heading h2 {
+	font-size: clamp(2rem, 4vw, 3.4rem);
+	line-height: 1.02;
+	letter-spacing: -.035em;
+	margin: 0 0 .7rem;
+}
