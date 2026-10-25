@@ -400,34 +400,94 @@ if ( ! function_exists( 'pk_card_fact_line' ) ) {
 			}
 			return implode( ' · ', array_filter( $bits ) );
 		}
-		if ( 'terrain' === $slug ) {
+		$commercial = array( 'local', 'local-commercial', 'commerce', 'bureau', 'bureaux', 'entrepot', 'depot', 'hangar' );
+		if ( in_array( $slug, $commercial, true ) ) {
+			$kind = pk_card_commercial_kind( $post_id, $slug );
+			if ( $kind ) {
+				array_unshift( $bits, $kind );
+			}
+			return implode( ' · ', array_filter( $bits ) );
+		}
+		if ( in_array( $slug, array( 'terrain', 'lot', 'ferme' ), true ) ) {
+			$nature = pk_card_lot_nature( $post_id, $slug );
+			if ( $nature ) {
+				$bits[] = $nature;
+			}
+			return implode( ' · ', array_filter( $bits ) );
+		}
+		if ( 'immeuble' === $slug ) {
+			if ( $levels ) {
+				$bits[] = $levels;
+			}
 			if ( $auth ) {
 				$bits[] = $auth;
 			}
 			return implode( ' · ', array_filter( $bits ) );
 		}
-		$with_levels = array( 'immeuble', 'bureau', 'bureaux', 'hangar', 'local', 'local-commercial', 'commerce' );
-		$with_auth = array( 'immeuble', 'terrain' );
-		if ( in_array( $slug, $with_levels, true ) && $levels ) {
-			$bits[] = $levels;
-		}
-		if ( in_array( $slug, $with_auth, true ) && $auth ) {
-			$bits[] = $auth;
-		}
-		if ( 'ferme' === $slug ) {
-			$exploit = pk_card_meta_first( $post_id, array( '_pk_exploitation' ) );
-			if ( $exploit ) {
-				$bits[] = $exploit;
-			}
-		}
-		if ( ! in_array( $slug, $residential, true ) && ! in_array( $slug, $with_levels, true ) && ! in_array( $slug, $with_auth, true ) && 'ferme' !== $slug && 'terrain' !== $slug ) {
-			if ( $auth ) {
-				$bits[] = $auth;
-			}
-			if ( $levels ) {
-				$bits[] = $levels;
-			}
-		}
 		return implode( ' · ', array_filter( $bits ) );
+	}
+}
+
+/**
+ * Nature du lot, dans la liste fermee. Champ vide : rien.
+ *
+ * @param int    $post_id Identifiant.
+ * @param string $slug    Slug.
+ * @return string
+ */
+if ( ! function_exists( 'pk_card_lot_nature' ) ) {
+	function pk_card_lot_nature( $post_id, $slug ) {
+		if ( 'ferme' === $slug ) {
+			return 'ferme';
+		}
+		$raw = pk_card_meta_first(
+			$post_id,
+			array( '_pk_lot_nature', '_pk_nature_lot', '_pk_nature', '_pk_lot_type', '_pk_lot_kind' )
+		);
+		$rplus = pk_card_meta_first( $post_id, array( '_pk_constructibilite', '_pk_rplus', '_pk_autorisation' ) );
+		$hay   = strtolower( $raw . ' ' . $rplus );
+		if ( preg_match( '/R\+\s*2/i', $raw . ' ' . $rplus ) && ( '' === $raw || false !== strpos( $hay, 'commerc' ) ) ) {
+			return 'R+2 commercial';
+		}
+		if ( preg_match( '/R\+\s*3/i', $raw . ' ' . $rplus ) && ( '' === $raw || false !== strpos( $hay, 'commerc' ) ) ) {
+			return 'R+3 commercial';
+		}
+		if ( false !== strpos( $hay, 'agric' ) ) {
+			return 'agricole';
+		}
+		if ( false !== strpos( $hay, 'industriel' ) ) {
+			return 'industriel';
+		}
+		if ( false !== strpos( $hay, 'ferme' ) ) {
+			return 'ferme';
+		}
+		return '';
+	}
+}
+
+/**
+ * Local commercial, bureau, entrepot ou hangar.
+ *
+ * @param int    $post_id Identifiant.
+ * @param string $slug    Slug.
+ * @return string
+ */
+if ( ! function_exists( 'pk_card_commercial_kind' ) ) {
+	function pk_card_commercial_kind( $post_id, $slug ) {
+		$bat = strtolower( pk_card_meta_first( $post_id, array( '_pk_batiment', '_pk_local_kind', '_pk_sous_type' ) ) );
+		$slug = sanitize_title( (string) $slug );
+		if ( 'hangar' === $slug || false !== strpos( $bat, 'hangar' ) ) {
+			return 'Hangar';
+		}
+		if ( in_array( $slug, array( 'bureau', 'bureaux' ), true ) ) {
+			return 'Bureau';
+		}
+		if ( in_array( $slug, array( 'entrepot', 'depot' ), true ) || false !== strpos( $bat, 'entrepot' ) || false !== strpos( $bat, 'depot' ) || false !== strpos( $bat, 'dépôt' ) ) {
+			return 'Entrepôt';
+		}
+		if ( in_array( $slug, array( 'local', 'local-commercial', 'commerce' ), true ) ) {
+			return 'Local commercial';
+		}
+		return '';
 	}
 }
