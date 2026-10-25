@@ -23,7 +23,11 @@ $existing = get_posts(
 	)
 );
 if ( $existing ) {
-	WP_CLI::success( 'démo déjà présente, skip' );
+	require_once __DIR__ . '/demo-facts.php';
+	if ( function_exists( 'pk_demo_apply_card_facts' ) ) {
+		pk_demo_apply_card_facts();
+	}
+	WP_CLI::success( 'démo déjà présente, faits de cartes mis à jour' );
 	return;
 }
 $msg = Partikulier_Demo_Installer::seed();
