@@ -161,6 +161,16 @@ class Partikulier_Tunnel_Preview {
 			status_header( 500 );
 			exit;
 		}
+		$pk_logo = esc_url( get_theme_file_uri( 'assets/img/pep-ma-blanc.png' ) );
+		$pk_html = preg_replace(
+			'#(<a class="pk-form-logo"[^>]*>\s*<img\s+src=")data:image/[^"]+(")#',
+			'$1' . $pk_logo . '$2',
+			$html,
+			1
+		);
+		if ( is_string( $pk_html ) ) {
+			$html = $pk_html;
+		}
 		$boot = '<script>window.PK_FORCE_LANG=' . wp_json_encode( self::document_lang() ) . ';</script>';
 		if ( false === strpos( $html, 'name="robots"' ) ) {
 			$html = preg_replace( '#<head>#', "<head>\n<meta name=\"robots\" content=\"noindex, nofollow\">\n" . $boot, $html, 1 );

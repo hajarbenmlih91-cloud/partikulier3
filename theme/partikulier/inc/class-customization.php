@@ -135,9 +135,9 @@ class Partikulier_Customization {
 	public static function defaults() {
 			return array(
 				'home_kicker'        => array(
-							'fr'         => 'La plateforme immobilière entre particuliers',
-													'en' => 'The real estate platform between private owners',
-										'ar' => 'المنصة العقارية بين المالكين',
+							'fr'         => 'La plateforme entre particuliers',
+													'en' => 'The platform between private owners',
+										'ar' => 'المنصة بين المالكين',
 									),
 				'home_title'         => array(
 							'fr'         => 'Vendez et louez entre particuliers.',
@@ -170,11 +170,36 @@ class Partikulier_Customization {
 			$current  = Partikulier_Settings::current_language();
 		foreach ( array_unique( array( $current, 'fr' ) ) as $language ) {
 				$value = $stored[ $key ][ $language ] ?? $values[ $language ] ?? $fallback;
+				$value = self::replace_retired_editorial( $key, $language, $value );
 			if ( '' !== trim( (string) $value ) ) {
 				return (string) $value;
 			}
 		}
 			return (string) $fallback;
+	}
+
+
+	/**
+	 * Ancienne formule du surtitre, si elle est encore enregistrée.
+	 *
+	 * @param string $key      Clé éditoriale.
+	 * @param string $language Langue.
+	 * @param mixed  $value    Valeur lue.
+	 * @return string
+	 */
+	private static function replace_retired_editorial( $key, $language, $value ) {
+		$retired = array(
+			'home_kicker' => array(
+				'fr' => array( 'La plateforme immobilière entre particuliers' => 'La plateforme entre particuliers' ),
+				'en' => array( 'The real estate platform between private owners' => 'The platform between private owners' ),
+				'ar' => array( 'المنصة العقارية بين المالكين' => 'المنصة بين المالكين' ),
+			),
+		);
+		$value = (string) $value;
+		if ( isset( $retired[ $key ][ $language ][ $value ] ) ) {
+			return $retired[ $key ][ $language ][ $value ];
+		}
+		return $value;
 	}
 
 	public static function get( $key, $fallback = '' ) {
