@@ -1,3 +1,16 @@
+function pkLimitTitle(value) {
+	var text = String(value || "").replace(/\s+/g, " ").trim();
+	if (text.length <= 160) {
+		return text;
+	}
+	var cut = text.slice(0, 160);
+	var space = cut.lastIndexOf(" ");
+	if (space >= 10) {
+		cut = cut.slice(0, space);
+	}
+	return cut.replace(/[\s,.;:\u2014-]+$/g, "");
+}
+
 /**
  * Parcours de depot d'annonce en 3 etapes.
  *
@@ -623,7 +636,7 @@
 				var p = data.data;
 
 				document.getElementById("pk-preview-kicker").textContent = p.kicker || "";
-				document.getElementById("pk-preview-title").textContent  = p.title || "";
+				document.getElementById("pk-preview-title").textContent  = pkLimitTitle(p.title || "");
 				document.getElementById("pk-preview-desc").textContent   = p.description || "";
 				document.getElementById("pk-preview-price").textContent  = p.price || "";
 
@@ -637,7 +650,7 @@
 
 				var titleField = document.getElementById("pk-title");
 				if (titleField && ! titleField.dataset.touched) {
-					titleField.value = p.title || "";
+					titleField.value = pkLimitTitle(p.title || "");
 				}
 				document.getElementById("pk-description").value = p.description || "";
 

@@ -1,3 +1,16 @@
+function pkLimitTitle(value) {
+	var text = String(value || "").replace(/\s+/g, " ").trim();
+	if (text.length <= 160) {
+		return text;
+	}
+	var cut = text.slice(0, 160);
+	var space = cut.lastIndexOf(" ");
+	if (space >= 10) {
+		cut = cut.slice(0, space);
+	}
+	return cut.replace(/[\s,.;:\u2014-]+$/g, "");
+}
+
 /**
  * Partikulier — scripts front-end.
  * Zero jQuery. ES6 natif, ~3 ko minifie.
@@ -313,7 +326,7 @@
 					var terrace          = terraceSelect && terraceSelect.value === "Oui"
 							? " avec terrasse" + (terraceSurfaceInput && terraceSurfaceInput.value ? " de " + terraceSurfaceInput.value + " m²" : "")
 							: "";
-					titleInput.value     = typeLabel + titleRoomLayout(type, bedrooms, livingRooms) + size + primaryAdvantage + terrace + " " + transaction + " à " + place;
+					titleInput.value     = pkLimitTitle(typeLabel + titleRoomLayout(type, bedrooms, livingRooms) + size + primaryAdvantage + terrace + " " + transaction + " à " + place);
 	}
 
 	if (titleInput) {

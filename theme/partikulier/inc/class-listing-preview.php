@@ -164,7 +164,16 @@ class Partikulier_Listing_Preview {
 			$title .= ' ' . sprintf( __( 'à %s', 'partikulier' ), $place );
 		}
 
-		return trim( preg_replace( '/\s+/u', ' ', $title ) );
+		$title = trim( preg_replace( '/\s+/u', ' ', $title ) );
+		if ( mb_strlen( $title ) > 160 ) {
+			$cut   = mb_substr( $title, 0, 160 );
+			$space = mb_strrpos( $cut, ' ' );
+			if ( false !== $space && $space >= 10 ) {
+				$cut = mb_substr( $cut, 0, $space );
+			}
+			$title = rtrim( $cut, " \t,.;:—-" );
+		}
+		return $title;
 	}
 
 	/**

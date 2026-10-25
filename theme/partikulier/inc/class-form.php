@@ -329,6 +329,8 @@ class Partikulier_Form {
 				$title = self::generate_listing_title( $type, $action, $city, $surface, $bedrooms_raw, $living_rooms_raw, $terrace, $terrace_surface, $vis_a_vis, $sunshine );
 		}
 
+		$title = self::limit_listing_title( $title );
+
 		if ( '' === $title || mb_strlen( $title ) < 10 ) {
 			return new WP_Error( 'title', __( 'Le titre doit contenir au moins 10 caractères.', 'partikulier' ) );
 		}
@@ -807,6 +809,25 @@ class Partikulier_Form {
 	private static function normalize_generated_title( $title ) {
 					$title = preg_replace( '/^Studio\s*(?:—|-|–)\s*Studio\b/ui', 'Studio', $title );
 					return preg_replace( '/^Studio\s+Studio\b/ui', 'Studio', $title );
+	}
+
+	/**
+	 * Le depot limite le titre a 160 caracteres. La carte reserve exactement cet espace.
+	 *
+	 * @param string $title Titre soumis ou genere.
+	 * @return string
+	 */
+	private static function limit_listing_title( $title ) {
+		$title = trim( preg_replace( '/\s+/u', ' ', (string) $title ) );
+		if ( mb_strlen( $title ) <= 160 ) {
+			return $title;
+		}
+		$cut   = mb_substr( $title, 0, 160 );
+		$space = mb_strrpos( $cut, ' ' );
+		if ( false !== $space && $space >= 10 ) {
+			$cut = mb_substr( $cut, 0, $space );
+		}
+		return rtrim( $cut, " \t,.;:—-" );
 	}
 
 				/**
