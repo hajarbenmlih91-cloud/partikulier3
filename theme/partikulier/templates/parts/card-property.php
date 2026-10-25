@@ -233,9 +233,21 @@ if ( $price ) {
 					<?php echo esc_html( $pk_plain_title ); ?>
 				</<?php echo esc_html( $pk_card_heading_tag ); ?>>
 				<p class="pk-card-facts">
-					<?php if ( $pk_fact_line ) : ?>
-						<span class="pk-card-fact-rest"><?php echo esc_html( $pk_fact_line ); ?></span>
-					<?php endif; ?>
+					<?php if ( $pk_fact_line ) :
+						$pk_fact_bits = preg_split( '/\s*·\s*/u', $pk_fact_line );
+						$pk_fact_bits = is_array( $pk_fact_bits ) ? array_values( array_filter( array_map( 'trim', $pk_fact_bits ), 'strlen' ) ) : array();
+						foreach ( $pk_fact_bits as $pk_fact_i => $pk_fact_bit ) :
+							if ( $pk_fact_i > 0 ) :
+								?>
+								<span class="pk-card-dot" aria-hidden="true">·</span>
+								<?php
+							endif;
+							?>
+							<span class="pk-card-fact"><?php echo esc_html( $pk_fact_bit ); ?></span>
+							<?php
+						endforeach;
+					endif;
+					?>
 				</p>
 				<div class="pk-card-foot">
 					<?php if ( $pk_city_label && $pk_city_url ) : ?>
