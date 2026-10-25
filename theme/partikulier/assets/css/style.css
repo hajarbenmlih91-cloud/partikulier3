@@ -5481,3 +5481,10 @@ body.home .pk-editorial-section--tint .pk-editorial-heading h2 {
 	letter-spacing: -.035em;
 	margin: 0 0 .7rem;
 }
+
+/* 6.20.120 — huit types de bien, deux rangées égales. */
+@media (min-width: 901px) {
+	body.home .pk-editorial-types {
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+	}
+}
