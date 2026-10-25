@@ -222,8 +222,8 @@ if ( $price ) {
 					}
 				}
 				$pk_plain_title = $pk_display_title;
-				if ( function_exists( 'mb_strlen' ) && mb_strlen( $pk_plain_title ) > 160 ) {
-					$pk_plain_title = mb_substr( $pk_plain_title, 0, 160 );
+				if ( function_exists( 'mb_strlen' ) && mb_strlen( $pk_plain_title ) > 120 ) {
+					$pk_plain_title = mb_substr( $pk_plain_title, 0, 120 );
 					$pk_title_space = mb_strrpos( $pk_plain_title, ' ' );
 					if ( false !== $pk_title_space && $pk_title_space >= 10 ) {
 						$pk_plain_title = mb_substr( $pk_plain_title, 0, $pk_title_space );

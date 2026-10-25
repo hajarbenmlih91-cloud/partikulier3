@@ -5983,3 +5983,14 @@ body .pk-grid-list .pk-card-title {
 body .pk-card-facts {
 	margin-top: 2px !important;
 }
+
+/* 6.20.132 — titre plafonne a 120 caracteres. Quatre lignes, pour que la 2e ligne reste alignee. */
+body .pk-card-title,
+body .pk-editorial-cards .pk-card-title,
+body .pk-archive-content .pk-card-title,
+body .pk-grid-list .pk-card-title {
+	height: 5.4em !important;
+	min-height: 5.4em !important;
+	max-height: 5.4em !important;
+	line-height: 1.35 !important;
+}

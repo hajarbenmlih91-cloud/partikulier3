@@ -663,7 +663,7 @@ $types = get_terms( array(
 										<label class="pk-label" for="pk-title">
 												<?php esc_html_e( 'Titre de l’annonce', 'partikulier' ); ?> <em class="pk-editable"><?php esc_html_e( 'modifiable', 'partikulier' ); ?></em>
 										</label>
-										<input type="text" id="pk-title" name="pk_title" maxlength="160" lang="<?php echo esc_attr( function_exists( 'pll_current_language' ) ? pll_current_language( 'locale' ) : get_locale() ); ?>" data-pk-free-text="1">
+										<input type="text" id="pk-title" name="pk_title" maxlength="120" lang="<?php echo esc_attr( function_exists( 'pll_current_language' ) ? pll_current_language( 'locale' ) : get_locale() ); ?>" data-pk-free-text="1">
 										<small class="pk-field-hint"><?php esc_html_e( 'Le titre est créé automatiquement à partir de vos réponses. Vous pouvez le modifier avant la validation.', 'partikulier' ); ?></small>
 								</div>
 

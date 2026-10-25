@@ -1,9 +1,9 @@
 function pkLimitTitle(value) {
 	var text = String(value || "").replace(/\s+/g, " ").trim();
-	if (text.length <= 160) {
+	if (text.length <= 120) {
 		return text;
 	}
-	var cut = text.slice(0, 160);
+	var cut = text.slice(0, 120);
 	var space = cut.lastIndexOf(" ");
 	if (space >= 10) {
 		cut = cut.slice(0, space);
