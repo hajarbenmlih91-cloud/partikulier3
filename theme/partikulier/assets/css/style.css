@@ -5488,3 +5488,34 @@ body.home .pk-editorial-section--tint .pk-editorial-heading h2 {
 		grid-template-columns: repeat(4, minmax(0, 1fr));
 	}
 }
+
+/* 6.20.121 — titre entier, une ligne de faits, ville cliquable. */
+.pk-card-title,
+.pk-editorial-cards .pk-card-title,
+.pk-grid-list .pk-card-title {
+	display: block;
+	min-height: 0;
+	padding-inline-end: 0;
+	overflow: visible;
+	-webkit-line-clamp: unset;
+	-webkit-box-orient: unset;
+}
+.pk-card-facts {
+	margin: .45rem 0 0;
+	color: var(--pk-text);
+	font-size: .84rem;
+	font-weight: 600;
+	line-height: 1.35;
+}
+.pk-card-city {
+	display: inline-flex;
+	align-items: center;
+	gap: .35rem;
+	min-width: 0;
+	color: var(--pk-primary);
+	font-size: .78rem;
+	font-weight: 700;
+	text-decoration: none;
+}
+.pk-card-city svg { flex: none; }
+.pk-card-city:hover { color: var(--pk-primary-dark); }

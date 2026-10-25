@@ -182,50 +182,42 @@ if ( $price ) {
 						</a>
 						</<?php echo esc_html( $pk_card_heading_tag ); ?>>
 				<?php
-				$pk_role       = get_post_meta( $property->ID, '_pk_owner_role', true );
-				$pk_role_label = Partikulier_Localization::translate_polylang_string( 'Propriétaire', 'Propriétaire', 'partikulier' );
+				$pk_type_slug = ( ! is_wp_error( $types ) && $types ) ? $types[0]->slug : '';
+				$pk_fact_line = function_exists( 'pk_card_fact_line' ) ? pk_card_fact_line( $property->ID, $pk_type_slug, $pk_language ) : '';
+				$pk_city_label = $location;
+				$pk_city_url   = '';
+				$pk_city_terms = get_the_terms( $property->ID, PARTIKULIER_ESTATIK_LOCATION_TAXONOMY );
+				if ( $pk_city_terms && ! is_wp_error( $pk_city_terms ) ) {
+					$pk_city_term = $pk_city_terms[0];
+					if ( $pk_language && function_exists( 'pll_get_term' ) ) {
+						$pk_city_translated_id = (int) pll_get_term( $pk_city_term->term_id, $pk_language );
+						if ( $pk_city_translated_id ) {
+							$pk_city_translated = get_term( $pk_city_translated_id, PARTIKULIER_ESTATIK_LOCATION_TAXONOMY );
+							if ( $pk_city_translated && ! is_wp_error( $pk_city_translated ) ) {
+								$pk_city_term = $pk_city_translated;
+							}
+						}
+					}
+					$pk_city_url = function_exists( 'pk_term_url' ) ? pk_term_url( $pk_city_term ) : get_term_link( $pk_city_term );
+					if ( is_wp_error( $pk_city_url ) ) {
+						$pk_city_url = '';
+					}
+					if ( ! $pk_city_label && isset( $pk_city_term->name ) ) {
+						$pk_city_label = class_exists( 'Partikulier_Listing_I18n' ) ? Partikulier_Listing_I18n::localized_place( $pk_city_term->name, $pk_language ) : $pk_city_term->name;
+					}
+				}
 				?>
-				<p class="pk-card-topline">
-						<?php if ( $location ) : ?>
-								<span class="pk-card-location" itemprop="address" itemscope itemtype="https://schema.org/PostalAddress">
-										<svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>
-										<span itemprop="addressLocality"><?php echo esc_html( $location ); ?></span>
-								</span>
-						<?php endif; ?>
-						<a class="pk-card-cta-top" href="<?php echo esc_url( $pk_property_url ); ?>">
-								<?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Voir l\'annonce', 'Voir l\'annonce', 'partikulier' ) ); ?> <span aria-hidden="true">&rarr;</span>
+				<?php if ( $pk_fact_line ) : ?>
+					<p class="pk-card-facts"><?php echo esc_html( $pk_fact_line ); ?></p>
+				<?php endif; ?>
+				<div class="pk-card-foot">
+					<?php if ( $pk_city_label && $pk_city_url ) : ?>
+						<a class="pk-card-city" href="<?php echo esc_url( $pk_city_url ); ?>">
+							<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>
+							<span itemprop="address" itemscope itemtype="https://schema.org/PostalAddress"><span itemprop="addressLocality"><?php echo esc_html( $pk_city_label ); ?></span></span>
 						</a>
-				</p>
-				<dl class="pk-card-meta">
-						<?php if ( $surface ) : ?>
-								<div class="pk-card-meta-item">
-<dt class="screen-reader-text"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Surface', 'Surface', 'partikulier' ) ); ?></dt>
-												<dd><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20 20 4"/><path d="M15 4h5v5"/><path d="M9 20H4v-5"/></svg><span><?php echo esc_html( number_format_i18n( (int) $surface ) . ' ' . Partikulier_Localization::translate_polylang_string( 'm²', 'm²', 'partikulier' ) ); ?></span></dd>
-								</div>
-						<?php endif; ?>
-						<?php if ( $composition ) : ?>
-										<div class="pk-card-meta-item pk-card-meta-item--rooms">
-												<dt class="screen-reader-text"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Composition', 'Composition', 'partikulier' ) ); ?></dt>
-										<dd><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 18v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6"/><path d="M3 18h18"/><path d="M7 10V7a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v3"/></svg><span><?php echo esc_html( $composition ); ?></span></dd>
-								</div>
-						<?php endif; ?>
-						<?php if ( $bathrooms ) : ?>
-								<div class="pk-card-meta-item">
-										<dt class="screen-reader-text"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Salles de bains', 'Salles de bains', 'partikulier' ) ); ?></dt>
-										<dd><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h16v3a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4z"/><path d="M7 12V6a2 2 0 0 1 4 0"/></svg><span><?php echo esc_html( $bathrooms ); ?></span></dd>
-								</div>
-						<?php endif; ?>
-						<?php if ( $terrace_label ) : ?>
-								<div class="pk-card-meta-item">
-										<dt class="screen-reader-text"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Terrasse', 'Terrasse', 'partikulier' ) ); ?></dt>
-										<dd><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 20h18"/><path d="M5 20V9l7-5 7 5v11"/></svg><span><?php echo esc_html( $terrace_label ); ?></span></dd>
-								</div>
-						<?php endif; ?>
-						<div class="pk-card-meta-item">
-								<dt class="screen-reader-text"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Type', 'Type', 'partikulier' ) ); ?></dt>
-								<dd><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M4 10h16"/></svg><span><?php echo esc_html( $type ); ?></span></dd>
-						</div>
-				</dl>
-				<div class="pk-card-foot"><span class="pk-card-direct"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Contact direct', 'Contact direct', 'partikulier' ) ); ?></span><a class="pk-card-cta" href="<?php echo esc_url( $pk_property_url ); ?>"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Voir l\'annonce', 'Voir l\'annonce', 'partikulier' ) ); ?><span aria-hidden="true"> ↗</span></a></div>
+					<?php endif; ?>
+					<a class="pk-card-cta" href="<?php echo esc_url( $pk_property_url ); ?>"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( "Voir l'annonce", "Voir l'annonce", 'partikulier' ) ); ?><span aria-hidden="true"> ↗</span></a>
+				</div>
 		</div>
 </article>
