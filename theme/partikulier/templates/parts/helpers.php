@@ -384,7 +384,7 @@ if ( ! function_exists( 'pk_card_meta_first' ) ) {
 }
 
 /**
- * Etages au format demande : etages RDC+N. Rien si le nombre n'est pas enregistre.
+ * Etages au format demande : RDC+N, sans le mot etage. Rien si le nombre n'est pas enregistre.
  *
  * @param string $raw  Valeur enregistree.
  * @param string $lang Langue.
@@ -423,10 +423,7 @@ if ( ! function_exists( 'pk_card_etages_phrase' ) ) {
 		if ( 'ar' === $lang ) {
 			return 0 === $plus ? 'الطابق الأرضي' : 'أرضي + ' . $plus;
 		}
-		if ( 'en' === $lang ) {
-			return 0 === $plus ? 'floors RDC' : 'floors RDC+' . $plus;
-		}
-		return 0 === $plus ? 'étages RDC' : 'étages RDC+' . $plus;
+		return 0 === $plus ? 'RDC' : 'RDC+' . $plus;
 	}
 }
 

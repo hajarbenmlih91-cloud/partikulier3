@@ -5968,3 +5968,18 @@ body .pk-grid-list .pk-card-title {
 	overflow: hidden !important;
 	line-height: 1.35 !important;
 }
+
+/* 6.20.131 — trois lignes de titre, assez pour les titres reels. Le mot etage ne gonfle plus la ligne. */
+body .pk-card-title,
+body .pk-editorial-cards .pk-card-title,
+body .pk-archive-content .pk-card-title,
+body .pk-grid-list .pk-card-title {
+	height: 4.05em !important;
+	min-height: 4.05em !important;
+	max-height: 4.05em !important;
+	line-height: 1.35 !important;
+	margin: 0 0 2px !important;
+}
+body .pk-card-facts {
+	margin-top: 2px !important;
+}
