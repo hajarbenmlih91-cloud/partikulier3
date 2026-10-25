@@ -6293,3 +6293,99 @@ body .pk-header-search .pk-search-bar button:focus-visible {
 	background: transparent !important;
 	color: #6515A0 !important;
 }
+
+/* 6.20.143 — boutons violet primaire, survol et clic violet sombre. Pied de page violet, texte blanc. */
+body .pk-btn,
+body a.pk-btn,
+body button.pk-btn,
+body .pk-btn-primary,
+body .pk-btn-dark,
+body .pk-btn-light,
+body .pk-btn-outline,
+body .pk-btn-ghost,
+body .pk-btn-search,
+body .pk-scroll-city,
+body .pk-find-submit,
+body .pk-find-results,
+body button[type="submit"],
+body .es-btn,
+body .pk-cookie-actions button,
+body .pk-header-search .pk-search-bar button {
+	background: #A13FF4 !important;
+	border-color: #A13FF4 !important;
+	color: #fff !important;
+}
+body .pk-btn:hover,
+body .pk-btn:active,
+body .pk-btn:focus-visible,
+body a.pk-btn:hover,
+body a.pk-btn:active,
+body button.pk-btn:hover,
+body button.pk-btn:active,
+body .pk-btn-primary:hover,
+body .pk-btn-primary:active,
+body .pk-btn-dark:hover,
+body .pk-btn-dark:active,
+body .pk-btn-light:hover,
+body .pk-btn-light:active,
+body .pk-btn-outline:hover,
+body .pk-btn-outline:active,
+body .pk-btn-ghost:hover,
+body .pk-btn-ghost:active,
+body .pk-btn-search:hover,
+body .pk-btn-search:active,
+body .pk-scroll-city:hover,
+body .pk-scroll-city:active,
+body .pk-find-submit:hover,
+body .pk-find-submit:active,
+body .pk-find-results:hover,
+body .pk-find-results:active,
+body button[type="submit"]:hover,
+body button[type="submit"]:active,
+body button[type="submit"]:focus-visible,
+body .es-btn:hover,
+body .es-btn:active,
+body .pk-cookie-actions button:hover,
+body .pk-cookie-actions button:active,
+body .pk-header-search .pk-search-bar button:hover,
+body .pk-header-search .pk-search-bar button:active,
+body .pk-header-search .pk-search-bar button:focus,
+body .pk-header-search .pk-search-bar button:focus-visible {
+	background: #6515A0 !important;
+	border-color: #6515A0 !important;
+	color: #fff !important;
+}
+body button[type="submit"]:disabled,
+body .es-btn:disabled {
+	background: #A13FF4 !important;
+	border-color: #A13FF4 !important;
+	color: #fff !important;
+	opacity: .55;
+}
+
+body .pk-site-footer,
+body .pk-site-footer .pk-footer-top,
+body .pk-site-footer .pk-footer-bottom {
+	background: #A13FF4 !important;
+	color: #fff !important;
+	border-color: rgba(255, 255, 255, .28) !important;
+}
+body .pk-site-footer a,
+body .pk-site-footer h2,
+body .pk-site-footer h3,
+body .pk-site-footer p,
+body .pk-site-footer li,
+body .pk-site-footer span,
+body .pk-footer-title,
+body .pk-footer-about,
+body .pk-copyright,
+body .pk-legal-links a,
+body .pk-site-footer svg {
+	color: #fff !important;
+}
+body .pk-site-footer a:hover,
+body .pk-legal-links a:hover,
+body .pk-footer-socials a:hover {
+	color: #fff !important;
+	text-decoration: underline;
+}
