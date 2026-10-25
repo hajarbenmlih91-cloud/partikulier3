@@ -6232,3 +6232,30 @@ body .pk-archive-content .pk-card-foot {
 		border-top: 1px solid var(--pk-line) !important;
 	}
 }
+
+/* 6.20.140 — hero desktop plus court : barre de recherche et mentions visibles des la premiere vue. */
+@media (min-width: 901px) {
+	body.home .pk-editorial-hero h1 {
+		font-size: clamp(1.85rem, 2.2vw, 2.45rem) !important;
+		line-height: 1.08 !important;
+		margin: 0 0 .5rem !important;
+		max-width: 16em;
+	}
+	body.home .pk-editorial-hero__intro {
+		font-size: 1rem !important;
+		line-height: 1.45 !important;
+		margin: 0 0 .65rem !important;
+		max-width: 40em;
+	}
+	body.home .pk-editorial-hero .pk-editorial-kicker {
+		margin-bottom: .3rem !important;
+	}
+	body.home .pk-editorial-hero__inner {
+		padding-top: 1.1rem !important;
+		padding-bottom: .9rem !important;
+		gap: .75rem !important;
+	}
+	body.home .pk-hero-trust {
+		margin-top: .65rem !important;
+	}
+}
