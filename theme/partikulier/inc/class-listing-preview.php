@@ -165,8 +165,8 @@ class Partikulier_Listing_Preview {
 		}
 
 		$title = trim( preg_replace( '/\s+/u', ' ', $title ) );
-		if ( mb_strlen( $title ) > 160 ) {
-			$cut   = mb_substr( $title, 0, 160 );
+		if ( mb_strlen( $title ) > 120 ) {
+			$cut   = mb_substr( $title, 0, 120 );
 			$space = mb_strrpos( $cut, ' ' );
 			if ( false !== $space && $space >= 10 ) {
 				$cut = mb_substr( $cut, 0, $space );

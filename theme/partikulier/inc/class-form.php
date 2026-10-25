@@ -812,17 +812,17 @@ class Partikulier_Form {
 	}
 
 	/**
-	 * Le depot limite le titre a 160 caracteres. La carte reserve exactement cet espace.
+	 * Le depot limite le titre a 120 caracteres. La carte reserve exactement cet espace.
 	 *
 	 * @param string $title Titre soumis ou genere.
 	 * @return string
 	 */
 	private static function limit_listing_title( $title ) {
 		$title = trim( preg_replace( '/\s+/u', ' ', (string) $title ) );
-		if ( mb_strlen( $title ) <= 160 ) {
+		if ( mb_strlen( $title ) <= 120 ) {
 			return $title;
 		}
-		$cut   = mb_substr( $title, 0, 160 );
+		$cut   = mb_substr( $title, 0, 120 );
 		$space = mb_strrpos( $cut, ' ' );
 		if ( false !== $space && $space >= 10 ) {
 			$cut = mb_substr( $cut, 0, $space );
