@@ -6280,3 +6280,16 @@ body .pk-archive-content .pk-card-foot {
 		margin: 0 0 .65rem !important;
 	}
 }
+
+/* 6.20.142 — header : icone recherche violet primaire, violet sombre au clic. */
+body .pk-header-search .pk-search-bar button,
+body .pk-header-search .pk-search-bar button:hover {
+	background: transparent !important;
+	color: #A13FF4 !important;
+}
+body .pk-header-search .pk-search-bar button:active,
+body .pk-header-search .pk-search-bar button:focus,
+body .pk-header-search .pk-search-bar button:focus-visible {
+	background: transparent !important;
+	color: #6515A0 !important;
+}
