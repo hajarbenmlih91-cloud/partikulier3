@@ -5525,3 +5525,27 @@ body.home .pk-editorial-section--tint .pk-editorial-heading h2 {
 body.home .pk-editorial-cards {
 	grid-template-columns: repeat(3, minmax(0, 1fr));
 }
+
+
+/* 6.20.124 — type et ville cliquables sur la carte. */
+.pk-card-places {
+	display: inline-flex;
+	align-items: center;
+	gap: .35rem .55rem;
+	min-width: 0;
+	flex-wrap: wrap;
+}
+.pk-card-type {
+	color: var(--pk-primary);
+	font-size: .78rem;
+	font-weight: 700;
+	text-decoration: underline;
+	text-underline-offset: .12em;
+}
+.pk-card-type:hover { color: var(--pk-primary-dark); }
+body .pk-card-title a.pk-card-jump {
+	color: var(--pk-primary);
+	text-decoration: underline;
+	text-underline-offset: .12em;
+}
+body .pk-card-title a.pk-card-jump:hover { color: var(--pk-primary-dark); }
