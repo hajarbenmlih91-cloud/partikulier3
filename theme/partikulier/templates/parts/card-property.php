@@ -176,13 +176,28 @@ if ( $price ) {
 		</div>
 
 		<div class="pk-card-body">
-						<<?php echo esc_html( $pk_card_heading_tag ); ?> class="pk-card-title">
-						<a href="<?php echo esc_url( $pk_property_url ); ?>" itemprop="url">
-								<span itemprop="name"><?php echo esc_html( $pk_display_title ); ?></span>
-						</a>
-						</<?php echo esc_html( $pk_card_heading_tag ); ?>>
 				<?php
 				$pk_type_slug = ( ! is_wp_error( $types ) && $types ) ? $types[0]->slug : '';
+				$pk_type_term = ( ! is_wp_error( $types ) && $types ) ? $types[0] : null;
+				if ( $pk_type_term && $pk_language && function_exists( 'pll_get_term' ) ) {
+					$pk_type_translated_id = (int) pll_get_term( $pk_type_term->term_id, $pk_language );
+					if ( $pk_type_translated_id ) {
+						$pk_type_translated = get_term( $pk_type_translated_id, PARTIKULIER_ESTATIK_TYPE_TAXONOMY );
+						if ( $pk_type_translated && ! is_wp_error( $pk_type_translated ) ) {
+							$pk_type_term = $pk_type_translated;
+							$pk_type_slug = $pk_type_translated->slug;
+						}
+					}
+				}
+				$pk_type_url = '';
+				if ( $pk_type_term && isset( $pk_type_term->slug ) ) {
+					$pk_type_archive = function_exists( 'pk_properties_archive_url' ) ? pk_properties_archive_url() : home_url( '/' );
+					if ( is_wp_error( $pk_type_archive ) || ! is_string( $pk_type_archive ) ) {
+						$pk_type_archive = home_url( '/' );
+					}
+					$pk_type_url = add_query_arg( 'es_type', $pk_type_term->slug, $pk_type_archive );
+				}
+				$pk_type_text = function_exists( 'pk_card_type_link_label' ) ? pk_card_type_link_label( $type, $pk_type_slug, $property->ID, $pk_language ) : $type;
 				$pk_fact_line = function_exists( 'pk_card_fact_line' ) ? pk_card_fact_line( $property->ID, $pk_type_slug, $pk_language ) : '';
 				$pk_city_label = $location;
 				$pk_city_url   = '';
@@ -206,17 +221,28 @@ if ( $price ) {
 						$pk_city_label = class_exists( 'Partikulier_Listing_I18n' ) ? Partikulier_Listing_I18n::localized_place( $pk_city_term->name, $pk_language ) : $pk_city_term->name;
 					}
 				}
+				$pk_title_html = function_exists( 'pk_card_title_html' )
+					? pk_card_title_html( $pk_display_title, $type, $pk_type_text, $pk_type_url, $pk_city_label, $pk_city_url, $pk_property_url )
+					: '<a href="' . esc_url( $pk_property_url ) . '" itemprop="url">' . esc_html( $pk_display_title ) . '</a>';
 				?>
+				<<?php echo esc_html( $pk_card_heading_tag ); ?> class="pk-card-title" itemprop="name">
+					<?php echo $pk_title_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- liens echappes dans pk_card_title_html. ?>
+				</<?php echo esc_html( $pk_card_heading_tag ); ?>>
 				<?php if ( $pk_fact_line ) : ?>
 					<p class="pk-card-facts"><?php echo esc_html( $pk_fact_line ); ?></p>
 				<?php endif; ?>
 				<div class="pk-card-foot">
-					<?php if ( $pk_city_label && $pk_city_url ) : ?>
-						<a class="pk-card-city" href="<?php echo esc_url( $pk_city_url ); ?>">
-							<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>
-							<span itemprop="address" itemscope itemtype="https://schema.org/PostalAddress"><span itemprop="addressLocality"><?php echo esc_html( $pk_city_label ); ?></span></span>
-						</a>
-					<?php endif; ?>
+					<span class="pk-card-places">
+						<?php if ( $pk_type_text && $pk_type_url ) : ?>
+							<a class="pk-card-type" href="<?php echo esc_url( $pk_type_url ); ?>"><?php echo esc_html( $pk_type_text ); ?></a>
+						<?php endif; ?>
+						<?php if ( $pk_city_label && $pk_city_url ) : ?>
+							<a class="pk-card-city" href="<?php echo esc_url( $pk_city_url ); ?>">
+								<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>
+								<span itemprop="address" itemscope itemtype="https://schema.org/PostalAddress"><span itemprop="addressLocality"><?php echo esc_html( $pk_city_label ); ?></span></span>
+							</a>
+						<?php endif; ?>
+					</span>
 					<a class="pk-card-cta" href="<?php echo esc_url( $pk_property_url ); ?>"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( "Voir l'annonce", "Voir l'annonce", 'partikulier' ) ); ?><span aria-hidden="true"> ↗</span></a>
 				</div>
 		</div>

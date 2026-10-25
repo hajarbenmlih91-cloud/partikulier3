@@ -228,11 +228,11 @@ if ( ! function_exists( 'pk_type_icon' ) ) {
 }
 
 /**
- * Phrase de compte deja traduite : 1, 2, ou la forme existante « 3+ ».
- * Au-dela, le nombre exact. Jamais « 6+ ».
+ * Phrase de compte deja traduite. Nombre exact seulement.
+ * Jamais « ou plus », jamais 3+, jamais 6+.
  *
  * @param string $raw  Valeur enregistree.
- * @param string $kind bed|salon.
+ * @param string $kind bed|salon|bath|suite|bureau|sdb.
  * @param string $lang fr|en|ar.
  * @return string
  */
@@ -240,10 +240,7 @@ if ( ! function_exists( 'pk_card_count_phrase' ) ) {
 	function pk_card_count_phrase( $raw, $kind, $lang ) {
 		$raw  = trim( (string) $raw );
 		$lang = in_array( $lang, array( 'en', 'ar' ), true ) ? $lang : 'fr';
-		if ( '' === $raw || '0' === $raw ) {
-			return '';
-		}
-		if ( false !== strpos( $raw, '+' ) ) {
+		if ( '' === $raw || '0' === $raw || false !== strpos( $raw, '+' ) ) {
 			return '';
 		}
 		if ( ! preg_match( '/^\d+$/', $raw ) ) {
@@ -252,6 +249,33 @@ if ( ! function_exists( 'pk_card_count_phrase' ) ) {
 		$n = (int) $raw;
 		if ( $n < 1 ) {
 			return '';
+		}
+		if ( 'suite' === $kind ) {
+			if ( 'en' === $lang ) {
+				return $n . ' ' . ( 1 === $n ? 'suite' : 'suites' );
+			}
+			if ( 'ar' === $lang ) {
+				return $n . ' ' . ( 1 === $n ? 'جناح' : 'أجنحة' );
+			}
+			return $n . ' ' . ( 1 === $n ? 'suite' : 'suites' );
+		}
+		if ( 'bureau' === $kind ) {
+			if ( 'en' === $lang ) {
+				return $n . ' ' . ( 1 === $n ? 'office' : 'offices' );
+			}
+			if ( 'ar' === $lang ) {
+				return $n . ' ' . ( 1 === $n ? 'مكتب' : 'مكاتب' );
+			}
+			return $n . ' ' . ( 1 === $n ? 'bureau' : 'bureaux' );
+		}
+		if ( 'sdb' === $kind ) {
+			if ( 'en' === $lang ) {
+				return $n . ' ' . ( 1 === $n ? 'bathroom' : 'bathrooms' );
+			}
+			if ( 'ar' === $lang ) {
+				return $n . ' ' . ( 1 === $n ? 'حمام' : 'حمامات' );
+			}
+			return $n . ' SDB';
 		}
 		if ( 1 === $n || 2 === $n ) {
 			if ( 'bath' === $kind ) {
@@ -360,76 +384,73 @@ if ( ! function_exists( 'pk_card_meta_first' ) ) {
 }
 
 /**
- * Une seule ligne de faits, selon le type.
- * Residentiel : surface, chambres, salons.
- * Terrain : surface et autorisation.
- * Local : surface et niveaux.
- * Les champs vides sont omis.
+ * Etages au format demande : etages RDC+N. Rien si le nombre n'est pas enregistre.
  *
- * @param int    $post_id Identifiant.
- * @param string $slug    Slug du type.
- * @param string $lang    Langue.
+ * @param string $raw  Valeur enregistree.
+ * @param string $lang Langue.
  * @return string
  */
-if ( ! function_exists( 'pk_card_fact_line' ) ) {
-	function pk_card_fact_line( $post_id, $slug, $lang ) {
-		$slug = sanitize_title( (string) $slug );
+if ( ! function_exists( 'pk_card_etages_phrase' ) ) {
+	function pk_card_etages_phrase( $raw, $lang ) {
+		$raw  = trim( (string) $raw );
 		$lang = in_array( $lang, array( 'en', 'ar' ), true ) ? $lang : 'fr';
-		$bits = array();
-		$surface = get_post_meta( $post_id, 'es_property_area', true );
-		if ( '' === (string) $surface ) {
-			$surface = get_post_meta( $post_id, 'es_size', true );
+		if ( '' === $raw ) {
+			return '';
 		}
-		if ( is_numeric( $surface ) && (int) $surface > 0 ) {
-			$unit = class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_polylang_string( 'm²', 'm²', 'partikulier' ) : 'm²';
-			$bits[] = trim( ( function_exists( 'pk_format_amount' ) ? pk_format_amount( $surface ) : (string) (int) $surface ) . ' ' . $unit );
+		$plus = null;
+		if ( preg_match( '/RDC\s*\+\s*(\d+)/iu', $raw, $m ) ) {
+			$plus = (int) $m[1];
+		} elseif ( preg_match( '/^R\+\s*(\d+)$/iu', $raw, $m ) ) {
+			$plus = (int) $m[1];
+		} elseif ( preg_match( '/rez(?:-de-chaussée|-de-chaussee)?\s*\+\s*(\d+)/iu', $raw, $m ) ) {
+			$plus = (int) $m[1];
+		} elseif ( preg_match( '/^rdc\s*(\d+)$/iu', $raw, $m ) ) {
+			$plus = (int) $m[1];
+		} elseif ( preg_match( '/(\d+)\s*niveaux/iu', $raw, $m ) && false === strpos( $raw, '+' ) ) {
+			$plus = max( 0, (int) $m[1] - 1 );
+		} elseif ( preg_match( '/^(\d+)$/', $raw, $m ) ) {
+			$n = (int) $m[1];
+			if ( $n < 1 ) {
+				return '';
+			}
+			$plus = max( 0, $n - 1 );
+		} elseif ( preg_match( '/^(rdc|rez|plain)/iu', $raw ) && false === strpos( $raw, '+' ) ) {
+			$plus = 0;
 		}
-		$auth = pk_card_meta_first( $post_id, array( '_pk_autorisation', '_pk_authorization', '_pk_constructibilite' ) );
-		$levels = pk_card_levels_phrase( pk_card_meta_first( $post_id, array( '_pk_niveaux', '_pk_levels', '_pk_floors' ) ), $lang );
-		$residential = array( 'appartement', 'duplex', 'maison', 'villa', 'riad', 'studio' );
-		if ( in_array( $slug, $residential, true ) ) {
-			$beds = pk_card_meta_first( $post_id, array( '_pk_bedrooms_label', 'es_property_bedrooms', 'es_bedrooms' ) );
-			$salons = pk_card_meta_first( $post_id, array( '_pk_living_rooms', '_pk_living_rooms_label' ) );
-			$bed_label = pk_card_count_phrase( $beds, 'bed', $lang );
-			$salon_label = pk_card_count_phrase( $salons, 'salon', $lang );
-			if ( $bed_label ) {
-				$bits[] = $bed_label;
-			}
-			if ( $salon_label ) {
-				$bits[] = $salon_label;
-			}
-			return implode( ' · ', array_filter( $bits ) );
+		if ( null === $plus ) {
+			return '';
 		}
-		$commercial = array( 'local', 'local-commercial', 'commerce', 'bureau', 'bureaux', 'entrepot', 'depot', 'hangar' );
-		if ( in_array( $slug, $commercial, true ) ) {
-			$kind = pk_card_commercial_kind( $post_id, $slug );
-			if ( $kind ) {
-				array_unshift( $bits, $kind );
-			}
-			return implode( ' · ', array_filter( $bits ) );
+		if ( 'ar' === $lang ) {
+			return 0 === $plus ? 'الطابق الأرضي' : 'أرضي + ' . $plus;
 		}
-		if ( in_array( $slug, array( 'terrain', 'lot', 'ferme' ), true ) ) {
-			$nature = pk_card_lot_nature( $post_id, $slug );
-			if ( $nature ) {
-				$bits[] = $nature;
-			}
-			return implode( ' · ', array_filter( $bits ) );
+		if ( 'en' === $lang ) {
+			return 0 === $plus ? 'floors RDC' : 'floors RDC+' . $plus;
 		}
-		if ( 'immeuble' === $slug ) {
-			if ( $levels ) {
-				$bits[] = $levels;
-			}
-			if ( $auth ) {
-				$bits[] = $auth;
-			}
-			return implode( ' · ', array_filter( $bits ) );
-		}
-		return implode( ' · ', array_filter( $bits ) );
+		return 0 === $plus ? 'étages RDC' : 'étages RDC+' . $plus;
 	}
 }
 
 /**
- * Nature du lot, dans la liste fermee. Champ vide : rien.
+ * Espace ouvert, formulation demandee. La traduction arabe est celle du formulaire.
+ *
+ * @param string $lang Langue.
+ * @return string
+ */
+if ( ! function_exists( 'pk_card_open_space_phrase' ) ) {
+	function pk_card_open_space_phrase( $lang ) {
+		$lang = in_array( $lang, array( 'en', 'ar' ), true ) ? $lang : 'fr';
+		if ( 'ar' === $lang ) {
+			return 'مساحة مفتوحة';
+		}
+		if ( 'en' === $lang ) {
+			return 'open space';
+		}
+		return 'espace ouvert';
+	}
+}
+
+/**
+ * Nature du lot, liste fermee. Champ vide : rien.
  *
  * @param int    $post_id Identifiant.
  * @param string $slug    Slug.
@@ -446,17 +467,23 @@ if ( ! function_exists( 'pk_card_lot_nature' ) ) {
 		);
 		$rplus = pk_card_meta_first( $post_id, array( '_pk_constructibilite', '_pk_rplus', '_pk_autorisation' ) );
 		$hay   = strtolower( $raw . ' ' . $rplus );
-		if ( preg_match( '/R\+\s*2/i', $raw . ' ' . $rplus ) && ( '' === $raw || false !== strpos( $hay, 'commerc' ) ) ) {
-			return 'R+2 commercial';
-		}
-		if ( preg_match( '/R\+\s*3/i', $raw . ' ' . $rplus ) && ( '' === $raw || false !== strpos( $hay, 'commerc' ) ) ) {
-			return 'R+3 commercial';
+		if ( '' === trim( $hay ) ) {
+			return '';
 		}
 		if ( false !== strpos( $hay, 'agric' ) ) {
 			return 'agricole';
 		}
 		if ( false !== strpos( $hay, 'industriel' ) ) {
 			return 'industriel';
+		}
+		if ( false !== strpos( $hay, 'depot' ) || false !== strpos( $hay, 'dépôt' ) || false !== strpos( $hay, 'entrepot' ) || false !== strpos( $hay, 'entrepôt' ) ) {
+			return 'dépôt';
+		}
+		if ( false !== strpos( $hay, 'resident' ) || false !== strpos( $hay, 'résident' ) ) {
+			return 'résidentiel';
+		}
+		if ( false !== strpos( $hay, 'commerc' ) ) {
+			return 'commercial';
 		}
 		if ( false !== strpos( $hay, 'ferme' ) ) {
 			return 'ferme';
@@ -466,7 +493,199 @@ if ( ! function_exists( 'pk_card_lot_nature' ) ) {
 }
 
 /**
- * Local commercial, bureau, entrepot ou hangar.
+ * Libelle court de la nature, pour le lien de type.
+ *
+ * @param string $nature Code ferme.
+ * @param string $lang   Langue.
+ * @return string
+ */
+if ( ! function_exists( 'pk_card_nature_phrase' ) ) {
+	function pk_card_nature_phrase( $nature, $lang ) {
+		$nature = (string) $nature;
+		$lang   = in_array( $lang, array( 'en', 'ar' ), true ) ? $lang : 'fr';
+		$phrases = array(
+			'fr' => array(
+				'agricole'     => 'agricole',
+				'industriel'   => 'industriel',
+				'dépôt'        => 'dépôt',
+				'résidentiel'  => 'résidentiel',
+				'commercial'   => 'commercial',
+				'ferme'        => 'ferme',
+			),
+			'en' => array(
+				'agricole'     => 'agricultural',
+				'industriel'   => 'industrial',
+				'dépôt'        => 'depot',
+				'résidentiel'  => 'residential',
+				'commercial'   => 'commercial',
+				'ferme'        => 'ferme',
+			),
+			'ar' => array(
+				'agricole'     => 'فلاحية',
+				'industriel'   => 'صناعية',
+				'dépôt'        => 'مستودع',
+				'résidentiel'  => 'سكنية',
+				'commercial'   => 'تجارية',
+				'ferme'        => 'ferme',
+			),
+		);
+		return isset( $phrases[ $lang ][ $nature ] ) ? $phrases[ $lang ][ $nature ] : '';
+	}
+}
+
+/**
+ * Texte du lien de type. Terrain : la nature suit le nom, si elle est enregistree.
+ *
+ * @param string $type_name Nom deja traduit.
+ * @param string $slug      Slug.
+ * @param int    $post_id   Identifiant.
+ * @param string $lang      Langue.
+ * @return string
+ */
+if ( ! function_exists( 'pk_card_type_link_label' ) ) {
+	function pk_card_type_link_label( $type_name, $slug, $post_id, $lang ) {
+		$name = trim( (string) $type_name );
+		$slug = sanitize_title( (string) $slug );
+		if ( ! in_array( $slug, array( 'terrain', 'lot' ), true ) ) {
+			return $name;
+		}
+		$nature = pk_card_lot_nature( $post_id, $slug );
+		if ( ! $nature || 'ferme' === $nature ) {
+			return $name;
+		}
+		$phrase = pk_card_nature_phrase( $nature, $lang );
+		if ( ! $phrase ) {
+			return $name;
+		}
+		return trim( $name . ' ' . $phrase );
+	}
+}
+
+/**
+ * Une seule ligne de faits, selon le type. Champ vide : omis. Rien n'est invente.
+ *
+ * @param int    $post_id Identifiant.
+ * @param string $slug    Slug du type.
+ * @param string $lang    Langue.
+ * @return string
+ */
+if ( ! function_exists( 'pk_card_fact_line' ) ) {
+	function pk_card_fact_line( $post_id, $slug, $lang ) {
+		$slug = sanitize_title( (string) $slug );
+		$lang = in_array( $lang, array( 'en', 'ar' ), true ) ? $lang : 'fr';
+		$bits = array();
+		$surface = get_post_meta( $post_id, 'es_property_area', true );
+		if ( '' === (string) $surface ) {
+			$surface = get_post_meta( $post_id, 'es_size', true );
+		}
+		if ( is_numeric( $surface ) && (int) $surface > 0 ) {
+			$unit   = class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_polylang_string( 'm²', 'm²', 'partikulier' ) : 'm²';
+			$bits[] = trim( ( function_exists( 'pk_format_amount' ) ? pk_format_amount( $surface ) : (string) (int) $surface ) . ' ' . $unit );
+		}
+		$beds_raw   = pk_card_meta_first( $post_id, array( '_pk_bedrooms_label', 'es_property_bedrooms', 'es_bedrooms' ) );
+		$salons_raw = pk_card_meta_first( $post_id, array( '_pk_living_rooms', '_pk_living_rooms_label' ) );
+		$baths_raw  = pk_card_meta_first( $post_id, array( '_pk_bathrooms_label', 'es_property_bathrooms', 'es_bathrooms' ) );
+		$levels_raw = pk_card_meta_first( $post_id, array( '_pk_niveaux', '_pk_niveaux_label', '_pk_etages', '_pk_etages_label', '_pk_levels', '_pk_floors' ) );
+		$etages     = pk_card_etages_phrase( $levels_raw, $lang );
+
+		if ( in_array( $slug, array( 'appartement', 'duplex', 'villa' ), true ) ) {
+			$bed_label   = pk_card_count_phrase( $beds_raw, 'bed', $lang );
+			$salon_label = pk_card_count_phrase( $salons_raw, 'salon', $lang );
+			if ( $bed_label ) {
+				$bits[] = $bed_label;
+			}
+			if ( $salon_label ) {
+				$bits[] = $salon_label;
+			}
+			return implode( ' · ', array_filter( $bits ) );
+		}
+		if ( 'studio' === $slug ) {
+			if ( '' === $beds_raw || '0' === $beds_raw ) {
+				$beds_raw = '1';
+			}
+			$bed_label   = pk_card_count_phrase( $beds_raw, 'bed', $lang );
+			$salon_label = pk_card_count_phrase( $salons_raw, 'salon', $lang );
+			if ( $bed_label ) {
+				$bits[] = $bed_label;
+			}
+			if ( $salon_label ) {
+				$bits[] = $salon_label;
+			}
+			return implode( ' · ', array_filter( $bits ) );
+		}
+		if ( 'riad' === $slug ) {
+			$bed_label = pk_card_count_phrase( $beds_raw, 'bed', $lang );
+			if ( $bed_label ) {
+				$bits[] = $bed_label;
+			}
+			$suite_raw = pk_card_meta_first( $post_id, array( '_pk_suites', '_pk_suites_label', '_pk_suite_count' ) );
+			if ( '' === $suite_raw ) {
+				$suite_raw = $salons_raw;
+			}
+			if ( '0' === $suite_raw ) {
+				if ( $etages ) {
+					$bits[] = $etages;
+				} else {
+					$levels = pk_card_levels_phrase( $levels_raw, $lang );
+					if ( $levels ) {
+						$bits[] = $levels;
+					}
+				}
+			} else {
+				$suite_label = pk_card_count_phrase( $suite_raw, 'suite', $lang );
+				if ( $suite_label ) {
+					$bits[] = $suite_label;
+				}
+			}
+			return implode( ' · ', array_filter( $bits ) );
+		}
+		if ( 'maison' === $slug ) {
+			$bed_label = pk_card_count_phrase( $beds_raw, 'bed', $lang );
+			if ( $bed_label ) {
+				$bits[] = $bed_label;
+			}
+			if ( $etages ) {
+				$bits[] = $etages;
+			}
+			return implode( ' · ', array_filter( $bits ) );
+		}
+		if ( 'immeuble' === $slug ) {
+			if ( $etages ) {
+				$bits[] = $etages;
+			}
+			return implode( ' · ', array_filter( $bits ) );
+		}
+		if ( in_array( $slug, array( 'bureau', 'bureaux' ), true ) ) {
+			$layout = strtolower( pk_card_meta_first( $post_id, array( '_pk_amenagement', '_pk_bureau_layout', '_pk_open_space', '_pk_espace' ) ) );
+			$bureaux_raw = pk_card_meta_first( $post_id, array( '_pk_bureaux_fermes', '_pk_bureaux', '_pk_offices', '_pk_bureaux_label' ) );
+			$open = ( false !== strpos( $layout, 'ouvert' ) || false !== strpos( $layout, 'open' ) || '0' === $bureaux_raw );
+			if ( $open ) {
+				$bits[] = pk_card_open_space_phrase( $lang );
+			} else {
+				$bureaux = pk_card_count_phrase( $bureaux_raw, 'bureau', $lang );
+				if ( $bureaux ) {
+					$bits[] = $bureaux;
+				}
+			}
+			$sdb = pk_card_count_phrase( $baths_raw, 'sdb', $lang );
+			if ( $sdb ) {
+				$bits[] = $sdb;
+			}
+			return implode( ' · ', array_filter( $bits ) );
+		}
+		if ( in_array( $slug, array( 'local', 'local-commercial', 'commerce' ), true ) ) {
+			$kind = pk_card_commercial_kind( $post_id, $slug );
+			if ( $kind ) {
+				array_unshift( $bits, $kind );
+			}
+			return implode( ' · ', array_filter( $bits ) );
+		}
+		return implode( ' · ', array_filter( $bits ) );
+	}
+}
+
+/**
+ * Local commercial. Depot, hangar et usine n'ont que la surface.
  *
  * @param int    $post_id Identifiant.
  * @param string $slug    Slug.
@@ -474,20 +693,102 @@ if ( ! function_exists( 'pk_card_lot_nature' ) ) {
  */
 if ( ! function_exists( 'pk_card_commercial_kind' ) ) {
 	function pk_card_commercial_kind( $post_id, $slug ) {
-		$bat = strtolower( pk_card_meta_first( $post_id, array( '_pk_batiment', '_pk_local_kind', '_pk_sous_type' ) ) );
+		$bat  = strtolower( pk_card_meta_first( $post_id, array( '_pk_batiment', '_pk_local_kind', '_pk_sous_type' ) ) );
 		$slug = sanitize_title( (string) $slug );
-		if ( 'hangar' === $slug || false !== strpos( $bat, 'hangar' ) ) {
-			return 'Hangar';
-		}
-		if ( in_array( $slug, array( 'bureau', 'bureaux' ), true ) ) {
-			return 'Bureau';
-		}
-		if ( in_array( $slug, array( 'entrepot', 'depot' ), true ) || false !== strpos( $bat, 'entrepot' ) || false !== strpos( $bat, 'depot' ) || false !== strpos( $bat, 'dépôt' ) ) {
-			return 'Entrepôt';
-		}
 		if ( in_array( $slug, array( 'local', 'local-commercial', 'commerce' ), true ) ) {
+			if ( false !== strpos( $bat, 'hangar' ) ) {
+				return 'Hangar';
+			}
+			if ( false !== strpos( $bat, 'entrepot' ) || false !== strpos( $bat, 'entrepôt' ) || false !== strpos( $bat, 'depot' ) || false !== strpos( $bat, 'dépôt' ) ) {
+				return 'Entrepôt';
+			}
+			if ( false !== strpos( $bat, 'bureau' ) ) {
+				return 'Bureau';
+			}
 			return 'Local commercial';
 		}
 		return '';
+	}
+}
+
+/**
+ * Longueur et decoupe UTF-8, pour le titre de carte.
+ *
+ * @param string   $text  Texte.
+ * @param int      $start Debut.
+ * @param int|null $len   Longueur.
+ * @return string
+ */
+if ( ! function_exists( 'pk_card_mb_sub' ) ) {
+	function pk_card_mb_sub( $text, $start, $len = null ) {
+		if ( function_exists( 'mb_substr' ) ) {
+			return null === $len ? mb_substr( $text, $start, null, 'UTF-8' ) : mb_substr( $text, $start, $len, 'UTF-8' );
+		}
+		return null === $len ? substr( $text, $start ) : substr( $text, $start, $len );
+	}
+}
+
+if ( ! function_exists( 'pk_card_mb_len' ) ) {
+	function pk_card_mb_len( $text ) {
+		return function_exists( 'mb_strlen' ) ? mb_strlen( $text, 'UTF-8' ) : strlen( $text );
+	}
+}
+
+/**
+ * Titre entier, avec le type et la ville cliquables quand ils bordent la phrase.
+ *
+ * @param string $title       Titre affiche.
+ * @param string $type_match  Mot du type, tel qu'il ouvre le titre.
+ * @param string $type_text   Texte du lien de type.
+ * @param string $type_url    Archive du type.
+ * @param string $city_label  Ville.
+ * @param string $city_url    Annonces de la ville.
+ * @param string $listing_url Annonce.
+ * @return string
+ */
+if ( ! function_exists( 'pk_card_title_html' ) ) {
+	function pk_card_title_html( $title, $type_match, $type_text, $type_url, $city_label, $city_url, $listing_url ) {
+		$title      = trim( (string) $title );
+		$type_match = trim( (string) $type_match );
+		$type_text  = trim( (string) $type_text );
+		$city_label = trim( (string) $city_label );
+		$rest       = $title;
+		$parts      = array();
+		if ( $type_match && $type_url && $type_text && pk_card_mb_sub( $rest, 0, pk_card_mb_len( $type_match ) ) === $type_match ) {
+			$parts[] = '<a class="pk-card-jump" href="' . esc_url( $type_url ) . '">' . esc_html( $type_text ) . '</a>';
+			$rest    = pk_card_mb_sub( $rest, pk_card_mb_len( $type_match ) );
+		}
+		$city_hit = '';
+		$cities   = array( $city_label );
+		foreach ( array( ',', '،' ) as $comma ) {
+			$pos = strrpos( $city_label, $comma );
+			if ( false !== $pos ) {
+				$cities[] = trim( substr( $city_label, $pos + strlen( $comma ) ) );
+			}
+		}
+		foreach ( $cities as $city ) {
+			if ( '' === $city || ! $city_url ) {
+				continue;
+			}
+			$clen = pk_card_mb_len( $city );
+			if ( $clen < 1 || pk_card_mb_len( $rest ) <= $clen ) {
+				continue;
+			}
+			if ( pk_card_mb_sub( $rest, pk_card_mb_len( $rest ) - $clen, $clen ) === $city ) {
+				$city_hit = $city;
+				$rest     = pk_card_mb_sub( $rest, 0, pk_card_mb_len( $rest ) - $clen );
+				break;
+			}
+		}
+		if ( '' !== $rest ) {
+			$parts[] = '<a href="' . esc_url( $listing_url ) . '" itemprop="url">' . esc_html( $rest ) . '</a>';
+		}
+		if ( '' !== $city_hit ) {
+			$parts[] = '<a class="pk-card-jump" href="' . esc_url( $city_url ) . '">' . esc_html( $city_hit ) . '</a>';
+		}
+		if ( ! $parts ) {
+			return '<a href="' . esc_url( $listing_url ) . '" itemprop="url">' . esc_html( $title ) . '</a>';
+		}
+		return implode( '', $parts );
 	}
 }
