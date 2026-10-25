@@ -221,9 +221,16 @@ if ( $price ) {
 						$pk_city_label = class_exists( 'Partikulier_Listing_I18n' ) ? Partikulier_Listing_I18n::localized_place( $pk_city_term->name, $pk_language ) : $pk_city_term->name;
 					}
 				}
+				$pk_plain_title = $pk_display_title;
+				if ( $type && $pk_type_text && function_exists( 'pk_card_mb_len' ) && function_exists( 'pk_card_mb_sub' ) ) {
+					$pk_type_len = pk_card_mb_len( $type );
+					if ( $pk_type_len > 0 && pk_card_mb_sub( $pk_plain_title, 0, $pk_type_len ) === $type ) {
+						$pk_plain_title = $pk_type_text . pk_card_mb_sub( $pk_plain_title, $pk_type_len );
+					}
+				}
 				?>
 				<<?php echo esc_html( $pk_card_heading_tag ); ?> class="pk-card-title" itemprop="name">
-					<?php echo esc_html( $pk_display_title ); ?>
+					<?php echo esc_html( $pk_plain_title ); ?>
 				</<?php echo esc_html( $pk_card_heading_tag ); ?>>
 				<p class="pk-card-facts">
 					<?php if ( $pk_fact_line ) : ?>
