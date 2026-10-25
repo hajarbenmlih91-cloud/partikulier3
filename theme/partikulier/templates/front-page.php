@@ -47,7 +47,6 @@ get_header();
 	}
 	</style>
 	<section class="pk-editorial-hero" aria-label="<?php echo esc_attr( Partikulier_Localization::translate_polylang_string( 'Recherche principale', 'Recherche principale', 'partikulier' ) ); ?>">
-		<div class="pk-editorial-hero__media"><img src="<?php echo esc_url( $hero_url ); ?>" alt="<?php echo esc_attr( $hero_alt ); ?>" width="1600" height="686" fetchpriority="high" decoding="async"><div class="pk-editorial-hero__veil"></div></div>
 	<div class="pk-container pk-editorial-hero__inner">
 		<div class="pk-editorial-hero__copy">
 			<p class="pk-editorial-kicker"><?php echo esc_html( Partikulier_Customization::editorial( 'home_kicker', 'La plateforme entre particuliers' ) ); ?></p>

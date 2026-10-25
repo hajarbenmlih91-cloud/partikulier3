@@ -216,11 +216,11 @@ $pk_city_placeholder = class_exists( 'Partikulier_Localization' )
 <form class="pk-search pk-search-<?php echo esc_attr( $variant ); ?> pk-find" action="<?php echo esc_url( $archive ); ?>" method="get" role="search" data-pk-live="<?php echo esc_attr( $variant ); ?>" aria-label="<?php echo esc_attr( $pk_t( 'Rechercher' ) ); ?>">
 	<div class="pk-find-tabs" role="radiogroup" aria-label="<?php echo esc_attr( $pk_t( 'À vendre' ) . ' / ' . $pk_t( 'À louer' ) . ' / ' . $pk_t( 'Saisonnière' ) ); ?>">
 		<input class="screen-reader-text pk-find-tab-input" type="radio" name="pk_intent" id="pk-find-sale" value="a-vendre" <?php checked( $pk_intent, 'a-vendre' ); ?>>
-		<label class="pk-find-tab" for="pk-find-sale"><?php echo esc_html( $pk_t( 'À vendre' ) ); ?></label>
+		<label class="pk-find-tab" for="pk-find-sale"><svg class="pk-find-tab__icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11.2 12 5l8 6.2"/><path d="M7 10.8V19h10v-8.2"/></svg><span><?php echo esc_html( $pk_t( 'À vendre' ) ); ?></span></label>
 		<input class="screen-reader-text pk-find-tab-input" type="radio" name="pk_intent" id="pk-find-rent" value="a-louer" <?php checked( $pk_intent, 'a-louer' ); ?>>
-		<label class="pk-find-tab" for="pk-find-rent"><?php echo esc_html( $pk_t( 'À louer' ) ); ?></label>
+		<label class="pk-find-tab" for="pk-find-rent"><svg class="pk-find-tab__icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8.2" cy="14.2" r="3.1"/><path d="M11 14.2h8.2M16.6 14.2v2.3"/></svg><span><?php echo esc_html( $pk_t( 'À louer' ) ); ?></span></label>
 		<input class="screen-reader-text pk-find-tab-input" type="radio" name="pk_intent" id="pk-find-season" value="saisonnier" <?php checked( $pk_intent, 'saisonnier' ); ?>>
-		<label class="pk-find-tab" for="pk-find-season"><?php echo esc_html( $pk_t( 'Saisonnière' ) ); ?></label>
+		<label class="pk-find-tab" for="pk-find-season"><svg class="pk-find-tab__icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3.1"/><path d="M12 4.2v2M12 17.8v2M4.2 12h2M17.8 12h2M6.4 6.4l1.4 1.4M16.2 16.2l1.4 1.4M17.6 6.4l-1.4 1.4M7.8 16.2 6.4 17.6"/></svg><span><?php echo esc_html( $pk_t( 'Saisonnière' ) ); ?></span></label>
 	</div>
 	<input type="hidden" name="es_action" value="<?php echo esc_attr( $pk_action_value ); ?>">
 	<input type="hidden" name="pk_rent" value="<?php echo esc_attr( $pk_rent_value ); ?>">

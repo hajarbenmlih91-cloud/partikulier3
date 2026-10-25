@@ -5334,3 +5334,104 @@ body.home .pk-editorial-more {
 	justify-content: flex-start;
 	margin: .85rem 0 0;
 }
+
+/* 6.20.117 — plus de photo. Recherche pleine largeur. Onglets : ligne sous le choix, fond blanc. */
+body.home .pk-editorial-hero,
+body.home .pk-editorial-hero__inner {
+	min-height: 0;
+	background: #fff;
+	color: #161715;
+}
+body.home .pk-editorial-hero__media,
+body.home .pk-editorial-hero__veil {
+	display: none !important;
+}
+body.home .pk-editorial-hero__inner {
+	width: 100%;
+	align-items: stretch;
+	gap: .8rem;
+	padding-top: 1.15rem;
+	padding-bottom: .4rem;
+}
+body.home .pk-editorial-hero__copy,
+body.home .pk-editorial-search {
+	width: 100%;
+	max-width: none;
+	background: transparent;
+	box-shadow: none;
+	padding: 0;
+}
+body.home .pk-editorial-hero__copy {
+	max-width: 40rem;
+}
+body.home .pk-search-hero.pk-find {
+	width: 100%;
+}
+body.home .pk-search-hero .pk-find-tabs {
+	display: flex;
+	justify-content: flex-start;
+	flex-wrap: wrap;
+	gap: .35rem 2.4rem;
+	width: 100%;
+	margin: 0 0 .85rem;
+	background: #fff;
+	border: 0;
+}
+body.home .pk-search-hero .pk-find-tab {
+	display: inline-flex;
+	align-items: center;
+	gap: .45rem;
+	flex: 0 1 auto;
+	max-width: none;
+	min-height: 44px;
+	padding: .2rem .05rem .65rem;
+	background: #fff;
+	border: 0;
+	box-shadow: none;
+	color: #6b675f;
+	font-family: inherit;
+	font-weight: 600;
+	font-size: 1.05rem;
+	letter-spacing: 0;
+	line-height: 1.2;
+	text-transform: none;
+	white-space: nowrap;
+}
+body.home .pk-search-hero .pk-find-tab__icon {
+	flex: none;
+	width: 18px;
+	height: 18px;
+}
+body.home .pk-search-hero .pk-find-tab-input:checked + .pk-find-tab,
+body.home .pk-search-hero .pk-find-tab-input:focus-visible + .pk-find-tab {
+	background: #fff;
+	border: 0;
+	box-shadow: none;
+	color: #161715;
+}
+body.home .pk-search-hero .pk-find-tab-input:checked + .pk-find-tab {
+	font-weight: 800;
+}
+body.home .pk-search-hero .pk-find-tab-input:checked + .pk-find-tab::after {
+	content: "";
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	height: 3px;
+	background: #A13FF4;
+	border-radius: 2px;
+}
+html[dir="rtl"] body.home .pk-search-hero .pk-find-tab {
+	letter-spacing: 0;
+	text-transform: none;
+	font-size: 1.05rem;
+}
+@media (max-width: 640px) {
+	body.home .pk-search-hero .pk-find-tabs {
+		gap: .2rem 1.15rem;
+	}
+	body.home .pk-search-hero .pk-find-tab {
+		font-size: .95rem;
+	}
+}

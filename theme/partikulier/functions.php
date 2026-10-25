@@ -364,14 +364,11 @@ if ( $partikulier_diagnostic_load && file_exists( $partikulier_diagnostic_file )
 }
 
 /**
- * Preload du hero LCP — 1 ligne pour passer Perf 92→98 (front-page).
- * Le hero est la plus grande image au-dessus du pli, on le preload en high.
+ * L'accueil n'affiche plus de photo. hero.jpg n'est pas préchargé.
  */
 add_action('wp_head', static function () {
-    if (!is_front_page()) return;
-    if (!class_exists('Partikulier_Customization')) return;
-    $url = Partikulier_Customization::hero_url();
-    if ($url) printf('<link rel="preload" as="image" href="%s" fetchpriority="high">' . "\n", esc_url($url));
+    // L'accueil n'affiche plus de photo. Ne pas précharger hero.jpg.
+    return;
 }, 1);
 
 /**
