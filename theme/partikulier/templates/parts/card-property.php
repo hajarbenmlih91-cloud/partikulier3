@@ -221,23 +221,15 @@ if ( $price ) {
 						$pk_city_label = class_exists( 'Partikulier_Listing_I18n' ) ? Partikulier_Listing_I18n::localized_place( $pk_city_term->name, $pk_language ) : $pk_city_term->name;
 					}
 				}
-				$pk_title_html = function_exists( 'pk_card_title_html' )
-					? pk_card_title_html( $pk_display_title, $type, $pk_type_text, $pk_type_url, $pk_city_label, $pk_city_url, $pk_property_url )
-					: '<a href="' . esc_url( $pk_property_url ) . '" itemprop="url">' . esc_html( $pk_display_title ) . '</a>';
 				?>
 				<<?php echo esc_html( $pk_card_heading_tag ); ?> class="pk-card-title" itemprop="name">
-					<?php echo $pk_title_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- liens echappes dans pk_card_title_html. ?>
+					<?php echo esc_html( $pk_display_title ); ?>
 				</<?php echo esc_html( $pk_card_heading_tag ); ?>>
-				<?php if ( ( $pk_type_text && $pk_type_url ) || $pk_fact_line ) : ?>
-					<p class="pk-card-facts">
-						<?php if ( $pk_type_text && $pk_type_url ) : ?>
-							<a class="pk-card-type" href="<?php echo esc_url( $pk_type_url ); ?>"><?php echo esc_html( $pk_type_text ); ?></a>
-						<?php endif; ?>
-						<?php if ( $pk_fact_line ) : ?>
-							<span class="pk-card-fact-rest"><?php echo esc_html( $pk_fact_line ); ?></span>
-						<?php endif; ?>
-					</p>
-				<?php endif; ?>
+				<p class="pk-card-facts">
+					<?php if ( $pk_fact_line ) : ?>
+						<span class="pk-card-fact-rest"><?php echo esc_html( $pk_fact_line ); ?></span>
+					<?php endif; ?>
+				</p>
 				<div class="pk-card-foot">
 					<?php if ( $pk_city_label && $pk_city_url ) : ?>
 						<a class="pk-card-city" href="<?php echo esc_url( $pk_city_url ); ?>">
@@ -245,7 +237,7 @@ if ( $price ) {
 							<span itemprop="address" itemscope itemtype="https://schema.org/PostalAddress"><span itemprop="addressLocality"><?php echo esc_html( $pk_city_label ); ?></span></span>
 						</a>
 					<?php endif; ?>
-					<a class="pk-card-cta" href="<?php echo esc_url( $pk_property_url ); ?>"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( "Voir l'annonce", "Voir l'annonce", 'partikulier' ) ); ?><span aria-hidden="true"> ↗</span></a>
+					<a class="pk-card-cta" href="<?php echo esc_url( $pk_property_url ); ?>" itemprop="url"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( "Voir l'annonce", "Voir l'annonce", 'partikulier' ) ); ?><span aria-hidden="true"> ↗</span></a>
 				</div>
 		</div>
 </article>

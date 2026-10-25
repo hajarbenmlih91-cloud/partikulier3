@@ -5573,3 +5573,316 @@ body .pk-card-title a.pk-card-jump:hover { color: #A13FF4 !important; }
 	font-size: inherit;
 	line-height: inherit;
 }
+
+/* 6.20.127 — titre fixe pour 160 caracteres, sans lien ni soulignement. Type retire de la deuxieme ligne. */
+body .pk-card-body {
+	container-type: inline-size;
+	container-name: pkcard;
+}
+body .pk-card-title,
+body .pk-editorial-cards .pk-card-title,
+body .pk-archive-content .pk-card-title,
+body .pk-grid-list .pk-card-title {
+	display: block !important;
+	-webkit-line-clamp: unset !important;
+	-webkit-box-orient: unset !important;
+	line-clamp: unset !important;
+	overflow: hidden !important;
+	width: 100%;
+	height: 120px !important;
+	min-height: 120px !important;
+	max-height: 120px !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	font-size: 17px !important;
+	font-weight: 700 !important;
+	line-height: 24px !important;
+	letter-spacing: -0.02em;
+	overflow-wrap: break-word;
+}
+body .pk-card-title,
+body .pk-card-title a,
+body .pk-card-title a.pk-card-jump {
+	color: #161715 !important;
+	font-weight: 700 !important;
+	text-decoration: none !important;
+	box-shadow: none !important;
+	pointer-events: none !important;
+	cursor: default !important;
+}
+body .pk-card-facts {
+	display: block !important;
+	height: 24px !important;
+	min-height: 24px !important;
+	max-height: 24px !important;
+	margin: 8px 0 0 !important;
+	padding: 0 !important;
+	line-height: 24px !important;
+	overflow: hidden !important;
+	overflow-wrap: break-word;
+}
+body .pk-card-foot {
+	box-sizing: border-box !important;
+	height: 56px !important;
+	min-height: 56px !important;
+	max-height: 56px !important;
+	margin-top: 8px !important;
+	padding-top: 8px !important;
+	align-items: center !important;
+	flex-wrap: nowrap !important;
+	overflow: hidden !important;
+}
+body .pk-card-foot .pk-card-cta {
+	min-height: 44px !important;
+	height: 44px !important;
+}
+
+@container pkcard (max-width: 280px) {
+	body .pk-card-title,
+	body .pk-editorial-cards .pk-card-title,
+	body .pk-archive-content .pk-card-title,
+	body .pk-grid-list .pk-card-title {
+		height: 144px !important;
+		min-height: 144px !important;
+		max-height: 144px !important;
+	}
+}
+
+@container pkcard (max-width: 233px) {
+	body .pk-card-title,
+	body .pk-editorial-cards .pk-card-title,
+	body .pk-archive-content .pk-card-title,
+	body .pk-grid-list .pk-card-title {
+		height: 168px !important;
+		min-height: 168px !important;
+		max-height: 168px !important;
+	}
+}
+
+@container pkcard (max-width: 200px) {
+	body .pk-card-title,
+	body .pk-editorial-cards .pk-card-title,
+	body .pk-archive-content .pk-card-title,
+	body .pk-grid-list .pk-card-title {
+		height: 192px !important;
+		min-height: 192px !important;
+		max-height: 192px !important;
+	}
+}
+
+@container pkcard (max-width: 175px) {
+	body .pk-card-title,
+	body .pk-editorial-cards .pk-card-title,
+	body .pk-archive-content .pk-card-title,
+	body .pk-grid-list .pk-card-title {
+		height: 216px !important;
+		min-height: 216px !important;
+		max-height: 216px !important;
+	}
+}
+
+@container pkcard (max-width: 155px) {
+	body .pk-card-title,
+	body .pk-editorial-cards .pk-card-title,
+	body .pk-archive-content .pk-card-title,
+	body .pk-grid-list .pk-card-title {
+		height: 240px !important;
+		min-height: 240px !important;
+		max-height: 240px !important;
+	}
+}
+
+@container pkcard (max-width: 140px) {
+	body .pk-card-title,
+	body .pk-editorial-cards .pk-card-title,
+	body .pk-archive-content .pk-card-title,
+	body .pk-grid-list .pk-card-title {
+		height: 264px !important;
+		min-height: 264px !important;
+		max-height: 264px !important;
+	}
+}
+
+@container pkcard (max-width: 127px) {
+	body .pk-card-title,
+	body .pk-editorial-cards .pk-card-title,
+	body .pk-archive-content .pk-card-title,
+	body .pk-grid-list .pk-card-title {
+		height: 288px !important;
+		min-height: 288px !important;
+		max-height: 288px !important;
+	}
+}
+
+@container pkcard (max-width: 116px) {
+	body .pk-card-title,
+	body .pk-editorial-cards .pk-card-title,
+	body .pk-archive-content .pk-card-title,
+	body .pk-grid-list .pk-card-title {
+		height: 312px !important;
+		min-height: 312px !important;
+		max-height: 312px !important;
+	}
+}
+
+@container pkcard (max-width: 107px) {
+	body .pk-card-title,
+	body .pk-editorial-cards .pk-card-title,
+	body .pk-archive-content .pk-card-title,
+	body .pk-grid-list .pk-card-title {
+		height: 336px !important;
+		min-height: 336px !important;
+		max-height: 336px !important;
+	}
+}
+
+@container pkcard (max-width: 100px) {
+	body .pk-card-title,
+	body .pk-editorial-cards .pk-card-title,
+	body .pk-archive-content .pk-card-title,
+	body .pk-grid-list .pk-card-title {
+		height: 360px !important;
+		min-height: 360px !important;
+		max-height: 360px !important;
+	}
+}
+
+@container pkcard (max-width: 93px) {
+	body .pk-card-title,
+	body .pk-editorial-cards .pk-card-title,
+	body .pk-archive-content .pk-card-title,
+	body .pk-grid-list .pk-card-title {
+		height: 384px !important;
+		min-height: 384px !important;
+		max-height: 384px !important;
+	}
+}
+
+@container pkcard (max-width: 87px) {
+	body .pk-card-title,
+	body .pk-editorial-cards .pk-card-title,
+	body .pk-archive-content .pk-card-title,
+	body .pk-grid-list .pk-card-title {
+		height: 408px !important;
+		min-height: 408px !important;
+		max-height: 408px !important;
+	}
+}
+
+@container pkcard (max-width: 82px) {
+	body .pk-card-title,
+	body .pk-editorial-cards .pk-card-title,
+	body .pk-archive-content .pk-card-title,
+	body .pk-grid-list .pk-card-title {
+		height: 432px !important;
+		min-height: 432px !important;
+		max-height: 432px !important;
+	}
+}
+
+@container pkcard (max-width: 77px) {
+	body .pk-card-title,
+	body .pk-editorial-cards .pk-card-title,
+	body .pk-archive-content .pk-card-title,
+	body .pk-grid-list .pk-card-title {
+		height: 456px !important;
+		min-height: 456px !important;
+		max-height: 456px !important;
+	}
+}
+
+@container pkcard (max-width: 73px) {
+	body .pk-card-title,
+	body .pk-editorial-cards .pk-card-title,
+	body .pk-archive-content .pk-card-title,
+	body .pk-grid-list .pk-card-title {
+		height: 480px !important;
+		min-height: 480px !important;
+		max-height: 480px !important;
+	}
+}
+
+@container pkcard (max-width: 70px) {
+	body .pk-card-title,
+	body .pk-editorial-cards .pk-card-title,
+	body .pk-archive-content .pk-card-title,
+	body .pk-grid-list .pk-card-title {
+		height: 504px !important;
+		min-height: 504px !important;
+		max-height: 504px !important;
+	}
+}
+
+@container pkcard (max-width: 66px) {
+	body .pk-card-title,
+	body .pk-editorial-cards .pk-card-title,
+	body .pk-archive-content .pk-card-title,
+	body .pk-grid-list .pk-card-title {
+		height: 528px !important;
+		min-height: 528px !important;
+		max-height: 528px !important;
+	}
+}
+
+@container pkcard (max-width: 63px) {
+	body .pk-card-title,
+	body .pk-editorial-cards .pk-card-title,
+	body .pk-archive-content .pk-card-title,
+	body .pk-grid-list .pk-card-title {
+		height: 552px !important;
+		min-height: 552px !important;
+		max-height: 552px !important;
+	}
+}
+
+@container pkcard (max-width: 60px) {
+	body .pk-card-title,
+	body .pk-editorial-cards .pk-card-title,
+	body .pk-archive-content .pk-card-title,
+	body .pk-grid-list .pk-card-title {
+		height: 576px !important;
+		min-height: 576px !important;
+		max-height: 576px !important;
+	}
+}
+
+@container pkcard (max-width: 239px) {
+	body .pk-card-facts {
+		height: 48px !important;
+		min-height: 48px !important;
+		max-height: 48px !important;
+	}
+}
+
+@container pkcard (max-width: 125px) {
+	body .pk-card-facts {
+		height: 72px !important;
+		min-height: 72px !important;
+		max-height: 72px !important;
+	}
+}
+
+@container pkcard (max-width: 84px) {
+	body .pk-card-facts {
+		height: 96px !important;
+		min-height: 96px !important;
+		max-height: 96px !important;
+	}
+}
+
+@container pkcard (max-width: 63px) {
+	body .pk-card-facts {
+		height: 120px !important;
+		min-height: 120px !important;
+		max-height: 120px !important;
+	}
+}
+
+@container pkcard (max-width: 220px) {
+	body .pk-card-foot {
+		height: 100px !important;
+		min-height: 100px !important;
+		max-height: 100px !important;
+		flex-wrap: wrap !important;
+	}
+}
