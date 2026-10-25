@@ -6188,3 +6188,27 @@ body .pk-archive-content .pk-card-foot {
 		border-top: 1px solid var(--pk-line) !important;
 	}
 }
+
+/* 6.20.138 — meme ecart entre le titre, les faits et la 3e ligne, y compris 3 faits. */
+@media (min-width: 901px) {
+	body .pk-card-title,
+	body .pk-editorial-cards .pk-card-title,
+	body .pk-archive-content .pk-card-title,
+	body .pk-grid-list .pk-card-title {
+		margin: 0 0 32px !important;
+	}
+	body .pk-card-facts {
+		height: 22px !important;
+		min-height: 22px !important;
+		max-height: 22px !important;
+		margin: 0 !important;
+		overflow: hidden !important;
+		flex-wrap: nowrap !important;
+	}
+	body .pk-card-foot,
+	body .pk-editorial-cards .pk-card-foot,
+	body .pk-archive-content .pk-card-foot {
+		margin-top: 18px !important;
+		padding-top: 14px !important;
+	}
+}
