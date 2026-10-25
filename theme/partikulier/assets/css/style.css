@@ -5269,3 +5269,68 @@ body.home .pk-editorial-hero .pk-hero-trust li {
 		background: transparent;
 	}
 }
+
+/* 6.20.116 — onglets comme la barre, bouton primaire, blocs resserres. */
+.pk-find-tabs {
+	background: #fff;
+}
+.pk-find-tab {
+	background: #fff;
+	color: #161715;
+	border-color: #e6e5df;
+	font-family: inherit;
+	font-weight: 600;
+	font-size: 13px;
+	letter-spacing: .08em;
+	text-transform: uppercase;
+}
+.pk-find-tab-input:checked + .pk-find-tab,
+.pk-find-tab-input:focus-visible + .pk-find-tab {
+	background: #fff;
+	border-color: #e6e5df;
+	color: #161715;
+}
+.pk-find-tab-input:checked + .pk-find-tab {
+	box-shadow: inset 0 -2px 0 #A13FF4;
+}
+html[dir="rtl"] .pk-find-tab {
+	letter-spacing: 0;
+	text-transform: none;
+	font-size: 1rem;
+}
+.pk-find-submit {
+	background: #A13FF4;
+	border-color: #A13FF4;
+	color: #fff;
+}
+.pk-find-submit:hover,
+.pk-find-submit:focus-visible {
+	background: #A13FF4;
+	border-color: #A13FF4;
+	color: #fff;
+}
+body.home .pk-editorial-section--tint {
+	padding: .55rem 0 .7rem;
+}
+body.home .pk-editorial-section--featured {
+	padding-top: 0;
+	padding-bottom: 1.4rem;
+}
+body.home .pk-editorial-section--tint .pk-editorial-heading,
+body.home .pk-editorial-section--featured .pk-editorial-heading {
+	margin-bottom: .7rem;
+}
+body.home .pk-editorial-section--tint .pk-editorial-heading h2 {
+	font-size: 1.35rem;
+	line-height: 1.25;
+	letter-spacing: 0;
+	margin-bottom: .3rem;
+}
+body.home .pk-editorial-section--tint .pk-editorial-heading p {
+	margin: 0;
+}
+body.home .pk-editorial-more {
+	display: flex;
+	justify-content: flex-start;
+	margin: .85rem 0 0;
+}
