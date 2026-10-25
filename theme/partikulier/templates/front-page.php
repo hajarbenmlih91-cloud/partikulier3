@@ -8,18 +8,56 @@
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 get_header();
 
-	$recent   = get_posts( array(
+	$pk_home_query = array(
 		'post_type'              => PARTIKULIER_ESTATIK_POST_TYPE,
 		'post_status'            => 'publish',
-		'posts_per_page'         => 6,
 		'no_found_rows'          => true,
-		'orderby'                => array( 'post_date', 'ID' ),
-		'order'                  => 'DESC',
+		'orderby'                => array( 'post_date' => 'DESC', 'ID' => 'DESC' ),
 		'meta_query'             => Partikulier_Dashboard::active_listing_meta_query(),
 		'update_post_term_cache' => true,
 		'update_post_meta_cache' => true,
-	) );
-	$featured = ! empty( $recent ) ? array( $recent[0] ) : array();
+	);
+	$pk_latest = get_posts( array_merge( $pk_home_query, array( 'posts_per_page' => 1 ) ) );
+	$featured  = ! empty( $pk_latest ) ? array( $pk_latest[0] ) : array();
+	$pk_home_types_for_cards = get_terms( array( 'taxonomy' => PARTIKULIER_ESTATIK_TYPE_TAXONOMY, 'hide_empty' => true, 'orderby' => 'name', 'order' => 'ASC' ) );
+	$pk_card_skip = array( 'apartments', 'condos', 'condo', 'houses', 'house', 'land', 'multifamily', 'townhouses', 'townhouse' );
+	$pk_card_order = array( 'appartement', 'duplex', 'immeuble', 'maison', 'riad', 'studio', 'terrain', 'villa' );
+	$pk_card_terms = array();
+	if ( ! is_wp_error( $pk_home_types_for_cards ) ) {
+		foreach ( $pk_home_types_for_cards as $pk_card_term ) {
+			if ( in_array( strtolower( (string) $pk_card_term->name ), $pk_card_skip, true ) || (int) $pk_card_term->count < 1 ) {
+				continue;
+			}
+			$pk_card_terms[ $pk_card_term->slug ] = $pk_card_term;
+		}
+	}
+	$recent = array();
+	$pk_card_slugs = array();
+	foreach ( $pk_card_order as $pk_card_slug ) {
+		if ( isset( $pk_card_terms[ $pk_card_slug ] ) ) {
+			$pk_card_slugs[] = $pk_card_slug;
+		}
+	}
+	foreach ( $pk_card_terms as $pk_card_slug => $pk_card_term ) {
+		if ( ! in_array( $pk_card_slug, $pk_card_slugs, true ) ) {
+			$pk_card_slugs[] = $pk_card_slug;
+		}
+	}
+	foreach ( $pk_card_slugs as $pk_card_slug ) {
+		$pk_one = get_posts( array_merge( $pk_home_query, array(
+			'posts_per_page' => 1,
+			'tax_query'      => array(
+				array(
+					'taxonomy' => PARTIKULIER_ESTATIK_TYPE_TAXONOMY,
+					'field'    => 'term_id',
+					'terms'    => (int) $pk_card_terms[ $pk_card_slug ]->term_id,
+				),
+			),
+		) ) );
+		if ( $pk_one ) {
+			$recent[] = $pk_one[0];
+		}
+	}
 	// Prefixe pk_home_ : card-property.php et search-form.php ecrasent $types
 	// (variables globales partagees par require). Bug constate au rendu :
 	// une seule tuile de type s'affichait, vide, apres la boucle des cartes.

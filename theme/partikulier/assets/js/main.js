@@ -285,7 +285,7 @@
 			if ("studio" === type.toLowerCase() || "0" === bedrooms) return "";
 			if ("1" === bedrooms && "1" === livingRooms) return " — 1 chambre + salon";
 			if ("2" === bedrooms && "1" === livingRooms) return " — 2 chambres + salon";
-			if ("3+" === bedrooms && "1" === livingRooms) return " — 3 chambres + salon ou plus";
+			if ("3+" === bedrooms) return "";
 			return "";
 	}
 
