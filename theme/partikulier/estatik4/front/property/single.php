@@ -46,36 +46,18 @@ $surface  = get_post_meta( $post->ID, 'es_property_area', true ) ?: get_post_met
 		$vis_a_vis = get_post_meta( $post->ID, '_pk_vis_a_vis', true );
 		$sunshine = get_post_meta( $post->ID, '_pk_sunshine', true );
 			$terrace_label = 'Oui' === $terrace ? Partikulier_Localization::translate_polylang_string( 'Oui', 'Oui', 'partikulier' ) . ( $terrace_surface ? ' · ' . $terrace_surface . ' ' . Partikulier_Localization::translate_polylang_string( 'm²', 'm²', 'partikulier' ) : '' ) : Partikulier_Localization::translate_polylang_string( 'Non', 'Non', 'partikulier' );
+			$pk_count_lang = function_exists( 'pll_current_language' ) ? sanitize_key( (string) pll_current_language( 'slug' ) ) : 'fr';
 			if ( '0' === (string) $bedrooms_label ) {
 				$bedrooms_display = __( 'Studio', 'partikulier' );
-			} elseif ( '3+' === (string) $bedrooms_label ) {
-				$bedrooms_display = __( '3 chambres ou plus', 'partikulier' );
-			} elseif ( $bedrooms_label ) {
-				$label = ( 1 === (int) $bedrooms_label ) ? '1 chambre' : '2 chambres';
-				$bedrooms_display = class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_polylang_string( $label, $label, 'partikulier' ) : esc_html__( $label, 'partikulier' );
 			} else {
-				$bedrooms_display = '';
+				$bedrooms_display = function_exists( 'pk_card_count_phrase' ) ? pk_card_count_phrase( $bedrooms_label, 'bed', $pk_count_lang ) : '';
 			}
-
 			if ( '0' === (string) $living_rooms ) {
 				$living_display = __( 'Pièce principale', 'partikulier' );
-			} elseif ( '3+' === (string) $living_rooms ) {
-				$living_display = __( '3 salons ou plus', 'partikulier' );
-			} elseif ( $living_rooms ) {
-				$label = ( 1 === (int) $living_rooms ) ? '1 salon' : '2 salons';
-				$living_display = class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_polylang_string( $label, $label, 'partikulier' ) : esc_html__( $label, 'partikulier' );
 			} else {
-				$living_display = '';
+				$living_display = function_exists( 'pk_card_count_phrase' ) ? pk_card_count_phrase( $living_rooms, 'salon', $pk_count_lang ) : '';
 			}
-
-			if ( '3+' === (string) $bathrooms_label ) {
-				$bathrooms_display = __( '3 salles de bains ou plus', 'partikulier' );
-			} elseif ( $bathrooms_label ) {
-				$label = ( 1 === (int) $bathrooms_label ) ? '1 salle de bains' : '2 salles de bains';
-				$bathrooms_display = class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_polylang_string( $label, $label, 'partikulier' ) : esc_html__( $label, 'partikulier' );
-			} else {
-				$bathrooms_display = '';
-			}
+			$bathrooms_display = function_exists( 'pk_card_count_phrase' ) ? pk_card_count_phrase( $bathrooms_label, 'bath', $pk_count_lang ) : '';
 $location = Partikulier_Geo::location_string( $post->ID );
 
 	// Optimisation senior : utiliser get_the_terms() pour beneficier du cache de WP_Query.

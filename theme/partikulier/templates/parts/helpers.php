@@ -243,9 +243,8 @@ if ( ! function_exists( 'pk_card_count_phrase' ) ) {
 		if ( '' === $raw || '0' === $raw ) {
 			return '';
 		}
-		if ( '3+' === $raw ) {
-			$key = ( 'salon' === $kind ) ? '3 salons ou plus' : '3 chambres ou plus';
-			return class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_polylang_string( $key, $key, 'partikulier' ) : $key;
+		if ( false !== strpos( $raw, '+' ) ) {
+			return '';
 		}
 		if ( ! preg_match( '/^\d+$/', $raw ) ) {
 			return '';
@@ -255,10 +254,23 @@ if ( ! function_exists( 'pk_card_count_phrase' ) ) {
 			return '';
 		}
 		if ( 1 === $n || 2 === $n ) {
-			$key = ( 'salon' === $kind )
-				? ( 1 === $n ? '1 salon' : '2 salons' )
-				: ( 1 === $n ? '1 chambre' : '2 chambres' );
+			if ( 'bath' === $kind ) {
+				$key = 1 === $n ? '1 salle de bains' : '2 salles de bains';
+			} elseif ( 'salon' === $kind ) {
+				$key = 1 === $n ? '1 salon' : '2 salons';
+			} else {
+				$key = 1 === $n ? '1 chambre' : '2 chambres';
+			}
 			return class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_polylang_string( $key, $key, 'partikulier' ) : $key;
+		}
+		if ( 'bath' === $kind ) {
+			if ( 'en' === $lang ) {
+				return $n . ' bathrooms';
+			}
+			if ( 'ar' === $lang ) {
+				return $n . ' حمامات';
+			}
+			return $n . ' salles de bains';
 		}
 		if ( 'salon' === $kind ) {
 			if ( 'en' === $lang ) {

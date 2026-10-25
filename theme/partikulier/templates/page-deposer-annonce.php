@@ -313,8 +313,12 @@ $types = get_terms( array(
 																<option value="0"><?php esc_html_e( 'Studio / 0 chambre', 'partikulier' ); ?></option>
 																<option value="1"><?php esc_html_e( '1 chambre', 'partikulier' ); ?></option>
 																<option value="2"><?php esc_html_e( '2 chambres', 'partikulier' ); ?></option>
-																<option value="3+"><?php esc_html_e( '3 chambres ou plus', 'partikulier' ); ?></option>
+																<option value="3+"><?php echo esc_html( $pk_i18n( '3 chambres ou plus' ) ); ?></option>
 														</select>
+														<div class="pk-field" data-pk-exact-for="pk-bedrooms" hidden>
+															<label class="pk-label" for="pk-bedrooms-exact"><?php echo esc_html( $pk_i18n( 'Nombre exact de chambres' ) ); ?> <span class="pk-req">*</span></label>
+															<input type="number" id="pk-bedrooms-exact" name="pk_bedrooms_exact" min="3" max="99" inputmode="numeric" placeholder="<?php echo esc_attr( $pk_i18n( 'Ex. 4' ) ); ?>">
+														</div>
 												</div>
 										</div>
 								</div>
@@ -332,8 +336,12 @@ $types = get_terms( array(
 														<option value="0"><?php esc_html_e( '0 salon — pièce principale', 'partikulier' ); ?></option>
 																<option value="1"><?php esc_html_e( '1 salon', 'partikulier' ); ?></option>
 																<option value="2"><?php esc_html_e( '2 salons', 'partikulier' ); ?></option>
-																<option value="3+"><?php esc_html_e( '3 salons ou plus', 'partikulier' ); ?></option>
+																<option value="3+"><?php echo esc_html( $pk_i18n( '3 salons ou plus' ) ); ?></option>
 												</select>
+												<div class="pk-field" data-pk-exact-for="pk-living-rooms" hidden>
+													<label class="pk-label" for="pk-living-rooms-exact"><?php echo esc_html( $pk_i18n( 'Nombre exact de salons' ) ); ?> <span class="pk-req">*</span></label>
+													<input type="number" id="pk-living-rooms-exact" name="pk_living_rooms_exact" min="3" max="99" inputmode="numeric" placeholder="<?php echo esc_attr( $pk_i18n( 'Ex. 4' ) ); ?>">
+												</div>
 										</div>
 										<div data-pk-field="pk_bathrooms" class="pk-field">
 												<label class="pk-label" for="pk-bathrooms"><?php esc_html_e( 'Nombre de salles de bains', 'partikulier' ); ?> <span class="pk-req">*</span></label>
@@ -345,8 +353,12 @@ $types = get_terms( array(
 																<option value=""><?php echo esc_html( $pk_i18n( 'Choisissez le nombre' ) ); ?></option>
 																		<option value="1"><?php esc_html_e( '1 salle de bains', 'partikulier' ); ?></option>
 																		<option value="2"><?php esc_html_e( '2 salles de bains', 'partikulier' ); ?></option>
-																		<option value="3+"><?php esc_html_e( '3 salles de bains ou plus', 'partikulier' ); ?></option>
+																		<option value="3+"><?php echo esc_html( $pk_i18n( '3 salles de bains ou plus' ) ); ?></option>
 														</select>
+														<div class="pk-field" data-pk-exact-for="pk-bathrooms" hidden>
+															<label class="pk-label" for="pk-bathrooms-exact"><?php echo esc_html( $pk_i18n( 'Nombre exact de salles de bains' ) ); ?> <span class="pk-req">*</span></label>
+															<input type="number" id="pk-bathrooms-exact" name="pk_bathrooms_exact" min="3" max="99" inputmode="numeric" placeholder="<?php echo esc_attr( $pk_i18n( 'Ex. 4' ) ); ?>">
+														</div>
 												</div>
 										</div>
 								</div>
@@ -697,6 +709,23 @@ $types = get_terms( array(
 				</form>
 		</div>
 </section>
+
+
+<script>
+document.addEventListener('change', function (event) {
+	var select = event.target;
+	if (!select || !select.id) return;
+	var box = document.querySelector('[data-pk-exact-for="' + select.id + '"]');
+	if (!box) return;
+	var on = select.value === '3+';
+	box.hidden = !on;
+	var input = box.querySelector('input');
+	if (input) {
+		input.required = on;
+		if (!on) input.value = '';
+	}
+});
+</script>
 
 <?php
 get_footer();

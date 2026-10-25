@@ -232,9 +232,30 @@ class Partikulier_Form {
 			$bedrooms_raw            = isset( $data['pk_bedrooms'] ) ? sanitize_text_field( wp_unslash( $data['pk_bedrooms'] ) ) : '';
 			$living_rooms_raw        = isset( $data['pk_living_rooms'] ) ? sanitize_text_field( wp_unslash( $data['pk_living_rooms'] ) ) : '';
 			$bathrooms_raw           = isset( $data['pk_bathrooms'] ) ? sanitize_text_field( wp_unslash( $data['pk_bathrooms'] ) ) : '';
-			$bedrooms                = '3+' === $bedrooms_raw ? 3 : absint( $bedrooms_raw );
-			$living_rooms            = '3+' === $living_rooms_raw ? 3 : absint( $living_rooms_raw );
-			$bathrooms               = '3+' === $bathrooms_raw ? 3 : absint( $bathrooms_raw );
+			$pk_exact_map            = array(
+				'pk_bedrooms'     => 'pk_bedrooms_exact',
+				'pk_living_rooms' => 'pk_living_rooms_exact',
+				'pk_bathrooms'    => 'pk_bathrooms_exact',
+			);
+			foreach ( $pk_exact_map as $pk_raw_key => $pk_exact_key ) {
+				$pk_current = 'pk_bedrooms' === $pk_raw_key ? $bedrooms_raw : ( 'pk_living_rooms' === $pk_raw_key ? $living_rooms_raw : $bathrooms_raw );
+				if ( '3+' !== $pk_current ) {
+					continue;
+				}
+				$pk_exact = isset( $data[ $pk_exact_key ] ) ? sanitize_text_field( wp_unslash( $data[ $pk_exact_key ] ) ) : '';
+				if ( preg_match( '/^\d+$/', $pk_exact ) && (int) $pk_exact >= 3 ) {
+					if ( 'pk_bedrooms' === $pk_raw_key ) {
+						$bedrooms_raw = $pk_exact;
+					} elseif ( 'pk_living_rooms' === $pk_raw_key ) {
+						$living_rooms_raw = $pk_exact;
+					} else {
+						$bathrooms_raw = $pk_exact;
+					}
+				}
+			}
+			$bedrooms                = absint( $bedrooms_raw );
+			$living_rooms            = absint( $living_rooms_raw );
+			$bathrooms               = absint( $bathrooms_raw );
 					$rooms           = $bedrooms + $living_rooms;
 					$terrace         = isset( $data['pk_terrace'] ) && 'Oui' === $data['pk_terrace'] ? 'Oui' : 'Non';
 					$terrace_surface = 'Oui' === $terrace && isset( $data['pk_terrace_surface'] ) ? absint( $data['pk_terrace_surface'] ) : 0;
@@ -392,13 +413,13 @@ class Partikulier_Form {
 				}
 			}
 		}
-		if ( '' !== $bedrooms_raw && ! in_array( $bedrooms_raw, array( '0', '1', '2', '3+' ), true ) ) {
+		if ( '3+' === $bedrooms_raw || ( '' !== $bedrooms_raw && ( ! preg_match( '/^\d+$/', $bedrooms_raw ) || (int) $bedrooms_raw > 99 ) ) ) {
 			return new WP_Error( 'bedrooms', __( 'Choisissez un nombre de chambres valide.', 'partikulier' ) );
 		}
-		if ( '' !== $living_rooms_raw && ! in_array( $living_rooms_raw, array( '0', '1', '2', '3+' ), true ) ) {
+		if ( '3+' === $living_rooms_raw || ( '' !== $living_rooms_raw && ( ! preg_match( '/^\d+$/', $living_rooms_raw ) || (int) $living_rooms_raw > 99 ) ) ) {
 			return new WP_Error( 'living_rooms', __( 'Choisissez un nombre de salons valide.', 'partikulier' ) );
 		}
-		if ( '' !== $bathrooms_raw && ! in_array( $bathrooms_raw, array( '1', '2', '3+' ), true ) ) {
+		if ( '3+' === $bathrooms_raw || ( '' !== $bathrooms_raw && ( ! preg_match( '/^\d+$/', $bathrooms_raw ) || (int) $bathrooms_raw < 1 || (int) $bathrooms_raw > 99 ) ) ) {
 			return new WP_Error( 'bathrooms', __( 'Choisissez un nombre de salles de bains valide.', 'partikulier' ) );
 		}
 		if ( 'Oui' === $terrace && ! $terrace_surface ) {
@@ -801,8 +822,8 @@ class Partikulier_Form {
 			$is_studio = '0' === (string) $bedrooms || 'studio' === strtolower( $type );
 			$type      = $is_studio ? 'Studio' : $type;
 			$layout    = '';
-		if ( ! $is_studio && '1' === (string) $living_rooms && in_array( (string) $bedrooms, array( '1', '2', '3+' ), true ) ) {
-						$layout = ' — ' . ( '3+' === (string) $bedrooms ? '3 chambres + salon ou plus' : $bedrooms . ' chambre' . ( '1' === (string) $bedrooms ? '' : 's' ) . ' + salon' );
+		if ( ! $is_studio && '1' === (string) $living_rooms && in_array( (string) $bedrooms, array( '1', '2' ), true ) ) {
+						$layout = ' — ' . $bedrooms . ' chambre' . ( '1' === (string) $bedrooms ? '' : 's' ) . ' + salon';
 		}
 			$size = $surface ? ' de ' . $surface . ' m²' : '';
 
