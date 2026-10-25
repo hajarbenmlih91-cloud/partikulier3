@@ -6177,3 +6177,14 @@ body .pk-archive-content .pk-card-foot {
 		height: 1em !important;
 	}
 }
+
+/* 6.20.137 — bureau : la ville et Voir l'annonce ne collent plus a la ligne des faits. */
+@media (min-width: 901px) {
+	body .pk-card-foot,
+	body .pk-editorial-cards .pk-card-foot,
+	body .pk-archive-content .pk-card-foot {
+		margin-top: 18px !important;
+		padding-top: 14px !important;
+		border-top: 1px solid var(--pk-line) !important;
+	}
+}
