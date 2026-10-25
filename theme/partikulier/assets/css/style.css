@@ -5435,3 +5435,41 @@ html[dir="rtl"] body.home .pk-search-hero .pk-find-tab {
 		font-size: .95rem;
 	}
 }
+
+/* 6.20.118 — trait court sous l'onglet choisi, comme Accueil. Espaces entre les deux versions. */
+body.home .pk-search-hero .pk-find-tab {
+	position: relative;
+	flex: 0 0 auto;
+	width: auto;
+	gap: 0;
+}
+body.home .pk-search-hero .pk-find-tab::after {
+	content: none;
+}
+body.home .pk-search-hero .pk-find-tab-input:checked + .pk-find-tab {
+	box-shadow: none;
+	color: #161715;
+	font-weight: 600;
+}
+body.home .pk-search-hero .pk-find-tab-input:checked + .pk-find-tab::after {
+	content: "";
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	width: auto;
+	height: 2px;
+	background: #A13FF4;
+	border-radius: 0;
+}
+body.home .pk-editorial-section--tint {
+	padding: 2rem 0 1.6rem;
+}
+body.home .pk-editorial-section--featured {
+	padding-top: 1.75rem;
+	padding-bottom: 2.4rem;
+}
+body.home .pk-editorial-section--tint .pk-editorial-heading,
+body.home .pk-editorial-section--featured .pk-editorial-heading {
+	margin-bottom: 1.25rem;
+}
