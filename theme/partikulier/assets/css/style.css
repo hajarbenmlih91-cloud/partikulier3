@@ -5549,3 +5549,27 @@ body .pk-card-title a.pk-card-jump {
 	text-underline-offset: .12em;
 }
 body .pk-card-title a.pk-card-jump:hover { color: var(--pk-primary-dark); }
+
+
+/* 6.20.126 — type dans le titre et sur la ligne des faits. Ville seule en bas. */
+body .pk-card-title a.pk-card-jump {
+	position: relative;
+	z-index: 4;
+	color: #6515A0 !important;
+	font-weight: 800;
+	text-decoration: underline !important;
+	text-underline-offset: .16em;
+	cursor: pointer;
+	pointer-events: auto;
+}
+body .pk-card-title a.pk-card-jump:hover { color: #A13FF4 !important; }
+.pk-card-facts {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: .15rem .4rem;
+}
+.pk-card-facts .pk-card-type {
+	font-size: inherit;
+	line-height: inherit;
+}

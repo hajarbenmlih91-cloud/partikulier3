@@ -228,21 +228,23 @@ if ( $price ) {
 				<<?php echo esc_html( $pk_card_heading_tag ); ?> class="pk-card-title" itemprop="name">
 					<?php echo $pk_title_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- liens echappes dans pk_card_title_html. ?>
 				</<?php echo esc_html( $pk_card_heading_tag ); ?>>
-				<?php if ( $pk_fact_line ) : ?>
-					<p class="pk-card-facts"><?php echo esc_html( $pk_fact_line ); ?></p>
-				<?php endif; ?>
-				<div class="pk-card-foot">
-					<span class="pk-card-places">
+				<?php if ( ( $pk_type_text && $pk_type_url ) || $pk_fact_line ) : ?>
+					<p class="pk-card-facts">
 						<?php if ( $pk_type_text && $pk_type_url ) : ?>
 							<a class="pk-card-type" href="<?php echo esc_url( $pk_type_url ); ?>"><?php echo esc_html( $pk_type_text ); ?></a>
 						<?php endif; ?>
-						<?php if ( $pk_city_label && $pk_city_url ) : ?>
-							<a class="pk-card-city" href="<?php echo esc_url( $pk_city_url ); ?>">
-								<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>
-								<span itemprop="address" itemscope itemtype="https://schema.org/PostalAddress"><span itemprop="addressLocality"><?php echo esc_html( $pk_city_label ); ?></span></span>
-							</a>
+						<?php if ( $pk_fact_line ) : ?>
+							<span class="pk-card-fact-rest"><?php echo esc_html( $pk_fact_line ); ?></span>
 						<?php endif; ?>
-					</span>
+					</p>
+				<?php endif; ?>
+				<div class="pk-card-foot">
+					<?php if ( $pk_city_label && $pk_city_url ) : ?>
+						<a class="pk-card-city" href="<?php echo esc_url( $pk_city_url ); ?>">
+							<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>
+							<span itemprop="address" itemscope itemtype="https://schema.org/PostalAddress"><span itemprop="addressLocality"><?php echo esc_html( $pk_city_label ); ?></span></span>
+						</a>
+					<?php endif; ?>
 					<a class="pk-card-cta" href="<?php echo esc_url( $pk_property_url ); ?>"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( "Voir l'annonce", "Voir l'annonce", 'partikulier' ) ); ?><span aria-hidden="true"> ↗</span></a>
 				</div>
 		</div>
