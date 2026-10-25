@@ -6068,3 +6068,64 @@ body .pk-card-fact-icon { display: none; }
 		padding-top: 0 !important;
 	}
 }
+
+/* 6.20.135 — meme rythme sur grand ecran : pas de titre reserve, faits sur toute la largeur. */
+body .pk-card-body {
+	gap: 0 !important;
+}
+body .pk-card-title,
+body .pk-editorial-cards .pk-card-title,
+body .pk-archive-content .pk-card-title,
+body .pk-grid-list .pk-card-title {
+	height: auto !important;
+	min-height: 0 !important;
+	max-height: none !important;
+	margin: 0 0 6px !important;
+	line-height: 1.28 !important;
+	overflow: visible !important;
+}
+body .pk-card-facts {
+	display: flex !important;
+	flex-wrap: nowrap !important;
+	align-items: center !important;
+	justify-content: space-between !important;
+	width: 100% !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	text-align: start !important;
+	gap: 8px !important;
+	line-height: 1.2 !important;
+}
+body .pk-card-facts:not(:has(.pk-card-dot)) {
+	justify-content: flex-start !important;
+}
+body .pk-card-facts .pk-card-dot { display: none !important; }
+body .pk-card-fact {
+	display: inline-flex !important;
+	align-items: center !important;
+	gap: 5px !important;
+	min-width: 0 !important;
+	color: inherit !important;
+	font-weight: 600 !important;
+	white-space: nowrap !important;
+}
+body .pk-card-fact-icon {
+	display: inline-flex !important;
+	flex: none !important;
+	width: 15px !important;
+	height: 15px !important;
+	color: #A13FF4 !important;
+}
+body .pk-card-fact-icon--bed {
+	fill: currentColor !important;
+	stroke: none !important;
+}
+body .pk-card-foot,
+body .pk-editorial-cards .pk-card-foot,
+body .pk-archive-content .pk-card-foot {
+	margin-top: 8px !important;
+	padding-top: 0 !important;
+}
+@media (min-width: 901px) {
+	body .pk-card-fact { font-size: .8rem !important; }
+}

@@ -892,6 +892,9 @@ if ( ! function_exists( 'pk_card_fact_icon' ) ) {
 			'open'   => '<rect x="3" y="6" width="18" height="12" rx="1.5"/><path d="M3 12h18"/>',
 			'mark'   => '<path d="M5 7h9l5 5-5 5H5V7z"/><path d="M9 12h.01"/>',
 		);
+		if ( 'bed' === $kind ) {
+			return '<svg class="pk-card-fact-icon pk-card-fact-icon--bed" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M4.2 5.1h6.1c.55 0 1 .45 1 1V11H3.2V6.1c0-.55.45-1 1-1zm9.5 0h6.1c.55 0 1 .45 1 1V11h-8.1V6.1c0-.55.45-1 1-1zM3 12.1h18v2.7H3zm-.8 3.5h19.6v2.3H2.2zM4.3 18.1h2v2.7h-2zm13.4 0h2v2.7h-2z"/></svg>';
+		}
 		$inner = isset( $paths[ $kind ] ) ? $paths[ $kind ] : $paths['mark'];
 		return '<svg class="pk-card-fact-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' . $inner . '</svg>';
 	}
