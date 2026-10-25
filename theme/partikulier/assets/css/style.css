@@ -5886,3 +5886,73 @@ body .pk-card-foot .pk-card-cta {
 		flex-wrap: wrap !important;
 	}
 }
+
+/* 6.20.129 — titre colle a la ligne des faits. Ville et Voir l'annonce sur la meme ligne. Points violets, ligne centree. */
+body .pk-card-title,
+body .pk-editorial-cards .pk-card-title,
+body .pk-archive-content .pk-card-title,
+body .pk-grid-list .pk-card-title {
+	height: auto !important;
+	min-height: 0 !important;
+	max-height: none !important;
+	margin: 0 !important;
+	overflow: visible !important;
+	line-height: 1.25 !important;
+}
+body .pk-card-facts {
+	display: block !important;
+	height: auto !important;
+	min-height: 0 !important;
+	max-height: none !important;
+	margin: 4px 0 0 !important;
+	padding: 0 !important;
+	line-height: 1.35 !important;
+	text-align: center !important;
+	overflow: visible !important;
+}
+body .pk-card-facts .pk-card-dot {
+	color: #A13FF4;
+	font-weight: 800;
+	padding: 0 .28em;
+}
+body .pk-card-foot,
+body .pk-editorial-cards .pk-card-foot,
+body .pk-archive-content .pk-card-foot {
+	display: flex !important;
+	flex-direction: row !important;
+	flex-wrap: nowrap !important;
+	align-items: center !important;
+	justify-content: space-between !important;
+	gap: 8px !important;
+	box-sizing: border-box !important;
+	height: auto !important;
+	min-height: 0 !important;
+	max-height: none !important;
+	margin-top: 6px !important;
+	padding-top: 6px !important;
+	overflow: visible !important;
+}
+body .pk-card-foot .pk-card-city {
+	display: inline-flex !important;
+	flex: 0 1 auto !important;
+	align-items: center !important;
+	width: auto !important;
+	max-width: 58% !important;
+	min-width: 0 !important;
+	margin: 0 !important;
+	white-space: nowrap !important;
+}
+body .pk-card-foot .pk-card-cta {
+	display: inline-flex !important;
+	flex: 0 0 auto !important;
+	align-items: center !important;
+	justify-content: flex-end !important;
+	width: auto !important;
+	max-width: none !important;
+	height: auto !important;
+	min-height: 0 !important;
+	margin: 0 0 0 auto !important;
+	padding: 0 !important;
+	white-space: nowrap !important;
+	overflow-wrap: normal !important;
+}
