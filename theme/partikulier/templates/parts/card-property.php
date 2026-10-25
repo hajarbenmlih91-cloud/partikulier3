@@ -251,7 +251,7 @@ if ( $price ) {
 								<?php
 							endif;
 							?>
-							<span class="pk-card-fact"><?php echo esc_html( $pk_fact_bit ); ?></span>
+							<span class="pk-card-fact"><?php echo function_exists( 'pk_card_fact_icon' ) ? pk_card_fact_icon( $pk_fact_bit ) : ''; ?><span class="pk-card-fact-label"><?php echo esc_html( $pk_fact_bit ); ?></span></span>
 							<?php
 						endforeach;
 					endif;
