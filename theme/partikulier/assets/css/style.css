@@ -6212,3 +6212,23 @@ body .pk-archive-content .pk-card-foot {
 		padding-top: 14px !important;
 	}
 }
+
+/* 6.20.139 — ecart titre/faits reduit, egal a l'ecart faits/trait. */
+@media (min-width: 901px) {
+	body .pk-card-title,
+	body .pk-editorial-cards .pk-card-title,
+	body .pk-archive-content .pk-card-title,
+	body .pk-grid-list .pk-card-title {
+		margin: 0 0 12px !important;
+	}
+	body .pk-card-facts {
+		margin: 0 !important;
+	}
+	body .pk-card-foot,
+	body .pk-editorial-cards .pk-card-foot,
+	body .pk-archive-content .pk-card-foot {
+		margin-top: 12px !important;
+		padding-top: 12px !important;
+		border-top: 1px solid var(--pk-line) !important;
+	}
+}
