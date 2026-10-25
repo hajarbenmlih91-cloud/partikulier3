@@ -5520,9 +5520,8 @@ body.home .pk-editorial-section--tint .pk-editorial-heading h2 {
 .pk-card-city svg { flex: none; }
 .pk-card-city:hover { color: var(--pk-primary-dark); }
 
-/* 6.20.122 — une annonce par type, sur deux rangées. */
-@media (min-width: 901px) {
-	body.home .pk-editorial-cards {
-		grid-template-columns: repeat(4, minmax(0, 1fr));
-	}
+
+/* 6.20.123 — trois annonces par ligne. */
+body.home .pk-editorial-cards {
+	grid-template-columns: repeat(3, minmax(0, 1fr));
 }
