@@ -561,6 +561,70 @@ if ( ! function_exists( 'pk_card_type_link_label' ) ) {
 	}
 }
 
+
+if ( ! function_exists( 'pk_card_kind_label' ) ) {
+	/**
+	 * Type a afficher quand la deuxieme ligne n'a que la superficie.
+	 *
+	 * @param int    $post_id Identifiant.
+	 * @param string $slug    Slug.
+	 * @param string $lang    Langue.
+	 * @return string
+	 */
+	function pk_card_kind_label( $post_id, $slug, $lang ) {
+		$slug  = sanitize_title( (string) $slug );
+		$names = array(
+			'terrain'  => 'Terrain',
+			'hangar'   => 'Hangar',
+			'depot'    => 'Dépôt',
+			'usine'    => 'Usine',
+			'immeuble' => 'Immeuble',
+			'ferme'    => 'Ferme',
+			'lot'      => 'Lot',
+		);
+		if ( ! isset( $names[ $slug ] ) ) {
+			return '';
+		}
+		$name = $names[ $slug ];
+		if ( class_exists( 'Partikulier_Localization' ) ) {
+			$name = Partikulier_Localization::translate_polylang_string( $name, $name, 'partikulier' );
+		}
+		if ( 'lot' === $slug ) {
+			$raw = strtolower( pk_card_meta_first( $post_id, array( '_pk_lot_nature', '_pk_nature_lot', '_pk_nature', '_pk_lot_type', '_pk_lot_kind' ) ) );
+			if ( false !== strpos( $raw, 'villa' ) ) {
+				return trim( $name . ' villa' );
+			}
+		}
+		if ( in_array( $slug, array( 'terrain', 'lot' ), true ) && function_exists( 'pk_card_type_link_label' ) ) {
+			return pk_card_type_link_label( $name, $slug, $post_id, $lang );
+		}
+		return $name;
+	}
+}
+
+if ( ! function_exists( 'pk_card_finish_facts' ) ) {
+	/**
+	 * Si la ligne n'a que la superficie, le type la precede.
+	 *
+	 * @param int    $post_id Identifiant.
+	 * @param string $slug    Slug.
+	 * @param string $lang    Langue.
+	 * @param array  $bits    Morceaux deja construits.
+	 * @return string
+	 */
+	function pk_card_finish_facts( $post_id, $slug, $lang, $bits ) {
+		$bits = array_values( array_filter( (array) $bits ) );
+		$only_surface = 1 === count( $bits ) && false !== strpos( (string) $bits[0], 'm²' );
+		if ( $only_surface ) {
+			$kind = pk_card_kind_label( $post_id, $slug, $lang );
+			if ( $kind ) {
+				array_unshift( $bits, $kind );
+			}
+		}
+		return implode( ' · ', $bits );
+	}
+}
+
 /**
  * Une seule ligne de faits, selon le type. Champ vide : omis. Rien n'est invente.
  *
@@ -597,7 +661,7 @@ if ( ! function_exists( 'pk_card_fact_line' ) ) {
 			if ( $salon_label ) {
 				$bits[] = $salon_label;
 			}
-			return implode( ' · ', array_filter( $bits ) );
+			return pk_card_finish_facts( $post_id, $slug, $lang, $bits );
 		}
 		if ( 'studio' === $slug ) {
 			if ( '' === $beds_raw || '0' === $beds_raw ) {
@@ -611,7 +675,7 @@ if ( ! function_exists( 'pk_card_fact_line' ) ) {
 			if ( $salon_label ) {
 				$bits[] = $salon_label;
 			}
-			return implode( ' · ', array_filter( $bits ) );
+			return pk_card_finish_facts( $post_id, $slug, $lang, $bits );
 		}
 		if ( 'riad' === $slug ) {
 			$bed_label = pk_card_count_phrase( $beds_raw, 'bed', $lang );
@@ -637,7 +701,7 @@ if ( ! function_exists( 'pk_card_fact_line' ) ) {
 					$bits[] = $suite_label;
 				}
 			}
-			return implode( ' · ', array_filter( $bits ) );
+			return pk_card_finish_facts( $post_id, $slug, $lang, $bits );
 		}
 		if ( 'maison' === $slug ) {
 			$bed_label = pk_card_count_phrase( $beds_raw, 'bed', $lang );
@@ -647,13 +711,13 @@ if ( ! function_exists( 'pk_card_fact_line' ) ) {
 			if ( $etages ) {
 				$bits[] = $etages;
 			}
-			return implode( ' · ', array_filter( $bits ) );
+			return pk_card_finish_facts( $post_id, $slug, $lang, $bits );
 		}
 		if ( 'immeuble' === $slug ) {
 			if ( $etages ) {
 				$bits[] = $etages;
 			}
-			return implode( ' · ', array_filter( $bits ) );
+			return pk_card_finish_facts( $post_id, $slug, $lang, $bits );
 		}
 		if ( in_array( $slug, array( 'bureau', 'bureaux' ), true ) ) {
 			$layout = strtolower( pk_card_meta_first( $post_id, array( '_pk_amenagement', '_pk_bureau_layout', '_pk_open_space', '_pk_espace' ) ) );
@@ -671,16 +735,16 @@ if ( ! function_exists( 'pk_card_fact_line' ) ) {
 			if ( $sdb ) {
 				$bits[] = $sdb;
 			}
-			return implode( ' · ', array_filter( $bits ) );
+			return pk_card_finish_facts( $post_id, $slug, $lang, $bits );
 		}
 		if ( in_array( $slug, array( 'local', 'local-commercial', 'commerce' ), true ) ) {
 			$kind = pk_card_commercial_kind( $post_id, $slug );
 			if ( $kind ) {
 				array_unshift( $bits, $kind );
 			}
-			return implode( ' · ', array_filter( $bits ) );
+			return pk_card_finish_facts( $post_id, $slug, $lang, $bits );
 		}
-		return implode( ' · ', array_filter( $bits ) );
+		return pk_card_finish_facts( $post_id, $slug, $lang, $bits );
 	}
 }
 

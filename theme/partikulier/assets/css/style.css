@@ -5956,3 +5956,15 @@ body .pk-card-foot .pk-card-cta {
 	white-space: nowrap !important;
 	overflow-wrap: normal !important;
 }
+
+/* 6.20.130 — titre fixe pour 160 caracteres : la 2e ligne est parallele sur les 3 cartes. */
+body .pk-card-title,
+body .pk-editorial-cards .pk-card-title,
+body .pk-archive-content .pk-card-title,
+body .pk-grid-list .pk-card-title {
+	height: 6.75em !important;
+	min-height: 6.75em !important;
+	max-height: 6.75em !important;
+	overflow: hidden !important;
+	line-height: 1.35 !important;
+}
