@@ -6259,3 +6259,24 @@ body .pk-archive-content .pk-card-foot {
 		margin-top: .65rem !important;
 	}
 }
+
+/* 6.20.141 — le titre d'accueil reste plus grand que le paragraphe, sans cacher la recherche. */
+@media (min-width: 901px) {
+	body.home .pk-editorial-hero h1 {
+		font-size: clamp(2.55rem, 3.1vw, 3.25rem) !important;
+		line-height: 1.05 !important;
+		font-weight: 700 !important;
+		margin: 0 0 .45rem !important;
+	}
+	body.home .pk-editorial-hero h1 .pk-hero-accent {
+		font-size: 1em !important;
+		line-height: 1.05 !important;
+		font-weight: 500 !important;
+	}
+	body.home .pk-editorial-hero__intro {
+		font-size: 1rem !important;
+		font-weight: 400 !important;
+		line-height: 1.45 !important;
+		margin: 0 0 .65rem !important;
+	}
+}
