@@ -5521,9 +5521,11 @@ body.home .pk-editorial-section--tint .pk-editorial-heading h2 {
 .pk-card-city:hover { color: var(--pk-primary-dark); }
 
 
-/* 6.20.123 — trois annonces par ligne. */
-body.home .pk-editorial-cards {
-	grid-template-columns: repeat(3, minmax(0, 1fr));
+/* 6.20.123 — trois annonces par ligne, uniquement au-dessus de 900 px. */
+@media (min-width: 901px) {
+	body.home .pk-editorial-cards {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
 }
 
 
@@ -5993,4 +5995,17 @@ body .pk-grid-list .pk-card-title {
 	min-height: 5.4em !important;
 	max-height: 5.4em !important;
 	line-height: 1.35 !important;
+}
+
+/* 6.20.133 — mobile et tablette reprennent les regles deja validees.
+   Telephone : une annonce. De 768 a 900 px : deux annonces. */
+@media (max-width: 900px) {
+	body.home .pk-editorial-cards {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
+@media (max-width: 767px) {
+	body.home .pk-editorial-cards {
+		grid-template-columns: minmax(0, 1fr);
+	}
 }
