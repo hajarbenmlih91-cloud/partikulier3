@@ -853,3 +853,46 @@ if ( ! function_exists( 'pk_card_title_html' ) ) {
 		return implode( '', $parts );
 	}
 }
+
+if ( ! function_exists( 'pk_card_fact_icon' ) ) {
+	/**
+	 * Petite icone de fait, mobile seulement. Le texte reste inchange.
+	 *
+	 * @param string $bit Morceau deja affiche.
+	 * @return string
+	 */
+	function pk_card_fact_icon( $bit ) {
+		$t = function_exists( 'mb_strtolower' ) ? mb_strtolower( (string) $bit ) : strtolower( (string) $bit );
+		$kind = 'mark';
+		if ( false !== strpos( $t, 'm²' ) || false !== strpos( $t, 'm2' ) ) {
+			$kind = 'area';
+		} elseif ( preg_match( '/salon|living|جلوس/u', $t ) ) {
+			$kind = 'sofa';
+		} elseif ( preg_match( '/chambre|bedroom|غرف نوم|غرفة نوم/u', $t ) ) {
+			$kind = 'bed';
+		} elseif ( preg_match( '/sdb|salle de bain|bathroom|حمام/u', $t ) ) {
+			$kind = 'bath';
+		} elseif ( preg_match( '/bureau|office|مكتب/u', $t ) ) {
+			$kind = 'desk';
+		} elseif ( preg_match( '/suite|جناح|أجنحة/u', $t ) ) {
+			$kind = 'suite';
+		} elseif ( preg_match( '/rdc|أرضي|الطابق|niveau|level|طوابق/u', $t ) ) {
+			$kind = 'floors';
+		} elseif ( preg_match( '/ouvert|open space|مفتوحة/u', $t ) ) {
+			$kind = 'open';
+		}
+		$paths = array(
+			'area'   => '<path d="M4 9V5h4"/><path d="M16 5h4v4"/><path d="M20 15v4h-4"/><path d="M8 20H4v-4"/><path d="M9 15.5l2.2-2.8 1.6 1.6L16 10.5"/>',
+			'bed'    => '<path d="M3 18V9"/><path d="M21 18v-5"/><path d="M3 13h18"/><path d="M3 18h18"/><path d="M7 13V10a2 2 0 0 1 2-2h1"/>',
+			'sofa'   => '<path d="M5 11V8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v3"/><path d="M3 12h18v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4z"/><path d="M7 18v2"/><path d="M17 18v2"/>',
+			'bath'   => '<path d="M5 12h14v2a5 5 0 0 1-5 5H10a5 5 0 0 1-5-5v-2z"/><path d="M7 12V8a2 2 0 0 1 2-2h1"/><path d="M8 6V4"/>',
+			'desk'   => '<path d="M4 9h16v7H4z"/><path d="M8 16v3"/><path d="M16 16v3"/><path d="M9 9V6h6v3"/>',
+			'suite'  => '<path d="M7 20V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v14"/><path d="M7 20h10"/><path d="M14.5 12h.01"/>',
+			'floors' => '<path d="M4 20h5v-5h5v-5h6"/>',
+			'open'   => '<rect x="3" y="6" width="18" height="12" rx="1.5"/><path d="M3 12h18"/>',
+			'mark'   => '<path d="M5 7h9l5 5-5 5H5V7z"/><path d="M9 12h.01"/>',
+		);
+		$inner = isset( $paths[ $kind ] ) ? $paths[ $kind ] : $paths['mark'];
+		return '<svg class="pk-card-fact-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' . $inner . '</svg>';
+	}
+}
