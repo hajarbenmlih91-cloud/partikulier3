@@ -6593,3 +6593,29 @@ html[dir="rtl"] .pk-scroll-actions .pk-scroll-arrow {
 		padding: .5rem .4rem;
 	}
 }
+
+/* 6.20.149 — mobile seul : Chercher + Déposer. Tablette et bureau : le menu suit. */
+@media (min-width: 768px) {
+	.pk-scroll-actions,
+	.pk-scroll-actions.is-on {
+		display: none !important;
+	}
+	.pk-main-nav {
+		position: sticky !important;
+		top: 0 !important;
+		z-index: 1100;
+		background: #fff;
+	}
+}
+
+/* 6.20.149 — arabe : Voir l'annonce à gauche, flèche vers la gauche. */
+html[dir="rtl"] body .pk-card-foot .pk-card-cta {
+	margin-left: 0 !important;
+	margin-right: auto !important;
+	text-align: left !important;
+	justify-content: flex-start !important;
+}
+html[dir="rtl"] body .pk-card-cta > span[aria-hidden="true"] {
+	display: inline-block;
+	transform: scaleX(-1);
+}
