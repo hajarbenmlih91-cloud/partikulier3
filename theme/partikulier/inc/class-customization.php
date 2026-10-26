@@ -137,7 +137,7 @@ class Partikulier_Customization {
 				'home_kicker'        => array(
 							'fr'         => 'La plateforme entre particuliers',
 													'en' => 'The platform between private owners',
-										'ar' => 'المنصة بين المالكين',
+										'ar' => 'منصة عقارية دون سماسرة',
 									),
 				'home_title'         => array(
 							'fr'         => 'Vendez et louez entre particuliers.',
@@ -192,7 +192,7 @@ class Partikulier_Customization {
 			'home_kicker' => array(
 				'fr' => array( 'La plateforme immobilière entre particuliers' => 'La plateforme entre particuliers' ),
 				'en' => array( 'The real estate platform between private owners' => 'The platform between private owners' ),
-				'ar' => array( 'المنصة العقارية بين المالكين' => 'المنصة بين المالكين' ),
+				'ar' => array( 'المنصة العقارية بين المالكين' => 'منصة عقارية دون سماسرة', 'المنصة بين المالكين' => 'منصة عقارية دون سماسرة' ),
 			),
 		);
 		$value = (string) $value;

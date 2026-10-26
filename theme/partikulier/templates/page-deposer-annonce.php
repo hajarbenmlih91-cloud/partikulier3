@@ -166,7 +166,7 @@ $types = get_terms( array(
 								<label class="pk-choice<?php echo 'louer' === $pk_edit_tx ? ' is-active' : ''; ?>">
 										<input type="radio" name="pk_transaction" value="louer" <?php checked( $pk_edit_tx, 'louer' ); ?>>
 										<strong><?php esc_html_e( 'Louer', 'partikulier' ); ?></strong>
-										<span><?php esc_html_e( 'Recevoir des demandes de visite.', 'partikulier' ); ?></span>
+										<span><?php esc_html_e( 'Recevoir des demandes de location.', 'partikulier' ); ?></span>
 								</label>
 						</div>
 				</div>

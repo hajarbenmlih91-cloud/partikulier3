@@ -80,7 +80,7 @@ if ( in_array( $pk_intent_raw, array( 'a-vendre', 'a-louer', 'saisonnier' ), tru
 } elseif ( in_array( $pk_action_raw, array( 'a-vendre', 'a-louer' ), true ) ) {
 	$pk_intent = $pk_action_raw;
 }
-if ( '' === $pk_intent && isset( $variant ) && 'hero' === $variant ) {
+if ( '' === $pk_intent && isset( $variant ) && in_array( $variant, array( 'hero', 'archive' ), true ) ) {
 	$pk_intent = 'a-vendre';
 }
 $pk_is_rent      = in_array( $pk_intent, array( 'a-louer', 'saisonnier' ), true );
