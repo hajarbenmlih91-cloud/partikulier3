@@ -55,6 +55,7 @@ $pk_t = static function ( $fr ) use ( $pk_find_lang ) {
 		'Local commercial'    => array( 'en' => 'Commercial premises', 'ar' => 'محل تجاري' ),
 		'Minimum'             => array( 'en' => 'Minimum' ),
 		'Salons'              => array( 'en' => 'Living rooms', 'ar' => 'غرف الجلوس' ),
+		'Superficie (m²)'     => array( 'en' => 'Area (m²)', 'ar' => 'المساحة (م²)' ),
 		'Maximum'             => array( 'en' => 'Maximum' ),
 		'Indifférent'         => array( 'en' => 'No preference / Not specified', 'ar' => 'لا تفضيل / غير محدد' ),
 	);
@@ -184,6 +185,8 @@ if ( $pk_area_min > $pk_area_max_val ) {
 $pk_beds = $pk_int( 'es_bedrooms_min' );
 $pk_salons = $pk_int( 'pk_salons_min' );
 $pk_salon_heading = ( 'ar' === $pk_find_lang ) ? 'غرف الجلوس' : $pk_t( 'Salons' );
+$pk_area_hint = $pk_t( 'Superficie (m²)' );
+$pk_area_unit = ( 'ar' === $pk_find_lang ) ? 'م²' : 'm²';
 if ( ! in_array( $pk_beds, array( 0, 1, 2, 3, 4, 5 ), true ) ) {
 	$pk_beds = 0;
 }
@@ -462,7 +465,8 @@ $pk_season_label = ( 'fr' === $pk_find_lang ) ? 'Location saisonnière' : $pk_t(
 				<div class="pk-find-duo">
 					<label>
 						<span><?php echo esc_html( $pk_t( 'Minimum' ) ); ?></span>
-						<select class="pk-find-select" name="es_size_min" data-pk-min dir="ltr">
+						<span class="pk-find-write"><?php echo esc_html( $pk_area_hint ); ?></span>
+						<select class="pk-find-select" name="es_size_min" data-pk-min data-pk-typein data-pk-unit="<?php echo esc_attr( $pk_area_unit ); ?>" data-pk-hint="<?php echo esc_attr( $pk_area_hint ); ?>" dir="ltr">
 							<option value=""><?php echo esc_html( $pk_t( 'Indifférent' ) ); ?></option>
 							<?php foreach ( $pk_area_choices as $pk_n ) : ?>
 								<option value="<?php echo esc_attr( $pk_n ); ?>" <?php selected( $pk_area_min, $pk_n ); ?>><?php echo esc_html( $pk_fmt( $pk_n ) . ' m²' ); ?></option>
@@ -471,7 +475,8 @@ $pk_season_label = ( 'fr' === $pk_find_lang ) ? 'Location saisonnière' : $pk_t(
 					</label>
 					<label>
 						<span><?php echo esc_html( $pk_t( 'Maximum' ) ); ?></span>
-						<select class="pk-find-select" name="es_size_max" dir="ltr">
+						<span class="pk-find-write"><?php echo esc_html( $pk_area_hint ); ?></span>
+						<select class="pk-find-select" name="es_size_max" data-pk-typein data-pk-unit="<?php echo esc_attr( $pk_area_unit ); ?>" data-pk-hint="<?php echo esc_attr( $pk_area_hint ); ?>" dir="ltr">
 							<option value=""><?php echo esc_html( $pk_t( 'Indifférent' ) ); ?></option>
 							<?php foreach ( $pk_area_choices as $pk_n ) : ?>
 								<option value="<?php echo esc_attr( $pk_n ); ?>" <?php selected( $pk_area_max_sel, $pk_n ); ?>><?php echo esc_html( $pk_fmt( $pk_n ) . ' m²' ); ?></option>

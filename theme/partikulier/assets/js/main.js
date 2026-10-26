@@ -1081,7 +1081,7 @@ function pkLimitTitle(value) {
 		select.parentNode.insertBefore(wrap, select);
 		wrap.appendChild(select);
 		select.classList.add("pk-select-native");
-		var canType = select.hasAttribute("data-pk-min");
+		var canType = select.hasAttribute("data-pk-min") || select.hasAttribute("data-pk-typein");
 		if (canType) wrap.classList.add("pk-select-can-type");
 		var btn = document.createElement("button");
 		btn.type = "button";
@@ -1128,7 +1128,8 @@ function pkLimitTitle(value) {
 			typeField.setAttribute("autocomplete", "off");
 			typeField.setAttribute("dir", "ltr");
 			var emptyOpt = select.options[0];
-			typeField.placeholder = emptyOpt ? emptyOpt.textContent.replace(/^\s+|\s+$/g, "") : "";
+			var hint = select.getAttribute("data-pk-hint") || "";
+			typeField.placeholder = hint || (emptyOpt ? emptyOpt.textContent.replace(/^\s+|\s+$/g, "") : "");
 			showTyped();
 			btn.classList.add("pk-select-opener");
 			btn.textContent = "";
@@ -1189,6 +1190,14 @@ function pkLimitTitle(value) {
 			});
 			typeField.addEventListener("blur", showTyped);
 			wrap.appendChild(typeField);
+			var unit = select.getAttribute("data-pk-unit") || "";
+			if (unit) {
+				var unitEl = document.createElement("span");
+				unitEl.className = "pk-select-unit";
+				unitEl.setAttribute("dir", "ltr");
+				unitEl.textContent = unit;
+				wrap.appendChild(unitEl);
+			}
 		}
 		wrap.appendChild(btn);
 		wrap.appendChild(list);
