@@ -183,6 +183,7 @@ if ( $pk_area_min > $pk_area_max_val ) {
 
 $pk_beds = $pk_int( 'es_bedrooms_min' );
 $pk_salons = $pk_int( 'pk_salons_min' );
+$pk_salon_heading = ( 'ar' === $pk_find_lang ) ? 'غرف الجلوس' : $pk_t( 'Salons' );
 if ( ! in_array( $pk_beds, array( 0, 1, 2, 3, 4, 5 ), true ) ) {
 	$pk_beds = 0;
 }
@@ -490,8 +491,8 @@ $pk_season_label = ( 'fr' === $pk_find_lang ) ? 'Location saisonnière' : $pk_t(
 						</label>
 					<?php endforeach; ?>
 				</div>
-				<h3 class="pk-find-next"><?php echo esc_html( $pk_t( 'Salons' ) ); ?></h3>
-				<div class="pk-find-seg" role="radiogroup" aria-label="<?php echo esc_attr( $pk_t( 'Salons' ) ); ?>">
+				<h3 class="pk-find-next"><?php echo esc_html( $pk_salon_heading ); ?></h3>
+				<div class="pk-find-seg" role="radiogroup" aria-label="<?php echo esc_attr( $pk_salon_heading ); ?>">
 					<?php foreach ( array( 1, 2, 3, 4 ) as $pk_n ) : ?>
 						<label>
 							<input type="radio" name="pk_salons_min" value="<?php echo esc_attr( $pk_n ); ?>" <?php checked( $pk_salons, $pk_n ); ?><?php echo $pk_salons === $pk_n ? ' data-was="1"' : ''; ?>>
