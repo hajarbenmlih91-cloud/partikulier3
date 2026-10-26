@@ -7170,3 +7170,138 @@ html body .pk-find-panel .pk-find-results:active {
 		right: 8px;
 	}
 }
+
+
+/* 6.20.157 — transaction et icones en tete du popup. Cases carrees, coche violette. */
+html body .pk-find-open:checked ~ .pk-find-panel {
+	width: min(620px, calc(100vw - 32px)) !important;
+	max-width: 620px !important;
+}
+html body .pk-find-type-card[hidden] {
+	display: none !important;
+}
+html body .pk-find-panel .pk-find-tx-row {
+	display: flex;
+	gap: 0;
+	border: 1px solid #d9d9d9;
+	border-radius: 8px;
+	overflow: hidden;
+}
+html body .pk-find-panel .pk-find-tx-btn {
+	flex: 1 1 0;
+	min-height: 44px;
+	margin: 0;
+	padding: .55rem .35rem;
+	border: 0 !important;
+	border-radius: 0 !important;
+	background: #fff !important;
+	color: #161715 !important;
+	font-weight: 700;
+	font-size: .95rem;
+	box-shadow: none;
+}
+html body .pk-find-panel .pk-find-tx-btn + .pk-find-tx-btn {
+	border-inline-start: 1px solid #d9d9d9 !important;
+}
+html body .pk-find-panel .pk-find-tx-btn.is-on,
+html body .pk-find-panel .pk-find-tx-btn[aria-pressed="true"] {
+	background: #A13FF4 !important;
+	color: #fff !important;
+}
+html body .pk-find-panel .pk-find-tx-btn.is-on:hover,
+html body .pk-find-panel .pk-find-tx-btn.is-on:active,
+html body .pk-find-panel .pk-find-tx-btn:hover {
+	background: #6515A0 !important;
+	color: #fff !important;
+}
+html body .pk-find-panel .pk-find-typegrid {
+	display: grid;
+	grid-template-columns: repeat(5, minmax(0, 1fr));
+	gap: 8px 4px;
+}
+html body .pk-find-panel .pk-find-type-card {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: flex-start;
+	gap: 6px;
+	min-height: 0;
+	margin: 0;
+	padding: 8px 2px;
+	background: transparent !important;
+	border: 0 !important;
+	box-shadow: none !important;
+	color: #8a8a8a !important;
+	font-size: 12px !important;
+	font-weight: 700 !important;
+	line-height: 1.2 !important;
+	text-align: center;
+}
+html body .pk-find-panel .pk-find-type-card .pk-find-type-ico {
+	display: flex;
+	color: #8a8a8a;
+}
+html body .pk-find-panel .pk-find-type-card .pk-find-type-ico svg {
+	width: 40px;
+	height: 40px;
+}
+html body .pk-find-panel .pk-find-type-card[aria-selected="true"],
+html body .pk-find-panel .pk-find-type-card[aria-selected="true"] .pk-find-type-ico {
+	color: #A13FF4 !important;
+}
+html body .pk-find-panel .pk-find-type-card:hover,
+html body .pk-find-panel .pk-find-type-card:hover .pk-find-type-ico,
+html body .pk-find-panel .pk-find-type-card:active,
+html body .pk-find-panel .pk-find-type-card:active .pk-find-type-ico {
+	color: #6515A0 !important;
+	background: transparent !important;
+}
+html body .pk-find-checks {
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	gap: .8rem .55rem;
+}
+html body .pk-find-check input {
+	appearance: none;
+	-webkit-appearance: none;
+	width: 18px;
+	height: 18px;
+	margin: .12rem 0 0;
+	border: 1.5px solid #c8c8c8;
+	border-radius: 3px;
+	background: #fff;
+	display: inline-grid;
+	place-content: center;
+	accent-color: unset;
+	cursor: pointer;
+}
+html body .pk-find-check input:checked {
+	border-color: #A13FF4;
+	background: #fff;
+}
+html body .pk-find-check input:checked::after {
+	content: "";
+	width: 9px;
+	height: 5px;
+	border-left: 2px solid #A13FF4;
+	border-bottom: 2px solid #A13FF4;
+	transform: rotate(-45deg) translate(0, -1px);
+}
+html body .pk-find-check input:focus-visible {
+	outline: 2px solid #161715;
+	outline-offset: 2px;
+}
+@media (max-width: 767px) {
+	html body .pk-find-open:checked ~ .pk-find-panel {
+		width: min(440px, calc(100vw - 28px)) !important;
+		max-width: calc(100vw - 28px) !important;
+	}
+	html body .pk-find-panel .pk-find-typegrid,
+	html body .pk-find-checks {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+}
+@media (max-width: 420px) {
+	html body .pk-find-checks {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
