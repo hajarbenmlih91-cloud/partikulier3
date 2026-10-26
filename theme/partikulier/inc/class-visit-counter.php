@@ -95,10 +95,10 @@ class Partikulier_Visit_Counter {
 			.pk-cookie-bar a { color: #111; text-decoration: underline; }
 			.pk-cookie-actions { display: flex; gap: 8px; flex: 0 0 auto; }
 			.pk-cookie-actions button {
-				min-width: 120px; height: 40px; padding: 0 16px; border: 1px solid #A13FF4;
-				background: #fff; color: #A13FF4; font: inherit; font-weight: 650; cursor: pointer;
+				min-width: 120px; height: 40px; padding: 0 16px; border: 1px solid #323232;
+				background: #fff; color: #323232; font: inherit; font-weight: 650; cursor: pointer;
 			}
-			.pk-cookie-actions button[data-yes] { background: #A13FF4; color: #fff; }
+			.pk-cookie-actions button[data-yes] { background: #C8242B; color: #fff; }
 			body.pk-cookie-open { padding-bottom: 84px; }
 			@media (max-width: 640px) {
 				.pk-cookie-bar { flex-direction: column; align-items: stretch; }
