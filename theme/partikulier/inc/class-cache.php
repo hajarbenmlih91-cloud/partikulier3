@@ -69,6 +69,7 @@ class Partikulier_Cache {
 		// Correctif A, partie 2 : les pages privees (depot, espace personnel, favoris,
 		// connexion) ne doivent jamais entrer dans le cache de pages de l'hebergeur.
 		add_action( 'init', array( __CLASS__, 'exclude_private_pages_from_host_cache' ), 2 );
+		add_action( 'send_headers', array( __CLASS__, 'private_when_logged_in' ) );
 
 		// Purge unique apres mise a jour (voir maybe_purge_after_update).
 		add_action( 'init', array( __CLASS__, 'maybe_purge_after_update' ), 3 );
@@ -179,7 +180,21 @@ class Partikulier_Cache {
 			self::purge_all();
 		}
 
-		public static function exclude_private_pages_from_host_cache() {
+	
+	/**
+	 * Une session connectée ne doit pas être mise en cache public :
+	 * le menu affiche Mon espace, pas Se connecter.
+	 */
+	public static function private_when_logged_in() {
+		if ( is_admin() || ! is_user_logged_in() || headers_sent() ) {
+			return;
+		}
+		do_action( 'litespeed_control_set_nocache', 'session Partikulier' );
+		header( 'X-LiteSpeed-Cache-Control: no-cache' );
+		header( 'Cache-Control: private, no-store, max-age=0' );
+	}
+
+	public static function exclude_private_pages_from_host_cache() {
 			$path = isset( $_SERVER['REQUEST_URI'] ) ? wp_parse_url( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ), PHP_URL_PATH ) : '';
 			$path = trim( (string) $path, '/' );
 			if ( ! preg_match( '#(?:^|/)(?:deposer(?:-une-annonce|-annonce|-en|-ar)?|mes-annonces(?:-en|-ar)?|favoris(?:-en|-ar)?|connexion(?:-en|-ar)?)(?:/|$)#', $path ) ) {

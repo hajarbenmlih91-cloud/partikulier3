@@ -17,6 +17,7 @@ class Partikulier_Header {
 
 	public static function init() {
 		add_filter( 'wp_nav_menu_objects', array( __CLASS__, 'localize_archive_items' ), 20, 2 );
+		add_filter( 'wp_nav_menu_objects', array( __CLASS__, 'sync_account_item' ), 100, 2 );
 	}
 
 	public static function localize_archive_items( $items, $args ) {
@@ -34,6 +35,63 @@ class Partikulier_Header {
 			}
 		}
 		return $items;
+	}
+
+
+	/**
+	 * Mon espace seulement si la personne est connectée.
+	 * Sinon : Se connecter, vers la page de connexion.
+	 *
+	 * @param array<int,object> $items Items de menu.
+	 * @param object            $args  Arguments du menu.
+	 * @return array<int,object>
+	 */
+	public static function sync_account_item( $items, $args ) {
+		unset( $args );
+		if ( ! is_array( $items ) ) {
+			return $items;
+		}
+		$space = function_exists( 'pk_page_url' ) ? pk_page_url( 'mes-annonces', '/mes-annonces/' ) : home_url( '/mes-annonces/' );
+		$login = function_exists( 'pk_login_page_url' ) ? pk_login_page_url( $space ) : wp_login_url( $space );
+		foreach ( $items as $item ) {
+			if ( ! is_object( $item ) || ! self::is_account_item( $item ) ) {
+				continue;
+			}
+			if ( is_user_logged_in() ) {
+				$item->url   = $space;
+				$item->title = self::account_label( 'Mon espace' );
+			} else {
+				$item->url   = $login;
+				$item->title = self::account_label( 'Se connecter' );
+			}
+		}
+		return $items;
+	}
+
+	/**
+	 * @param object $item Item de menu.
+	 */
+	private static function is_account_item( $item ) {
+		$url   = isset( $item->url ) ? (string) $item->url : '';
+		$path  = (string) wp_parse_url( $url, PHP_URL_PATH );
+		$title = isset( $item->title ) ? trim( wp_strip_all_tags( (string) $item->title ) ) : '';
+		if ( preg_match( '#/(?:mes-annonces|connexion|login|wp-login\.php)(?:/|$)#', $path ) ) {
+			return true;
+		}
+		if ( false !== strpos( $url, 'auth_item=login' ) ) {
+			return true;
+		}
+		return in_array( $title, array( 'Mon espace', 'Se connecter', 'Connexion', 'My account', 'Sign in', 'مساحتي', 'تسجيل الدخول' ), true );
+	}
+
+	/**
+	 * @param string $source Libellé français déjà enregistré.
+	 */
+	private static function account_label( $source ) {
+		if ( class_exists( 'Partikulier_Localization' ) ) {
+			return Partikulier_Localization::translate_polylang_string( $source, $source, 'partikulier' );
+		}
+		return $source;
 	}
 
 	public static function fallback_menu( $args ) {
