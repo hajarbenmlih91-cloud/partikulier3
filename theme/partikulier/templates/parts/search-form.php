@@ -54,6 +54,7 @@ $pk_t = static function ( $fr ) use ( $pk_find_lang ) {
 		'Ferme'               => array( 'en' => 'Farm', 'ar' => 'ضيعة' ),
 		'Local commercial'    => array( 'en' => 'Commercial premises', 'ar' => 'محل تجاري' ),
 		'Minimum'             => array( 'en' => 'Minimum' ),
+		'Salons'              => array( 'en' => 'Living rooms', 'ar' => 'غرف الجلوس' ),
 		'Maximum'             => array( 'en' => 'Maximum' ),
 		'Indifférent'         => array( 'en' => 'No preference / Not specified', 'ar' => 'لا تفضيل / غير محدد' ),
 	);
@@ -68,7 +69,7 @@ $pk_scalar = static function ( $key ) {
 };
 
 $pk_int = static function ( $key ) use ( $pk_scalar ) {
-	$raw = $pk_scalar( $key );
+	$raw = str_replace( array( ' ', "\xc2\xa0" ), '', $pk_scalar( $key ) );
 	return ( '' !== $raw && preg_match( '/^\d+$/', $raw ) ) ? (int) $raw : 0;
 };
 
@@ -181,12 +182,12 @@ if ( $pk_area_min > $pk_area_max_val ) {
 }
 
 $pk_beds = $pk_int( 'es_bedrooms_min' );
-$pk_baths = $pk_int( 'es_bathrooms_min' );
+$pk_salons = $pk_int( 'pk_salons_min' );
 if ( ! in_array( $pk_beds, array( 0, 1, 2, 3, 4, 5 ), true ) ) {
 	$pk_beds = 0;
 }
-if ( ! in_array( $pk_baths, array( 0, 1, 2, 3, 4 ), true ) ) {
-	$pk_baths = 0;
+if ( ! in_array( $pk_salons, array( 0, 1, 2, 3, 4 ), true ) ) {
+	$pk_salons = 0;
 }
 $pk_furnished = ( 'meuble' === $pk_scalar( 'pk_furnished' ) ) ? 'meuble' : '';
 
@@ -460,7 +461,7 @@ $pk_season_label = ( 'fr' === $pk_find_lang ) ? 'Location saisonnière' : $pk_t(
 				<div class="pk-find-duo">
 					<label>
 						<span><?php echo esc_html( $pk_t( 'Minimum' ) ); ?></span>
-						<select class="pk-find-select" name="es_size_min" dir="ltr">
+						<select class="pk-find-select" name="es_size_min" data-pk-min dir="ltr">
 							<option value=""><?php echo esc_html( $pk_t( 'Indifférent' ) ); ?></option>
 							<?php foreach ( $pk_area_choices as $pk_n ) : ?>
 								<option value="<?php echo esc_attr( $pk_n ); ?>" <?php selected( $pk_area_min, $pk_n ); ?>><?php echo esc_html( $pk_fmt( $pk_n ) . ' m²' ); ?></option>
@@ -489,11 +490,11 @@ $pk_season_label = ( 'fr' === $pk_find_lang ) ? 'Location saisonnière' : $pk_t(
 						</label>
 					<?php endforeach; ?>
 				</div>
-				<h3 class="pk-find-next"><?php echo esc_html( $pk_t( 'Salles de bains' ) ); ?></h3>
-				<div class="pk-find-seg" role="radiogroup" aria-label="<?php echo esc_attr( $pk_t( 'Salles de bains' ) ); ?>">
+				<h3 class="pk-find-next"><?php echo esc_html( $pk_t( 'Salons' ) ); ?></h3>
+				<div class="pk-find-seg" role="radiogroup" aria-label="<?php echo esc_attr( $pk_t( 'Salons' ) ); ?>">
 					<?php foreach ( array( 1, 2, 3, 4 ) as $pk_n ) : ?>
 						<label>
-							<input type="radio" name="es_bathrooms_min" value="<?php echo esc_attr( $pk_n ); ?>" <?php checked( $pk_baths, $pk_n ); ?><?php echo $pk_baths === $pk_n ? ' data-was="1"' : ''; ?>>
+							<input type="radio" name="pk_salons_min" value="<?php echo esc_attr( $pk_n ); ?>" <?php checked( $pk_salons, $pk_n ); ?><?php echo $pk_salons === $pk_n ? ' data-was="1"' : ''; ?>>
 							<span dir="ltr"><?php echo esc_html( $pk_n . '+' ); ?></span>
 						</label>
 					<?php endforeach; ?>
@@ -562,8 +563,8 @@ $pk_season_label = ( 'fr' === $pk_find_lang ) ? 'Location saisonnière' : $pk_t(
 				if ( $pk_beds > 0 ) {
 					$pk_count_params['es_bedrooms_min'] = (string) $pk_beds;
 				}
-				if ( $pk_baths > 0 ) {
-					$pk_count_params['es_bathrooms_min'] = (string) $pk_baths;
+				if ( $pk_salons > 0 ) {
+					$pk_count_params['pk_salons_min'] = (string) $pk_salons;
 				}
 				if ( 'meuble' === $pk_furnished ) {
 					$pk_count_params['pk_furnished'] = 'meuble';
