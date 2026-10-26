@@ -6547,3 +6547,49 @@ html[dir="rtl"] body .pk-editorial-feature__price {
 	unicode-bidi: isolate !important;
 	align-self: flex-start !important;
 }
+
+/* 6.20.148 — barre qui suit : Chercher et Déposer, violet, plus de bouton blanc encadré. */
+.pk-scroll-actions.is-on {
+	background: #fff;
+	border-bottom: 1px solid #e6e5df;
+}
+.pk-scroll-actions__inner {
+	display: flex !important;
+	align-items: center;
+	justify-content: stretch;
+	gap: 8px;
+	padding: .5rem 0;
+}
+.pk-scroll-actions .pk-btn {
+	flex: 1 1 0;
+	min-width: 0;
+	min-height: 42px;
+	margin: 0;
+	padding: .55rem .7rem;
+	justify-content: center;
+	gap: .4rem;
+	font-size: 13px;
+	font-weight: 800;
+	line-height: 1.2;
+	white-space: nowrap;
+	background: #A13FF4 !important;
+	border: 1px solid #A13FF4 !important;
+	color: #fff !important;
+	box-shadow: none;
+}
+.pk-scroll-actions .pk-btn:hover,
+.pk-scroll-actions .pk-btn:active,
+.pk-scroll-actions .pk-btn:focus-visible {
+	background: #6515A0 !important;
+	border-color: #6515A0 !important;
+	color: #fff !important;
+}
+html[dir="rtl"] .pk-scroll-actions .pk-scroll-arrow {
+	transform: scaleX(-1);
+}
+@media (max-width: 767px) {
+	.pk-scroll-actions .pk-btn {
+		font-size: 12px;
+		padding: .5rem .4rem;
+	}
+}

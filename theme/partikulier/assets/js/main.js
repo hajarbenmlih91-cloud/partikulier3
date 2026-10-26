@@ -1575,12 +1575,13 @@ function pkLimitTitle(value) {
 	var search = document.querySelector(".pk-editorial-search");
 	if (!bar || !search) return;
 	function sync() {
-		var header = document.querySelector(".pk-site-header");
 		var top = 0;
-		if (header) {
-			var box = header.getBoundingClientRect();
-			top = Math.max(0, Math.round(box.bottom));
-		}
+		[document.querySelector(".pk-site-header"), document.querySelector(".pk-main-nav")].forEach(function (el) {
+			if (!el) return;
+			var box = el.getBoundingClientRect();
+			if (box.bottom > top && box.top < 120) top = Math.round(box.bottom);
+		});
+		top = Math.max(0, top);
 		document.documentElement.style.setProperty("--pk-header-h", top + "px");
 		var past = search.getBoundingClientRect().bottom < top + 4;
 		bar.classList.toggle("is-on", past);
