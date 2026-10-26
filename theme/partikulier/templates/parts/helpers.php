@@ -212,28 +212,23 @@ if ( ! function_exists( 'pk_type_icon' ) ) {
 	function pk_type_icon( $slug = '' ) {
 		$slug = sanitize_title( (string) $slug );
 		$slug = preg_replace( '/-(fr|en|ar)$/', '', $slug );
-		if ( 'entrepot' === $slug ) {
-			$slug = 'depot';
-		}
-		$paths = array(
-			'appartement' => '<path d="M4 21V5a1 1 0 0 1 1-1h9a1 1 0 0 1 1 1v16"/><path d="M15 21V9h4a1 1 0 0 1 1 1v11"/><path d="M2 21h20"/><path d="M7 8h2M7 12h2M7 16h2"/>',
-			'duplex'      => '<path d="M4 21V12h16v9"/><path d="M4 12V8l8-5 8 5v4"/><path d="M10 21v-4h4v4"/>',
-			'maison'      => '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/>',
-			'villa'       => '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9 13h2v3H9zM13 13h2v3h-2z"/>',
-			'riad'        => '<rect x="3" y="3" width="18" height="18"/><rect x="8" y="8" width="8" height="8"/><path d="M12 10v4M10 12h4"/>',
-			'terrain'     => '<path d="M12 3 3 8v8l9 5 9-5V8z"/><path d="M3 8l9 5 9-5"/><path d="M12 13v8"/>',
-			'parking'     => '<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M10 16V8h3a2.5 2.5 0 0 1 0 5h-3"/>',
-			'immeuble'    => '<rect x="4" y="3" width="16" height="18" rx="1"/><path d="M8 7h2M14 7h2M8 11h2M14 11h2M8 15h2M14 15h2"/>',
-			'local'       => '<path d="M3 9l1.5-5h15L21 9"/><path d="M4 9v12h16V9"/><path d="M3 9h18"/><path d="M9 21v-6h6v6"/>',
-			'loft'        => '<path d="M3 21V8l9-5 9 5v13"/><path d="M3 12h18M9 21V12M15 21V12"/>',
-			'studio'      => '<rect x="3" y="5" width="18" height="14" rx="1"/><path d="M3 15h18"/><path d="M7 15V9h4v6"/>',
-			'bureau'      => '<rect x="3" y="4" width="18" height="12"/><path d="M8 20h8M12 16v4"/>',
-			'depot'       => '<path d="M3 10l9-6 9 6"/><path d="M4 10v10h16V10"/><path d="M9 20v-6h6v6"/>',
-			'hangar'      => '<path d="M2 18V9l10-5 10 5v9"/><path d="M2 18h20"/><path d="M7 18v-5h10v5"/>',
-			'usine'       => '<path d="M3 21V10l5 3V10l5 3V8h8v13"/><path d="M17 8V4h2v4"/>',
+		$alias = array(
+			'entrepot' => 'local',
+			'depot'    => 'local',
+			'usine'    => 'local',
+			'loft'     => 'appartement',
+			'parking'  => 'terrain',
 		);
-		$d     = isset( $paths[ $slug ] ) ? $paths[ $slug ] : $paths['maison'];
-		return '<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' . $d . '</svg>';
+		if ( isset( $alias[ $slug ] ) ) {
+			$slug = $alias[ $slug ];
+		}
+		$file  = dirname( __DIR__, 2 ) . '/inc/type-icon-paths.php';
+		$paths = is_readable( $file ) ? include $file : array();
+		$d     = ( is_array( $paths ) && isset( $paths[ $slug ] ) ) ? $paths[ $slug ] : ( is_array( $paths ) && isset( $paths['maison'] ) ? $paths['maison'] : '' );
+		if ( '' === $d ) {
+			return '';
+		}
+		return '<svg viewBox="0 0 1024 1024" width="42" height="42" aria-hidden="true" focusable="false"><path fill="currentColor" d="' . $d . '"/></svg>';
 	}
 }
 

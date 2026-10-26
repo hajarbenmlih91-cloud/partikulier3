@@ -298,7 +298,30 @@ $pk_season_label = ( 'fr' === $pk_find_lang ) ? 'Location saisonnière' : $pk_t(
 					<span class="pk-find-type-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" focusable="false"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></span>
 					<span><?php echo esc_html( $pk_t( 'Tous' ) ); ?></span>
 				</button>
-				<?php foreach ( (array) $pk_types as $pk_term ) : ?>
+				<?php $pk_icon_rank = array(
+					'appartement' => 1,
+					'maison'      => 2,
+					'villa'       => 3,
+					'riad'        => 4,
+					'depot'       => 5,
+					'bureau'      => 6,
+					'terrain'     => 7,
+					'hangar'      => 8,
+					'usine'       => 9,
+					'studio'      => 10,
+					'duplex'      => 11,
+					'immeuble'    => 12,
+				);
+				$pk_type_cards = (array) $pk_types;
+				usort(
+					$pk_type_cards,
+					static function ( $a, $b ) use ( $pk_icon_rank ) {
+						$ra = ( $a instanceof WP_Term && isset( $pk_icon_rank[ $a->slug ] ) ) ? $pk_icon_rank[ $a->slug ] : 50;
+						$rb = ( $b instanceof WP_Term && isset( $pk_icon_rank[ $b->slug ] ) ) ? $pk_icon_rank[ $b->slug ] : 50;
+						return $ra <=> $rb;
+					}
+				);
+				foreach ( $pk_type_cards as $pk_term ) : ?>
 					<?php if ( ! $pk_term instanceof WP_Term ) { continue; } ?>
 					<button type="button" class="pk-find-type-opt pk-find-type-card" data-value="<?php echo esc_attr( $pk_term->slug ); ?>" aria-selected="<?php echo selected( $pk_type, $pk_term->slug, false ) ? 'true' : 'false'; ?>">
 						<span class="pk-find-type-ico" aria-hidden="true"><?php echo function_exists( 'pk_type_icon' ) ? pk_type_icon( $pk_term->slug ) : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
