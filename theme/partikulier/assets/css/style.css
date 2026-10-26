@@ -6514,3 +6514,23 @@ body .pk-site-footer .pk-footer-bottom {
 	color: #fff !important;
 	border-color: rgba(255, 255, 255, .28) !important;
 }
+
+/* 6.20.146 — prix arabe : le badge et le texte partent de la droite. Le nombre reste LTR. */
+html[dir="rtl"] body .pk-card-price,
+html[dir="rtl"] body .pk-editorial-cards .pk-card-price,
+html[dir="rtl"] body .pk-archive-content .pk-card-price {
+	left: auto !important;
+	right: 12px !important;
+	direction: rtl !important;
+	text-align: right !important;
+	unicode-bidi: isolate !important;
+}
+html[dir="rtl"] body .pk-price-num {
+	direction: ltr !important;
+	unicode-bidi: isolate !important;
+	display: inline-block;
+}
+html[dir="rtl"] body .pk-card-price-note {
+	direction: rtl !important;
+	unicode-bidi: isolate !important;
+}
