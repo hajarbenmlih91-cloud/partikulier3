@@ -7385,3 +7385,10 @@ html body .pk-find-panel .pk-find-check span {
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
 }
+
+/* 6.20.159 — une option hors type reste cachée, malgré le display flex des cases. */
+html body .pk-find-panel .pk-find-check[hidden],
+html body .pk-find-panel label.pk-find-chip.pk-find-check[hidden],
+html body .pk-find-amenities[hidden] {
+	display: none !important;
+}

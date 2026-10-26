@@ -124,14 +124,39 @@ $pk_tx_codes = static function ( $item ) {
 	return $codes;
 };
 $pk_chip_types = static function ( $id ) {
-	$building = array( 'elevator', 'garage', 'garage_m', 'security', 'pool', 'gym', 'concierge', 'facade', 'pets' );
-	if ( in_array( $id, $building, true ) ) {
-		return 'logement studio immeuble';
-	}
-	if ( 'garden' === $id ) {
-		return 'logement';
-	}
-	return 'logement studio';
+	// Pastilles du formulaire, par type. Studio et duplex reprennent la fiche appartement.
+	$map = array(
+		'terrace'     => 'appartement studio duplex maison',
+		'balcony'     => 'appartement studio duplex maison',
+		'garage'      => 'appartement studio duplex maison villa local',
+		'garage_m'    => 'appartement studio duplex maison villa local',
+		'elevator'    => 'appartement studio duplex maison villa',
+		'visavis'     => 'appartement studio duplex maison villa',
+		'garden'      => 'appartement studio duplex maison villa',
+		'sea'         => 'appartement studio duplex villa',
+		'gym'         => 'appartement studio duplex maison villa',
+		'pool'        => 'appartement studio duplex villa',
+		'concierge'   => 'appartement studio duplex',
+		'salon_ma'    => 'appartement studio duplex maison',
+		'salon_eu'    => 'appartement studio duplex maison',
+		'satellite'   => 'appartement studio duplex maison',
+		'clim'        => 'appartement studio duplex maison villa local',
+		'door'        => 'appartement studio duplex maison villa',
+		'kitchen_fit' => 'maison villa',
+		'fridge'      => 'appartement studio duplex maison',
+		'oven'        => 'appartement studio duplex maison',
+		'tv'          => 'appartement studio duplex maison',
+		'washer'      => 'appartement studio duplex maison',
+		'wifi'        => 'appartement studio duplex maison',
+		'microwave'   => 'appartement studio duplex maison',
+		'glazing'     => 'appartement studio duplex maison villa',
+		'pool_view'   => 'appartement studio duplex',
+		'mountain'    => 'appartement studio duplex villa',
+		'forest'      => 'appartement studio duplex',
+		'nature'      => 'appartement studio duplex villa',
+		'dishwasher'  => 'appartement studio duplex maison',
+	);
+	return isset( $map[ $id ] ) ? $map[ $id ] : '';
 };
 $pk_price_cap = $pk_is_rent ? $pk_rent_max : $pk_sale_max;
 $pk_price_step = $pk_is_rent ? $pk_rent_step : $pk_sale_step;
@@ -290,9 +315,15 @@ if ( class_exists( 'Partikulier_Amenities' ) ) {
 	}
 }
 $pk_amenity_title = class_exists( 'Partikulier_Amenities' ) ? Partikulier_Amenities::copy( 'group' ) : $pk_t( 'Équipements' );
-$pk_amenity_visible = false;
+$pk_type_now = preg_replace( '/-(fr|en|ar)$/', '', sanitize_title( (string) $pk_type ) );
+$pk_type_has = static function ( $types ) use ( $pk_type_now ) {
+	return '' !== $pk_type_now && '' !== (string) $types && false !== strpos( ' ' . $types . ' ', ' ' . $pk_type_now . ' ' );
+};
+$pk_meuble_types = 'appartement studio duplex maison villa';
+$pk_meuble_on    = ( 'louer' === $pk_tx_now ) && $pk_type_has( $pk_meuble_types );
+$pk_amenity_visible = $pk_meuble_on;
 foreach ( $pk_amenities as $pk_item ) {
-	if ( $pk_filter_ready && in_array( $pk_tx_now, (array) $pk_item['pk_tx'], true ) && false !== strpos( ' ' . $pk_item['pk_types'] . ' ', ' ' . $pk_family_now . ' ' ) ) {
+	if ( in_array( $pk_tx_now, (array) $pk_item['pk_tx'], true ) && $pk_type_has( $pk_item['pk_types'] ) ) {
 		$pk_amenity_visible = true;
 		break;
 	}
@@ -470,21 +501,21 @@ $pk_season_label = ( 'fr' === $pk_find_lang ) ? 'Location saisonnière' : $pk_t(
 			</div>
 
 			<?php if ( $pk_amenities || class_exists( 'Partikulier_Amenities' ) ) : ?>
-				<div class="pk-find-amenities">
+				<div class="pk-find-amenities"<?php echo $pk_amenity_visible ? '' : ' hidden'; ?>>
 					<h3><?php echo esc_html( $pk_amenity_title ); ?></h3>
 					<div class="pk-find-checks">
 						<?php foreach ( $pk_amenities as $pk_item ) : ?>
 							<?php
-							$pk_id     = sanitize_key( $pk_item['id'] );
-							$pk_chip_on = in_array( $pk_tx_now, (array) $pk_item['pk_tx'], true );
+							$pk_id      = sanitize_key( $pk_item['id'] );
+							$pk_chip_on = in_array( $pk_tx_now, (array) $pk_item['pk_tx'], true ) && $pk_type_has( $pk_item['pk_types'] );
 							?>
-							<label class="pk-find-chip pk-find-check" data-pk-tx="<?php echo esc_attr( implode( ' ', $pk_item['pk_tx'] ) ); ?>"<?php echo $pk_chip_on ? '' : ' hidden'; ?>>
+							<label class="pk-find-chip pk-find-check" data-pk-tx="<?php echo esc_attr( implode( ' ', $pk_item['pk_tx'] ) ); ?>" data-pk-types="<?php echo esc_attr( $pk_item['pk_types'] ); ?>"<?php echo $pk_chip_on ? '' : ' hidden'; ?>>
 								<input type="checkbox" name="pk_amenity[]" value="<?php echo esc_attr( $pk_id ); ?>" <?php checked( $pk_chip_on && in_array( $pk_id, $pk_selected_amenities, true ) ); ?>>
 								<span><?php echo esc_html( Partikulier_Amenities::label( $pk_item ) ); ?></span>
 							</label>
 						<?php endforeach; ?>
-						<label class="pk-find-chip pk-find-check" data-pk-tx="louer"<?php echo ( 'louer' === $pk_tx_now ) ? '' : ' hidden'; ?>>
-							<input type="checkbox" name="pk_furnished" value="meuble" <?php checked( 'louer' === $pk_tx_now && 'meuble' === $pk_furnished ); ?>>
+						<label class="pk-find-chip pk-find-check" data-pk-tx="louer" data-pk-types="<?php echo esc_attr( $pk_meuble_types ); ?>"<?php echo $pk_meuble_on ? '' : ' hidden'; ?>>
+							<input type="checkbox" name="pk_furnished" value="meuble" <?php checked( $pk_meuble_on && 'meuble' === $pk_furnished ); ?>>
 							<span><?php echo esc_html( $pk_meuble_label ); ?></span>
 						</label>
 					</div>
