@@ -7714,3 +7714,58 @@ html body .pk-find-panel .pk-select-option {
 	cursor: pointer;
 	font-size: 13px;
 }
+
+/* 6.20.167 — superficie saisie avec son unite. Cases mobiles plus grandes. */
+html body .pk-find-panel .pk-find-write {
+	color: #5d615a;
+	font-size: .78rem;
+	font-weight: 500;
+	line-height: 1.3;
+}
+html body .pk-find-panel .pk-select-unit {
+	flex: 0 0 auto;
+	color: #5d615a;
+	font-size: .85rem;
+	font-weight: 600;
+	line-height: 1.2;
+	direction: ltr;
+}
+@media (max-width: 767px) {
+	html body .pk-find-panel .pk-find-checks {
+		align-items: start;
+		grid-auto-rows: 64px;
+		gap: 10px 14px;
+	}
+	html body .pk-find-panel .pk-find-check,
+	html body .pk-find-panel label.pk-find-chip.pk-find-check {
+		height: 64px;
+		min-height: 64px !important;
+		max-height: 64px;
+		align-items: center !important;
+		gap: .55rem !important;
+		font-size: 16px !important;
+		line-height: 1.25 !important;
+	}
+	html body .pk-find-panel .pk-find-check span {
+		font-size: 16px !important;
+		line-height: 1.25 !important;
+	}
+	html body .pk-find-panel .pk-find-check input {
+		box-sizing: border-box !important;
+		width: 24px !important;
+		height: 24px !important;
+		min-width: 24px !important;
+		min-height: 24px !important;
+		max-width: 24px !important;
+		max-height: 24px !important;
+		flex: 0 0 24px !important;
+		margin: 0 !important;
+		border-radius: 4px !important;
+	}
+	html body .pk-find-panel .pk-find-check input:checked::after {
+		width: 12px;
+		height: 6px;
+		border-left-width: 2px;
+		border-bottom-width: 2px;
+	}
+}

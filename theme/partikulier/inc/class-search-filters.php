@@ -794,7 +794,7 @@ class Partikulier_Search_Filters {
 	 */
 	private static function apply_detail_filters( $query ) {
 		$size_min = self::query_amount( 'es_size_min' );
-		$size_max = self::query_int( 'es_size_max' );
+		$size_max = self::query_amount( 'es_size_max' );
 		if ( $size_max >= self::AREA_MAX ) {
 			$size_max = 0;
 		}
