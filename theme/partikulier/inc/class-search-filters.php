@@ -664,7 +664,7 @@ class Partikulier_Search_Filters {
 			// --- Budget : un tableau GET n'est pas un nombre (E-5105). Le curseur
 			// au plafond du formulaire veut dire « sans limite », pas un plafond. ---
 			$price_max = self::query_int( 'es_price_max' );
-			$price_min = self::query_int( 'es_price_min' );
+			$price_min = self::query_amount( 'es_price_min' );
 			$price_cap = ( 'a-louer' === self::query_key( 'es_action' ) ) ? self::PRICE_RENT_MAX : self::PRICE_SALE_MAX;
 			if ( $price_max >= $price_cap ) {
 				$price_max = 0;
@@ -746,6 +746,18 @@ class Partikulier_Search_Filters {
 	 * @param string $key Parametre GET.
 	 * @return int
 	 */
+	private static function query_amount( $key ) {
+		if ( ! isset( $_GET[ $key ] ) || ! is_scalar( $_GET[ $key ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			return 0;
+		}
+		$raw = (string) wp_unslash( $_GET[ $key ] ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$raw = str_replace( array( ' ', "\xc2\xa0" ), '', $raw );
+		if ( '' === $raw || ! preg_match( '/^\d+$/', $raw ) ) {
+			return 0;
+		}
+		return (int) $raw;
+	}
+
 	private static function query_int( $key ) {
 		if ( ! isset( $_GET[ $key ] ) || ! is_scalar( $_GET[ $key ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			return 0;
@@ -781,7 +793,7 @@ class Partikulier_Search_Filters {
 	 * @param WP_Query $query Requete.
 	 */
 	private static function apply_detail_filters( $query ) {
-		$size_min = self::query_int( 'es_size_min' );
+		$size_min = self::query_amount( 'es_size_min' );
 		$size_max = self::query_int( 'es_size_max' );
 		if ( $size_max >= self::AREA_MAX ) {
 			$size_max = 0;
@@ -805,13 +817,22 @@ class Partikulier_Search_Filters {
 			) );
 		}
 
-		$bathrooms = self::query_int( 'es_bathrooms_min' );
-		if ( $bathrooms > 0 ) {
+		$salons = self::query_int( 'pk_salons_min' );
+		if ( $salons > 0 && $salons <= 4 ) {
 			self::push_meta( $query, array(
-				'key'     => 'es_property_bathrooms',
-				'value'   => $bathrooms,
-				'type'    => 'NUMERIC',
-				'compare' => '>=',
+				'relation' => 'OR',
+				array(
+					'key'     => '_pk_living_rooms',
+					'value'   => $salons,
+					'type'    => 'NUMERIC',
+					'compare' => '>=',
+				),
+				array(
+					'key'     => '_pk_living_rooms_label',
+					'value'   => $salons,
+					'type'    => 'NUMERIC',
+					'compare' => '>=',
+				),
 			) );
 		}
 
@@ -1105,6 +1126,7 @@ class Partikulier_Search_Filters {
 			'es_size_max',
 			'es_bedrooms_min',
 			'es_bathrooms_min',
+			'pk_salons_min',
 			'pk_furnished',
 		);
 		$params  = array();
