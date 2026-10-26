@@ -1575,6 +1575,10 @@ function pkLimitTitle(value) {
 	var search = document.querySelector(".pk-editorial-search");
 	if (!bar || !search) return;
 	function sync() {
+		if (window.matchMedia("(min-width: 768px)").matches) {
+			bar.classList.remove("is-on");
+			return;
+		}
 		var top = 0;
 		[document.querySelector(".pk-site-header"), document.querySelector(".pk-main-nav")].forEach(function (el) {
 			if (!el) return;
