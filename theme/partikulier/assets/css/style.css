@@ -6389,3 +6389,128 @@ body .pk-footer-socials a:hover {
 	color: #fff !important;
 	text-decoration: underline;
 }
+
+/* 6.20.144 — Annonces : même barre et mêmes cartes que l'accueil.
+   Onglets dans la police du menu. Boutons noirs en violet primaire.
+   Pied de page violet sombre sur tout le site. */
+body .pk-find-tab,
+body.home .pk-search-hero .pk-find-tab,
+body .pk-search-archive .pk-find-tab,
+body .pk-archive-search .pk-find-tab {
+	font-family: var(--pk-font) !important;
+	font-weight: 600 !important;
+	font-size: 10px !important;
+	letter-spacing: .13em !important;
+	text-transform: uppercase !important;
+	line-height: 1.2 !important;
+	color: #161715 !important;
+}
+html[dir="rtl"] body .pk-find-tab,
+html[dir="rtl"] body.home .pk-search-hero .pk-find-tab {
+	letter-spacing: 0 !important;
+	text-transform: none !important;
+	font-size: 1rem !important;
+}
+body .pk-search-hero .pk-find-tabs,
+body .pk-search-archive .pk-find-tabs,
+body .pk-archive-search .pk-find-tabs {
+	display: flex !important;
+	justify-content: flex-start !important;
+	flex-wrap: wrap !important;
+	gap: .35rem 2.4rem !important;
+	width: 100% !important;
+	margin: 0 0 .85rem !important;
+	background: #fff !important;
+	border: 0 !important;
+}
+body .pk-search-hero .pk-find-tab,
+body .pk-search-archive .pk-find-tab,
+body .pk-archive-search .pk-find-tab {
+	display: inline-flex !important;
+	align-items: center !important;
+	flex: 0 1 auto !important;
+	max-width: none !important;
+	min-height: 44px !important;
+	padding: .2rem .05rem .65rem !important;
+	background: #fff !important;
+	border: 0 !important;
+	box-shadow: none !important;
+	position: relative !important;
+	white-space: nowrap !important;
+}
+body .pk-find-tab-input:checked + .pk-find-tab,
+body .pk-find-tab-input:focus-visible + .pk-find-tab {
+	background: #fff !important;
+	border: 0 !important;
+	box-shadow: none !important;
+	color: #161715 !important;
+	font-weight: 600 !important;
+}
+body .pk-find-tab-input:checked + .pk-find-tab::after {
+	content: "" !important;
+	position: absolute !important;
+	left: 0 !important;
+	right: 0 !important;
+	bottom: 0 !important;
+	width: auto !important;
+	height: 2px !important;
+	background: #A13FF4 !important;
+	border-radius: 0 !important;
+}
+body .pk-archive-search {
+	margin: 0 0 1.25rem !important;
+	padding: 0 !important;
+	background: transparent !important;
+}
+body .pk-archive-search .pk-search,
+body .pk-search-archive.pk-find {
+	width: 100% !important;
+	border: 0 !important;
+	box-shadow: none !important;
+	padding: 0 !important;
+	background: transparent !important;
+}
+body .pk-archive-content .pk-card,
+body .pk-grid-cards .pk-card {
+	background: #fff !important;
+	border: 0 !important;
+	box-shadow: none !important;
+}
+body .pk-archive-content .pk-card-media,
+body .pk-grid-cards .pk-card-media {
+	aspect-ratio: 16 / 10 !important;
+}
+body .pk-archive-content .pk-card-body {
+	padding: 1.15rem !important;
+}
+
+body .pk-archive .pk-filter-toggle,
+body .pk-view-btn.is-active,
+body .pk-toggle-btn.is-on,
+body .pk-role-btn.pk-role-active,
+body .pk-role-btn:has(input:checked) {
+	background: #A13FF4 !important;
+	border-color: #A13FF4 !important;
+	color: #fff !important;
+}
+body .pk-archive .pk-filter-toggle:hover,
+body .pk-archive .pk-filter-toggle:active,
+body .pk-view-btn.is-active:hover,
+body .pk-view-btn.is-active:active,
+body .pk-toggle-btn.is-on:hover,
+body .pk-toggle-btn.is-on:active,
+body .pk-role-btn.pk-role-active:hover,
+body .pk-role-btn:has(input:checked):hover,
+body .pk-role-btn:has(input:checked):active {
+	background: #6515A0 !important;
+	border-color: #6515A0 !important;
+	color: #fff !important;
+}
+
+body .pk-site-footer,
+body .pk-site-footer .pk-footer-top,
+body .pk-site-footer .pk-footer-bottom {
+	background: #6515A0 !important;
+	color: #fff !important;
+	border-color: rgba(255, 255, 255, .28) !important;
+}
