@@ -42,6 +42,8 @@ class Partikulier_Search_Filters {
 	public static function init() {
 			add_action( 'init', array( __CLASS__, 'ensure_ferme_term' ), 30 );
 			add_action( 'pre_get_posts', array( __CLASS__, 'apply_filters' ), 20 );
+			add_action( 'wp_ajax_pk_find_count', array( __CLASS__, 'ajax_count' ) );
+			add_action( 'wp_ajax_nopriv_pk_find_count', array( __CLASS__, 'ajax_count' ) );
 			add_filter( 'posts_orderby', array( __CLASS__, 'stable_property_order' ), 999, 2 );
 	}
 
@@ -346,12 +348,12 @@ class Partikulier_Search_Filters {
 
 	public static function apply_filters( $query ) {
 		self::normalize_intent();
-		if ( is_admin() || ! $query->is_main_query() || $query->is_singular() ) {
-				return;
+		$pk_counting = (bool) $query->get( 'pk_count' );
+		if ( $query->is_singular() ) {
+			return;
 		}
-
-		if ( ! self::is_property_query( $query ) ) {
-				return;
+		if ( ! $pk_counting && ( is_admin() || ! $query->is_main_query() || ! self::is_property_query( $query ) ) ) {
+			return;
 		}
 
 			// Les tris explicites du formulaire sont traduits en meta_key/orderby
@@ -1042,6 +1044,83 @@ class Partikulier_Search_Filters {
 		}
 		return $counts;
 	}
+
+	/**
+	 * Nombre d'annonces publiees pour les memes filtres que le formulaire.
+	 *
+	 * @param array<string,mixed>|null $params Parametres. Null conserve $_GET.
+	 * @return int
+	 */
+	public static function matching_count( $params = null ) {
+		$saved = $_GET;
+		if ( is_array( $params ) ) {
+			$_GET = $params;
+		}
+		$lang = '';
+		if ( isset( $_POST['pk_language'] ) && is_scalar( $_POST['pk_language'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			$lang = sanitize_key( wp_unslash( $_POST['pk_language'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing
+		} elseif ( function_exists( 'pll_current_language' ) ) {
+			$lang = (string) pll_current_language( 'slug' );
+		}
+		$args = array(
+			'post_type'              => PARTIKULIER_ESTATIK_POST_TYPE,
+			'post_status'            => 'publish',
+			'posts_per_page'         => 1,
+			'fields'                 => 'ids',
+			'no_found_rows'          => false,
+			'update_post_meta_cache' => false,
+			'update_post_term_cache' => false,
+			'ignore_sticky_posts'    => true,
+			'pk_count'               => 1,
+		);
+		if ( in_array( $lang, array( 'fr', 'en', 'ar' ), true ) ) {
+			$args['lang'] = $lang;
+		}
+		try {
+			$query = new WP_Query( $args );
+			$count = (int) $query->found_posts;
+			wp_reset_postdata();
+			return $count;
+		} finally {
+			$_GET = $saved;
+		}
+	}
+
+	/**
+	 * Compte du filtre, meme requete que la page d'annonces.
+	 *
+	 * @return void
+	 */
+	public static function ajax_count() {
+		check_ajax_referer( 'pk_public', 'nonce' );
+		$allowed = array(
+			'pk_intent',
+			'es_action',
+			'pk_rent',
+			'es_type',
+			'es_city',
+			'es_price_min',
+			'es_price_max',
+			'es_size_min',
+			'es_size_max',
+			'es_bedrooms_min',
+			'es_bathrooms_min',
+			'pk_furnished',
+		);
+		$params  = array();
+		foreach ( $allowed as $key ) {
+			if ( ! isset( $_POST[ $key ] ) || ! is_scalar( $_POST[ $key ] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing
+				continue;
+			}
+			$params[ $key ] = sanitize_text_field( wp_unslash( $_POST[ $key ] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing
+		}
+		if ( isset( $_POST['pk_amenity'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			$raw = wp_unslash( $_POST['pk_amenity'] ); // phpcs:ignore WordPress.Security.NonceVerification.Missing
+			$params['pk_amenity'] = is_array( $raw ) ? $raw : ( is_scalar( $raw ) ? array( $raw ) : array() );
+		}
+		wp_send_json_success( array( 'count' => self::matching_count( $params ) ) );
+	}
+
 }
 
 Partikulier_Search_Filters::init();

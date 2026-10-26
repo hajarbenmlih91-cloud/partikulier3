@@ -7562,3 +7562,45 @@ html body .pk-req {
 html body :focus-visible {
 	outline-color: #C8242B;
 }
+
+html body .pk-find-panel .pk-find-results {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: .35em;
+	max-width: 100%;
+}
+html body .pk-find-panel .pk-find-results-num {
+	direction: ltr;
+	unicode-bidi: isolate;
+}
+html body .pk-find-panel .pk-find-tx-btn.is-on,
+html body .pk-find-panel .pk-find-tx-btn[aria-pressed="true"] {
+	background: #C8242B !important;
+	border-color: #C8242B !important;
+	color: #fff !important;
+}
+html body .pk-find-panel .pk-find-tx-btn.is-on:hover,
+html body .pk-find-panel .pk-find-tx-btn.is-on:active,
+html body .pk-find-panel .pk-find-tx-btn[aria-pressed="true"]:hover,
+html body .pk-find-panel .pk-find-tx-btn[aria-pressed="true"]:active {
+	background: #9A1B21 !important;
+	border-color: #9A1B21 !important;
+	color: #fff !important;
+}
+html body .pk-find-panel .pk-find-type-card[aria-selected="true"] {
+	border-color: #C8242B !important;
+	box-shadow: inset 0 0 0 1px #C8242B !important;
+	color: #C8242B !important;
+}
+html body .pk-find-panel .pk-find-type-card[aria-selected="true"] .pk-find-type-ico {
+	color: #C8242B !important;
+}
+html body .pk-find-panel .pk-find-type-card[aria-selected="true"]:hover,
+html body .pk-find-panel .pk-find-type-card[aria-selected="true"]:active,
+html body .pk-find-panel .pk-find-type-card[aria-selected="true"]:hover .pk-find-type-ico,
+html body .pk-find-panel .pk-find-type-card[aria-selected="true"]:active .pk-find-type-ico {
+	border-color: #9A1B21 !important;
+	box-shadow: inset 0 0 0 1px #9A1B21 !important;
+	color: #9A1B21 !important;
+}

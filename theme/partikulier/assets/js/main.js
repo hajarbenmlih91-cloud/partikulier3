@@ -1636,6 +1636,83 @@ function pkLimitTitle(value) {
 		opener.checked = false;
 		setExpanded();
 	});
+
+	function formatCount(n) {
+		var s = String(Math.max(0, n | 0));
+		return s.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+	}
+	function paintCount(n) {
+		var btn = root.querySelector(".pk-find-results");
+		if (!btn) return;
+		var num = btn.querySelector(".pk-find-results-num");
+		var noun = btn.querySelector(".pk-find-results-noun");
+		var one = btn.getAttribute("data-one") || "";
+		var many = btn.getAttribute("data-many") || "";
+		var label = n === 1 ? one : many;
+		btn.setAttribute("data-pk-count", String(n));
+		if (num) num.textContent = formatCount(n);
+		if (noun) {
+			noun.textContent = label;
+			if (label) noun.removeAttribute("hidden");
+			else noun.setAttribute("hidden", "");
+		}
+	}
+	var countTimer = 0;
+	var countSeq = 0;
+	function collectCountBody() {
+		syncHiddenIntent();
+		var body = new URLSearchParams();
+		body.set("action", "pk_find_count");
+		body.set("nonce", (typeof pkConfig !== "undefined" && pkConfig.nonce) ? pkConfig.nonce : "");
+		body.set("pk_language", (typeof pkConfig !== "undefined" && pkConfig.language) ? pkConfig.language : (document.documentElement.lang || "fr").slice(0, 2));
+		["pk_intent", "es_action", "pk_rent", "es_city", "es_type", "es_price_min", "es_price_max", "es_size_min", "es_size_max"].forEach(function (name) {
+			var el = root.querySelector("[name='" + name + "']");
+			if (!el) return;
+			if (el.type === "radio") {
+				var checked = root.querySelector("[name='" + name + "']:checked");
+				if (checked && checked.value) body.set(name, checked.value);
+				return;
+			}
+			if (el.value) body.set(name, el.value);
+		});
+		["es_bedrooms_min", "es_bathrooms_min"].forEach(function (name) {
+			var checked = root.querySelector("input[name='" + name + "']:checked");
+			if (checked && checked.value && checked.value !== "0") body.set(name, checked.value);
+		});
+		root.querySelectorAll("input[name='pk_amenity[]']:checked").forEach(function (box) {
+			if (box.disabled || (box.closest && box.closest("[hidden]"))) return;
+			body.append("pk_amenity[]", box.value);
+		});
+		var furnished = root.querySelector("input[name='pk_furnished']:checked");
+		if (furnished && !furnished.disabled && furnished.value) body.set("pk_furnished", furnished.value);
+		return body;
+	}
+	function refreshCount() {
+		if (!window.fetch || typeof pkConfig === "undefined" || !pkConfig.ajaxUrl) return;
+		var seq = ++countSeq;
+		fetch(pkConfig.ajaxUrl, {
+			method: "POST",
+			credentials: "same-origin",
+			headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
+			body: collectCountBody().toString()
+		}).then(function (res) {
+			return res.json();
+		}).then(function (data) {
+			if (seq !== countSeq) return;
+			if (data && data.success && data.data && typeof data.data.count === "number") paintCount(data.data.count);
+		}).catch(function () {});
+	}
+	function scheduleCount() {
+		window.clearTimeout(countTimer);
+		countTimer = window.setTimeout(refreshCount, 220);
+	}
+	root.addEventListener("change", scheduleCount);
+	root.addEventListener("click", function (event) {
+		var target = event.target;
+		if (!target || !target.closest) return;
+		if (target.closest(".pk-find-tx-btn, .pk-find-type-card, .pk-suggest, .pk-place-suggestions, .pk-find-chip, .pk-find-room, .pk-find-check")) scheduleCount();
+	});
+	scheduleCount();
 }());
 
 /* Boutons dépôt / annonces : hors du hero, visibles seulement après la barre. */
