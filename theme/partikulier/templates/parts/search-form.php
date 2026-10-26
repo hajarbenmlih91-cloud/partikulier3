@@ -523,7 +523,64 @@ $pk_season_label = ( 'fr' === $pk_find_lang ) ? 'Location saisonnière' : $pk_t(
 			<?php endif; ?>
 
 			<div class="pk-find-foot">
-				<button type="submit" class="pk-find-results"><?php echo esc_html( $pk_t( 'Voir les résultats' ) ); ?></button>
+				<?php
+				$pk_count_params = array();
+				if ( '' !== $pk_intent ) {
+					$pk_count_params['pk_intent'] = $pk_intent;
+				}
+				if ( '' !== $pk_action_value ) {
+					$pk_count_params['es_action'] = $pk_action_value;
+				}
+				if ( '' !== $pk_rent_value ) {
+					$pk_count_params['pk_rent'] = $pk_rent_value;
+				}
+				if ( '' !== $pk_city_slug ) {
+					$pk_count_params['es_city'] = $pk_city_slug;
+				}
+				if ( '' !== $pk_type ) {
+					$pk_count_params['es_type'] = $pk_type;
+				}
+				if ( $pk_price_min > 0 ) {
+					$pk_count_params['es_price_min'] = (string) $pk_price_min;
+				}
+				if ( $pk_price_max_raw > 0 && $pk_price_max_raw < $pk_price_cap ) {
+					$pk_count_params['es_price_max'] = (string) $pk_price_max_raw;
+				}
+				if ( $pk_area_min > 0 ) {
+					$pk_count_params['es_size_min'] = (string) $pk_area_min;
+				}
+				if ( $pk_area_max_raw > 0 && $pk_area_max_raw < $pk_area_max ) {
+					$pk_count_params['es_size_max'] = (string) $pk_area_max_raw;
+				}
+				if ( $pk_beds > 0 ) {
+					$pk_count_params['es_bedrooms_min'] = (string) $pk_beds;
+				}
+				if ( $pk_baths > 0 ) {
+					$pk_count_params['es_bathrooms_min'] = (string) $pk_baths;
+				}
+				if ( 'meuble' === $pk_furnished ) {
+					$pk_count_params['pk_furnished'] = 'meuble';
+				}
+				if ( $pk_selected_amenities ) {
+					$pk_count_params['pk_amenity'] = $pk_selected_amenities;
+				}
+				$pk_count_n = class_exists( 'Partikulier_Search_Filters' ) ? Partikulier_Search_Filters::matching_count( $pk_count_params ) : 0;
+				$pk_count_verb = 'Afficher';
+				$pk_count_one  = 'annonce';
+				$pk_count_many = 'annonces';
+				if ( 'fr' !== $pk_find_lang ) {
+					$pk_count_verb = $pk_t( 'Voir les résultats' );
+					$pk_count_one  = '';
+					$pk_count_many = '';
+				}
+				$pk_count_noun = ( 1 === (int) $pk_count_n ) ? $pk_count_one : $pk_count_many;
+				$pk_count_num  = $pk_fmt( $pk_count_n );
+				?>
+				<button type="submit" class="pk-find-results" data-pk-count="<?php echo esc_attr( (string) $pk_count_n ); ?>" data-verb="<?php echo esc_attr( $pk_count_verb ); ?>" data-one="<?php echo esc_attr( $pk_count_one ); ?>" data-many="<?php echo esc_attr( $pk_count_many ); ?>">
+					<span class="pk-find-results-verb"><?php echo esc_html( $pk_count_verb ); ?></span>
+					<span class="pk-find-results-num" dir="ltr"><?php echo esc_html( $pk_count_num ); ?></span>
+					<span class="pk-find-results-noun"<?php echo '' === $pk_count_noun ? ' hidden' : ''; ?>><?php echo esc_html( $pk_count_noun ); ?></span>
+				</button>
 			</div>
 		</div>
 	</div>
