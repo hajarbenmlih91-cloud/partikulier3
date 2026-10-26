@@ -1081,20 +1081,71 @@ function pkLimitTitle(value) {
 		select.parentNode.insertBefore(wrap, select);
 		wrap.appendChild(select);
 		select.classList.add("pk-select-native");
+		var canType = select.hasAttribute("data-pk-min");
+		if (canType) wrap.classList.add("pk-select-can-type");
 		var btn = document.createElement("button");
 		btn.type = "button";
 		btn.className = "pk-select-btn";
 		btn.setAttribute("aria-haspopup", "listbox");
 		btn.setAttribute("aria-expanded", "false");
+		var typeField = null;
+		function digitsOf(raw) {
+			return String(raw || "").replace(/[\u0660-\u0669]/g, function (d) {
+				return String(d.charCodeAt(0) - 0x0660);
+			}).replace(/[\u06F0-\u06F9]/g, function (d) {
+				return String(d.charCodeAt(0) - 0x06F0);
+			}).replace(/[^\d]/g, "");
+		}
+		function groupDigits(n) {
+			return String(n || "").replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+		}
 		function currentLabel() {
 			var opt = select.options[select.selectedIndex];
 			return opt ? opt.textContent.replace(/^\s+|\s+$/g, "") : "";
 		}
-		btn.textContent = currentLabel();
+		function showTyped() {
+			if (!typeField) return;
+			typeField.value = select.value ? groupDigits(digitsOf(select.value)) : "";
+		}
+		function ensureTyped(n) {
+			if (!n) {
+				select.value = "";
+				return;
+			}
+			if (!select.querySelector("option[value='" + n + "']")) {
+				var opt = document.createElement("option");
+				opt.value = n;
+				opt.textContent = groupDigits(n);
+				select.appendChild(opt);
+			}
+			select.value = n;
+		}
+		if (canType) {
+			typeField = document.createElement("input");
+			typeField.type = "text";
+			typeField.className = "pk-select-type";
+			typeField.setAttribute("inputmode", "numeric");
+			typeField.setAttribute("autocomplete", "off");
+			typeField.setAttribute("dir", "ltr");
+			var emptyOpt = select.options[0];
+			typeField.placeholder = emptyOpt ? emptyOpt.textContent.replace(/^\s+|\s+$/g, "") : "";
+			showTyped();
+			btn.classList.add("pk-select-opener");
+			btn.textContent = "";
+			var labelEl = wrap.parentNode;
+			var span = labelEl && labelEl.querySelector ? labelEl.querySelector("span") : null;
+			if (span && span.textContent) btn.setAttribute("aria-label", span.textContent.replace(/^\s+|\s+$/g, ""));
+		} else {
+			btn.textContent = currentLabel();
+		}
 		var list = document.createElement("ul");
 		list.className = "pk-select-list";
 		list.hidden = true;
 		list.setAttribute("role", "listbox");
+		function paintChoice() {
+			if (typeField) showTyped();
+			else btn.textContent = currentLabel();
+		}
 		function rebuild() {
 			list.textContent = "";
 			Array.prototype.forEach.call(select.options, function (opt, index) {
@@ -1107,7 +1158,7 @@ function pkLimitTitle(value) {
 					select.selectedIndex = index;
 					try { select.dispatchEvent(new Event("change", { bubbles: true })); }
 					catch (err) { /* IE */ }
-					btn.textContent = currentLabel();
+					paintChoice();
 					closeAll();
 				});
 				list.appendChild(li);
@@ -1116,7 +1167,7 @@ function pkLimitTitle(value) {
 		rebuild();
 		select.addEventListener("pk-select-rebuild", function () {
 			rebuild();
-			btn.textContent = currentLabel();
+			paintChoice();
 		});
 		btn.addEventListener("click", function (event) {
 			event.preventDefault();
@@ -1130,6 +1181,15 @@ function pkLimitTitle(value) {
 				btn.setAttribute("aria-expanded", "true");
 			}
 		});
+		if (typeField) {
+			typeField.addEventListener("input", function () {
+				ensureTyped(digitsOf(typeField.value));
+				try { select.dispatchEvent(new Event("change", { bubbles: true })); }
+				catch (err) { /* IE */ }
+			});
+			typeField.addEventListener("blur", showTyped);
+			wrap.appendChild(typeField);
+		}
 		wrap.appendChild(btn);
 		wrap.appendChild(list);
 	});
@@ -1303,6 +1363,18 @@ function pkLimitTitle(value) {
 				select.appendChild(opt);
 			});
 			select.value = current && select.querySelector("option[value='" + current + "']") ? current : "";
+			if (!select.value && current && /^[0-9]+$/.test(current)) {
+				var typed = Number(current);
+				if (typed > 0 && (!cap || typed < cap)) {
+					var extra = document.createElement("option");
+					extra.value = String(typed);
+					extra.textContent = group(typed) + (unit ? " " + unit : "");
+					select.appendChild(extra);
+					select.value = String(typed);
+				}
+			}
+			try { select.dispatchEvent(new Event("pk-select-rebuild")); }
+			catch (err) { /* IE */ }
 		}
 		fill(min);
 		fill(max);
@@ -1466,7 +1538,7 @@ function pkLimitTitle(value) {
 		root.querySelectorAll(".pk-find-panel select").forEach(function (select) {
 			if (!select.value) select.disabled = true;
 		});
-		root.querySelectorAll("input[name='es_bedrooms_min'], input[name='es_bathrooms_min']").forEach(function (input) {
+		root.querySelectorAll("input[name='es_bedrooms_min'], input[name='pk_salons_min']").forEach(function (input) {
 			if (!input.value || (input.closest("[hidden]"))) input.disabled = true;
 		});
 		root.querySelectorAll(".pk-find-chip[hidden] input, [data-pk-rooms][hidden] input").forEach(function (input) {
@@ -1515,7 +1587,7 @@ function pkLimitTitle(value) {
 			if (city) city.value = "";
 			if (cityValue) cityValue.value = "";
 			root.querySelectorAll(".pk-find-chip input").forEach(function (box) { box.checked = false; });
-			root.querySelectorAll(".pk-find-pill input, input[name='es_bedrooms_min'], input[name='es_bathrooms_min']").forEach(function (box) {
+			root.querySelectorAll(".pk-find-pill input, input[name='es_bedrooms_min'], input[name='pk_salons_min']").forEach(function (box) {
 				box.checked = box.value === "";
 				box.setAttribute("data-pk-on", "0");
 			});
@@ -1675,7 +1747,7 @@ function pkLimitTitle(value) {
 			}
 			if (el.value) body.set(name, el.value);
 		});
-		["es_bedrooms_min", "es_bathrooms_min"].forEach(function (name) {
+		["es_bedrooms_min", "pk_salons_min"].forEach(function (name) {
 			var checked = root.querySelector("input[name='" + name + "']:checked");
 			if (checked && checked.value && checked.value !== "0") body.set(name, checked.value);
 		});
