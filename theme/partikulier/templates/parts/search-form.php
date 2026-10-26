@@ -51,6 +51,7 @@ $pk_t = static function ( $fr ) use ( $pk_find_lang ) {
 		'Vente'               => array( 'en' => 'For sale', 'ar' => 'للبيع' ),
 		'Location'            => array( 'en' => 'For rent', 'ar' => 'للكراء' ),
 		'Vacances'            => array( 'en' => 'Seasonal', 'ar' => 'موسمية' ),
+		'Ferme'               => array( 'en' => 'Farm', 'ar' => 'ضيعة' ),
 	);
 	return isset( $extra[ $fr ][ $pk_find_lang ] ) ? $extra[ $fr ][ $pk_find_lang ] : $fr;
 };
@@ -186,6 +187,23 @@ $pk_fill = static function ( $min, $max, $cap ) {
 
 $pk_types = get_terms( array( 'taxonomy' => PARTIKULIER_ESTATIK_TYPE_TAXONOMY, 'hide_empty' => true ) );
 $pk_types = is_wp_error( $pk_types ) ? array() : $pk_types;
+$pk_has_ferme = false;
+foreach ( $pk_types as $pk_term ) {
+	if ( $pk_term instanceof WP_Term && 'ferme' === preg_replace( '/-(fr|en|ar)$/', '', $pk_term->slug ) ) {
+		$pk_has_ferme = true;
+		break;
+	}
+}
+if ( ! $pk_has_ferme ) {
+	$pk_types[] = new WP_Term(
+		(object) array(
+			'term_id'  => 0,
+			'name'     => $pk_t( 'Ferme' ),
+			'slug'     => 'ferme',
+			'taxonomy' => PARTIKULIER_ESTATIK_TYPE_TAXONOMY,
+		)
+	);
+}
 
 $pk_amenities = array();
 $pk_tx_now    = ( 'saisonnier' === $pk_intent ) ? 'saisonnier' : ( 'a-louer' === $pk_intent ? 'louer' : 'vente' );
@@ -306,11 +324,12 @@ $pk_season_label = ( 'fr' === $pk_find_lang ) ? 'Location saisonnière' : $pk_t(
 					'depot'       => 5,
 					'bureau'      => 6,
 					'terrain'     => 7,
-					'hangar'      => 8,
-					'usine'       => 9,
-					'studio'      => 10,
-					'duplex'      => 11,
-					'immeuble'    => 12,
+					'ferme'       => 8,
+					'hangar'      => 9,
+					'usine'       => 10,
+					'studio'      => 11,
+					'duplex'      => 12,
+					'immeuble'    => 13,
 				);
 				$pk_type_cards = (array) $pk_types;
 				usort(

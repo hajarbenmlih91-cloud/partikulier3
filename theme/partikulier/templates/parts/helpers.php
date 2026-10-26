@@ -216,6 +216,8 @@ if ( ! function_exists( 'pk_type_icon' ) ) {
 			'entrepot' => 'local',
 			'depot'    => 'local',
 			'usine'    => 'local',
+			'hangar'   => 'local',
+			'ferme'    => 'hangar',
 			'loft'     => 'appartement',
 			'parking'  => 'terrain',
 		);

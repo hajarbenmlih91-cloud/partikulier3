@@ -40,9 +40,24 @@ class Partikulier_Search_Filters {
 	}
 
 	public static function init() {
+			add_action( 'init', array( __CLASS__, 'ensure_ferme_term' ), 30 );
 			add_action( 'pre_get_posts', array( __CLASS__, 'apply_filters' ), 20 );
 			add_filter( 'posts_orderby', array( __CLASS__, 'stable_property_order' ), 999, 2 );
 	}
+
+		/**
+		 * Le formulaire de depot a le type Ferme. Le filtre doit pouvoir le choisir
+		 * meme si aucune annonce publiee ne le porte encore.
+		 */
+		public static function ensure_ferme_term() {
+			if ( ! taxonomy_exists( PARTIKULIER_ESTATIK_TYPE_TAXONOMY ) ) {
+				return;
+			}
+			if ( get_term_by( 'slug', 'ferme', PARTIKULIER_ESTATIK_TYPE_TAXONOMY ) ) {
+				return;
+			}
+			wp_insert_term( 'Ferme', PARTIKULIER_ESTATIK_TYPE_TAXONOMY, array( 'slug' => 'ferme' ) );
+		}
 
 		/**
 		 * SE-048-R (E-4804, 10e fonction) — le tri « premium-first » s'applique-t-il ?
