@@ -1278,24 +1278,34 @@ function pkLimitTitle(value) {
 	function setPriceScale(mode, keep) {
 		var box = root.querySelector("[data-pk-price]");
 		if (!box) return;
-		var min = box.querySelector(".pk-find-range-min");
-		var max = box.querySelector(".pk-find-range-max");
-		var cap = Number(mode === "sale" ? box.getAttribute("data-sale-max") : (mode === "season" ? box.getAttribute("data-season-max") : box.getAttribute("data-rent-max")));
-		var step = Number(mode === "sale" ? box.getAttribute("data-sale-step") : (mode === "season" ? box.getAttribute("data-season-step") : box.getAttribute("data-rent-step")));
+		var min = box.querySelector("[data-pk-min]");
+		var max = box.querySelector("[data-pk-max]");
+		if (!min || !max) return;
+		var sale = mode === "sale";
+		var list = (sale ? box.getAttribute("data-sale-prices") : box.getAttribute("data-rent-prices")) || "";
 		var unit = mode === "rent" ? (box.getAttribute("data-rent-unit") || "") : (mode === "season" ? (box.getAttribute("data-season-unit") || "") : (box.getAttribute("data-sale-unit") || ""));
-		box.setAttribute("data-unit", unit);
-		[min, max].forEach(function (input) {
-			if (!input) return;
-			input.max = String(cap);
-			input.step = String(step);
-		});
-		if (!keep) {
-			min.value = "0";
-			max.value = String(cap);
-		} else if (max && Number(max.value) > cap) {
-			max.value = String(cap);
+		var cap = Number(sale ? box.getAttribute("data-sale-max") : box.getAttribute("data-rent-max"));
+		var any = box.getAttribute("data-any") || "";
+		function fill(select) {
+			var current = keep ? select.value : "";
+			if (keep && select.options.length) return;
+			select.innerHTML = "";
+			var empty = document.createElement("option");
+			empty.value = "";
+			empty.textContent = any;
+			select.appendChild(empty);
+			list.split(",").forEach(function (raw) {
+				var n = Number(raw);
+				if (!n || (cap && n >= cap)) return;
+				var opt = document.createElement("option");
+				opt.value = String(n);
+				opt.textContent = group(n) + (unit ? " " + unit : "");
+				select.appendChild(opt);
+			});
+			select.value = current && select.querySelector("option[value='" + current + "']") ? current : "";
 		}
-		syncRange(box);
+		fill(min);
+		fill(max);
 	}
 	function currentFamily() {
 		if (!typeSelect || !typeSelect.value) return "";
@@ -1320,33 +1330,28 @@ function pkLimitTitle(value) {
 		if (rent) rent.value = value === "saisonnier" ? "saisonnier" : "";
 	}
 	function applyContext(keepPrice) {
-		var family = currentFamily();
 		var code = txCode();
 		root.querySelectorAll(".pk-find-chip").forEach(function (chip) {
-			var show = family && hasToken(chip.getAttribute("data-pk-tx"), code) && hasToken(chip.getAttribute("data-pk-types"), family);
+			var show = hasToken(chip.getAttribute("data-pk-tx"), code);
 			chip.hidden = !show;
-			if (!show) {
-				var box = chip.querySelector("input");
-				if (box) box.checked = false;
-			}
+			var box = chip.querySelector("input");
+			if (!box) return;
+			box.disabled = !show;
+			if (!show) box.checked = false;
 		});
-		root.querySelectorAll("[data-pk-field]").forEach(function (field) {
-			var show = family && hasToken(field.getAttribute("data-pk-types"), family);
-			field.hidden = !show;
-			if (!show) {
-				field.querySelectorAll("input").forEach(function (input) {
-					if (input.type === "radio") input.checked = input.value === "";
-					else input.checked = false;
+		var rooms = root.querySelector("[data-pk-rooms]");
+		if (rooms) {
+			var slug = "";
+			if (typeSelect && typeSelect.value) slug = String(typeSelect.value).replace(/-(fr|en|ar)$/, "");
+			var housing = (rooms.getAttribute("data-housing") || "").split(" ");
+			var showRooms = !slug || housing.indexOf(slug) !== -1;
+			rooms.hidden = !showRooms;
+			if (!showRooms) {
+				rooms.querySelectorAll("input").forEach(function (input) {
+					input.checked = false;
+					input.removeAttribute("data-was");
 				});
 			}
-		});
-		var rooms = root.querySelector(".pk-find-rooms");
-		if (rooms) {
-			var anyRoom = false;
-			rooms.querySelectorAll("[data-pk-field]").forEach(function (field) {
-				if (!field.hidden) anyRoom = true;
-			});
-			rooms.hidden = !anyRoom;
 		}
 		var amenities = root.querySelector(".pk-find-amenities");
 		if (amenities) amenities.hidden = !amenities.querySelector(".pk-find-chip:not([hidden])");
@@ -1360,20 +1365,38 @@ function pkLimitTitle(value) {
 		var intent = root.querySelector(".pk-find-tab-input:checked");
 		var value = intent ? intent.value : "a-vendre";
 		var token = value === "saisonnier" ? "saisonnier" : (value === "a-louer" ? "louer" : "vente");
-		root.querySelectorAll(".pk-find-type-card").forEach(function (card) {
+		function allow(list) {
+			return (" " + (list || "vente louer") + " ").indexOf(" " + token + " ") !== -1;
+		}
+		root.querySelectorAll(".pk-find-type-opt[data-pk-tx], .pk-find-type-card[data-pk-tx]").forEach(function (card) {
 			var slug = card.getAttribute("data-value") || "";
 			if (!slug) {
 				card.hidden = false;
 				return;
 			}
-			var list = card.getAttribute("data-pk-tx") || "vente louer";
-			var show = (" " + list + " ").indexOf(" " + token + " ") !== -1;
+			var show = allow(card.getAttribute("data-pk-tx"));
 			card.hidden = !show;
 			if (!show && typeSelect && typeSelect.value === slug) {
 				typeSelect.value = "";
 				syncTypeLabel();
 			}
 		});
+		if (typeSelect) {
+			Array.prototype.forEach.call(typeSelect.options, function (opt) {
+				if (!opt.value) {
+					opt.hidden = false;
+					opt.disabled = false;
+					return;
+				}
+				var show = allow(opt.getAttribute("data-pk-tx"));
+				opt.hidden = !show;
+				opt.disabled = !show;
+				if (!show && typeSelect.value === opt.value) {
+					typeSelect.value = "";
+					syncTypeLabel();
+				}
+			});
+		}
 	}
 	function syncTxButtons() {
 		var chosen = root.querySelector(".pk-find-tab-input:checked");
@@ -1414,21 +1437,39 @@ function pkLimitTitle(value) {
 		if (filter) filter.removeAttribute("aria-disabled");
 		if (filtersReady()) showNeed(false);
 	}
-	root.querySelectorAll("[data-pk-range]").forEach(function (box) {
-		syncRange(box);
-		box.addEventListener("input", function () { syncRange(box); });
+	root.querySelectorAll(".pk-find-seg input").forEach(function (input) {
+		input.addEventListener("click", function () {
+			if (input.getAttribute("data-was") === "1") {
+				input.checked = false;
+				input.removeAttribute("data-was");
+				return;
+			}
+			root.querySelectorAll("input[name='" + input.name + "']").forEach(function (other) {
+				other.removeAttribute("data-was");
+			});
+			input.setAttribute("data-was", "1");
+		});
+	});
+	root.querySelectorAll(".pk-find-duo").forEach(function (duo) {
+		var min = duo.querySelector("select:first-of-type");
+		var max = duo.querySelector("select:last-of-type");
+		if (!min || !max) return;
+		duo.addEventListener("change", function () {
+			if (!min.value || !max.value) return;
+			if (Number(min.value) > Number(max.value)) {
+				if (document.activeElement === min) max.value = min.value;
+				else min.value = max.value;
+			}
+		});
 	});
 	root.addEventListener("submit", function () {
-		root.querySelectorAll("[data-pk-range]").forEach(function (box) {
-			var min = box.querySelector(".pk-find-range-min");
-			var max = box.querySelector(".pk-find-range-max");
-			if (min && Number(min.value) <= Number(min.min || 0)) min.disabled = true;
-			if (max && Number(max.value) >= Number(max.max || 0)) max.disabled = true;
+		root.querySelectorAll(".pk-find-panel select").forEach(function (select) {
+			if (!select.value) select.disabled = true;
 		});
 		root.querySelectorAll("input[name='es_bedrooms_min'], input[name='es_bathrooms_min']").forEach(function (input) {
-			if (!input.value) input.disabled = true;
+			if (!input.value || (input.closest("[hidden]"))) input.disabled = true;
 		});
-		root.querySelectorAll(".pk-find-chip[hidden] input, [data-pk-field][hidden] input").forEach(function (input) {
+		root.querySelectorAll(".pk-find-chip[hidden] input, [data-pk-rooms][hidden] input").forEach(function (input) {
 			input.disabled = true;
 		});
 		var rent = root.querySelector("input[name='pk_rent']");
