@@ -7305,3 +7305,83 @@ html body .pk-find-check input:focus-visible {
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
 }
+
+
+/* 6.20.158 — critères : carré visible, coche violette, quatre colonnes. Plus de pastille. */
+html body .pk-find-panel .pk-find-checks {
+	display: grid !important;
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	gap: 14px 12px;
+}
+html body .pk-find-panel .pk-find-check,
+html body .pk-find-panel label.pk-find-chip.pk-find-check {
+	position: static !important;
+	display: flex !important;
+	align-items: flex-start !important;
+	justify-content: flex-start !important;
+	gap: .4rem !important;
+	width: auto !important;
+	min-height: 0 !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	border: 0 !important;
+	border-radius: 0 !important;
+	background: transparent !important;
+	box-shadow: none !important;
+	color: #161715 !important;
+	font-size: 13.5px !important;
+	font-weight: 500 !important;
+	line-height: 1.25 !important;
+	text-align: start !important;
+	cursor: pointer;
+}
+html body .pk-find-panel .pk-find-check:has(input:checked),
+html body .pk-find-panel label.pk-find-chip.pk-find-check:has(input:checked) {
+	background: transparent !important;
+	border-color: transparent !important;
+	color: #161715 !important;
+}
+html body .pk-find-panel .pk-find-check input {
+	position: static !important;
+	width: 16px !important;
+	height: 16px !important;
+	min-width: 16px !important;
+	margin: 1px 0 0 !important;
+	padding: 0 !important;
+	overflow: visible !important;
+	clip: auto !important;
+	clip-path: none !important;
+	appearance: none !important;
+	-webkit-appearance: none !important;
+	border: 1.5px solid #c8c8c8 !important;
+	border-radius: 2px !important;
+	background: #fff !important;
+	display: inline-grid !important;
+	place-content: center;
+	flex: 0 0 16px;
+	accent-color: unset;
+	cursor: pointer;
+}
+html body .pk-find-panel .pk-find-check input:checked {
+	border-color: #A13FF4 !important;
+	background: #fff !important;
+}
+html body .pk-find-panel .pk-find-check input:checked::after {
+	content: "";
+	width: 8px;
+	height: 4px;
+	border-left: 2px solid #A13FF4;
+	border-bottom: 2px solid #A13FF4;
+	transform: rotate(-45deg) translate(0, -1px);
+	display: block;
+}
+html body .pk-find-panel .pk-find-check span {
+	min-width: 0;
+	color: #161715;
+	font-weight: 500;
+}
+@media (max-width: 767px) {
+	html body .pk-find-panel .pk-find-checks {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
