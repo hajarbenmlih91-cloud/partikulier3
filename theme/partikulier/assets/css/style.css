@@ -7633,3 +7633,30 @@ html body .pk-find-open:checked ~ .pk-find-panel .pk-find-panel-bar {
 	position: static !important;
 	top: auto !important;
 }
+
+/* 6.20.163 — meme espace entre les carres, quelle que soit la ligne. */
+html body .pk-find-panel .pk-find-checks {
+	align-items: start;
+	grid-auto-rows: 52px;
+	gap: 12px 12px;
+}
+html body .pk-find-panel .pk-find-check,
+html body .pk-find-panel label.pk-find-chip.pk-find-check {
+	height: 52px;
+	min-height: 52px !important;
+	max-height: 52px;
+	align-items: flex-start !important;
+	overflow: hidden;
+}
+html body .pk-find-panel .pk-find-check input {
+	box-sizing: border-box !important;
+	width: 16px !important;
+	height: 16px !important;
+	min-width: 16px !important;
+	min-height: 16px !important;
+	max-width: 16px !important;
+	max-height: 16px !important;
+	flex: 0 0 16px !important;
+	margin: 1px 0 0 !important;
+	overflow: hidden !important;
+}

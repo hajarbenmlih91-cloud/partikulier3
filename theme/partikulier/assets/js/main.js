@@ -1343,7 +1343,7 @@ function pkLimitTitle(value) {
 			var box = chip.querySelector("input");
 			if (!box) return;
 			box.disabled = !show;
-			if (!show) box.checked = false;
+			if (!show && box.getAttribute("data-pk-default") !== "1") box.checked = false;
 		});
 		var rooms = root.querySelector("[data-pk-rooms]");
 		if (rooms) {
