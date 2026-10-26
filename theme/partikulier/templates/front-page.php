@@ -104,9 +104,11 @@ get_header();
 	</div>
 </section>
 
+	<noscript><style>.pk-scroll-actions{display:block;padding:.5rem 0}</style></noscript>
 	<div class="pk-scroll-actions" data-pk-scroll-actions>
 		<div class="pk-container pk-scroll-actions__inner">
-			<a class="pk-btn pk-scroll-city" href="<?php echo esc_url( $archive ); ?>"><?php echo esc_html( Partikulier_Settings::get( 'btn_listings' ) ); ?></a>
+			<a class="pk-btn pk-btn-primary" href="<?php echo esc_url( $deposit ); ?>"><?php echo esc_html( Partikulier_Settings::get( 'btn_deposit' ) ); ?><svg class="pk-scroll-arrow" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+			<a class="pk-btn pk-btn-primary" href="<?php echo esc_url( $archive ); ?>"><?php echo esc_html( Partikulier_Settings::get( 'btn_listings' ) ); ?><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></a>
 		</div>
 	</div>
 
