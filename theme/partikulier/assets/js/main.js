@@ -1330,9 +1330,15 @@ function pkLimitTitle(value) {
 		if (rent) rent.value = value === "saisonnier" ? "saisonnier" : "";
 	}
 	function applyContext(keepPrice) {
+		syncHiddenIntent();
+		setPriceScale(priceMode(), keepPrice);
+		syncTxButtons();
+		syncTypeCards();
 		var code = txCode();
+		var slug = "";
+		if (typeSelect && typeSelect.value) slug = String(typeSelect.value).replace(/-(fr|en|ar)$/, "");
 		root.querySelectorAll(".pk-find-chip").forEach(function (chip) {
-			var show = hasToken(chip.getAttribute("data-pk-tx"), code);
+			var show = hasToken(chip.getAttribute("data-pk-tx"), code) && hasToken(chip.getAttribute("data-pk-types"), slug);
 			chip.hidden = !show;
 			var box = chip.querySelector("input");
 			if (!box) return;
@@ -1341,8 +1347,6 @@ function pkLimitTitle(value) {
 		});
 		var rooms = root.querySelector("[data-pk-rooms]");
 		if (rooms) {
-			var slug = "";
-			if (typeSelect && typeSelect.value) slug = String(typeSelect.value).replace(/-(fr|en|ar)$/, "");
 			var housing = (rooms.getAttribute("data-housing") || "").split(" ");
 			var showRooms = !slug || housing.indexOf(slug) !== -1;
 			rooms.hidden = !showRooms;
@@ -1355,10 +1359,6 @@ function pkLimitTitle(value) {
 		}
 		var amenities = root.querySelector(".pk-find-amenities");
 		if (amenities) amenities.hidden = !amenities.querySelector(".pk-find-chip:not([hidden])");
-		syncHiddenIntent();
-		setPriceScale(priceMode(), keepPrice);
-		syncTxButtons();
-		syncTypeCards();
 		guardFilters();
 	}
 	function syncTypeCards() {
