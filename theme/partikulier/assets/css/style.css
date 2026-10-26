@@ -7604,3 +7604,32 @@ html body .pk-find-panel .pk-find-type-card[aria-selected="true"]:active .pk-fin
 	box-shadow: inset 0 0 0 1px #9A1B21 !important;
 	color: #9A1B21 !important;
 }
+
+/* 6.20.162 — la fenetre filtre passe devant la navigation. Le titre ne suit pas le defilement. */
+html.pk-find-modal .pk-main-nav,
+body:has(.pk-find-open:checked) .pk-main-nav,
+html.pk-find-modal .pk-site-header,
+body:has(.pk-find-open:checked) .pk-site-header,
+html.pk-find-modal .pk-mobile-sticky-cta,
+body:has(.pk-find-open:checked) .pk-mobile-sticky-cta,
+html.pk-find-modal .pk-scroll-actions,
+body:has(.pk-find-open:checked) .pk-scroll-actions,
+html.pk-find-modal .pk-intent-bar,
+body:has(.pk-find-open:checked) .pk-intent-bar {
+	z-index: 1 !important;
+}
+html.pk-find-modal .pk-editorial-hero,
+body:has(.pk-find-open:checked) .pk-editorial-hero,
+html.pk-find-modal .pk-archive,
+body:has(.pk-find-open:checked) .pk-archive,
+html.pk-find-modal .pk-archive-search,
+body:has(.pk-find-open:checked) .pk-archive-search {
+	position: relative;
+	z-index: 4000 !important;
+	overflow: visible !important;
+}
+html body .pk-find-panel .pk-find-panel-bar,
+html body .pk-find-open:checked ~ .pk-find-panel .pk-find-panel-bar {
+	position: static !important;
+	top: auto !important;
+}
