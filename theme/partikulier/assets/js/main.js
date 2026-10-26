@@ -1208,6 +1208,204 @@ function pkLimitTitle(value) {
 	});
 }());
 
+/* 6.20.168 — au clic, une fenetre de choix. Pas de liste deroulante dans le champ. */
+(function () {
+	"use strict";
+	var forms = document.querySelectorAll("form.pk-find");
+	if (!forms.length) return;
+	function mobile() {
+		return window.matchMedia("(max-width: 767px)").matches;
+	}
+	function digitsOf(raw) {
+		return String(raw || "").replace(/[\u0660-\u0669]/g, function (d) {
+			return String(d.charCodeAt(0) - 0x0660);
+		}).replace(/[\u06F0-\u06F9]/g, function (d) {
+			return String(d.charCodeAt(0) - 0x06F0);
+		}).replace(/[^\d]/g, "");
+	}
+	function groupDigits(n) {
+		return String(n || "").replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+	}
+	function isWindowSelect(select) {
+		return !!(select && /^(es_price_min|es_price_max|es_size_min|es_size_max)$/.test(select.name || ""));
+	}
+	function currentText(select) {
+		var opt = select.options[select.selectedIndex];
+		return opt ? opt.textContent.replace(/^\s+|\s+$/g, "") : "";
+	}
+	function ensureOption(select, n) {
+		if (!n) {
+			select.value = "";
+			return;
+		}
+		if (!select.querySelector("option[value='" + n + "']")) {
+			var opt = document.createElement("option");
+			opt.value = n;
+			opt.textContent = groupDigits(n);
+			select.appendChild(opt);
+		}
+		select.value = n;
+	}
+	function fire(select) {
+		try { select.dispatchEvent(new Event("change", { bubbles: true })); }
+		catch (err) { /* IE */ }
+		try { select.dispatchEvent(new Event("pk-select-rebuild")); }
+		catch (err2) { /* IE */ }
+	}
+	forms.forEach(function (form) {
+		var panel = form.querySelector(".pk-find-panel");
+		if (!panel) return;
+		var closer = panel.querySelector(".pk-find-close");
+		var closeWord = closer ? (closer.getAttribute("aria-label") || "") : "";
+		var layer = document.createElement("div");
+		layer.className = "pk-pick";
+		layer.hidden = true;
+		var card = document.createElement("div");
+		card.className = "pk-pick-card";
+		card.setAttribute("role", "dialog");
+		card.setAttribute("aria-modal", "true");
+		var title = document.createElement("h3");
+		title.className = "pk-pick-title";
+		var typeRow = document.createElement("label");
+		typeRow.className = "pk-pick-type";
+		typeRow.hidden = true;
+		var hint = document.createElement("span");
+		hint.className = "pk-pick-hint";
+		var input = document.createElement("input");
+		input.type = "text";
+		input.className = "pk-pick-input";
+		input.setAttribute("inputmode", "numeric");
+		input.setAttribute("autocomplete", "off");
+		input.setAttribute("dir", "ltr");
+		var unit = document.createElement("span");
+		unit.className = "pk-pick-unit";
+		unit.setAttribute("dir", "ltr");
+		typeRow.appendChild(hint);
+		var field = document.createElement("span");
+		field.className = "pk-pick-field";
+		field.appendChild(input);
+		field.appendChild(unit);
+		typeRow.appendChild(field);
+		var list = document.createElement("ul");
+		list.className = "pk-pick-list";
+		var foot = document.createElement("div");
+		foot.className = "pk-pick-foot";
+		var back = document.createElement("button");
+		back.type = "button";
+		back.className = "pk-pick-back";
+		if (closeWord) back.setAttribute("aria-label", closeWord);
+		var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+		svg.setAttribute("viewBox", "0 0 24 24");
+		svg.setAttribute("width", "18");
+		svg.setAttribute("height", "18");
+		svg.setAttribute("aria-hidden", "true");
+		var path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+		path.setAttribute("d", "M14.5 5.5L8 12l6.5 6.5");
+		path.setAttribute("fill", "none");
+		path.setAttribute("stroke", "currentColor");
+		path.setAttribute("stroke-width", "2.2");
+		path.setAttribute("stroke-linecap", "round");
+		path.setAttribute("stroke-linejoin", "round");
+		svg.appendChild(path);
+		back.appendChild(svg);
+		var done = document.createElement("button");
+		done.type = "button";
+		done.className = "pk-pick-done";
+		done.textContent = closeWord;
+		foot.appendChild(back);
+		foot.appendChild(done);
+		card.appendChild(title);
+		card.appendChild(typeRow);
+		card.appendChild(list);
+		card.appendChild(foot);
+		layer.appendChild(card);
+		panel.appendChild(layer);
+		var active = null;
+		function refreshButtons() {
+			form.querySelectorAll(".pk-pick-open").forEach(function (btn) {
+				var select = btn.pkSelect;
+				if (select) btn.textContent = currentText(select);
+			});
+		}
+		function closePick(applyTyped) {
+			if (applyTyped && active && !typeRow.hidden) {
+				var n = digitsOf(input.value);
+				if (n) ensureOption(active, n);
+				else active.value = "";
+				fire(active);
+			}
+			layer.hidden = true;
+			active = null;
+			refreshButtons();
+		}
+		function openPick(select) {
+			active = select;
+			var block = select.closest(".pk-find-block");
+			var head = block ? block.querySelector("h3") : null;
+			var label = select.closest("label");
+			var name = label ? label.querySelector("span") : null;
+			var a = head ? head.textContent.replace(/^\s+|\s+$/g, "") : "";
+			var b = name ? name.textContent.replace(/^\s+|\s+$/g, "") : "";
+			title.textContent = a && b ? (a + " " + b) : (b || a);
+			var canType = select.hasAttribute("data-pk-min") || select.hasAttribute("data-pk-typein");
+			typeRow.hidden = !canType;
+			var hintText = select.getAttribute("data-pk-hint") || "";
+			if (!hintText && label) {
+				var write = label.querySelector(".pk-find-write");
+				hintText = write ? write.textContent.replace(/^\s+|\s+$/g, "") : "";
+			}
+			hint.textContent = hintText;
+			hint.hidden = !hintText;
+			input.value = select.value ? groupDigits(digitsOf(select.value)) : "";
+			input.placeholder = hintText || currentText(select);
+			unit.textContent = select.getAttribute("data-pk-unit") || "";
+			unit.hidden = !unit.textContent;
+			list.textContent = "";
+			Array.prototype.forEach.call(select.options, function (opt, index) {
+				var li = document.createElement("li");
+				var row = document.createElement("button");
+				row.type = "button";
+				row.className = "pk-pick-row";
+				row.textContent = opt.textContent.replace(/^\s+|\s+$/g, "");
+				if (opt.selected) row.setAttribute("aria-current", "true");
+				row.addEventListener("click", function () {
+					select.selectedIndex = index;
+					fire(select);
+					refreshButtons();
+					layer.hidden = true;
+					active = null;
+				});
+				li.appendChild(row);
+				list.appendChild(li);
+			});
+			layer.hidden = false;
+		}
+		back.addEventListener("click", function () { closePick(true); });
+		done.addEventListener("click", function () { closePick(true); });
+		layer.addEventListener("click", function (event) {
+			if (event.target === layer) closePick(true);
+		});
+		form.querySelectorAll("select").forEach(function (select) {
+			if (!isWindowSelect(select)) return;
+			var label = select.closest("label");
+			if (!label || label.querySelector(".pk-pick-open")) return;
+			var btn = document.createElement("button");
+			btn.type = "button";
+			btn.className = "pk-pick-open";
+			btn.pkSelect = select;
+			btn.textContent = currentText(select);
+			label.appendChild(btn);
+			select.addEventListener("change", function () { btn.textContent = currentText(select); });
+			select.addEventListener("pk-select-rebuild", function () { btn.textContent = currentText(select); });
+			btn.addEventListener("click", function (event) {
+				event.preventDefault();
+				if (!mobile()) return;
+				openPick(select);
+			});
+		});
+	});
+}());
+
 
 /* Budget max : paliers vente ≠ location, dès le changement d’action. */
 (function () {
