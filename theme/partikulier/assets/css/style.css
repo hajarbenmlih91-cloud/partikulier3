@@ -6534,3 +6534,16 @@ html[dir="rtl"] body .pk-card-price-note {
 	direction: rtl !important;
 	unicode-bidi: isolate !important;
 }
+
+/* 6.20.147 — annonce à la une : le prix arabe part de la droite, chiffres isolés. */
+html[dir="rtl"] body .pk-editorial-feature__content {
+	direction: rtl !important;
+	text-align: right !important;
+	align-items: flex-start !important;
+}
+html[dir="rtl"] body .pk-editorial-feature__price {
+	direction: rtl !important;
+	text-align: right !important;
+	unicode-bidi: isolate !important;
+	align-self: flex-start !important;
+}
