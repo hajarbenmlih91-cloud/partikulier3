@@ -6872,3 +6872,58 @@ body .pk-find-close {
 		border-radius: 16px !important;
 	}
 }
+
+/* 6.20.153 — icones de type de bien, meme rangee que la reference. Violet si choisi, gris sinon. */
+html body .pk-find-typegrid {
+	grid-template-columns: repeat(5, minmax(0, 1fr));
+	gap: 2px 4px;
+}
+html body .pk-find-type-card {
+	background: transparent !important;
+	border: 0 !important;
+	box-shadow: none !important;
+	color: #8a8a8a !important;
+	min-height: 0 !important;
+	padding: 8px 2px !important;
+	border-radius: 10px !important;
+	font-size: 12px !important;
+	font-weight: 700 !important;
+	line-height: 1.2 !important;
+}
+html body .pk-find-type-card .pk-find-type-ico {
+	display: flex;
+	color: #8a8a8a;
+}
+html body .pk-find-type-card .pk-find-type-ico svg {
+	width: 42px;
+	height: 42px;
+}
+html body .pk-find-type-card[aria-selected="true"],
+html body .pk-find-type-card[aria-selected="true"] .pk-find-type-ico {
+	color: #A13FF4 !important;
+}
+html body .pk-find-type-card:hover,
+html body .pk-find-type-card:hover .pk-find-type-ico,
+html body .pk-find-type-card:active,
+html body .pk-find-type-card:active .pk-find-type-ico {
+	color: #6515A0 !important;
+	background: transparent !important;
+}
+.pk-find-type-menu svg {
+	width: 22px;
+	height: 22px;
+}
+@media (min-width: 768px) and (max-width: 900px) {
+	html body .pk-find-typegrid {
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+	}
+}
+@media (max-width: 767px) {
+	html body .pk-find-typegrid {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+	html body .pk-find-type-card .pk-find-type-ico svg {
+		width: 36px;
+		height: 36px;
+	}
+}
