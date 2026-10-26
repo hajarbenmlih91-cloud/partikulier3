@@ -1352,8 +1352,27 @@ function pkLimitTitle(value) {
 		if (amenities) amenities.hidden = !amenities.querySelector(".pk-find-chip:not([hidden])");
 		syncHiddenIntent();
 		setPriceScale(priceMode(), keepPrice);
+		syncTxButtons();
 		guardFilters();
 	}
+	function syncTxButtons() {
+		var chosen = root.querySelector(".pk-find-tab-input:checked");
+		var value = chosen ? chosen.value : "";
+		root.querySelectorAll(".pk-find-tx-btn").forEach(function (btn) {
+			var on = btn.getAttribute("data-pk-intent") === value;
+			btn.classList.toggle("is-on", on);
+			btn.setAttribute("aria-pressed", on ? "true" : "false");
+		});
+	}
+	root.querySelectorAll(".pk-find-tx-btn").forEach(function (btn) {
+		btn.addEventListener("click", function () {
+			var value = btn.getAttribute("data-pk-intent") || "";
+			var input = root.querySelector(".pk-find-tab-input[value='" + value + "']");
+			if (!input) return;
+			input.checked = true;
+			applyContext(false);
+		});
+	});
 	function intentChosen() {
 		return !!root.querySelector(".pk-find-tab-input:checked");
 	}
@@ -1373,12 +1392,6 @@ function pkLimitTitle(value) {
 		root.classList.remove("is-filter-locked");
 		var filter = root.querySelector(".pk-find-filter");
 		if (filter) filter.removeAttribute("aria-disabled");
-		if (!filtersReady() && opener && opener.checked) {
-			opener.checked = false;
-			if (typeof setExpanded === "function") setExpanded();
-			showNeed(true);
-			return;
-		}
 		if (filtersReady()) showNeed(false);
 	}
 	root.querySelectorAll("[data-pk-range]").forEach(function (box) {
@@ -1528,19 +1541,13 @@ function pkLimitTitle(value) {
 	function setExpanded() {
 		if (opener) opener.setAttribute("aria-expanded", opener.checked ? "true" : "false");
 		if (opener && opener.checked) closeType();
+		document.documentElement.classList.toggle("pk-find-modal", !!(opener && opener.checked));
 	}
 	setExpanded();
 	var filterBtn = root.querySelector(".pk-find-filter");
 	if (filterBtn) {
-		filterBtn.addEventListener("click", function (event) {
-			if (filtersReady()) {
-				showNeed(false);
-				return;
-			}
-			event.preventDefault();
-			if (opener) opener.checked = false;
-			setExpanded();
-			showNeed(true);
+		filterBtn.addEventListener("click", function () {
+			showNeed(false);
 		});
 	}
 	var closeBtn = root.querySelector(".pk-find-close");

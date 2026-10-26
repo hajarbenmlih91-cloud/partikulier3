@@ -47,6 +47,10 @@ $pk_t = static function ( $fr ) use ( $pk_find_lang ) {
 		'Prix'                => array( 'en' => 'Price', 'ar' => 'السعر' ),
 		'Voir les résultats'  => array( 'en' => 'Show results', 'ar' => 'عرض النتائج' ),
 		'Équipements'         => array( 'en' => 'Amenities', 'ar' => 'التجهيزات' ),
+		'Type de transaction' => array( 'en' => 'Transaction', 'ar' => 'المعاملة' ),
+		'Vente'               => array( 'en' => 'For sale', 'ar' => 'للبيع' ),
+		'Location'            => array( 'en' => 'For rent', 'ar' => 'للكراء' ),
+		'Vacances'            => array( 'en' => 'Seasonal', 'ar' => 'موسمية' ),
 	);
 	return isset( $extra[ $fr ][ $pk_find_lang ] ) ? $extra[ $fr ][ $pk_find_lang ] : $fr;
 };
@@ -274,9 +278,34 @@ $pk_season_label = ( 'fr' === $pk_find_lang ) ? 'Location saisonnière' : $pk_t(
 
 	<p class="pk-find-need" id="pk-find-need" role="alert" aria-live="assertive" hidden><?php echo esc_html( $pk_t( 'Veuillez vérifier les champs obligatoires.' ) ); ?></p>
 
-	<div class="pk-find-panel" id="pk-find-panel">
+	<div class="pk-find-panel" id="pk-find-panel" role="dialog" aria-modal="true" aria-labelledby="pk-find-pop-title">
 		<div class="pk-find-panel-bar">
+			<h2 class="pk-find-pop-title" id="pk-find-pop-title"><?php echo esc_html( $pk_t( 'Filtres' ) ); ?></h2>
 			<button type="button" class="pk-find-close"><?php echo esc_html( $pk_t( 'Fermer' ) ); ?></button>
+		</div>
+		<div class="pk-find-tx" role="group" aria-label="<?php echo esc_attr( $pk_t( 'Type de transaction' ) ); ?>">
+			<p class="pk-find-label"><?php echo esc_html( $pk_t( 'Type de transaction' ) ); ?></p>
+			<div class="pk-find-tx-row">
+				<?php foreach ( array( 'a-vendre' => 'Vente', 'a-louer' => 'Location', 'saisonnier' => 'Vacances' ) as $pk_tx_val => $pk_tx_label ) : ?>
+					<button type="button" class="pk-find-tx-btn<?php echo $pk_intent === $pk_tx_val ? ' is-on' : ''; ?>" data-pk-intent="<?php echo esc_attr( $pk_tx_val ); ?>" aria-pressed="<?php echo $pk_intent === $pk_tx_val ? 'true' : 'false'; ?>"><?php echo esc_html( $pk_t( $pk_tx_label ) ); ?></button>
+				<?php endforeach; ?>
+			</div>
+		</div>
+		<div class="pk-find-typegrid-wrap">
+			<p class="pk-find-label"><?php echo esc_html( $pk_t( 'Type de bien' ) ); ?></p>
+			<div class="pk-find-typegrid" role="listbox" aria-label="<?php echo esc_attr( $pk_t( 'Type de bien' ) ); ?>">
+				<button type="button" class="pk-find-type-opt pk-find-type-card" data-value="" aria-selected="<?php echo '' === $pk_type ? 'true' : 'false'; ?>">
+					<span class="pk-find-type-ico" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" focusable="false"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></span>
+					<span><?php echo esc_html( $pk_t( 'Tous' ) ); ?></span>
+				</button>
+				<?php foreach ( (array) $pk_types as $pk_term ) : ?>
+					<?php if ( ! $pk_term instanceof WP_Term ) { continue; } ?>
+					<button type="button" class="pk-find-type-opt pk-find-type-card" data-value="<?php echo esc_attr( $pk_term->slug ); ?>" aria-selected="<?php echo selected( $pk_type, $pk_term->slug, false ) ? 'true' : 'false'; ?>">
+						<span class="pk-find-type-ico" aria-hidden="true"><?php echo function_exists( 'pk_type_icon' ) ? pk_type_icon( $pk_term->slug ) : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
+						<span><?php echo esc_html( class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_taxonomy_label( $pk_term->name ) : $pk_term->name ); ?></span>
+					</button>
+				<?php endforeach; ?>
+			</div>
 		</div>
 		<div class="pk-find-split">
 			<div class="pk-find-range" data-pk-range data-pk-price data-unit="<?php echo esc_attr( $pk_price_unit ); ?>" data-sale-max="<?php echo esc_attr( $pk_sale_max ); ?>" data-rent-max="<?php echo esc_attr( $pk_rent_max ); ?>" data-sale-step="<?php echo esc_attr( $pk_sale_step ); ?>" data-rent-step="<?php echo esc_attr( $pk_rent_step ); ?>" data-sale-unit="<?php echo esc_attr( $pk_unit_sale ); ?>" data-rent-unit="<?php echo esc_attr( $pk_unit_rent ); ?>" data-season-max="<?php echo esc_attr( $pk_rent_max ); ?>" data-season-step="<?php echo esc_attr( $pk_rent_step ); ?>" data-season-unit="<?php echo esc_attr( $pk_unit_sale ); ?>">
