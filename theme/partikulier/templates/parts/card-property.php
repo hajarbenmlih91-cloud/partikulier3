@@ -112,7 +112,7 @@ if ( $price ) {
 	$label           = ( 'a-louer' === $action_slug || 'location' === $action_slug || 'rent' === $action_slug ) ? sprintf( ' <span class="pk-card-price-note">%s</span>', esc_html( function_exists( 'pk_rent_suffix' ) ? pk_rent_suffix() : '/ mois' ) ) : '';
 		$formatted   = function_exists( 'pk_format_amount' ) ? pk_format_amount( $price ) : $price;
 		$currency   = apply_filters( 'partikulier_currency', 'DH' );
-		$price_html = esc_html( trim( $formatted . ' ' . $currency ) ) . $label;
+		$price_html = '<span class="pk-price-num" dir="ltr">' . esc_html( trim( (string) $formatted ) ) . '</span> ' . esc_html( (string) $currency ) . $label;
 } else {
 		$price_html = esc_html( Partikulier_Localization::translate_polylang_string( 'Prix sur demande', 'Prix sur demande', 'partikulier' ) );
 }
