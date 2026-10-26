@@ -1588,7 +1588,9 @@ function pkLimitTitle(value) {
 		});
 		root.querySelectorAll(".pk-find-type-opt").forEach(function (opt) {
 			opt.addEventListener("click", function () {
-				typeSelect.value = opt.getAttribute("data-value") || "";
+				var value = opt.getAttribute("data-value") || "";
+				if (opt.classList.contains("pk-find-type-card") && typeSelect.value === value) value = "";
+				typeSelect.value = value;
 				syncTypeLabel();
 				closeType();
 				applyContext(true);
