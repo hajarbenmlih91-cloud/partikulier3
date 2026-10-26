@@ -52,6 +52,7 @@ $pk_t = static function ( $fr ) use ( $pk_find_lang ) {
 		'Location'            => array( 'en' => 'For rent', 'ar' => 'للكراء' ),
 		'Vacances'            => array( 'en' => 'Seasonal', 'ar' => 'موسمية' ),
 		'Ferme'               => array( 'en' => 'Farm', 'ar' => 'ضيعة' ),
+		'Local commercial'    => array( 'en' => 'Commercial premises', 'ar' => 'محل تجاري' ),
 	);
 	return isset( $extra[ $fr ][ $pk_find_lang ] ) ? $extra[ $fr ][ $pk_find_lang ] : $fr;
 };
@@ -194,12 +195,26 @@ foreach ( $pk_types as $pk_term ) {
 		break;
 	}
 }
-if ( ! $pk_has_ferme ) {
+$pk_extra_types = array(
+	'ferme' => 'Ferme',
+	'local' => 'Local commercial',
+);
+foreach ( $pk_extra_types as $pk_extra_slug => $pk_extra_label ) {
+	$pk_has_extra = false;
+	foreach ( $pk_types as $pk_term ) {
+		if ( $pk_term instanceof WP_Term && $pk_extra_slug === preg_replace( '/-(fr|en|ar)$/', '', $pk_term->slug ) ) {
+			$pk_has_extra = true;
+			break;
+		}
+	}
+	if ( $pk_has_extra ) {
+		continue;
+	}
 	$pk_types[] = new WP_Term(
 		(object) array(
 			'term_id'  => 0,
-			'name'     => $pk_t( 'Ferme' ),
-			'slug'     => 'ferme',
+			'name'     => $pk_t( $pk_extra_label ),
+			'slug'     => $pk_extra_slug,
 			'taxonomy' => PARTIKULIER_ESTATIK_TYPE_TAXONOMY,
 		)
 	);
@@ -321,15 +336,16 @@ $pk_season_label = ( 'fr' === $pk_find_lang ) ? 'Location saisonnière' : $pk_t(
 					'maison'      => 2,
 					'villa'       => 3,
 					'riad'        => 4,
-					'depot'       => 5,
+					'local'       => 5,
 					'bureau'      => 6,
 					'terrain'     => 7,
 					'ferme'       => 8,
-					'hangar'      => 9,
-					'usine'       => 10,
-					'studio'      => 11,
-					'duplex'      => 12,
-					'immeuble'    => 13,
+					'depot'       => 9,
+					'hangar'      => 10,
+					'usine'       => 11,
+					'studio'      => 12,
+					'duplex'      => 13,
+					'immeuble'    => 14,
 				);
 				$pk_type_cards = (array) $pk_types;
 				usort(
@@ -342,7 +358,7 @@ $pk_season_label = ( 'fr' === $pk_find_lang ) ? 'Location saisonnière' : $pk_t(
 				);
 				foreach ( $pk_type_cards as $pk_term ) : ?>
 					<?php if ( ! $pk_term instanceof WP_Term ) { continue; } ?>
-					<button type="button" class="pk-find-type-opt pk-find-type-card" data-value="<?php echo esc_attr( $pk_term->slug ); ?>" aria-selected="<?php echo selected( $pk_type, $pk_term->slug, false ) ? 'true' : 'false'; ?>">
+					<button type="button" class="pk-find-type-opt pk-find-type-card" data-value="<?php echo esc_attr( $pk_term->slug ); ?>" data-pk-tx="<?php echo esc_attr( in_array( preg_replace( '/-(fr|en|ar)$/', '', $pk_term->slug ), array( 'appartement', 'maison', 'villa', 'riad', 'studio', 'duplex' ), true ) ? 'vente louer saisonnier' : 'vente louer' ); ?>" aria-selected="<?php echo selected( $pk_type, $pk_term->slug, false ) ? 'true' : 'false'; ?>">
 						<span class="pk-find-type-ico" aria-hidden="true"><?php echo function_exists( 'pk_type_icon' ) ? pk_type_icon( $pk_term->slug ) : ''; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></span>
 						<span><?php echo esc_html( class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_taxonomy_label( $pk_term->name ) : $pk_term->name ); ?></span>
 					</button>

@@ -53,10 +53,16 @@ class Partikulier_Search_Filters {
 			if ( ! taxonomy_exists( PARTIKULIER_ESTATIK_TYPE_TAXONOMY ) ) {
 				return;
 			}
-			if ( get_term_by( 'slug', 'ferme', PARTIKULIER_ESTATIK_TYPE_TAXONOMY ) ) {
-				return;
+			$pk_types_assures = array(
+			'ferme' => 'Ferme',
+			'local' => 'Local commercial',
+		);
+		foreach ( $pk_types_assures as $pk_slug => $pk_nom ) {
+			if ( get_term_by( 'slug', $pk_slug, PARTIKULIER_ESTATIK_TYPE_TAXONOMY ) ) {
+				continue;
 			}
-			wp_insert_term( 'Ferme', PARTIKULIER_ESTATIK_TYPE_TAXONOMY, array( 'slug' => 'ferme' ) );
+			wp_insert_term( $pk_nom, PARTIKULIER_ESTATIK_TYPE_TAXONOMY, array( 'slug' => $pk_slug ) );
+		}
 		}
 
 		/**

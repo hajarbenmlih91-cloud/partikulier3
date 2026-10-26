@@ -1353,7 +1353,27 @@ function pkLimitTitle(value) {
 		syncHiddenIntent();
 		setPriceScale(priceMode(), keepPrice);
 		syncTxButtons();
+		syncTypeCards();
 		guardFilters();
+	}
+	function syncTypeCards() {
+		var intent = root.querySelector(".pk-find-tab-input:checked");
+		var value = intent ? intent.value : "a-vendre";
+		var token = value === "saisonnier" ? "saisonnier" : (value === "a-louer" ? "louer" : "vente");
+		root.querySelectorAll(".pk-find-type-card").forEach(function (card) {
+			var slug = card.getAttribute("data-value") || "";
+			if (!slug) {
+				card.hidden = false;
+				return;
+			}
+			var list = card.getAttribute("data-pk-tx") || "vente louer";
+			var show = (" " + list + " ").indexOf(" " + token + " ") !== -1;
+			card.hidden = !show;
+			if (!show && typeSelect && typeSelect.value === slug) {
+				typeSelect.value = "";
+				syncTypeLabel();
+			}
+		});
 	}
 	function syncTxButtons() {
 		var chosen = root.querySelector(".pk-find-tab-input:checked");
