@@ -813,6 +813,14 @@ class Partikulier_Search_Filters {
 			) );
 		}
 
+		if ( 'meuble' === self::query_key( 'pk_furnished' ) ) {
+			self::push_meta( $query, array(
+				'key'     => '_pk_furnished',
+				'value'   => 'meuble',
+				'compare' => '=',
+			) );
+		}
+
 		$known = self::amenity_catalog();
 		foreach ( self::amenity_request() as $id ) {
 			if ( ! isset( $known[ $id ] ) ) {
