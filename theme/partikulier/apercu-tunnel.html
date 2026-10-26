@@ -6,8 +6,8 @@
 <title>Déposer une annonce</title>
 <style>
   :root {
-    --pk-primary: #A13FF4;
-    --pk-primary-dark: #6515A0;
+    --pk-primary: #323232;
+    --pk-primary-dark: #161715;
     --pk-ink: #161715;
     --pk-text: #3d403b;
     --pk-muted: #8a877f;
@@ -55,7 +55,7 @@
     letter-spacing: -.045em;
     line-height: 1.02;
   }
-  .pk-hero-accent { display: block; color: #6515A0; font-weight: 500; }
+  .pk-hero-accent { display: block; color: #161715; font-weight: 500; }
   .pk-submit-subtitle { margin: .9rem 0 0; color: var(--pk-muted); max-width: 34rem; font-size: 1.02rem; }
   .pk-stepper { margin: 2.1rem 0 1.8rem; }
   .pk-stepper-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin: 0; padding: 0; list-style: none; }
@@ -183,7 +183,7 @@
   }
   .info.is-inline { position: static; display: inline-flex; align-items: center; justify-content: center; margin-left: .35rem; vertical-align: middle; }
   .tip, .alert { margin: .6rem 0 0; padding: .75rem .85rem; background: var(--pk-wash); border-radius: 12px; font-size: .84rem; }
-  .alert { color: #6515A0; }
+  .alert { color: #9A1B21; }
   .drop {
     position: relative;
     display: flex;
@@ -331,13 +331,13 @@
     border-top: 1px solid var(--pk-line);
   }
   .go, .ghost { min-height: 48px; padding: .8rem 1.45rem; border-radius: 980px; cursor: pointer; font-weight: 600; font-size: .92rem; }
-  .go { border: 0; background: #6515A0; color: #fff; }
-  .go:hover { background: var(--pk-primary-dark); }
+  .go { border: 0; background: #C8242B; color: #fff; }
+  .go:hover, .go:active { background: #9A1B21; color: #fff; }
   .ghost { border: 1px solid var(--pk-line); background: #fff; color: var(--pk-ink); }
   .pk-step-legal { text-align: center; color: var(--pk-muted); font-size: .75rem; margin: 1rem 0 0; }
   .choices.pk-invalid, .pills.pk-invalid, .suffix.pk-invalid, #surface-champ.pk-invalid { outline: 2px solid #c0392b; outline-offset: 4px; }
   input.pk-invalid, .suffix.pk-invalid { border-color: #c0392b; box-shadow: 0 0 0 4px rgba(192, 57, 43, .1); }
-  .err { margin: .55rem 0 0; color: #6515A0; font-weight: 650; font-size: .84rem; }
+  .err { margin: .55rem 0 0; color: #9A1B21; font-weight: 650; font-size: .84rem; }
 
   .stepper { display: flex; align-items: center; gap: .7rem; }
   .step {
@@ -371,9 +371,9 @@
   #lieu-proposition .pk-fold-title { font-size: 1.08rem; font-weight: 750; color: #fff; }
   #lieu-proposition .pk-fold-closed, #lieu-proposition .pk-fold-open { font-size: .86rem; font-weight: 500; color: #fff; }
   #lieu-proposition summary,
-  #lieu-proposition[open] summary { background: #6515A0; color: #fff; }
+  #lieu-proposition[open] summary { background: #161715; color: #fff; }
   #lieu-proposition summary small { color: #fff; }
-  #lieu-proposition .pk-fold-mark { background: #fff; border-color: #fff; color: #A13FF4; }
+  #lieu-proposition .pk-fold-mark { background: #fff; border-color: #fff; color: #323232; }
   .pk-fold-mark {
     flex: 0 0 48px; width: 48px; height: 48px; display: grid; place-items: center;
     border: 2px solid var(--pk-primary); background: #fff; color: var(--pk-primary-dark);
@@ -400,7 +400,7 @@
     display: flex; justify-content: space-between; align-items: center;
     direction: ltr;
     min-height: 52px; padding: 8px 18px;
-    background: #A13FF4;
+    background: #323232;
   }
   .pk-form-logo { display: flex; align-items: center; flex: none; line-height: 0; }
   .pk-form-logo img { display: block; height: 40px; width: auto; }
