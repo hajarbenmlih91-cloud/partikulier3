@@ -6812,3 +6812,63 @@ body .pk-find-type-card[aria-selected="true"] .pk-find-type-ico {
 		font-size: 1.05rem;
 	}
 }
+
+/* 6.20.152 — le popup est centré sur les trois écrans, bords arrondis.
+   inset-inline venait après left et annulait le centrage. */
+html body .pk-find-open:checked ~ .pk-find-panel {
+	position: fixed !important;
+	inset: auto !important;
+	top: 50% !important;
+	right: auto !important;
+	bottom: auto !important;
+	left: 50% !important;
+	margin: 0 !important;
+	transform: translate(-50%, -50%) !important;
+	border-radius: 16px !important;
+}
+html[dir="rtl"] body .pk-find-open:checked ~ .pk-find-panel {
+	left: 50% !important;
+	right: auto !important;
+	transform: translate(-50%, -50%) !important;
+}
+html body .pk-find-open:checked ~ .pk-find-panel .pk-find-panel-bar {
+	border-radius: 16px 16px 0 0;
+}
+html body .pk-find-open:checked ~ .pk-find-panel .pk-find-foot {
+	border-radius: 0 0 16px 16px;
+}
+body .pk-find-tx-btn,
+body .pk-find-type-card,
+body .pk-find-close {
+	border-radius: 10px !important;
+}
+@media (min-width: 901px) {
+	html body .pk-find-open:checked ~ .pk-find-panel {
+		left: 50% !important;
+		right: auto !important;
+		width: min(920px, calc(100vw - 64px)) !important;
+		transform: translate(-50%, -50%) !important;
+		border-radius: 16px !important;
+	}
+}
+@media (min-width: 768px) and (max-width: 900px) {
+	html body .pk-find-open:checked ~ .pk-find-panel {
+		left: 50% !important;
+		right: auto !important;
+		width: min(680px, calc(100vw - 48px)) !important;
+		max-width: 680px !important;
+		transform: translate(-50%, -50%) !important;
+		border-radius: 16px !important;
+	}
+}
+@media (max-width: 767px) {
+	html body .pk-find-open:checked ~ .pk-find-panel {
+		left: 50% !important;
+		right: auto !important;
+		width: min(440px, calc(100vw - 28px)) !important;
+		max-width: calc(100vw - 28px) !important;
+		max-height: calc(100dvh - 28px) !important;
+		transform: translate(-50%, -50%) !important;
+		border-radius: 16px !important;
+	}
+}
