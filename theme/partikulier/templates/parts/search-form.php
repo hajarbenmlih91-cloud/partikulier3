@@ -510,7 +510,14 @@ $pk_season_label = ( 'fr' === $pk_find_lang ) ? 'Location saisonnière' : $pk_t(
 							$pk_chip_on = in_array( $pk_tx_now, (array) $pk_item['pk_tx'], true ) && $pk_type_has( $pk_item['pk_types'] );
 							?>
 							<label class="pk-find-chip pk-find-check" data-pk-tx="<?php echo esc_attr( implode( ' ', $pk_item['pk_tx'] ) ); ?>" data-pk-types="<?php echo esc_attr( $pk_item['pk_types'] ); ?>"<?php echo $pk_chip_on ? '' : ' hidden'; ?>>
-								<input type="checkbox" name="pk_amenity[]" value="<?php echo esc_attr( $pk_id ); ?>" <?php checked( $pk_chip_on && in_array( $pk_id, $pk_selected_amenities, true ) ); ?>>
+								<?php
+							$pk_default_checks = array( 'terrace', 'elevator' );
+							$pk_box_checked    = in_array( $pk_id, $pk_selected_amenities, true );
+							if ( ! isset( $_GET['pk_amenity'] ) && '' === $pk_scalar( 'es_type' ) && in_array( $pk_id, $pk_default_checks, true ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+								$pk_box_checked = true;
+							}
+							?>
+							<input type="checkbox" name="pk_amenity[]" value="<?php echo esc_attr( $pk_id ); ?>" <?php checked( $pk_box_checked ); ?><?php echo $pk_box_checked && in_array( $pk_id, $pk_default_checks, true ) ? ' data-pk-default="1"' : ''; ?><?php echo $pk_chip_on ? '' : ' disabled'; ?>>
 								<span><?php echo esc_html( Partikulier_Amenities::label( $pk_item ) ); ?></span>
 							</label>
 						<?php endforeach; ?>
