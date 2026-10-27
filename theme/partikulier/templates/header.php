@@ -25,36 +25,39 @@ if ( ! defined( 'ABSPATH' ) ) {
 <?php if ( is_front_page() ) : ?>
 <style id="pk-home-logo-red">
 body.home .pk-find-submit,
-body.home .pk-editorial-places a.pk-btn,
-body.home .pk-header-search button[type="submit"],
-body.home .pk-topbar-contact a[href*="connexion"],
-body.home .pk-main-nav a[href*="connexion"],
-body.home .pk-mobile-menu a[href*="connexion"] {
+body.home .pk-header-search button[type="submit"] {
 	background: #FF5757 !important;
 	background-color: #FF5757 !important;
-	background-image: none !important;
 	border-color: #FF5757 !important;
 	color: #fff !important;
+	border-radius: 0 !important;
 }
 body.home .pk-find-submit:hover,
 body.home .pk-find-submit:active,
-body.home .pk-editorial-places a.pk-btn:hover,
-body.home .pk-editorial-places a.pk-btn:active,
 body.home .pk-header-search button[type="submit"]:hover,
-body.home .pk-header-search button[type="submit"]:active,
-body.home .pk-topbar-contact a[href*="connexion"]:hover,
-body.home .pk-main-nav a[href*="connexion"]:hover,
-body.home .pk-mobile-menu a[href*="connexion"]:hover {
+body.home .pk-header-search button[type="submit"]:active {
 	background: #E04D4D !important;
 	background-color: #E04D4D !important;
 	border-color: #E04D4D !important;
-	color: #fff !important;
 }
-body.home .pk-topbar-contact a[href*="connexion"],
-body.home .pk-main-nav a[href*="connexion"],
-body.home .pk-mobile-menu a[href*="connexion"] {
-	border-radius: 980px;
-	padding: .4rem .9rem !important;
+@media (min-width: 768px) {
+	body .pk-main-nav .pk-menu-item.pk-current > a::after {
+		background: #FF5757 !important;
+	}
+	body .pk-main-nav a[href*="connexion"],
+	body .pk-topbar-contact a[href*="connexion"],
+	body .pk-topbar-contact a[href*="login"] {
+		background: transparent !important;
+		background-color: transparent !important;
+		background-image: none !important;
+		color: inherit !important;
+		border-radius: 0 !important;
+		box-shadow: none !important;
+	}
+	body .pk-main-nav .pk-menu-item > a[href*="connexion"] {
+		padding: .95rem 0 !important;
+		color: #161715 !important;
+	}
 }
 </style>
 <?php endif; ?>
