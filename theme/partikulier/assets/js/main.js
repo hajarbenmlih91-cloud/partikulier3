@@ -2313,3 +2313,65 @@ function pkLimitTitle(value) {
 	}, true);
 }());
 
+(function () {
+	function edge(nav, dir) {
+		var box = nav.getBoundingClientRect();
+		var links = nav.querySelectorAll("a");
+		var target = null;
+		for (var i = 0; i < links.length; i++) {
+			var rect = links[i].getBoundingClientRect();
+			if (dir < 0 && rect.left < box.left - 2) target = links[i];
+			if (dir > 0 && rect.right > box.right + 2 && !target) target = links[i];
+		}
+		return target;
+	}
+	function scrollVisual(nav, dx) {
+		var child = nav.querySelector("a");
+		if (!child || !dx) return;
+		var before = child.getBoundingClientRect().left;
+		var start = nav.scrollLeft;
+		nav.scrollLeft = start + dx;
+		var moved = child.getBoundingClientRect().left - before;
+		nav.scrollLeft = start;
+		if (Math.abs(moved) < 0.5) return;
+		var sign = (dx > 0 && moved < 0) || (dx < 0 && moved > 0) ? 1 : -1;
+		nav.scrollBy({ left: sign * dx, behavior: "smooth" });
+	}
+	function paint(rail) {
+		var nav = rail.querySelector(".pk-quartiers");
+		var prev = rail.querySelector(".is-prev");
+		var next = rail.querySelector(".is-next");
+		var open = document.getElementById("pk-quartiers-open");
+		if (!nav || !prev || !next) return;
+		if (open && open.checked) {
+			prev.hidden = true;
+			next.hidden = true;
+			return;
+		}
+		prev.hidden = !edge(nav, -1);
+		next.hidden = !edge(nav, 1);
+	}
+	document.querySelectorAll(".pk-quartiers-rail").forEach(function (rail) {
+		var nav = rail.querySelector(".pk-quartiers");
+		if (!nav) return;
+		rail.addEventListener("click", function (event) {
+			var btn = event.target.closest("[data-pk-quartiers-dir]");
+			if (!btn) return;
+			event.preventDefault();
+			var dir = btn.getAttribute("data-pk-quartiers-dir") === "1" ? 1 : -1;
+			var target = edge(nav, dir);
+			if (!target) return;
+			var box = nav.getBoundingClientRect();
+			var rect = target.getBoundingClientRect();
+			var dx = dir > 0 ? (rect.right - box.right + 12) : (rect.left - box.left - 12);
+			scrollVisual(nav, dx);
+			window.setTimeout(function () { paint(rail); }, 280);
+		});
+		nav.addEventListener("scroll", function () { paint(rail); }, { passive: true });
+		window.addEventListener("resize", function () { paint(rail); });
+		var open = document.getElementById("pk-quartiers-open");
+		if (open) open.addEventListener("change", function () { paint(rail); });
+		paint(rail);
+	});
+}());
+

@@ -268,74 +268,68 @@ if ( 'a-louer' === $pk_intent ) {
 } elseif ( 'saisonnier' === $pk_intent ) {
 	$pk_tx_word = ( 'fr' === $pk_lang ) ? 'Location saisonnière' : $pk_say( 'Vacances' );
 }
-$pk_mark = static function ( $class, $text, $ltr = false ) {
-	if ( '' === (string) $text ) {
-		return '';
-	}
-	$dir = $ltr ? ' dir="ltr"' : '';
-	return '<span class="' . $class . '"' . $dir . '>' . esc_html( $text ) . '</span>';
-};
-$pk_beds_html = '';
-if ( $pk_beds > 0 ) {
-	if ( 'ar' === $pk_lang && 1 === $pk_beds ) {
-		$pk_beds_html = $pk_mark( 'pk-results-strong', 'غرفة نوم واحدة' );
-	} elseif ( 'ar' === $pk_lang ) {
-		$pk_beds_html = $pk_mark( 'pk-results-strong', (string) $pk_beds, true ) . ' ' . $pk_mark( 'pk-results-soft', 'غرف نوم' );
-	} elseif ( 'en' === $pk_lang ) {
-		$pk_beds_html = $pk_mark( 'pk-results-strong', (string) $pk_beds, true ) . ' ' . $pk_mark( 'pk-results-soft', 1 === $pk_beds ? 'bedroom' : 'bedrooms' );
-	} else {
-		$pk_beds_html = $pk_mark( 'pk-results-strong', (string) $pk_beds, true ) . ' ' . $pk_mark( 'pk-results-soft', 1 === $pk_beds ? 'chambre' : 'chambres' );
-	}
-}
-$pk_place_html = '';
+$pk_in = '';
 if ( '' !== $pk_place ) {
 	if ( 'ar' === $pk_lang ) {
-		$pk_place_html = $pk_mark( 'pk-results-soft', 'في' ) . ' ' . $pk_mark( 'pk-results-strong', $pk_place );
+		$pk_in = 'في ' . $pk_place;
 	} elseif ( 'en' === $pk_lang ) {
-		$pk_place_html = $pk_mark( 'pk-results-soft', 'in' ) . ' ' . $pk_mark( 'pk-results-strong', $pk_place );
+		$pk_in = 'in ' . $pk_place;
 	} else {
-		$pk_place_html = $pk_mark( 'pk-results-soft', 'à' ) . ' ' . $pk_mark( 'pk-results-strong', $pk_place );
+		$pk_in = 'à ' . $pk_place;
 	}
 }
-$pk_head_html = array();
-foreach ( array( $pk_mark( 'pk-results-strong', $pk_type_label ), $pk_beds_html, $pk_mark( 'pk-results-accent', $pk_tx_word ), $pk_place_html ) as $pk_bit ) {
+$pk_beds_label = '';
+if ( $pk_beds > 0 ) {
+	if ( 'ar' === $pk_lang ) {
+		$pk_beds_label = ( 1 === $pk_beds ) ? 'غرفة نوم واحدة' : sprintf( '%d غرف نوم', $pk_beds );
+	} elseif ( 'en' === $pk_lang ) {
+		$pk_beds_label = sprintf( 1 === $pk_beds ? '%d bedroom' : '%d bedrooms', $pk_beds );
+	} else {
+		$pk_beds_label = sprintf( 1 === $pk_beds ? '%d chambre' : '%d chambres', $pk_beds );
+	}
+}
+$pk_title_bits = array();
+foreach ( array( $pk_type_label, $pk_tx_word, $pk_in ) as $pk_bit ) {
 	if ( '' !== $pk_bit ) {
-		$pk_head_html[] = $pk_bit;
+		$pk_title_bits[] = $pk_bit;
 	}
 }
+$pk_results_title = implode( ' ', $pk_title_bits );
+$pk_sub_bits = array();
+foreach ( array( $pk_type_label, $pk_beds_label, $pk_tx_word, $pk_in ) as $pk_bit ) {
+	if ( '' !== $pk_bit ) {
+		$pk_sub_bits[] = $pk_bit;
+	}
+}
+$pk_results_sub = implode( ' ', $pk_sub_bits );
 global $wp_query;
 $pk_found = ( isset( $wp_query ) && $wp_query instanceof WP_Query ) ? (int) $wp_query->found_posts : 0;
 $pk_found_txt = number_format( $pk_found, 0, ',', ' ' );
 $pk_ads = $pk_say( 'annonces' );
-if ( $pk_head_html ) {
-	$pk_head_html[] = $pk_mark( 'pk-results-soft', '•' );
-	$pk_head_html[] = $pk_mark( 'pk-results-strong', $pk_found_txt, true );
-	$pk_head_html[] = $pk_mark( 'pk-results-soft', $pk_ads );
-}
-$pk_results_html = implode( ' ', $pk_head_html );
 $pk_quartier_kicker = ( 'fr' === $pk_lang ) ? 'Choisis ton quartier' : $pk_say( 'Choisissez un quartier' );
 if ( ! isset( $pk_sort_button ) ) {
 	$pk_sort_button = ( 'ar' === $pk_lang ) ? 'ترتيب' : $pk_say( 'Trier les annonces' );
-}
-if ( ! isset( $pk_sort_prefix ) ) {
-	$pk_sort_prefix = '';
-}
-if ( ! isset( $pk_sort_value ) ) {
-	$pk_sort_value = $pk_sort_button;
 }
 
 $pk_clear = ( 'ar' === $pk_lang ) ? 'مسح الفلتر' : $pk_say( 'Réinitialiser' );
 $pk_clear_url = $pk_drop( array( 's', 'es_city', 'es_type', 'es_action', 'pk_intent', 'pk_rent', 'es_price_min', 'es_price_max', 'es_size_min', 'es_size_max', 'es_bedrooms_min', 'pk_salons_min', 'pk_amenity', 'pk_furnished', 'pk_quartier' ) );
 ?>
 <div class="pk-results-tools">
-	<?php if ( '' !== $pk_results_html ) : ?>
+	<?php if ( '' !== $pk_results_title ) : ?>
 	<div class="pk-results-copy">
-		<h2 class="pk-results-title pk-results-voice"><?php echo $pk_results_html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- spans déjà échappés. ?></h2>
+		<h2 class="pk-results-title"><?php echo esc_html( $pk_results_title ); ?></h2>
+		<p class="pk-results-meta">
+			<?php if ( '' !== $pk_results_sub && $pk_results_sub !== $pk_results_title ) : ?>
+				<span><?php echo esc_html( $pk_results_sub ); ?></span>
+				<span aria-hidden="true"> • </span>
+			<?php endif; ?>
+			<span class="pk-results-count"><span dir="ltr"><?php echo esc_html( $pk_found_txt ); ?></span> <?php echo esc_html( $pk_ads ); ?></span>
+		</p>
 	</div>
 	<?php endif; ?>
 	<button type="button" class="pk-sort-inline" data-pk-open-sort>
 		<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M8 7v10M8 7l-3 3M8 7l3 3M16 17V7M16 17l-3-3M16 17l3-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-		<span><?php if ( '' !== $pk_sort_prefix ) : ?><span class="pk-sort-prefix"><?php echo esc_html( $pk_sort_prefix ); ?></span> <?php endif; ?><span class="pk-sort-value"><?php echo esc_html( $pk_sort_value ); ?></span></span>
+		<span><?php echo esc_html( $pk_sort_button ); ?></span>
 	</button>
 </div>
 <?php if ( $pk_chips ) : ?>
@@ -379,38 +373,27 @@ $pk_clear_url = $pk_drop( array( 's', 'es_city', 'es_type', 'es_action', 'pk_int
 	}
 	$pk_need_more = count( $pk_quartier_links ) > 4;
 	?>
-<p class="pk-quartiers-kicker pk-results-voice"><?php echo esc_html( $pk_quartier_kicker ); ?></p>
+<p class="pk-quartiers-kicker"><?php echo esc_html( $pk_quartier_kicker ); ?></p>
 <div class="pk-quartiers-box">
 	<input class="pk-quartiers-open" type="checkbox" id="pk-quartiers-open"<?php echo $pk_need_more ? '' : ' disabled'; ?>>
-	<nav class="pk-quartiers" aria-label="<?php echo esc_attr( $pk_city_heading ? $pk_city_heading : $pk_say( 'Ville' ) ); ?>">
-		<?php foreach ( $pk_quartier_links as $pk_link ) : ?>
-			<a class="pk-quartier<?php echo $pk_link['on'] ? ' is-on' : ''; ?>" href="<?php echo esc_url( $pk_link['href'] ); ?>"<?php echo $pk_link['on'] ? ' aria-current="true"' : ''; ?>><?php echo esc_html( $pk_link['label'] ); ?></a>
-		<?php endforeach; ?>
-	</nav>
 	<?php if ( $pk_need_more ) : ?>
 		<label class="pk-quartiers-more" for="pk-quartiers-open">
 			<span class="pk-more"><?php echo esc_html( $pk_more ); ?></span>
 			<span class="pk-less"><?php echo esc_html( $pk_less ); ?></span>
 		</label>
 	<?php endif; ?>
-	<?php if ( $pk_need_more ) : ?>
-		<div class="pk-quartiers-sheet">
-			<label class="pk-quartiers-backdrop" for="pk-quartiers-open" aria-label="<?php echo esc_attr( $pk_close ); ?>"></label>
-			<div class="pk-quartiers-sheet-card" role="dialog" aria-modal="true" aria-label="<?php echo esc_attr( $pk_city_heading ? $pk_city_heading : $pk_more ); ?>">
-				<div class="pk-quartiers-sheet-head">
-					<?php if ( '' !== $pk_city_heading ) : ?>
-						<h2><?php echo esc_html( $pk_city_heading ); ?></h2>
-					<?php endif; ?>
-					<label class="pk-quartiers-sheet-close" for="pk-quartiers-open" aria-label="<?php echo esc_attr( $pk_close ); ?>"><span aria-hidden="true">×</span></label>
-				</div>
-				<div class="pk-quartiers-sheet-list">
-					<?php foreach ( $pk_quartier_links as $pk_link ) : ?>
-						<a class="pk-quartier-row<?php echo $pk_link['on'] ? ' is-on' : ''; ?>" href="<?php echo esc_url( $pk_link['href'] ); ?>"<?php echo $pk_link['on'] ? ' aria-current="true"' : ''; ?>><?php echo esc_html( $pk_link['label'] ); ?></a>
-					<?php endforeach; ?>
-				</div>
-				<label class="pk-quartiers-sheet-less" for="pk-quartiers-open"><?php echo esc_html( $pk_less ); ?></label>
-			</div>
-		</div>
-	<?php endif; ?>
+	<div class="pk-quartiers-rail">
+		<button type="button" class="pk-quartiers-arrow is-prev" data-pk-quartiers-dir="-1" hidden aria-hidden="true" tabindex="-1">
+			<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M14 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+		</button>
+		<nav class="pk-quartiers" aria-label="<?php echo esc_attr( $pk_city_heading ? $pk_city_heading : $pk_say( 'Ville' ) ); ?>">
+			<?php foreach ( $pk_quartier_links as $pk_link ) : ?>
+				<a class="pk-quartier<?php echo $pk_link['on'] ? ' is-on' : ''; ?>" href="<?php echo esc_url( $pk_link['href'] ); ?>"<?php echo $pk_link['on'] ? ' aria-current="true"' : ''; ?>><?php echo esc_html( $pk_link['label'] ); ?></a>
+			<?php endforeach; ?>
+		</nav>
+		<button type="button" class="pk-quartiers-arrow is-next" data-pk-quartiers-dir="1" hidden aria-hidden="true" tabindex="-1">
+			<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+		</button>
+	</div>
 </div>
 <?php endif; ?>
