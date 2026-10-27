@@ -241,6 +241,22 @@ function pk_login_page_url( $redirect = '' ) {
 }
 
 /**
+ * Libellé de l'espace connecté. L'arabe affiché est حسابي, pas مساحتي.
+ *
+ * @return string
+ */
+function pk_account_space_label() {
+	$lang = class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::current_language() : 'fr';
+	if ( 'ar' === $lang ) {
+		return 'حسابي';
+	}
+	if ( class_exists( 'Partikulier_Localization' ) ) {
+		return Partikulier_Localization::translate_polylang_string( 'Mon espace', 'Mon espace', 'partikulier' );
+	}
+	return 'Mon espace';
+}
+
+/**
  * Chargement modulaire des modules du theme.
  */
 $partikulier_modules = array(

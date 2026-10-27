@@ -164,7 +164,7 @@ if ( ! is_string( $pk_bar_publish ) || '' === trim( $pk_bar_publish ) ) {
 		<span><?php echo esc_html( $pk_bar_t( 'Rechercher' ) ); ?></span>
 	</a>
 	<a class="pk-appbar-publish" href="<?php echo esc_url( $pk_bar_deposit ); ?>">
-		<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+		<span class="pk-appbar-plus" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26"><path d="M12 5v14M5 12h14" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg></span>
 		<span><?php echo esc_html( $pk_bar_publish ); ?></span>
 	</a>
 	<a class="pk-appbar-item" href="<?php echo esc_url( $pk_bar_favoris ); ?>">
@@ -174,7 +174,7 @@ if ( ! is_string( $pk_bar_publish ) || '' === trim( $pk_bar_publish ) ) {
 	<?php if ( is_user_logged_in() ) : ?>
 		<a class="pk-appbar-item" href="<?php echo esc_url( $pk_bar_space ); ?>">
 			<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5.5 19.2a6.5 6.5 0 0 1 13 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-			<span><?php echo esc_html( $pk_bar_t( 'Mon espace' ) ); ?></span>
+			<span><?php echo esc_html( pk_account_space_label() ); ?></span>
 		</a>
 	<?php else : ?>
 		<a class="pk-appbar-item" href="<?php echo esc_url( $pk_bar_login ); ?>">
