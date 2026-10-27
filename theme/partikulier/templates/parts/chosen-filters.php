@@ -274,18 +274,60 @@ $pk_clear_url = $pk_drop( array( 's', 'es_city', 'es_type', 'es_action', 'pk_int
 </div>
 <?php endif; ?>
 <?php if ( $pk_districts ) : ?>
-<nav class="pk-quartiers" aria-label="<?php echo esc_attr( $pk_say( 'Ville' ) ); ?>">
-	<?php foreach ( $pk_districts as $pk_row ) : ?>
-		<?php
+	<?php
+	$pk_more = ( 'ar' === $pk_lang ) ? 'اعرض المزيد' : $pk_say( 'Tout voir' );
+	$pk_less = ( 'ar' === $pk_lang ) ? 'اعرض أقل' : $pk_say( 'Fermer' );
+	$pk_city_heading = '';
+	if ( '' !== $pk_city_fr && class_exists( 'Partikulier_Listing_I18n' ) ) {
+		$pk_city_heading = Partikulier_Listing_I18n::localized_place( $pk_city_fr, $pk_lang );
+	} elseif ( '' !== $pk_city_fr ) {
+		$pk_city_heading = $pk_city_fr;
+	}
+	$pk_quartier_links = array();
+	foreach ( $pk_districts as $pk_row ) {
 		$pk_name = isset( $pk_row['district'] ) ? (string) $pk_row['district'] : '';
 		if ( '' === $pk_name ) {
 			continue;
 		}
-		$pk_label = class_exists( 'Partikulier_Listing_I18n' ) ? Partikulier_Listing_I18n::localized_place( $pk_name, $pk_lang ) : $pk_name;
-		$pk_on    = ( $pk_name === $pk_quartier_ok );
-		$pk_href  = $pk_on ? $pk_drop( 'pk_quartier' ) : add_query_arg( 'pk_quartier', $pk_name, remove_query_arg( array( 'pk_quartier', 'paged' ) ) );
-		?>
-		<a class="pk-quartier<?php echo $pk_on ? ' is-on' : ''; ?>" href="<?php echo esc_url( $pk_href ); ?>"<?php echo $pk_on ? ' aria-current="true"' : ''; ?>><?php echo esc_html( $pk_label ); ?></a>
-	<?php endforeach; ?>
-</nav>
+		$pk_quartier_links[] = array(
+			'label' => class_exists( 'Partikulier_Listing_I18n' ) ? Partikulier_Listing_I18n::localized_place( $pk_name, $pk_lang ) : $pk_name,
+			'on'    => ( $pk_name === $pk_quartier_ok ),
+			'href'  => ( $pk_name === $pk_quartier_ok ) ? $pk_drop( 'pk_quartier' ) : add_query_arg( 'pk_quartier', $pk_name, remove_query_arg( array( 'pk_quartier', 'paged' ) ) ),
+		);
+	}
+	$pk_need_more = count( $pk_quartier_links ) > 4;
+	?>
+<div class="pk-quartiers-box">
+	<input class="pk-quartiers-open" type="checkbox" id="pk-quartiers-open"<?php echo $pk_need_more ? '' : ' disabled'; ?>>
+	<nav class="pk-quartiers" aria-label="<?php echo esc_attr( $pk_city_heading ? $pk_city_heading : $pk_say( 'Ville' ) ); ?>">
+		<?php foreach ( $pk_quartier_links as $pk_link ) : ?>
+			<a class="pk-quartier<?php echo $pk_link['on'] ? ' is-on' : ''; ?>" href="<?php echo esc_url( $pk_link['href'] ); ?>"<?php echo $pk_link['on'] ? ' aria-current="true"' : ''; ?>><?php echo esc_html( $pk_link['label'] ); ?></a>
+		<?php endforeach; ?>
+	</nav>
+	<?php if ( $pk_need_more ) : ?>
+		<label class="pk-quartiers-more" for="pk-quartiers-open">
+			<span class="pk-more"><?php echo esc_html( $pk_more ); ?></span>
+			<span class="pk-less"><?php echo esc_html( $pk_less ); ?></span>
+		</label>
+	<?php endif; ?>
+	<?php if ( $pk_need_more ) : ?>
+		<div class="pk-quartiers-sheet">
+			<label class="pk-quartiers-backdrop" for="pk-quartiers-open" aria-label="<?php echo esc_attr( $pk_close ); ?>"></label>
+			<div class="pk-quartiers-sheet-card" role="dialog" aria-modal="true" aria-label="<?php echo esc_attr( $pk_city_heading ? $pk_city_heading : $pk_more ); ?>">
+				<div class="pk-quartiers-sheet-head">
+					<?php if ( '' !== $pk_city_heading ) : ?>
+						<h2><?php echo esc_html( $pk_city_heading ); ?></h2>
+					<?php endif; ?>
+					<label class="pk-quartiers-sheet-close" for="pk-quartiers-open" aria-label="<?php echo esc_attr( $pk_close ); ?>"><span aria-hidden="true">×</span></label>
+				</div>
+				<div class="pk-quartiers-sheet-list">
+					<?php foreach ( $pk_quartier_links as $pk_link ) : ?>
+						<a class="pk-quartier-row<?php echo $pk_link['on'] ? ' is-on' : ''; ?>" href="<?php echo esc_url( $pk_link['href'] ); ?>"<?php echo $pk_link['on'] ? ' aria-current="true"' : ''; ?>><?php echo esc_html( $pk_link['label'] ); ?></a>
+					<?php endforeach; ?>
+				</div>
+				<label class="pk-quartiers-sheet-less" for="pk-quartiers-open"><?php echo esc_html( $pk_less ); ?></label>
+			</div>
+		</div>
+	<?php endif; ?>
+</div>
 <?php endif; ?>
