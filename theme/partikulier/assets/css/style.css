@@ -8641,3 +8641,121 @@ html[dir="rtl"] body.home .pk-editorial-hero h1 .pk-hero-accent {
 body.home .pk-hero-trust li + li::before {
 	background: #FF5757 !important;
 }
+
+/* 6.20.189 — fenêtre de recherche, critères retirables, état vide. */
+.pk-find-panel .pk-find-city.is-in-panel {
+	display: block;
+	width: 100%;
+	margin: 0 0 1.15rem;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	position: relative;
+}
+.pk-find-panel .pk-find-city.is-in-panel .pk-place-input {
+	width: 100%;
+	min-height: 48px;
+	border: 1px solid #e6e5df;
+	border-radius: 8px;
+	background: #fff;
+}
+.pk-find-panel .pk-find-city.is-in-panel .pk-place-suggestions {
+	z-index: 6;
+}
+html.pk-find-modal .pk-find-type-menu,
+html.pk-find-modal .pk-find-type-backdrop {
+	display: none !important;
+}
+.pk-chosen {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 10px 14px;
+	margin: 0 0 1.25rem;
+}
+.pk-chosen-list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	flex: 1 1 auto;
+	min-width: 0;
+}
+.pk-chosen-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	min-height: 36px;
+	padding: 0 12px;
+	border: 1px solid #e6e5df;
+	border-radius: 999px;
+	background: #fff;
+	color: #161715;
+	text-decoration: none;
+	font-size: .92rem;
+	font-weight: 700;
+	line-height: 1.2;
+}
+.pk-chosen-chip:hover,
+.pk-chosen-chip:focus-visible {
+	border-color: #161715;
+	color: #161715;
+}
+.pk-chosen-x {
+	color: #6b6b6b;
+	font-size: 1.05rem;
+	line-height: 1;
+}
+.pk-chosen-clear {
+	margin-inline-start: auto;
+	color: #FF5757;
+	font-weight: 700;
+	text-decoration: none;
+	white-space: nowrap;
+}
+.pk-chosen-clear:hover,
+.pk-chosen-clear:focus-visible {
+	color: #E04D4D;
+}
+.pk-empty-search {
+	border: 0;
+	background: transparent;
+	box-shadow: none;
+	padding: 2.4rem 1rem 1.2rem;
+}
+.pk-empty-mark {
+	width: 72px;
+	height: 72px;
+	margin: 0 auto 1rem;
+	border-radius: 50%;
+	background: #f3f3f1;
+	color: #8d8d8d;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+.pk-empty-search h2 {
+	max-width: 38rem;
+	margin: 0 auto;
+	font-size: 1.05rem;
+	font-weight: 500;
+	line-height: 1.75;
+	color: #5e5e5e;
+}
+.pk-empty-search p {
+	max-width: 36rem;
+	margin: .8rem auto 0;
+	color: #6b6b6b;
+}
+.pk-reco {
+	margin-top: 1.6rem;
+}
+.pk-reco > h2 {
+	margin: 0 0 1rem;
+	font-size: 1.35rem;
+	line-height: 1.3;
+	color: #161715;
+}
+.pk-empty-fallback {
+	text-align: center;
+	margin: 1rem 0 0;
+}

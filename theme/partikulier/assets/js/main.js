@@ -1805,10 +1805,6 @@ function pkLimitTitle(value) {
 	root.querySelectorAll(".pk-find-tab-input").forEach(function (input) {
 		input.addEventListener("change", function () {
 			applyContext(false);
-			if (root.getAttribute("data-pk-live") === "archive") {
-				if (typeof root.requestSubmit === "function") root.requestSubmit();
-				else root.submit();
-			}
 		});
 	});
 	root.querySelectorAll(".pk-find-pill input[value]").forEach(function (input) {
@@ -1894,9 +1890,10 @@ function pkLimitTitle(value) {
 		}
 	}
 	function openType() {
-		if (opener && opener.checked) {
-			opener.checked = false;
-			setExpanded();
+		if (opener) {
+			opener.checked = true;
+			opener.dispatchEvent(new Event("change", { bubbles: true }));
+			return;
 		}
 		root.classList.add("is-type-open");
 		if (typeBtn) typeBtn.setAttribute("aria-expanded", "true");
@@ -1944,7 +1941,10 @@ function pkLimitTitle(value) {
 	var closeBtn = root.querySelector(".pk-find-close");
 	if (closeBtn) {
 		closeBtn.addEventListener("click", function () {
-			if (opener) opener.checked = false;
+			if (opener) {
+				opener.checked = false;
+				opener.dispatchEvent(new Event("change", { bubbles: true }));
+			}
 			setExpanded();
 			showNeed(false);
 		});
@@ -1953,7 +1953,10 @@ function pkLimitTitle(value) {
 	applyContext(true);
 	document.addEventListener("keydown", function (event) {
 		if (event.key === "Escape") {
-			if (opener && opener.checked) opener.checked = false;
+			if (opener && opener.checked) {
+				opener.checked = false;
+				opener.dispatchEvent(new Event("change", { bubbles: true }));
+			}
 			closeType();
 		}
 		setExpanded();
@@ -1962,6 +1965,7 @@ function pkLimitTitle(value) {
 		if (!opener || !opener.checked) return;
 		if (root.contains(event.target)) return;
 		opener.checked = false;
+		opener.dispatchEvent(new Event("change", { bubbles: true }));
 		setExpanded();
 	});
 
@@ -2188,3 +2192,79 @@ function pkLimitTitle(value) {
 		opener.dispatchEvent(new Event("change", { bubbles: true }));
 	});
 }());
+
+/* 6.20.189 — un clic sur le filtre, la ville ou vente/location ouvre la fenêtre déjà validée. */
+(function () {
+	var homes = typeof WeakMap === "function" ? new WeakMap() : null;
+	function cityOf(root) {
+		return root.querySelector(".pk-find-city");
+	}
+	function parkCity(root) {
+		var city = cityOf(root);
+		var scroll = root.querySelector(".pk-find-panel-scroll");
+		var bar = scroll ? scroll.querySelector(".pk-find-panel-bar") : null;
+		if (!city || !scroll) return;
+		if (homes && !homes.has(city)) homes.set(city, { parent: city.parentNode, next: city.nextSibling });
+		if (city.parentNode !== scroll) {
+			if (bar) bar.insertAdjacentElement("afterend", city);
+			else scroll.insertBefore(city, scroll.firstChild);
+		}
+		city.classList.add("is-in-panel");
+	}
+	function restoreCity(root) {
+		var city = cityOf(root);
+		var home = city && homes ? homes.get(city) : null;
+		if (!city || !home || !home.parent) return;
+		city.classList.remove("is-in-panel");
+		if (home.next && home.next.parentNode === home.parent) home.parent.insertBefore(city, home.next);
+		else home.parent.appendChild(city);
+	}
+	function openFind(root, focusCity) {
+		var opener = root.querySelector(".pk-find-open");
+		if (!opener) return;
+		if (!opener.checked) {
+			opener.checked = true;
+			opener.dispatchEvent(new Event("change", { bubbles: true }));
+		}
+		parkCity(root);
+		if (focusCity) {
+			var input = root.querySelector("[data-pk-place-input]");
+			if (input) window.setTimeout(function () { input.focus(); }, 30);
+		}
+	}
+	document.addEventListener("click", function (event) {
+		if (!event.target || !event.target.closest) return;
+		var root = event.target.closest(".pk-find");
+		if (!root || event.target.closest(".pk-find-panel")) return;
+		var tab = event.target.closest(".pk-find-tab");
+		var typeHit = event.target.closest(".pk-find-type-btn, .pk-find-typefield");
+		var city = event.target.closest(".pk-find-city");
+		if (!tab && !typeHit && !city) return;
+		if (typeHit && !city) {
+			event.preventDefault();
+			event.stopPropagation();
+		}
+		openFind(root, !!city);
+	}, true);
+	document.addEventListener("focusin", function (event) {
+		var input = event.target;
+		if (!input || !input.closest || !input.matches || !input.matches("[data-pk-place-input]")) return;
+		var root = input.closest(".pk-find");
+		if (!root) return;
+		var opener = root.querySelector(".pk-find-open");
+		if (opener && opener.checked && input.closest(".pk-find-panel")) return;
+		openFind(root, true);
+	}, true);
+	document.addEventListener("change", function (event) {
+		var opener = event.target;
+		if (!opener || !opener.classList || !opener.classList.contains("pk-find-open")) return;
+		var root = opener.closest(".pk-find");
+		if (!root) return;
+		if (opener.checked) parkCity(root);
+		else restoreCity(root);
+	});
+	document.querySelectorAll(".pk-find").forEach(function (root) {
+		var opener = root.querySelector(".pk-find-open");
+		if (opener && opener.checked) parkCity(root);
+	});
+})();
