@@ -79,6 +79,7 @@ get_header();
 
 	<style>
 	html[dir="rtl"] body.home .pk-editorial-hero h1 .pk-hero-accent { color: #FF5757 !important; }
+	body.home .pk-hero-trust li + li::before { background: #FF5757 !important; }
 	@media (max-width:767px){
 		body.home .pk-header-search{display:none!important}
 		body.home .pk-editorial-hero__inner{padding:1.1rem 20px 1.4rem!important;gap:1rem}
