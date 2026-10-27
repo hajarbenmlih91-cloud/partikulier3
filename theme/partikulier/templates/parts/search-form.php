@@ -184,6 +184,7 @@ if ( $pk_area_min > $pk_area_max_val ) {
 $pk_beds = $pk_int( 'es_bedrooms_min' );
 $pk_salons = $pk_int( 'pk_salons_min' );
 $pk_salon_heading = ( 'ar' === $pk_find_lang ) ? 'غرف الجلوس' : $pk_t( 'Salons' );
+$pk_filters_label = ( 'ar' === $pk_find_lang ) ? 'فلتر' : $pk_t( 'Filtres' );
 $pk_area_unit = ( 'ar' === $pk_find_lang ) ? 'م²' : 'm²';
 if ( ! in_array( $pk_beds, array( 0, 1, 2, 3, 4, 5 ), true ) ) {
 	$pk_beds = 0;
@@ -394,7 +395,7 @@ $pk_season_label = ( 'fr' === $pk_find_lang ) ? 'Location saisonnière' : $pk_t(
 
 		<label class="pk-find-filter" for="pk-find-open">
 			<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M4 7h16M4 12h16M4 17h16"/><circle cx="9" cy="7" r="2.2" fill="currentColor"/><circle cx="15" cy="12" r="2.2" fill="currentColor"/><circle cx="8" cy="17" r="2.2" fill="currentColor"/></svg>
-			<span><?php echo esc_html( $pk_t( 'Filtres' ) ); ?></span>
+			<span><?php echo esc_html( $pk_filters_label ); ?></span>
 		</label>
 
 		<button type="submit" class="pk-find-submit"><?php echo esc_html( $pk_t( 'Rechercher' ) ); ?></button>
@@ -410,7 +411,7 @@ $pk_season_label = ( 'fr' === $pk_find_lang ) ? 'Location saisonnière' : $pk_t(
 			<div class="pk-find-panel-bar">
 				<h2 class="pk-find-pop-title" id="pk-find-pop-title">
 					<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M4 7h16M4 12h16M4 17h16"/><circle cx="9" cy="7" r="2.2" fill="currentColor"/><circle cx="15" cy="12" r="2.2" fill="currentColor"/><circle cx="8" cy="17" r="2.2" fill="currentColor"/></svg>
-					<span><?php echo esc_html( $pk_t( 'Filtres' ) ); ?></span>
+					<span><?php echo esc_html( $pk_filters_label ); ?></span>
 				</h2>
 			</div>
 
