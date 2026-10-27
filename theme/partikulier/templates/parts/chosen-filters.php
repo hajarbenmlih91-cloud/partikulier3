@@ -249,13 +249,89 @@ if ( '' !== $pk_quartier_ok ) {
 	);
 }
 
-if ( ! $pk_chips && ! $pk_districts ) {
-	return;
+$pk_type_label = '';
+if ( '' !== $pk_type && class_exists( 'Partikulier_Listing_I18n' ) ) {
+	$pk_type_base  = preg_replace( '/-(?:fr|en|ar)$/', '', $pk_type );
+	$pk_type_label = Partikulier_Listing_I18n::localized_type( str_replace( '-', ' ', $pk_type_base ), $pk_lang );
+}
+$pk_place = '';
+if ( '' !== $pk_city_fr && class_exists( 'Partikulier_Listing_I18n' ) ) {
+	$pk_place = Partikulier_Listing_I18n::localized_place( $pk_city_fr, $pk_lang );
+}
+$pk_tx_word = '';
+if ( 'a-louer' === $pk_intent ) {
+	$pk_tx_word = class_exists( 'Partikulier_Localization' )
+		? Partikulier_Localization::translate_polylang_string( 'A louer', 'A louer', 'partikulier' )
+		: 'à louer';
+} elseif ( 'a-vendre' === $pk_intent ) {
+	$pk_tx_word = ( 'fr' === $pk_lang ) ? 'à vendre' : $pk_say( 'Vente' );
+} elseif ( 'saisonnier' === $pk_intent ) {
+	$pk_tx_word = ( 'fr' === $pk_lang ) ? 'Location saisonnière' : $pk_say( 'Vacances' );
+}
+$pk_in = '';
+if ( '' !== $pk_place ) {
+	if ( 'ar' === $pk_lang ) {
+		$pk_in = 'في ' . $pk_place;
+	} elseif ( 'en' === $pk_lang ) {
+		$pk_in = 'in ' . $pk_place;
+	} else {
+		$pk_in = 'à ' . $pk_place;
+	}
+}
+$pk_beds_label = '';
+if ( $pk_beds > 0 ) {
+	if ( 'ar' === $pk_lang ) {
+		$pk_beds_label = ( 1 === $pk_beds ) ? 'غرفة نوم واحدة' : sprintf( '%d غرف نوم', $pk_beds );
+	} elseif ( 'en' === $pk_lang ) {
+		$pk_beds_label = sprintf( 1 === $pk_beds ? '%d bedroom' : '%d bedrooms', $pk_beds );
+	} else {
+		$pk_beds_label = sprintf( 1 === $pk_beds ? '%d chambre' : '%d chambres', $pk_beds );
+	}
+}
+$pk_title_bits = array();
+foreach ( array( $pk_type_label, $pk_tx_word, $pk_in ) as $pk_bit ) {
+	if ( '' !== $pk_bit ) {
+		$pk_title_bits[] = $pk_bit;
+	}
+}
+$pk_results_title = implode( ' ', $pk_title_bits );
+$pk_sub_bits = array();
+foreach ( array( $pk_type_label, $pk_beds_label, $pk_tx_word, $pk_in ) as $pk_bit ) {
+	if ( '' !== $pk_bit ) {
+		$pk_sub_bits[] = $pk_bit;
+	}
+}
+$pk_results_sub = implode( ' ', $pk_sub_bits );
+global $wp_query;
+$pk_found = ( isset( $wp_query ) && $wp_query instanceof WP_Query ) ? (int) $wp_query->found_posts : 0;
+$pk_found_txt = number_format( $pk_found, 0, ',', ' ' );
+$pk_ads = $pk_say( 'annonces' );
+$pk_quartier_kicker = ( 'fr' === $pk_lang ) ? 'Choisis ton quartier' : $pk_say( 'Choisissez un quartier' );
+if ( ! isset( $pk_sort_button ) ) {
+	$pk_sort_button = ( 'ar' === $pk_lang ) ? 'ترتيب' : $pk_say( 'Trier les annonces' );
 }
 
 $pk_clear = ( 'ar' === $pk_lang ) ? 'مسح الفلتر' : $pk_say( 'Réinitialiser' );
 $pk_clear_url = $pk_drop( array( 's', 'es_city', 'es_type', 'es_action', 'pk_intent', 'pk_rent', 'es_price_min', 'es_price_max', 'es_size_min', 'es_size_max', 'es_bedrooms_min', 'pk_salons_min', 'pk_amenity', 'pk_furnished', 'pk_quartier' ) );
 ?>
+<div class="pk-results-tools">
+	<?php if ( '' !== $pk_results_title ) : ?>
+	<div class="pk-results-copy">
+		<h2 class="pk-results-title"><?php echo esc_html( $pk_results_title ); ?></h2>
+		<p class="pk-results-meta">
+			<?php if ( '' !== $pk_results_sub && $pk_results_sub !== $pk_results_title ) : ?>
+				<span><?php echo esc_html( $pk_results_sub ); ?></span>
+				<span aria-hidden="true"> • </span>
+			<?php endif; ?>
+			<span class="pk-results-count"><span dir="ltr"><?php echo esc_html( $pk_found_txt ); ?></span> <?php echo esc_html( $pk_ads ); ?></span>
+		</p>
+	</div>
+	<?php endif; ?>
+	<button type="button" class="pk-sort-inline" data-pk-open-sort>
+		<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M8 7v10M8 7l-3 3M8 7l3 3M16 17V7M16 17l-3-3M16 17l3-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+		<span><?php echo esc_html( $pk_sort_button ); ?></span>
+	</button>
+</div>
 <?php if ( $pk_chips ) : ?>
 <div class="pk-chosen">
 	<div class="pk-chosen-list">
@@ -297,6 +373,7 @@ $pk_clear_url = $pk_drop( array( 's', 'es_city', 'es_type', 'es_action', 'pk_int
 	}
 	$pk_need_more = count( $pk_quartier_links ) > 4;
 	?>
+<p class="pk-quartiers-kicker"><?php echo esc_html( $pk_quartier_kicker ); ?></p>
 <div class="pk-quartiers-box">
 	<input class="pk-quartiers-open" type="checkbox" id="pk-quartiers-open"<?php echo $pk_need_more ? '' : ' disabled'; ?>>
 	<nav class="pk-quartiers" aria-label="<?php echo esc_attr( $pk_city_heading ? $pk_city_heading : $pk_say( 'Ville' ) ); ?>">

@@ -344,7 +344,52 @@ endforeach;
 								</aside>
 
 								<div class="pk-archive-content">
-								<?php require PARTIKULIER_DIR . '/templates/parts/chosen-filters.php'; ?>
+<?php
+				$pk_sort_now = isset( $_GET['pk_order'] ) && is_scalar( $_GET['pk_order'] ) ? sanitize_key( wp_unslash( $_GET['pk_order'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+				if ( ! in_array( $pk_sort_now, array( 'recent', 'date-asc', 'price-asc', 'price-desc' ), true ) ) {
+					$pk_sort_now = '';
+				}
+				$pk_sort_label = static function ( $fr ) {
+					return class_exists( 'Partikulier_Localization' )
+						? Partikulier_Localization::translate_polylang_string( $fr, $fr, 'partikulier' )
+						: $fr;
+				};
+				$pk_sort_lang = class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::current_language() : 'fr';
+				$pk_sort_catalog = array(
+					''           => array( 'fr' => 'Plus récentes', 'ar' => 'الأكثر طلبا' ),
+					'recent'     => array( 'fr' => 'Plus récentes', 'ar' => 'الأحدث إلى الأقدم' ),
+					'date-asc'   => array( 'ar' => 'الأقدم إلى الأحدث' ),
+					'price-desc' => array( 'fr' => 'Prix décroissant', 'ar' => 'السعر من الأعلى إلى الأقل' ),
+					'price-asc'  => array( 'fr' => 'Prix croissant', 'ar' => 'السعر من الأقل إلى الأعلى' ),
+				);
+				$pk_sort_text = static function ( $key ) use ( $pk_sort_catalog, $pk_sort_lang, $pk_sort_label ) {
+					if ( ! isset( $pk_sort_catalog[ $key ] ) ) {
+						$key = '';
+					}
+					$row = $pk_sort_catalog[ $key ];
+					if ( 'ar' === $pk_sort_lang && ! empty( $row['ar'] ) ) {
+						return $row['ar'];
+					}
+					return ! empty( $row['fr'] ) ? $pk_sort_label( $row['fr'] ) : '';
+				};
+				$pk_sort_current = $pk_sort_text( $pk_sort_now );
+				$pk_sort_button  = ( 'ar' === $pk_sort_lang ) ? ( 'ترتيب: ' . $pk_sort_current ) : $pk_sort_label( 'Trier les annonces' );
+				$pk_sort_base    = remove_query_arg( array( 'pk_order', 'paged' ) );
+				$pk_sort_menu    = array();
+				$pk_sort_seen    = array( $pk_sort_current => true );
+				foreach ( $pk_sort_catalog as $pk_sort_key => $pk_sort_row ) {
+					$pk_sort_item = $pk_sort_text( $pk_sort_key );
+					if ( '' === $pk_sort_item || isset( $pk_sort_seen[ $pk_sort_item ] ) ) {
+						continue;
+					}
+					$pk_sort_seen[ $pk_sort_item ] = true;
+					$pk_sort_menu[] = array(
+						'text' => $pk_sort_item,
+						'href' => '' === $pk_sort_key ? $pk_sort_base : add_query_arg( 'pk_order', $pk_sort_key, $pk_sort_base ),
+					);
+				}
+				?>
+				<?php require PARTIKULIER_DIR . '/templates/parts/chosen-filters.php'; ?>
 								<?php if ( have_posts() ) : ?>
 										<div class="pk-grid pk-grid-cards">
 												<?php
@@ -366,51 +411,25 @@ endforeach;
 		</div>
 </section>
 
-<?php
-$pk_sort_now = isset( $_GET['pk_order'] ) && is_scalar( $_GET['pk_order'] ) ? sanitize_key( wp_unslash( $_GET['pk_order'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-if ( ! in_array( $pk_sort_now, array( 'price-asc', 'price-desc' ), true ) ) {
-	$pk_sort_now = 'recent';
-}
-$pk_sort_label = static function ( $fr ) {
-	return class_exists( 'Partikulier_Localization' )
-		? Partikulier_Localization::translate_polylang_string( $fr, $fr, 'partikulier' )
-		: $fr;
-};
-$pk_sort_rows = array(
-	'recent'     => 'Plus récentes',
-	'price-asc'  => 'Prix croissant',
-	'price-desc' => 'Prix décroissant',
-);
-$pk_sort_base = remove_query_arg( array( 'pk_order', 'paged' ) );
-?>
 <div class="pk-scroll-actions pk-archive-actions" data-pk-archive-actions hidden>
 	<?php require PARTIKULIER_DIR . '/templates/parts/filter-chips.php'; ?>
 </div>
-<?php
-$pk_chip_lang  = class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::current_language() : 'fr';
-$pk_sort_float = ( 'ar' === $pk_chip_lang ) ? 'ترتيب' : $pk_sort_label( 'Trier les annonces' );
-?>
 <button type="button" class="pk-sort-float" data-pk-open-sort>
 	<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M8 7v10M8 7l-3 3M8 7l3 3M16 17V7M16 17l-3-3M16 17l3-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-	<span><?php echo esc_html( $pk_sort_float ); ?></span>
+	<span><?php echo esc_html( $pk_sort_button ); ?></span>
 </button>
 <div class="pk-sort" data-pk-sort hidden>
 	<button type="button" class="pk-sort-backdrop" data-pk-sort-close aria-label="<?php echo esc_attr( $pk_sort_label( 'Fermer' ) ); ?>"></button>
 	<div class="pk-sort-card" role="dialog" aria-modal="true" aria-labelledby="pk-sort-title">
 		<div class="pk-sort-head">
-			<h2 id="pk-sort-title"><?php echo esc_html( $pk_sort_label( 'Trier les annonces' ) ); ?></h2>
+			<h2 id="pk-sort-title"><?php echo esc_html( $pk_sort_current ); ?></h2>
 			<button type="button" class="pk-sort-close" data-pk-sort-close aria-label="<?php echo esc_attr( $pk_sort_label( 'Fermer' ) ); ?>">×</button>
 		</div>
 		<ul class="pk-sort-list">
-			<?php foreach ( $pk_sort_rows as $pk_sort_key => $pk_sort_fr ) : ?>
-				<?php
-				$pk_sort_href = '' === $pk_sort_key ? $pk_sort_base : add_query_arg( 'pk_order', $pk_sort_key, $pk_sort_base );
-				$pk_sort_on   = $pk_sort_now === $pk_sort_key;
-				?>
+			<?php foreach ( $pk_sort_menu as $pk_sort_item ) : ?>
 			<li>
-				<a href="<?php echo esc_url( $pk_sort_href ); ?>"<?php echo $pk_sort_on ? ' class="is-current" aria-current="true"' : ''; ?>>
-					<span><?php echo esc_html( $pk_sort_label( $pk_sort_fr ) ); ?></span>
-					<svg class="pk-sort-chevron" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+				<a href="<?php echo esc_url( $pk_sort_item['href'] ); ?>">
+					<span><?php echo esc_html( $pk_sort_item['text'] ); ?></span>
 				</a>
 			</li>
 			<?php endforeach; ?>
