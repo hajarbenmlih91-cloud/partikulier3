@@ -484,6 +484,29 @@
   html[dir="rtl"] .optional { margin-inline-start: .4rem; }
   html[dir="rtl"] .pk-stepper-item { text-align: right; }
 
+  /* 6.20.179 — barre du haut et barre du quartier : rouge du logo, plus le noir. */
+  .pk-lang-bar { background: #FF5757; }
+  #lieu-proposition { border-color: #FF5757; }
+  #lieu-proposition summary,
+  #lieu-proposition[open] summary {
+    background: #FF5757;
+    color: #fff;
+  }
+  #lieu-proposition .pk-fold-title,
+  #lieu-proposition .pk-fold-closed,
+  #lieu-proposition .pk-fold-open,
+  #lieu-proposition summary small { color: #fff; }
+  #lieu-proposition .pk-fold-mark {
+    background: #fff;
+    border-color: #fff;
+    color: #FF5757;
+  }
+  .pk-fold { border-color: #FF5757; }
+  .pk-fold-closed,
+  .pk-fold-open,
+  .pk-fold summary small { color: #FF5757; }
+  .pk-fold-mark { border-color: #FF5757; color: #FF5757; }
+
 </style>
 </head>
 <body>
