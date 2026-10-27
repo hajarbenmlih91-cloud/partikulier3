@@ -59,6 +59,9 @@ $pk_close = class_exists( 'Partikulier_Localization' )
 $pk_chips = array();
 
 $pk_city = sanitize_title( $pk_get( 'es_city' ) );
+if ( '' === $pk_city ) {
+	$pk_city = sanitize_title( $pk_get( 'location' ) );
+}
 if ( '' !== $pk_city ) {
 	$pk_term = get_term_by( 'slug', $pk_city, PARTIKULIER_ESTATIK_LOCATION_TAXONOMY );
 	$pk_name = ( $pk_term && ! is_wp_error( $pk_term ) ) ? $pk_term->name : $pk_city;
@@ -67,7 +70,7 @@ if ( '' !== $pk_city ) {
 	}
 	$pk_chips[] = array(
 		'text' => $pk_name,
-		'url'  => $pk_drop( array( 'es_city', 's' ) ),
+		'url'  => $pk_drop( array( 'es_city', 'location', 's', 'pk_quartier' ) ),
 	);
 } elseif ( '' !== $pk_get( 's' ) ) {
 	$pk_chips[] = array(
@@ -312,7 +315,7 @@ if ( ! isset( $pk_sort_button ) ) {
 }
 
 $pk_clear = ( 'ar' === $pk_lang ) ? 'مسح الفلتر' : $pk_say( 'Réinitialiser' );
-$pk_clear_url = $pk_drop( array( 's', 'es_city', 'es_type', 'es_action', 'pk_intent', 'pk_rent', 'es_price_min', 'es_price_max', 'es_size_min', 'es_size_max', 'es_bedrooms_min', 'pk_salons_min', 'pk_amenity', 'pk_furnished', 'pk_quartier' ) );
+$pk_clear_url = $pk_drop( array( 's', 'es_city', 'location', 'es_type', 'es_action', 'pk_intent', 'pk_rent', 'es_price_min', 'es_price_max', 'es_size_min', 'es_size_max', 'es_bedrooms_min', 'pk_salons_min', 'pk_amenity', 'pk_furnished', 'pk_quartier' ) );
 ?>
 <div class="pk-results-tools">
 	<?php if ( '' !== $pk_results_title ) : ?>
@@ -349,31 +352,76 @@ $pk_clear_url = $pk_drop( array( 's', 'es_city', 'es_type', 'es_action', 'pk_int
 	<a class="pk-chosen-clear" href="<?php echo esc_url( $pk_clear_url ); ?>"><?php echo esc_html( $pk_clear ); ?></a>
 </div>
 <?php endif; ?>
-<?php if ( $pk_districts ) : ?>
-	<?php
-	$pk_more = ( 'ar' === $pk_lang ) ? 'اعرض المزيد' : $pk_say( 'Tout voir' );
-	$pk_less = ( 'ar' === $pk_lang ) ? 'اعرض أقل' : $pk_say( 'Fermer' );
-	$pk_city_heading = '';
+<?php
+$pk_place_links = array();
+$pk_place_kicker = '';
+$pk_place_nav = $pk_say( 'Ville' );
+if ( $pk_districts ) {
+	$pk_place_kicker = $pk_quartier_kicker;
 	if ( '' !== $pk_city_fr && class_exists( 'Partikulier_Listing_I18n' ) ) {
-		$pk_city_heading = Partikulier_Listing_I18n::localized_place( $pk_city_fr, $pk_lang );
+		$pk_place_nav = Partikulier_Listing_I18n::localized_place( $pk_city_fr, $pk_lang );
 	} elseif ( '' !== $pk_city_fr ) {
-		$pk_city_heading = $pk_city_fr;
+		$pk_place_nav = $pk_city_fr;
 	}
-	$pk_quartier_links = array();
 	foreach ( $pk_districts as $pk_row ) {
 		$pk_name = isset( $pk_row['district'] ) ? (string) $pk_row['district'] : '';
 		if ( '' === $pk_name ) {
 			continue;
 		}
-		$pk_quartier_links[] = array(
+		$pk_place_links[] = array(
 			'label' => class_exists( 'Partikulier_Listing_I18n' ) ? Partikulier_Listing_I18n::localized_place( $pk_name, $pk_lang ) : $pk_name,
 			'on'    => ( $pk_name === $pk_quartier_ok ),
 			'href'  => ( $pk_name === $pk_quartier_ok ) ? $pk_drop( 'pk_quartier' ) : add_query_arg( 'pk_quartier', $pk_name, remove_query_arg( array( 'pk_quartier', 'paged' ) ) ),
 		);
 	}
-	$pk_need_more = count( $pk_quartier_links ) > 4;
-	?>
-<p class="pk-quartiers-kicker"><?php echo esc_html( $pk_quartier_kicker ); ?></p>
+} elseif ( '' === $pk_city && '' === $pk_city_fr && class_exists( 'Partikulier_Morocco_Places' ) ) {
+	$pk_place_kicker = $pk_say( 'Choisir une ville…' );
+	$pk_city_terms = get_terms( array(
+		'taxonomy'   => PARTIKULIER_ESTATIK_LOCATION_TAXONOMY,
+		'hide_empty' => false,
+		'lang'       => 'all',
+	) );
+	if ( is_wp_error( $pk_city_terms ) || ! $pk_city_terms ) {
+		$pk_city_terms = array();
+	}
+	foreach ( array_keys( Partikulier_Morocco_Places::reference() ) as $pk_ref_city ) {
+		$pk_want = Partikulier_Morocco_Places::normalize( $pk_ref_city );
+		$pk_id   = 0;
+		foreach ( $pk_city_terms as $pk_term_row ) {
+			if ( Partikulier_Morocco_Places::normalize( $pk_term_row->name ) === $pk_want ) {
+				$pk_id = (int) $pk_term_row->term_id;
+				break;
+			}
+		}
+		if ( $pk_id && function_exists( 'pll_get_term' ) && '' !== $pk_lang ) {
+			$pk_tr = (int) pll_get_term( $pk_id, $pk_lang );
+			if ( $pk_tr ) {
+				$pk_id = $pk_tr;
+			}
+		}
+		$pk_slug = '';
+		if ( $pk_id ) {
+			$pk_term_row = get_term( $pk_id, PARTIKULIER_ESTATIK_LOCATION_TAXONOMY );
+			if ( $pk_term_row && ! is_wp_error( $pk_term_row ) ) {
+				$pk_slug = (string) $pk_term_row->slug;
+			}
+		}
+		if ( '' === $pk_slug ) {
+			$pk_slug = sanitize_title( $pk_ref_city );
+		}
+		$pk_place_links[] = array(
+			'label' => class_exists( 'Partikulier_Listing_I18n' ) ? Partikulier_Listing_I18n::localized_place( $pk_ref_city, $pk_lang ) : $pk_ref_city,
+			'on'    => false,
+			'href'  => add_query_arg( 'es_city', $pk_slug, remove_query_arg( array( 'es_city', 'location', 'pk_quartier', 'paged', 's' ) ) ),
+		);
+	}
+}
+$pk_more = ( 'ar' === $pk_lang ) ? 'اعرض المزيد' : $pk_say( 'Tout voir' );
+$pk_less = ( 'ar' === $pk_lang ) ? 'اعرض أقل' : $pk_say( 'Fermer' );
+$pk_need_more = count( $pk_place_links ) > 4;
+?>
+<?php if ( $pk_place_links ) : ?>
+<p class="pk-quartiers-kicker"><?php echo esc_html( $pk_place_kicker ); ?></p>
 <div class="pk-quartiers-box">
 	<input class="pk-quartiers-open" type="checkbox" id="pk-quartiers-open"<?php echo $pk_need_more ? '' : ' disabled'; ?>>
 	<?php if ( $pk_need_more ) : ?>
@@ -386,8 +434,8 @@ $pk_clear_url = $pk_drop( array( 's', 'es_city', 'es_type', 'es_action', 'pk_int
 		<button type="button" class="pk-quartiers-arrow is-prev" data-pk-quartiers-dir="-1" hidden aria-hidden="true" tabindex="-1">
 			<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M14 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
 		</button>
-		<nav class="pk-quartiers" aria-label="<?php echo esc_attr( $pk_city_heading ? $pk_city_heading : $pk_say( 'Ville' ) ); ?>">
-			<?php foreach ( $pk_quartier_links as $pk_link ) : ?>
+		<nav class="pk-quartiers" aria-label="<?php echo esc_attr( $pk_place_nav ); ?>">
+			<?php foreach ( $pk_place_links as $pk_link ) : ?>
 				<a class="pk-quartier<?php echo $pk_link['on'] ? ' is-on' : ''; ?>" href="<?php echo esc_url( $pk_link['href'] ); ?>"<?php echo $pk_link['on'] ? ' aria-current="true"' : ''; ?>><?php echo esc_html( $pk_link['label'] ); ?></a>
 			<?php endforeach; ?>
 		</nav>
