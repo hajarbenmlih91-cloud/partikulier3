@@ -22,45 +22,55 @@ if ( ! defined( 'ABSPATH' ) ) {
 <meta name="theme-color" content="#111111">
 <link rel="profile" href="https://gmpg.org/xfn/11">
 <?php wp_head(); ?>
-<?php if ( is_front_page() ) : ?>
-<style id="pk-home-logo-red">
-body.home .pk-find-submit,
-body.home .pk-header-search button[type="submit"] {
-	background: #FF5757 !important;
-	background-color: #FF5757 !important;
-	border-color: #FF5757 !important;
-	color: #fff !important;
-	border-radius: 0 !important;
-}
-body.home .pk-find-submit:hover,
-body.home .pk-find-submit:active,
-body.home .pk-header-search button[type="submit"]:hover,
-body.home .pk-header-search button[type="submit"]:active {
-	background: #E04D4D !important;
-	background-color: #E04D4D !important;
-	border-color: #E04D4D !important;
-}
+<style id="pk-desktop-nav-red">
 @media (min-width: 768px) {
-	body .pk-main-nav .pk-menu-item.pk-current > a::after {
+	html body .pk-main-nav .pk-menu-item.pk-current > a::after {
+		content: "" !important;
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		height: 2px;
 		background: #FF5757 !important;
 	}
-	body .pk-main-nav a[href*="connexion"],
-	body .pk-topbar-contact a[href*="connexion"],
-	body .pk-topbar-contact a[href*="login"] {
+	html body a.pk-header-cta.pk-btn-primary,
+	html body a.pk-header-cta.pk-btn-primary:hover,
+	html body a.pk-header-cta.pk-btn-primary:active,
+	html body .pk-header-search .pk-search-bar button[type="submit"],
+	html body .pk-header-search .pk-search-bar button[type="submit"]:hover,
+	html body .pk-header-search .pk-search-bar button[type="submit"]:active,
+	html body button.pk-find-submit,
+	html body button.pk-find-submit:hover,
+	html body button.pk-find-submit:active {
+		background: #FF5757 !important;
+		background-color: #FF5757 !important;
+		border-color: #FF5757 !important;
+		color: #fff !important;
+		border-radius: 0 !important;
+	}
+	html body a.pk-header-cta.pk-btn-primary:hover,
+	html body a.pk-header-cta.pk-btn-primary:active,
+	html body .pk-header-search .pk-search-bar button[type="submit"]:hover,
+	html body .pk-header-search .pk-search-bar button[type="submit"]:active,
+	html body button.pk-find-submit:hover,
+	html body button.pk-find-submit:active {
+		background: #E04D4D !important;
+		background-color: #E04D4D !important;
+		border-color: #E04D4D !important;
+	}
+	html body .pk-main-nav a[href*="connexion"],
+	html body .pk-topbar-contact a[href*="connexion"] {
 		background: transparent !important;
 		background-color: transparent !important;
-		background-image: none !important;
-		color: inherit !important;
 		border-radius: 0 !important;
 		box-shadow: none !important;
 	}
-	body .pk-main-nav .pk-menu-item > a[href*="connexion"] {
+	html body .pk-main-nav .pk-menu-item > a[href*="connexion"] {
 		padding: .95rem 0 !important;
 		color: #161715 !important;
 	}
 }
 </style>
-<?php endif; ?>
 </head>
 
 <body <?php body_class(); ?>>

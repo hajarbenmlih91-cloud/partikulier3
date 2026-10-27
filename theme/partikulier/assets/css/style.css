@@ -8601,4 +8601,17 @@ html body.home .pk-header-search button[type="submit"]:active {
 		border-color: #E04D4D !important;
 		border-radius: 0 !important;
 	}
+	html body a.pk-header-cta.pk-btn-primary,
+	html body a.pk-header-cta.pk-btn-primary:hover,
+	html body a.pk-header-cta.pk-btn-primary:active {
+		background: #FF5757 !important;
+		border-color: #FF5757 !important;
+		color: #fff !important;
+		border-radius: 0 !important;
+	}
+	html body a.pk-header-cta.pk-btn-primary:hover,
+	html body a.pk-header-cta.pk-btn-primary:active {
+		background: #E04D4D !important;
+		border-color: #E04D4D !important;
+	}
 }
