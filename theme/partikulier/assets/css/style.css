@@ -8447,3 +8447,54 @@ html body .pk-find-panel .pk-pick-row:active {
 html body .pk-find-panel :focus-visible {
 	outline-color: #FF5757;
 }
+
+/* 6.20.181 — accueil : le rouge visible devient le rouge du logo #FF5757. */
+html body.home .pk-find-submit,
+html body.home .pk-find-results,
+html body.home .pk-btn-search,
+html body.home .pk-filter-apply,
+html body.home .pk-scroll-actions .pk-btn,
+html body.home .pk-header-search .pk-search-bar button,
+html body.home .pk-cookie-actions button[data-yes] {
+	background: #FF5757 !important;
+	border-color: #FF5757 !important;
+	color: #fff !important;
+}
+html body.home .pk-find-submit:hover,
+html body.home .pk-find-submit:active,
+html body.home .pk-find-submit:focus-visible,
+html body.home .pk-find-results:hover,
+html body.home .pk-find-results:active,
+html body.home .pk-btn-search:hover,
+html body.home .pk-btn-search:active,
+html body.home .pk-filter-apply:hover,
+html body.home .pk-scroll-actions .pk-btn:hover,
+html body.home .pk-scroll-actions .pk-btn:active,
+html body.home .pk-header-search .pk-search-bar button:hover,
+html body.home .pk-header-search .pk-search-bar button:active,
+html body.home .pk-cookie-actions button[data-yes]:hover,
+html body.home .pk-cookie-actions button[data-yes]:active {
+	background: #E04D4D !important;
+	border-color: #E04D4D !important;
+	color: #fff !important;
+}
+html body.home .pk-card-foot .pk-card-cta,
+html body.home .pk-card-foot .pk-card-cta:link,
+html body.home .pk-card-foot .pk-card-cta:visited,
+html body.home .pk-card-foot .pk-card-cta span {
+	color: #FF5757 !important;
+}
+html body.home .pk-card-foot .pk-card-cta:hover,
+html body.home .pk-card-foot .pk-card-cta:hover span,
+html body.home .pk-card-foot .pk-card-cta:active,
+html body.home .pk-card-foot .pk-card-cta:active span,
+html body.home .pk-card-foot .pk-card-cta:focus-visible,
+html body.home .pk-card-foot .pk-card-cta:focus-visible span {
+	color: #E04D4D !important;
+}
+html body.home .pk-req {
+	color: #FF5757;
+}
+html body.home :focus-visible {
+	outline-color: #FF5757;
+}
