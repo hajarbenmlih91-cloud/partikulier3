@@ -2375,3 +2375,35 @@ function pkLimitTitle(value) {
 	});
 }());
 
+/* 6.20.201 — fenêtre des villes ou des quartiers. */
+(function () {
+	"use strict";
+	var box = document.querySelector("[data-pk-places]");
+	if (!box) return;
+	function openPlaces() {
+		box.hidden = false;
+		document.documentElement.classList.add("pk-places-open");
+		var closeBtn = box.querySelector(".pk-places-close");
+		if (closeBtn) closeBtn.focus();
+	}
+	function closePlaces() {
+		if (box.hidden) return;
+		box.hidden = true;
+		document.documentElement.classList.remove("pk-places-open");
+	}
+	document.addEventListener("click", function (event) {
+		if (event.target.closest("[data-pk-open-places]")) {
+			event.preventDefault();
+			openPlaces();
+			return;
+		}
+		if (event.target.closest("[data-pk-places-close]")) {
+			event.preventDefault();
+			closePlaces();
+		}
+	});
+	document.addEventListener("keydown", function (event) {
+		if (event.key === "Escape") closePlaces();
+	});
+}());
+

@@ -374,6 +374,7 @@ if ( $pk_districts ) {
 			continue;
 		}
 		$pk_place_links[] = array(
+			'key'   => $pk_name,
 			'label' => class_exists( 'Partikulier_Listing_I18n' ) ? Partikulier_Listing_I18n::localized_place( $pk_name, $pk_lang ) : $pk_name,
 			'on'    => ( $pk_name === $pk_quartier_ok ),
 			'href'  => ( $pk_name === $pk_quartier_ok ) ? $pk_drop( 'pk_quartier' ) : add_query_arg( 'pk_quartier', $pk_name, remove_query_arg( array( 'pk_quartier', 'paged' ) ) ),
@@ -390,12 +391,18 @@ if ( $pk_districts ) {
 		$pk_city_terms = array();
 	}
 	foreach ( array_keys( Partikulier_Morocco_Places::reference() ) as $pk_ref_city ) {
-		$pk_want = Partikulier_Morocco_Places::normalize( $pk_ref_city );
-		$pk_id   = 0;
+		$pk_want     = Partikulier_Morocco_Places::normalize( $pk_ref_city );
+		$pk_id       = 0;
+		$pk_term_ids = array();
 		foreach ( $pk_city_terms as $pk_term_row ) {
-			if ( Partikulier_Morocco_Places::normalize( $pk_term_row->name ) === $pk_want ) {
+			$pk_norm = Partikulier_Morocco_Places::normalize( $pk_term_row->name );
+			$pk_bare = preg_replace( '/-(?:fr|en|ar)$/', '', $pk_norm );
+			if ( $pk_norm !== $pk_want && $pk_bare !== $pk_want ) {
+				continue;
+			}
+			$pk_term_ids[] = (int) $pk_term_row->term_id;
+			if ( ! $pk_id && $pk_norm === $pk_want ) {
 				$pk_id = (int) $pk_term_row->term_id;
-				break;
 			}
 		}
 		if ( $pk_id && function_exists( 'pll_get_term' ) && '' !== $pk_lang ) {
@@ -414,46 +421,80 @@ if ( $pk_districts ) {
 		if ( '' === $pk_slug ) {
 			$pk_slug = sanitize_title( $pk_ref_city );
 		}
+		if ( $pk_id ) {
+			$pk_term_ids[] = (int) $pk_id;
+		}
+		$pk_term_ids = array_values( array_unique( $pk_term_ids ) );
 		$pk_place_links[] = array(
-			'label' => class_exists( 'Partikulier_Listing_I18n' ) ? Partikulier_Listing_I18n::localized_place( $pk_ref_city, $pk_lang ) : $pk_ref_city,
-			'on'    => false,
-			'href'  => add_query_arg( 'es_city', $pk_slug, remove_query_arg( array( 'es_city', 'location', 'pk_quartier', 'paged', 's' ) ) ),
+			'key'      => $pk_ref_city,
+			'term_ids' => $pk_term_ids,
+			'label'    => class_exists( 'Partikulier_Listing_I18n' ) ? Partikulier_Listing_I18n::localized_place( $pk_ref_city, $pk_lang ) : $pk_ref_city,
+			'on'       => false,
+			'href'     => add_query_arg( 'es_city', $pk_slug, remove_query_arg( array( 'es_city', 'location', 'pk_quartier', 'paged', 's' ) ) ),
 		);
 	}
 }
 $pk_more = ( 'ar' === $pk_lang ) ? 'اعرض المزيد' : $pk_say( 'Tout voir' );
-$pk_less = ( 'ar' === $pk_lang ) ? 'اعرض أقل' : $pk_say( 'Fermer' );
-$pk_need_more = count( $pk_place_links ) > 4;
-$pk_need_chip = count( $pk_place_links ) > 8;
+$pk_need_more = count( $pk_place_links ) > 8;
+$pk_place_counts = array();
+if ( $pk_need_more && class_exists( 'Partikulier_Search_Filters' ) ) {
+	if ( $pk_districts ) {
+		$pk_place_counts = Partikulier_Search_Filters::district_counts( array_map( static function ( $pk_link ) {
+			return (string) $pk_link['key'];
+		}, $pk_place_links ) );
+	} else {
+		$pk_sets = array();
+		foreach ( $pk_place_links as $pk_link ) {
+			$pk_sets[ (string) $pk_link['key'] ] = isset( $pk_link['term_ids'] ) ? (array) $pk_link['term_ids'] : array();
+		}
+		$pk_place_counts = Partikulier_Search_Filters::city_counts( $pk_sets );
+	}
+}
+$pk_place_row = array_slice( $pk_place_links, 0, 8 );
 ?>
 <?php if ( $pk_place_links ) : ?>
 <p class="pk-quartiers-kicker"><?php echo esc_html( $pk_place_kicker ); ?></p>
 <div class="pk-quartiers-box">
-	<input class="pk-quartiers-open" type="checkbox" id="pk-quartiers-open"<?php echo $pk_need_more ? '' : ' disabled'; ?>>
-	<?php if ( $pk_need_more ) : ?>
-		<label class="pk-quartiers-more pk-quartiers-more-line" for="pk-quartiers-open">
-			<span class="pk-more"><?php echo esc_html( $pk_more ); ?></span>
-			<span class="pk-less"><?php echo esc_html( $pk_less ); ?></span>
-		</label>
-	<?php endif; ?>
 	<div class="pk-quartiers-rail">
 		<button type="button" class="pk-quartiers-arrow is-prev" data-pk-quartiers-dir="-1" hidden aria-hidden="true" tabindex="-1">
 			<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M14 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
 		</button>
 		<nav class="pk-quartiers" aria-label="<?php echo esc_attr( $pk_place_nav ); ?>">
-			<?php foreach ( $pk_place_links as $pk_i => $pk_link ) : ?>
-				<?php if ( 8 === $pk_i && $pk_need_chip ) : ?>
-				<label class="pk-quartiers-more pk-quartiers-more-chip" for="pk-quartiers-open">
-					<span class="pk-more"><?php echo esc_html( $pk_more ); ?></span>
-					<span class="pk-less"><?php echo esc_html( $pk_less ); ?></span>
-				</label>
-				<?php endif; ?>
+			<?php foreach ( $pk_place_row as $pk_link ) : ?>
 				<a class="pk-quartier<?php echo $pk_link['on'] ? ' is-on' : ''; ?>" href="<?php echo esc_url( $pk_link['href'] ); ?>"<?php echo $pk_link['on'] ? ' aria-current="true"' : ''; ?>><?php echo esc_html( $pk_link['label'] ); ?></a>
 			<?php endforeach; ?>
+			<?php if ( $pk_need_more ) : ?>
+				<button type="button" class="pk-quartiers-more pk-quartiers-more-chip" data-pk-open-places><?php echo esc_html( $pk_more ); ?></button>
+			<?php endif; ?>
 		</nav>
 		<button type="button" class="pk-quartiers-arrow is-next" data-pk-quartiers-dir="1" hidden aria-hidden="true" tabindex="-1">
 			<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
 		</button>
 	</div>
 </div>
+<?php if ( $pk_need_more ) : ?>
+<div class="pk-places" data-pk-places hidden>
+	<button type="button" class="pk-places-backdrop" data-pk-places-close aria-label="<?php echo esc_attr( $pk_close ); ?>"></button>
+	<div class="pk-places-card" role="dialog" aria-modal="true" aria-labelledby="pk-places-title">
+		<div class="pk-places-head">
+			<h2 id="pk-places-title"><?php echo esc_html( $pk_place_kicker ); ?></h2>
+			<button type="button" class="pk-places-close" data-pk-places-close aria-label="<?php echo esc_attr( $pk_close ); ?>">×</button>
+		</div>
+		<ul class="pk-places-list">
+			<?php foreach ( $pk_place_links as $pk_link ) : ?>
+				<?php
+				$pk_n     = isset( $pk_place_counts[ $pk_link['key'] ] ) ? (int) $pk_place_counts[ $pk_link['key'] ] : 0;
+				$pk_n_txt = number_format( $pk_n, 0, ',', ' ' );
+				?>
+			<li>
+				<a class="<?php echo $pk_link['on'] ? 'is-on' : ''; ?>" href="<?php echo esc_url( $pk_link['href'] ); ?>"<?php echo $pk_link['on'] ? ' aria-current="true"' : ''; ?>>
+					<span><?php echo esc_html( $pk_link['label'] ); ?></span>
+					<span class="pk-places-n"><span dir="ltr"><?php echo esc_html( $pk_n_txt ); ?></span> <?php echo esc_html( $pk_ads ); ?></span>
+				</a>
+			</li>
+			<?php endforeach; ?>
+		</ul>
+	</div>
+</div>
+<?php endif; ?>
 <?php endif; ?>
