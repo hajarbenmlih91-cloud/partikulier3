@@ -2268,3 +2268,21 @@ function pkLimitTitle(value) {
 		if (opener && opener.checked) parkCity(root);
 	});
 })();
+
+/* 6.20.193 — Afficher les annonces ferme la fenêtre filtre. */
+(function () {
+	"use strict";
+	function closeFind(form) {
+		var opener = form.querySelector(".pk-find-open");
+		if (!opener || !opener.checked) return;
+		opener.checked = false;
+		try { opener.dispatchEvent(new Event("change", { bubbles: true })); }
+		catch (err) { /* IE */ }
+	}
+	document.addEventListener("submit", function (event) {
+		var form = event.target;
+		if (!form || !form.classList || !form.classList.contains("pk-find")) return;
+		window.setTimeout(function () { closeFind(form); }, 0);
+	}, true);
+}());
+

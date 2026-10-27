@@ -334,8 +334,6 @@ foreach ( $pk_amenities as $pk_item ) {
 	}
 }
 
-$pk_filter_ready = ( '' !== $pk_type );
-$pk_panel_open = $pk_filter_ready && ( $pk_price_min > 0 || $pk_price_max_val < $pk_price_cap || $pk_area_min > 0 || $pk_area_max_val < $pk_area_max || $pk_beds > 0 || $pk_baths > 0 || ! empty( $pk_selected_amenities ) );
 $pk_clear = '' !== $pk_intent ? add_query_arg( 'pk_intent', $pk_intent, $archive ) : $archive;
 
 $pk_city_placeholder = class_exists( 'Partikulier_Localization' )
@@ -355,7 +353,7 @@ $pk_season_label = ( 'fr' === $pk_find_lang ) ? 'Location saisonnière' : $pk_t(
 	<input type="hidden" name="es_action" value="<?php echo esc_attr( $pk_action_value ); ?>">
 	<input type="hidden" name="pk_rent" value="<?php echo esc_attr( $pk_rent_value ); ?>">
 
-	<input class="pk-find-open" type="checkbox" id="pk-find-open" aria-controls="pk-find-panel" <?php checked( $pk_panel_open ); ?>>
+	<input class="pk-find-open" type="checkbox" id="pk-find-open" aria-controls="pk-find-panel">
 	<label class="pk-find-backdrop" for="pk-find-open"></label>
 
 	<div class="pk-find-card">
