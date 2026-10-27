@@ -8100,3 +8100,16 @@ body .pk-card-foot .pk-card-cta:focus-visible span {
 }
 html[dir="rtl"] .pk-sort-chevron { transform: scaleX(-1); }
 html.pk-sort-open { overflow: hidden; }
+
+
+/* 6.20.173 — mobile : meme ecart de part et d'autre du trait que sur bureau. */
+@media (max-width: 900px) {
+	body .pk-card-foot,
+	body .pk-editorial-cards .pk-card-foot,
+	body .pk-archive-content .pk-card-foot {
+		margin-top: 12px !important;
+		padding-top: 12px !important;
+		padding-bottom: 0 !important;
+		border-top: 1px solid var(--pk-line) !important;
+	}
+}
