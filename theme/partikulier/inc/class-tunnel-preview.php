@@ -161,7 +161,7 @@ class Partikulier_Tunnel_Preview {
 			status_header( 500 );
 			exit;
 		}
-		$pk_logo = esc_url( get_theme_file_uri( 'assets/img/pep-ma-blanc.png' ) );
+		$pk_logo = esc_url( get_theme_file_uri( 'assets/img/pep-logo-white.png' ) );
 		$pk_html = preg_replace(
 			'#(<a class="pk-form-logo"[^>]*>\s*<img\s+src=")data:image/[^"]+(")#',
 			'$1' . $pk_logo . '$2',

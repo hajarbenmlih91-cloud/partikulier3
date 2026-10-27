@@ -49,7 +49,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 				<div class="pk-header-brand">
 						<?php
 						$pk_home = esc_url( function_exists( 'pk_localized_home_url' ) ? pk_localized_home_url() : home_url( '/' ) );
-						$pk_logo = esc_url( get_theme_file_uri( 'assets/img/pep-ma.png' ) );
+						$pk_logo = esc_url( get_theme_file_uri( 'assets/img/pep-logo.png' ) );
 						?>
                         <a class="pk-logo-text" href="<?php echo $pk_home; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>" rel="home" aria-label="<?php echo esc_attr__( 'pep.ma, retour à l’accueil', 'partikulier' ); ?>">
 								<img class="pk-logo-img" src="<?php echo $pk_logo; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>" alt="pep.ma" width="1308" height="557">
