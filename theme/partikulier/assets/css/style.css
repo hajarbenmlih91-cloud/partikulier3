@@ -8528,22 +8528,6 @@ html body .pk-editorial-places .pk-btn:active {
 	background: #E04D4D !important;
 	border-color: #E04D4D !important;
 }
-html body .pk-topbar-contact a[href*="connexion"],
-html body .pk-topbar-contact a[href*="login"],
-html body .pk-topbar-contact a[href*="auth_item=login"] {
-	background: #FF5757 !important;
-	color: #fff !important;
-	border-radius: 980px;
-	padding: .28rem .75rem;
-}
-html body .pk-topbar-contact a[href*="connexion"]:hover,
-html body .pk-topbar-contact a[href*="login"]:hover,
-html body .pk-topbar-contact a[href*="auth_item=login"]:hover {
-	background: #E04D4D !important;
-	color: #fff !important;
-}
-html body .pk-menu a[href*="connexion"],
-html body .pk-menu a[href*="auth_item=login"],
 html body .pk-appbar a[href*="connexion"],
 html body .pk-appbar a[href*="auth_item=login"] {
 	color: #FF5757 !important;
@@ -8560,29 +8544,61 @@ html body.home .pk-editorial-places a.pk-btn:active,
 html body.home .pk-editorial-places a.pk-btn:focus-visible,
 html body.home .pk-header-search button[type="submit"],
 html body.home .pk-header-search button[type="submit"]:hover,
-html body.home .pk-header-search button[type="submit"]:active,
-html body.home .pk-topbar-contact a[href*="connexion"],
-html body.home .pk-topbar-contact a[href*="connexion"]:hover,
-html body.home .pk-main-nav a[href*="connexion"],
-html body.home .pk-main-nav a[href*="connexion"]:hover,
-html body.home .pk-mobile-menu a[href*="connexion"],
-html body.home .pk-mobile-menu a[href*="connexion"]:hover {
+html body.home .pk-header-search button[type="submit"]:active {
 	background: #FF5757 !important;
 	background-color: #FF5757 !important;
 	background-image: none !important;
 	border-color: #FF5757 !important;
 	color: #fff !important;
+	border-radius: 0 !important;
 }
 html body.home .pk-find-submit:hover,
 html body.home .pk-find-submit:active,
 html body.home .pk-editorial-places a.pk-btn:hover,
 html body.home .pk-editorial-places a.pk-btn:active,
 html body.home .pk-header-search button[type="submit"]:hover,
-html body.home .pk-header-search button[type="submit"]:active,
-html body.home .pk-topbar-contact a[href*="connexion"]:hover,
-html body.home .pk-main-nav a[href*="connexion"]:hover,
-html body.home .pk-mobile-menu a[href*="connexion"]:hover {
+html body.home .pk-header-search button[type="submit"]:active {
 	background: #E04D4D !important;
 	background-color: #E04D4D !important;
 	border-color: #E04D4D !important;
+}
+
+/* 6.20.184 — bureau : plus de pastille sur connexion. Trait de l'option choisie au rouge du logo. */
+@media (min-width: 768px) {
+	html body .pk-main-nav .pk-menu-item.pk-current > a::after {
+		background: #FF5757 !important;
+	}
+	html body .pk-main-nav a[href*="connexion"],
+	html body .pk-main-nav a[href*="auth_item=login"],
+	html body .pk-topbar-contact a[href*="connexion"],
+	html body .pk-topbar-contact a[href*="login"],
+	html body .pk-topbar-contact a[href*="auth_item=login"] {
+		background: transparent !important;
+		background-color: transparent !important;
+		background-image: none !important;
+		border-color: transparent !important;
+		border-radius: 0 !important;
+		box-shadow: none !important;
+		color: inherit !important;
+	}
+	html body .pk-main-nav .pk-menu-item > a[href*="connexion"],
+	html body .pk-main-nav .pk-menu-item > a[href*="auth_item=login"] {
+		padding: .95rem 0 !important;
+		color: #161715 !important;
+	}
+	html body .pk-header-search .pk-search-bar button,
+	html body .pk-find-submit {
+		border-radius: 0 !important;
+		background: #FF5757 !important;
+		border-color: #FF5757 !important;
+		color: #fff !important;
+	}
+	html body .pk-header-search .pk-search-bar button:hover,
+	html body .pk-header-search .pk-search-bar button:active,
+	html body .pk-find-submit:hover,
+	html body .pk-find-submit:active {
+		background: #E04D4D !important;
+		border-color: #E04D4D !important;
+		border-radius: 0 !important;
+	}
 }
