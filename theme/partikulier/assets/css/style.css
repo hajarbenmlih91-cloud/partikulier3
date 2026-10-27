@@ -9019,27 +9019,32 @@ html body .pk-find-panel .pk-find-chip:has(input:checked):not(.pk-find-check) * 
 	margin: 0 0 1rem;
 }
 .pk-results-copy { min-width: 0; flex: 1 1 auto; }
-.pk-results-title {
+html body .pk-results-voice {
 	margin: 0;
 	color: #161715;
+	font-family: "Noto Sans Arabic", "DM Sans", var(--pk-font), system-ui, sans-serif;
 	font-size: 1.35rem;
 	font-weight: 800;
-	line-height: 1.3;
-}
-.pk-results-meta {
-	margin: .35rem 0 0;
-	color: #5d615a;
-	font-size: .95rem;
-	font-weight: 600;
+	font-style: normal;
+	letter-spacing: 0;
 	line-height: 1.45;
+	text-transform: none;
 }
-.pk-results-count { color: #161715; font-weight: 800; }
-.pk-quartiers-kicker {
-	margin: 0 0 .55rem;
+html body .pk-quartiers-kicker { margin: 0 0 .7rem; }
+html body .pk-results-title .pk-results-strong {
 	color: #161715;
-	font-size: 1rem;
 	font-weight: 800;
 }
+html body .pk-results-title .pk-results-soft {
+	color: #6b6b6b;
+	font-weight: 500;
+}
+html body .pk-results-title .pk-results-accent {
+	color: #FF5757;
+	font-weight: 800;
+}
+.pk-sort-prefix { color: #6b6b6b; font-weight: 600; }
+.pk-sort-value { color: #161715; font-weight: 800; }
 .pk-sort-inline {
 	display: inline-flex;
 	align-items: center;
@@ -9076,7 +9081,7 @@ html body .pk-find-panel .pk-find-chip:has(input:checked):not(.pk-find-check) * 
 	.pk-sort-inline { display: none !important; }
 	.pk-results-tools:not(:has(.pk-results-copy)) { display: none; }
 	.pk-results-tools { margin-bottom: .75rem; }
-	.pk-results-title { font-size: 1.15rem; }
+	html body .pk-results-voice { font-size: 1.15rem; }
 }
 @media (min-width: 768px) {
 	.pk-sort-float { display: none !important; }

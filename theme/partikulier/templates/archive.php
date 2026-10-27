@@ -373,7 +373,9 @@ endforeach;
 					return ! empty( $row['fr'] ) ? $pk_sort_label( $row['fr'] ) : '';
 				};
 				$pk_sort_current = $pk_sort_text( $pk_sort_now );
-				$pk_sort_button  = ( 'ar' === $pk_sort_lang ) ? ( 'ترتيب: ' . $pk_sort_current ) : $pk_sort_label( 'Trier les annonces' );
+				$pk_sort_prefix = ( 'ar' === $pk_sort_lang ) ? 'ترتيب:' : '';
+				$pk_sort_value  = ( 'ar' === $pk_sort_lang ) ? $pk_sort_current : $pk_sort_label( 'Trier les annonces' );
+				$pk_sort_button = trim( $pk_sort_prefix . ' ' . $pk_sort_value );
 				$pk_sort_base    = remove_query_arg( array( 'pk_order', 'paged' ) );
 				$pk_sort_menu    = array();
 				$pk_sort_seen    = array( $pk_sort_current => true );
@@ -416,7 +418,7 @@ endforeach;
 </div>
 <button type="button" class="pk-sort-float" data-pk-open-sort>
 	<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M8 7v10M8 7l-3 3M8 7l3 3M16 17V7M16 17l-3-3M16 17l3-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-	<span><?php echo esc_html( $pk_sort_button ); ?></span>
+	<span><?php if ( '' !== $pk_sort_prefix ) : ?><span class="pk-sort-prefix"><?php echo esc_html( $pk_sort_prefix ); ?></span> <?php endif; ?><span class="pk-sort-value"><?php echo esc_html( $pk_sort_value ); ?></span></span>
 </button>
 <div class="pk-sort" data-pk-sort hidden>
 	<button type="button" class="pk-sort-backdrop" data-pk-sort-close aria-label="<?php echo esc_attr( $pk_sort_label( 'Fermer' ) ); ?>"></button>
