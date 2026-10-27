@@ -37,8 +37,8 @@ $is_type = $queried instanceof WP_Term && PARTIKULIER_ESTATIK_TYPE_TAXONOMY === 
 			.pk-quartiers-open:checked ~ .pk-quartiers-more .pk-less{display:inline}
 
 			.pk-header-search,.pk-archive>.pk-container>.pk-breadcrumb,.pk-intent-bar,.pk-intent-sentinel,.pk-archive-toolbar{display:none!important}
-			.pk-archive-head,.pk-archive-search,.pk-archive-search .pk-search,.pk-archive-search .pk-archive-trust{display:block!important}
-			.pk-archive-search .pk-archive-trust{display:flex!important}
+			.pk-archive-head,.pk-archive-search .pk-find-tabs,.pk-archive-search .pk-find-card,.pk-archive-search .pk-archive-trust,.pk-archive-search .pk-find-need{display:none!important}
+			.pk-archive-actions,.pk-archive-actions[hidden]{display:block!important;position:sticky;top:0;z-index:40;background:#fff}
 			.pk-filter-toggle{display:none!important}
 			.pk-archive>.pk-container{padding-inline:16px}
 			.pk-archive-layout{display:block!important;width:100%}
@@ -342,6 +342,9 @@ endforeach;
 								</aside>
 
 								<div class="pk-archive-content">
+<div class="pk-scroll-actions pk-archive-actions" data-pk-archive-actions>
+	<?php require PARTIKULIER_DIR . '/templates/parts/filter-chips.php'; ?>
+</div>
 <?php
 				$pk_sort_now = isset( $_GET['pk_order'] ) && is_scalar( $_GET['pk_order'] ) ? sanitize_key( wp_unslash( $_GET['pk_order'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 				if ( ! in_array( $pk_sort_now, array( 'recent', 'date-asc', 'price-asc', 'price-desc' ), true ) ) {
@@ -409,9 +412,6 @@ endforeach;
 		</div>
 </section>
 
-<div class="pk-scroll-actions pk-archive-actions" data-pk-archive-actions hidden>
-	<?php require PARTIKULIER_DIR . '/templates/parts/filter-chips.php'; ?>
-</div>
 <button type="button" class="pk-sort-float" data-pk-open-sort>
 	<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M8 7v10M8 7l-3 3M8 7l3 3M16 17V7M16 17l-3-3M16 17l3-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
 	<span><?php echo esc_html( $pk_sort_button ); ?></span>
