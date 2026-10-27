@@ -2113,10 +2113,36 @@ function pkLimitTitle(value) {
 		opener.dispatchEvent(new Event("change", { bubbles: true }));
 	}
 
-	function openSort() {
+	function openSort(anchor) {
 		if (!sort) return;
 		sort.hidden = false;
 		document.documentElement.classList.add("pk-sort-open");
+		var card = sort.querySelector(".pk-sort-card");
+		if (card && anchor && anchor.getBoundingClientRect) {
+			var box = anchor.getBoundingClientRect();
+			var rtl = document.documentElement.getAttribute("dir") === "rtl";
+			var width = Math.min(280, window.innerWidth - 24);
+			var cardH = Math.min(320, card.offsetHeight || 240);
+			var top = box.bottom + 8;
+			card.style.position = "fixed";
+			card.style.width = width + "px";
+			card.style.transform = "none";
+			card.style.margin = "0";
+			if (top + cardH > window.innerHeight - 12 && box.top > cardH + 12) {
+				card.style.top = "auto";
+				card.style.bottom = (window.innerHeight - box.top + 8) + "px";
+			} else {
+				card.style.bottom = "auto";
+				card.style.top = Math.max(12, top) + "px";
+			}
+			if (rtl) {
+				card.style.left = Math.max(12, Math.min(box.left, window.innerWidth - width - 12)) + "px";
+				card.style.right = "auto";
+			} else {
+				card.style.left = "auto";
+				card.style.right = Math.max(12, window.innerWidth - box.right) + "px";
+			}
+		}
 		var closeBtn = sort.querySelector(".pk-sort-close");
 		if (closeBtn) closeBtn.focus();
 	}
@@ -2142,9 +2168,10 @@ function pkLimitTitle(value) {
 				return;
 			}
 		}
-		if (event.target.closest("[data-pk-open-sort]")) {
+		var sortBtn = event.target.closest("[data-pk-open-sort]");
+		if (sortBtn) {
 			event.preventDefault();
-			openSort();
+			openSort(sortBtn);
 			return;
 		}
 		if (event.target.closest("[data-pk-sort-close]")) {

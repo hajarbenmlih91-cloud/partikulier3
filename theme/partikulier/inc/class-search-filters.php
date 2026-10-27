@@ -88,7 +88,7 @@ class Partikulier_Search_Filters {
 			return false;
 		}
 		$requested_order = isset( $_GET['pk_order'] ) ? sanitize_key( wp_unslash( $_GET['pk_order'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- lecture d'affichage, aucune écriture
-		if ( in_array( $requested_order, array( 'price-asc', 'price-desc', 'surface-desc' ), true ) ) {
+		if ( in_array( $requested_order, array( 'price-asc', 'price-desc', 'surface-desc', 'date-asc' ), true ) ) {
 			return false;
 		}
 		return true;
@@ -134,8 +134,13 @@ class Partikulier_Search_Filters {
 		}
 			// Les tris explicites du formulaire sont déjà traduits dans WP_Query.
 			$requested_order = isset( $_GET['pk_order'] ) ? sanitize_key( wp_unslash( $_GET['pk_order'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		if ( 'date-asc' === $requested_order ) {
+			global $wpdb;
+			$posts = $wpdb->posts;
+			return $posts . '.post_date ASC, ' . $posts . '.ID ASC';
+		}
 		if ( in_array( $requested_order, array( 'price-asc', 'price-desc', 'surface-desc' ), true ) ) {
-				return $orderby;
+			return $orderby;
 		}
 			global $wpdb;
 			$posts = $wpdb->posts;
@@ -367,6 +372,9 @@ class Partikulier_Search_Filters {
 			case 'price-desc':
 					$query->set( 'meta_key', 'es_property_price' );
 					$query->set( 'orderby', array( 'meta_value_num' => 'DESC', 'ID' => 'DESC' ) );
+						break;
+			case 'date-asc':
+					$query->set( 'orderby', array( 'date' => 'ASC', 'ID' => 'ASC' ) );
 						break;
 			case 'surface-desc':
 					$query->set( 'meta_key', 'es_property_area' );
