@@ -35,7 +35,6 @@ if ( function_exists( 'pll_current_language' ) && function_exists( 'pll_get_post
 
 $price    = get_post_meta( $post->ID, 'es_property_price', true ) ?: get_post_meta( $post->ID, 'es_price', true );
 $surface  = get_post_meta( $post->ID, 'es_property_area', true ) ?: get_post_meta( $post->ID, 'es_size', true );
-	$rooms    = get_post_meta( $post->ID, 'es_property_total_rooms', true ) ?: get_post_meta( $post->ID, 'es_rooms', true );
 	$bedrooms = get_post_meta( $post->ID, 'es_property_bedrooms', true ) ?: get_post_meta( $post->ID, 'es_bedrooms', true );
 	$bedrooms_label = get_post_meta( $post->ID, '_pk_bedrooms_label', true ) ?: $bedrooms;
 	$living_rooms = get_post_meta( $post->ID, '_pk_living_rooms_label', true ) ?: get_post_meta( $post->ID, '_pk_living_rooms', true );
@@ -320,8 +319,7 @@ $gallery_ids = array();
 						$pk_renovated  = get_post_meta( $post->ID, 'es_property_year_remodeled', true );
 						$pk_energy     = get_post_meta( $post->ID, 'es_property_epc_class', true ) ?: get_post_meta( $post->ID, 'es_energy_class', true );
 						$pk_ges        = get_post_meta( $post->ID, 'es_property_ges_class', true );
-						$pk_rooms      = get_post_meta( $post->ID, 'es_property_total_rooms', true );
-						$pk_half_baths = get_post_meta( $post->ID, 'es_property_half_baths', true );
+					$pk_half_baths = get_post_meta( $post->ID, 'es_property_half_baths', true );
 						$pk_lot_size   = get_post_meta( $post->ID, 'es_property_lot_size', true );
 						$pk_charges    = get_post_meta( $post->ID, '_pk_charges', true );
 						$pk_available  = get_post_meta( $post->ID, '_pk_availability', true );
@@ -351,8 +349,7 @@ $gallery_ids = array();
 							'_pk_terrace' => array( $terrace_label, Partikulier_Localization::translate_polylang_string( 'Terrasse', 'Terrasse', 'partikulier' ), '', '' ),
 							'_pk_vis_a_vis' => array( 'Oui' === $vis_a_vis ? Partikulier_Localization::translate_polylang_string( 'Sans vis-à-vis', 'Sans vis-à-vis', 'partikulier' ) : '', __( 'Vue', 'partikulier' ), '', '' ),
 							'_pk_sunshine' => array( $sunshine, Partikulier_Localization::translate_polylang_string( 'Ensoleillement', 'Ensoleillement', 'partikulier' ), '', '' ),
-							'es_property_total_rooms' => array( $pk_rooms, __( 'Pièces', 'partikulier' ), '', '' ),
-							'es_property_lot_size' => array( $pk_lot_size, Partikulier_Localization::translate_polylang_string( 'Terrain', 'Terrain', 'partikulier' ), Partikulier_Localization::translate_polylang_string( 'm²', 'm²', 'partikulier' ), '' ),
+						'es_property_lot_size' => array( $pk_lot_size, Partikulier_Localization::translate_polylang_string( 'Terrain', 'Terrain', 'partikulier' ), Partikulier_Localization::translate_polylang_string( 'm²', 'm²', 'partikulier' ), '' ),
 							'es_property_year_built' => array( $pk_year, Partikulier_Localization::translate_polylang_string( 'Année de construction', 'Année de construction', 'partikulier' ), '', '', 'brut' ),
 							'es_property_year_remodeled' => array( $pk_renovated, Partikulier_Localization::translate_polylang_string( 'Rénovation', 'Rénovation', 'partikulier' ), '', '', 'brut' ),
 						'es_garages' => array( $pk_parking, Partikulier_Localization::translate_polylang_string( 'Parkings', 'Parkings', 'partikulier' ), '', '' ),
@@ -390,12 +387,7 @@ $gallery_ids = array();
 				<section class="pk-single-section pk-single-description" aria-label="<?php esc_attr_e( 'Description', 'partikulier' ); ?>">
 					<h2 class="pk-single-section-title"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Description', 'Description', 'partikulier' ) ); ?></h2>
 					<div class="pk-content">
-						<?php
-						if ( has_excerpt( $post ) ) {
-							echo '<p class="pk-lead">' . esc_html( get_the_excerpt( $post ) ) . '</p>';
-						}
-						the_content();
-						?>
+						<?php the_content(); ?>
 					</div>
 				</section>
 			</div>
