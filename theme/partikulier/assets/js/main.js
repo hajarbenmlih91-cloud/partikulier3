@@ -1347,8 +1347,7 @@ function pkLimitTitle(value) {
 			var a = head ? head.textContent.replace(/^\s+|\s+$/g, "") : "";
 			var b = name ? name.textContent.replace(/^\s+|\s+$/g, "") : "";
 			title.textContent = a && b ? (a + " " + b) : (b || a);
-			var canType = select.hasAttribute("data-pk-min") || select.hasAttribute("data-pk-typein");
-			typeRow.hidden = !canType;
+			typeRow.hidden = true;
 			var hintText = select.getAttribute("data-pk-hint") || "";
 			if (!hintText && label) {
 				var write = label.querySelector(".pk-find-write");
@@ -1542,20 +1541,47 @@ function pkLimitTitle(value) {
 		if (value === "a-louer") return "rent";
 		return "sale";
 	}
+	function choiceKey() {
+		var slug = "";
+		if (typeSelect && typeSelect.value) slug = String(typeSelect.value).replace(/-(fr|en|ar)$/, "");
+		if (slug === "studio") return "studio";
+		if (slug === "appartement" || slug === "duplex") return "appart";
+		if (slug === "maison" || slug === "villa" || slug === "riad") return "maison";
+		if (slug === "terrain") return "terrain";
+		if (slug === "ferme") return "ferme";
+		if (slug === "bureau" || slug === "local") return "bureau";
+		if (slug === "depot" || slug === "hangar" || slug === "usine") return "pro";
+		if (slug === "immeuble") return "immeuble";
+		return "all";
+	}
+	var scaleBands = {
+		studio: { sale: [400000, 1500000], rent: [1500, 8000], season: [1000, 5000], area: [30, 80] },
+		appart: { sale: [400000, 3000000], rent: [2500, 15000], season: [1000, 8000], area: [40, 200] },
+		maison: { sale: [800000, 10000000], rent: [6000, 40000], season: [2000, 8000], area: [100, 500] },
+		terrain: { sale: [200000, 3000000], rent: [2000, 20000], season: [1000, 8000], area: [100, 3000] },
+		ferme: { sale: [500000, 7000000], rent: [3000, 20000], season: [1000, 8000], area: [500, 3000] },
+		bureau: { sale: [300000, 5000000], rent: [2500, 20000], season: [1000, 8000], area: [30, 500] },
+		pro: { sale: [400000, 10000000], rent: [4000, 40000], season: [1000, 8000], area: [200, 3000] },
+		immeuble: { sale: [1500000, 20000000], rent: [10000, 40000], season: [2000, 8000], area: [200, 2000] }
+	};
+	function inBand(n, band) {
+		return !band || (n >= band[0] && n <= band[1]);
+	}
 	function setPriceScale(mode, keep) {
 		var box = root.querySelector("[data-pk-price]");
 		if (!box) return;
 		var min = box.querySelector("[data-pk-min]");
 		var max = box.querySelector("[data-pk-max]");
 		if (!min || !max) return;
-		var sale = mode === "sale";
-		var list = (sale ? box.getAttribute("data-sale-prices") : box.getAttribute("data-rent-prices")) || "";
+		var attr = mode === "sale" ? "data-sale-prices" : (mode === "season" ? "data-season-prices" : "data-rent-prices");
+		var list = box.getAttribute(attr) || box.getAttribute("data-rent-prices") || "";
 		var unit = mode === "rent" ? (box.getAttribute("data-rent-unit") || "") : (mode === "season" ? (box.getAttribute("data-season-unit") || "") : (box.getAttribute("data-sale-unit") || ""));
-		var cap = Number(sale ? box.getAttribute("data-sale-max") : box.getAttribute("data-rent-max"));
+		var cap = Number(mode === "sale" ? box.getAttribute("data-sale-max") : box.getAttribute("data-rent-max"));
 		var any = box.getAttribute("data-any") || "";
+		var spec = scaleBands[choiceKey()];
+		var band = spec ? (spec[mode] || spec.rent) : null;
 		function fill(select) {
 			var current = keep ? select.value : "";
-			if (keep && select.options.length) return;
 			select.innerHTML = "";
 			var empty = document.createElement("option");
 			empty.value = "";
@@ -1563,28 +1589,49 @@ function pkLimitTitle(value) {
 			select.appendChild(empty);
 			list.split(",").forEach(function (raw) {
 				var n = Number(raw);
-				if (!n || (cap && n >= cap)) return;
+				if (!n || (cap && n >= cap) || !inBand(n, band)) return;
 				var opt = document.createElement("option");
 				opt.value = String(n);
 				opt.textContent = group(n) + (unit ? " " + unit : "");
 				select.appendChild(opt);
 			});
 			select.value = current && select.querySelector("option[value='" + current + "']") ? current : "";
-			if (!select.value && current && /^[0-9]+$/.test(current)) {
-				var typed = Number(current);
-				if (typed > 0 && (!cap || typed < cap)) {
-					var extra = document.createElement("option");
-					extra.value = String(typed);
-					extra.textContent = group(typed) + (unit ? " " + unit : "");
-					select.appendChild(extra);
-					select.value = String(typed);
-				}
-			}
 			try { select.dispatchEvent(new Event("pk-select-rebuild")); }
 			catch (err) { /* IE */ }
 		}
 		fill(min);
 		fill(max);
+	}
+	function setAreaScale(mode, keep) {
+		var box = root.querySelector("[data-pk-area]");
+		if (!box) return;
+		var list = box.getAttribute("data-areas") || "";
+		var unit = box.getAttribute("data-area-unit") || "";
+		var any = "";
+		var price = root.querySelector("[data-pk-price]");
+		if (price) any = price.getAttribute("data-any") || "";
+		var spec = scaleBands[choiceKey()];
+		var band = spec ? spec.area : null;
+		if (mode === "season") band = band ? [band[0], Math.min(band[1], 500)] : [30, 500];
+		box.querySelectorAll("select").forEach(function (select) {
+			var current = keep ? select.value : "";
+			select.innerHTML = "";
+			var empty = document.createElement("option");
+			empty.value = "";
+			empty.textContent = any;
+			select.appendChild(empty);
+			list.split(",").forEach(function (raw) {
+				var n = Number(raw);
+				if (!n || !inBand(n, band)) return;
+				var opt = document.createElement("option");
+				opt.value = String(n);
+				opt.textContent = group(n) + (unit ? " " + unit : "");
+				select.appendChild(opt);
+			});
+			select.value = current && select.querySelector("option[value='" + current + "']") ? current : "";
+			try { select.dispatchEvent(new Event("pk-select-rebuild")); }
+			catch (err) { /* IE */ }
+		});
 	}
 	function currentFamily() {
 		if (!typeSelect || !typeSelect.value) return "";
@@ -1610,7 +1657,6 @@ function pkLimitTitle(value) {
 	}
 	function applyContext(keepPrice) {
 		syncHiddenIntent();
-		setPriceScale(priceMode(), keepPrice);
 		syncTxButtons();
 		syncTypeCards();
 		var code = txCode();
@@ -1638,6 +1684,8 @@ function pkLimitTitle(value) {
 		}
 		var amenities = root.querySelector(".pk-find-amenities");
 		if (amenities) amenities.hidden = !amenities.querySelector(".pk-find-chip:not([hidden])");
+		setPriceScale(priceMode(), keepPrice);
+		setAreaScale(priceMode(), keepPrice);
 		guardFilters();
 	}
 	function syncTypeCards() {
@@ -1799,7 +1847,8 @@ function pkLimitTitle(value) {
 				box.setAttribute("data-pk-on", "0");
 			});
 			var sale = root.querySelector(".pk-find-tab-input:checked");
-			setPriceScale(sale && sale.value === "a-louer", false);
+			setPriceScale(priceMode(), false);
+			setAreaScale(priceMode(), false);
 			var area = root.querySelector("[data-pk-area]");
 			if (area) {
 				var amin = area.querySelector(".pk-find-range-min");

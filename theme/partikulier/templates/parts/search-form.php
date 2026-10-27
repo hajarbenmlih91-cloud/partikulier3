@@ -55,7 +55,6 @@ $pk_t = static function ( $fr ) use ( $pk_find_lang ) {
 		'Local commercial'    => array( 'en' => 'Commercial premises', 'ar' => 'محل تجاري' ),
 		'Minimum'             => array( 'en' => 'Minimum' ),
 		'Salons'              => array( 'en' => 'Living rooms', 'ar' => 'غرف الجلوس' ),
-		'Superficie (m²)'     => array( 'en' => 'Area (m²)', 'ar' => 'المساحة (م²)' ),
 		'Maximum'             => array( 'en' => 'Maximum' ),
 		'Indifférent'         => array( 'en' => 'No preference / Not specified', 'ar' => 'لا تفضيل / غير محدد' ),
 	);
@@ -185,7 +184,6 @@ if ( $pk_area_min > $pk_area_max_val ) {
 $pk_beds = $pk_int( 'es_bedrooms_min' );
 $pk_salons = $pk_int( 'pk_salons_min' );
 $pk_salon_heading = ( 'ar' === $pk_find_lang ) ? 'غرف الجلوس' : $pk_t( 'Salons' );
-$pk_area_hint = $pk_t( 'Superficie (m²)' );
 $pk_area_unit = ( 'ar' === $pk_find_lang ) ? 'م²' : 'm²';
 if ( ! in_array( $pk_beds, array( 0, 1, 2, 3, 4, 5 ), true ) ) {
 	$pk_beds = 0;
@@ -288,6 +286,7 @@ $pk_type_base  = preg_replace( '/-(fr|en|ar)$/', '', (string) $pk_type );
 $pk_rooms_on   = ( '' === $pk_type_base || in_array( $pk_type_base, $pk_room_slugs, true ) );
 $pk_sale_prices = array( 100000, 150000, 200000, 250000, 300000, 400000, 500000, 600000, 800000, 1000000, 1500000, 2000000, 2500000, 3000000, 4000000, 5000000, 7000000, 10000000, 15000000, 20000000 );
 $pk_rent_prices = array( 1000, 1500, 2000, 2500, 3000, 4000, 5000, 6000, 8000, 10000, 12000, 15000, 20000, 25000, 30000, 40000 );
+$pk_season_prices = array( 1000, 1500, 2000, 2500, 3000, 4000, 5000, 6000, 8000 );
 $pk_area_choices = array( 30, 40, 50, 60, 70, 80, 100, 120, 150, 200, 250, 300, 400, 500, 700, 1000, 1500, 2000, 3000 );
 $pk_ensure_choice = static function ( $list, $value, $cap ) {
 	$value = (int) $value;
@@ -436,7 +435,7 @@ $pk_season_label = ( 'fr' === $pk_find_lang ) ? 'Location saisonnière' : $pk_t(
 					<?php endforeach; ?>
 				</div>
 			</div>
-			<div class="pk-find-block" data-pk-price data-sale-max="<?php echo esc_attr( $pk_sale_max ); ?>" data-rent-max="<?php echo esc_attr( $pk_rent_max ); ?>" data-sale-prices="<?php echo esc_attr( implode( ',', $pk_sale_prices ) ); ?>" data-rent-prices="<?php echo esc_attr( implode( ',', $pk_rent_prices ) ); ?>" data-sale-unit="<?php echo esc_attr( $pk_unit_sale ); ?>" data-rent-unit="<?php echo esc_attr( $pk_unit_rent ); ?>" data-season-unit="<?php echo esc_attr( $pk_unit_sale ); ?>" data-any="<?php echo esc_attr( $pk_t( 'Indifférent' ) ); ?>">
+			<div class="pk-find-block" data-pk-price data-sale-max="<?php echo esc_attr( $pk_sale_max ); ?>" data-rent-max="<?php echo esc_attr( $pk_rent_max ); ?>" data-sale-prices="<?php echo esc_attr( implode( ',', $pk_sale_prices ) ); ?>" data-rent-prices="<?php echo esc_attr( implode( ',', $pk_rent_prices ) ); ?>" data-season-prices="<?php echo esc_attr( implode( ',', $pk_season_prices ) ); ?>" data-sale-unit="<?php echo esc_attr( $pk_unit_sale ); ?>" data-rent-unit="<?php echo esc_attr( $pk_unit_rent ); ?>" data-season-unit="<?php echo esc_attr( $pk_unit_sale ); ?>" data-any="<?php echo esc_attr( $pk_t( 'Indifférent' ) ); ?>">
 				<h3><?php echo esc_html( $pk_t( 'Prix' ) ); ?></h3>
 				<div class="pk-find-duo">
 					<label>
@@ -460,26 +459,24 @@ $pk_season_label = ( 'fr' === $pk_find_lang ) ? 'Location saisonnière' : $pk_t(
 				</div>
 			</div>
 
-			<div class="pk-find-block" data-pk-area>
+			<div class="pk-find-block" data-pk-area data-areas="<?php echo esc_attr( implode( ',', $pk_area_choices ) ); ?>" data-area-unit="<?php echo esc_attr( $pk_area_unit ); ?>">
 				<h3><?php echo esc_html( $pk_t( 'Surface' ) ); ?></h3>
 				<div class="pk-find-duo">
 					<label>
 						<span><?php echo esc_html( $pk_t( 'Minimum' ) ); ?></span>
-						<span class="pk-find-write"><?php echo esc_html( $pk_area_hint ); ?></span>
-						<select class="pk-find-select" name="es_size_min" data-pk-min data-pk-typein data-pk-unit="<?php echo esc_attr( $pk_area_unit ); ?>" data-pk-hint="<?php echo esc_attr( $pk_area_hint ); ?>" dir="ltr">
+						<select class="pk-find-select" name="es_size_min" dir="ltr">
 							<option value=""><?php echo esc_html( $pk_t( 'Indifférent' ) ); ?></option>
 							<?php foreach ( $pk_area_choices as $pk_n ) : ?>
-								<option value="<?php echo esc_attr( $pk_n ); ?>" <?php selected( $pk_area_min, $pk_n ); ?>><?php echo esc_html( $pk_fmt( $pk_n ) . ' m²' ); ?></option>
+								<option value="<?php echo esc_attr( $pk_n ); ?>" <?php selected( $pk_area_min, $pk_n ); ?>><?php echo esc_html( $pk_fmt( $pk_n ) . ' ' . $pk_area_unit ); ?></option>
 							<?php endforeach; ?>
 						</select>
 					</label>
 					<label>
 						<span><?php echo esc_html( $pk_t( 'Maximum' ) ); ?></span>
-						<span class="pk-find-write"><?php echo esc_html( $pk_area_hint ); ?></span>
-						<select class="pk-find-select" name="es_size_max" data-pk-typein data-pk-unit="<?php echo esc_attr( $pk_area_unit ); ?>" data-pk-hint="<?php echo esc_attr( $pk_area_hint ); ?>" dir="ltr">
+						<select class="pk-find-select" name="es_size_max" dir="ltr">
 							<option value=""><?php echo esc_html( $pk_t( 'Indifférent' ) ); ?></option>
 							<?php foreach ( $pk_area_choices as $pk_n ) : ?>
-								<option value="<?php echo esc_attr( $pk_n ); ?>" <?php selected( $pk_area_max_sel, $pk_n ); ?>><?php echo esc_html( $pk_fmt( $pk_n ) . ' m²' ); ?></option>
+								<option value="<?php echo esc_attr( $pk_n ); ?>" <?php selected( $pk_area_max_sel, $pk_n ); ?>><?php echo esc_html( $pk_fmt( $pk_n ) . ' ' . $pk_area_unit ); ?></option>
 							<?php endforeach; ?>
 						</select>
 					</label>
