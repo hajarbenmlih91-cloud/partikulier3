@@ -213,26 +213,79 @@ if ( 'meuble' === sanitize_key( $pk_get( 'pk_furnished' ) ) ) {
 	);
 }
 
-if ( ! $pk_chips ) {
+$pk_city_fr = '';
+if ( '' !== $pk_city && class_exists( 'Partikulier_Morocco_Places' ) ) {
+	$pk_city_term = get_term_by( 'slug', $pk_city, PARTIKULIER_ESTATIK_LOCATION_TAXONOMY );
+	$pk_city_try  = array( $pk_city );
+	if ( $pk_city_term && ! is_wp_error( $pk_city_term ) ) {
+		$pk_city_try[] = $pk_city_term->name;
+	}
+	$pk_city_try[] = str_replace( '-', ' ', preg_replace( '/-(?:ar|fr|en)$/', '', $pk_city ) );
+	foreach ( Partikulier_Morocco_Places::reference() as $pk_ref_city => $pk_ref_districts ) {
+		$pk_ref_norm = Partikulier_Morocco_Places::normalize( $pk_ref_city );
+		foreach ( $pk_city_try as $pk_try ) {
+			if ( Partikulier_Morocco_Places::normalize( $pk_try ) === $pk_ref_norm || sanitize_title( $pk_ref_city ) === sanitize_title( $pk_try ) ) {
+				$pk_city_fr = $pk_ref_city;
+				break 2;
+			}
+		}
+	}
+}
+$pk_districts = ( '' !== $pk_city_fr && class_exists( 'Partikulier_Morocco_Places' ) ) ? Partikulier_Morocco_Places::districts_of( $pk_city_fr, '', 40 ) : array();
+$pk_quartier  = $pk_get( 'pk_quartier' );
+$pk_quartier_ok = '';
+foreach ( $pk_districts as $pk_row ) {
+	$pk_name = isset( $pk_row['district'] ) ? (string) $pk_row['district'] : '';
+	if ( '' !== $pk_name && $pk_name === $pk_quartier ) {
+		$pk_quartier_ok = $pk_name;
+		break;
+	}
+}
+if ( '' !== $pk_quartier_ok ) {
+	$pk_q_label = class_exists( 'Partikulier_Listing_I18n' ) ? Partikulier_Listing_I18n::localized_place( $pk_quartier_ok, $pk_lang ) : $pk_quartier_ok;
+	$pk_chips[] = array(
+		'text' => $pk_q_label,
+		'url'  => $pk_drop( 'pk_quartier' ),
+	);
+}
+
+if ( ! $pk_chips && ! $pk_districts ) {
 	return;
 }
 
 $pk_clear = ( 'ar' === $pk_lang ) ? 'مسح الفلتر' : $pk_say( 'Réinitialiser' );
-$pk_clear_url = $pk_drop( array( 's', 'es_city', 'es_type', 'es_action', 'pk_intent', 'pk_rent', 'es_price_min', 'es_price_max', 'es_size_min', 'es_size_max', 'es_bedrooms_min', 'pk_salons_min', 'pk_amenity', 'pk_furnished' ) );
+$pk_clear_url = $pk_drop( array( 's', 'es_city', 'es_type', 'es_action', 'pk_intent', 'pk_rent', 'es_price_min', 'es_price_max', 'es_size_min', 'es_size_max', 'es_bedrooms_min', 'pk_salons_min', 'pk_amenity', 'pk_furnished', 'pk_quartier' ) );
 ?>
+<?php if ( $pk_chips ) : ?>
 <div class="pk-chosen">
 	<div class="pk-chosen-list">
 		<?php foreach ( $pk_chips as $pk_chip ) : ?>
-			<a class="pk-chosen-chip" href="<?php echo esc_url( $pk_chip['url'] ); ?>">
+			<a class="pk-chosen-chip" href="<?php echo esc_url( $pk_chip['url'] ); ?>" aria-label="<?php echo esc_attr( $pk_chip['text'] . ' — ' . $pk_close ); ?>">
 				<?php if ( ! empty( $pk_chip['html'] ) ) : ?>
 					<?php echo $pk_chip['html']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- fragments échappés à la construction. ?>
 				<?php else : ?>
 					<span><?php echo esc_html( $pk_chip['text'] ); ?></span>
 				<?php endif; ?>
 				<span class="pk-chosen-x" aria-hidden="true">×</span>
-				<span class="screen-reader-text"><?php echo esc_html( $pk_close ); ?></span>
 			</a>
 		<?php endforeach; ?>
 	</div>
 	<a class="pk-chosen-clear" href="<?php echo esc_url( $pk_clear_url ); ?>"><?php echo esc_html( $pk_clear ); ?></a>
 </div>
+<?php endif; ?>
+<?php if ( $pk_districts ) : ?>
+<nav class="pk-quartiers" aria-label="<?php echo esc_attr( $pk_say( 'Ville' ) ); ?>">
+	<?php foreach ( $pk_districts as $pk_row ) : ?>
+		<?php
+		$pk_name = isset( $pk_row['district'] ) ? (string) $pk_row['district'] : '';
+		if ( '' === $pk_name ) {
+			continue;
+		}
+		$pk_label = class_exists( 'Partikulier_Listing_I18n' ) ? Partikulier_Listing_I18n::localized_place( $pk_name, $pk_lang ) : $pk_name;
+		$pk_on    = ( $pk_name === $pk_quartier_ok );
+		$pk_href  = $pk_on ? $pk_drop( 'pk_quartier' ) : add_query_arg( 'pk_quartier', $pk_name, remove_query_arg( array( 'pk_quartier', 'paged' ) ) );
+		?>
+		<a class="pk-quartier<?php echo $pk_on ? ' is-on' : ''; ?>" href="<?php echo esc_url( $pk_href ); ?>"<?php echo $pk_on ? ' aria-current="true"' : ''; ?>><?php echo esc_html( $pk_label ); ?></a>
+	<?php endforeach; ?>
+</nav>
+<?php endif; ?>

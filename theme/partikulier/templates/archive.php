@@ -23,6 +23,10 @@ $is_type = $queried instanceof WP_Term && PARTIKULIER_ESTATIK_TYPE_TAXONOMY === 
 <section class="pk-archive">
 		<style>
 		@media (max-width:767px){
+			.pk-chosen{flex-wrap:nowrap!important}
+			.pk-chosen-list,.pk-quartiers{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto!important;scrollbar-width:none}
+			.pk-chosen-chip,.pk-chosen-clear,.pk-quartier{flex:0 0 auto!important}
+
 			.pk-header-search,.pk-archive>.pk-container>.pk-breadcrumb,.pk-intent-bar,.pk-intent-sentinel,.pk-archive-toolbar{display:none!important}
 			.pk-archive-head,.pk-archive-search,.pk-archive-search .pk-search,.pk-archive-search .pk-archive-trust{display:block!important}
 			.pk-archive-search .pk-archive-trust{display:flex!important}
