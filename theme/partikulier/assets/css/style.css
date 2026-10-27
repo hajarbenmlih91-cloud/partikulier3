@@ -9014,3 +9014,24 @@ html body .pk-find-panel .pk-find-chip:has(input:checked):not(.pk-find-check) * 
 	.pk-sort-float { display: none !important; }
 }
 
+/* 6.20.199 — mobile : la barre de filtre est le départ, le reste vient après. */
+@media (max-width: 767px) {
+	html body .pk-archive-head,
+	html body .pk-archive-search .pk-find-tabs,
+	html body .pk-archive-search .pk-find-card,
+	html body .pk-archive-search .pk-archive-trust,
+	html body .pk-archive-search .pk-find-need {
+		display: none !important;
+	}
+	html body .pk-archive-actions,
+	html body .pk-archive-actions[hidden] {
+		display: block !important;
+		position: sticky;
+		top: var(--pk-header-h, 0px);
+		z-index: 40;
+		margin: 0 0 .75rem;
+		background: #fff;
+		border-bottom: 1px solid #e6e5df;
+	}
+}
+
