@@ -135,6 +135,54 @@ if ( class_exists( 'Partikulier_Localization' ) ) {
 	</div>
 </div>
 <?php endif; ?>
+<?php
+$pk_bar_t = static function ( $fr ) {
+	return class_exists( 'Partikulier_Localization' )
+		? Partikulier_Localization::translate_polylang_string( $fr, $fr, 'partikulier' )
+		: $fr;
+};
+$pk_bar_archive = function_exists( 'pk_properties_archive_url' ) ? pk_properties_archive_url() : home_url( '/' );
+if ( is_wp_error( $pk_bar_archive ) || ! is_string( $pk_bar_archive ) ) {
+	$pk_bar_archive = home_url( '/' );
+}
+$pk_bar_deposit = function_exists( 'pk_page_url' ) ? pk_page_url( 'deposer', '/deposer/' ) : home_url( '/deposer/' );
+$pk_bar_favoris = function_exists( 'pk_page_url' ) ? pk_page_url( 'favoris', '/favoris/' ) : home_url( '/favoris/' );
+$pk_bar_space   = function_exists( 'pk_page_url' ) ? pk_page_url( 'mes-annonces', '/mes-annonces/' ) : home_url( '/mes-annonces/' );
+$pk_bar_login   = function_exists( 'pk_login_page_url' ) ? pk_login_page_url( $pk_bar_space ) : wp_login_url( $pk_bar_space );
+$pk_bar_publish = class_exists( 'Partikulier_Settings' ) ? Partikulier_Settings::get_localized( 'btn_deposit', 'Publier gratuitement' ) : 'Publier gratuitement';
+if ( ! is_string( $pk_bar_publish ) || '' === trim( $pk_bar_publish ) ) {
+	$pk_bar_publish = 'Publier gratuitement';
+}
+?>
+<nav class="pk-appbar" data-pk-appbar>
+	<button type="button" class="pk-appbar-item" data-pk-app-menu aria-expanded="false" aria-controls="pk-mobile-menu">
+		<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+		<span><?php echo esc_html( $pk_bar_t( 'Menu principal' ) ); ?></span>
+	</button>
+	<a class="pk-appbar-item" data-pk-app-search href="<?php echo esc_url( $pk_bar_archive ); ?>">
+		<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="m20 20-3.5-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+		<span><?php echo esc_html( $pk_bar_t( 'Rechercher' ) ); ?></span>
+	</a>
+	<a class="pk-appbar-publish" href="<?php echo esc_url( $pk_bar_deposit ); ?>">
+		<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+		<span><?php echo esc_html( $pk_bar_publish ); ?></span>
+	</a>
+	<a class="pk-appbar-item" href="<?php echo esc_url( $pk_bar_favoris ); ?>">
+		<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+		<span><?php echo esc_html( $pk_bar_t( 'Favoris' ) ); ?></span>
+	</a>
+	<?php if ( is_user_logged_in() ) : ?>
+		<a class="pk-appbar-item" href="<?php echo esc_url( $pk_bar_space ); ?>">
+			<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5.5 19.2a6.5 6.5 0 0 1 13 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+			<span><?php echo esc_html( $pk_bar_t( 'Mon espace' ) ); ?></span>
+		</a>
+	<?php else : ?>
+		<a class="pk-appbar-item" href="<?php echo esc_url( $pk_bar_login ); ?>">
+			<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M5.5 19.2a6.5 6.5 0 0 1 13 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+			<span><?php echo esc_html( $pk_bar_t( 'Se connecter' ) ); ?></span>
+		</a>
+	<?php endif; ?>
+</nav>
 <?php wp_footer(); ?>
 </body>
 </html>
