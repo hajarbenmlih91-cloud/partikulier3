@@ -8789,3 +8789,65 @@ html.pk-find-modal .pk-find-type-backdrop {
 		grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
 	}
 }
+
+/* 6.20.191 — mobile : critères et quartiers sur une seule ligne défilante. */
+.pk-quartiers {
+	display: flex;
+	flex-wrap: nowrap;
+	gap: 8px;
+	margin: 0 0 1.25rem;
+	overflow-x: auto;
+	overscroll-behavior-x: contain;
+	-webkit-overflow-scrolling: touch;
+	scrollbar-width: none;
+}
+.pk-quartiers::-webkit-scrollbar { display: none; }
+.pk-quartier {
+	flex: 0 0 auto;
+	display: inline-flex;
+	align-items: center;
+	min-height: 36px;
+	padding: 0 14px;
+	border: 1px solid #e6e5df;
+	border-radius: 999px;
+	background: #fff;
+	color: #161715;
+	font-size: .92rem;
+	font-weight: 700;
+	text-decoration: none;
+	white-space: nowrap;
+}
+.pk-quartier.is-on,
+.pk-quartier[aria-current="true"] {
+	background: #323232;
+	border-color: #323232;
+	color: #fff;
+}
+.pk-quartier:hover,
+.pk-quartier:focus-visible {
+	border-color: #161715;
+	color: #161715;
+}
+.pk-quartier.is-on:hover,
+.pk-quartier.is-on:focus-visible {
+	color: #fff;
+}
+@media (max-width: 767px) {
+	.pk-chosen {
+		flex-wrap: nowrap;
+		align-items: stretch;
+	}
+	.pk-chosen-list {
+		flex-wrap: nowrap;
+		overflow-x: auto;
+		overscroll-behavior-x: contain;
+		-webkit-overflow-scrolling: touch;
+		scrollbar-width: none;
+		min-width: 0;
+	}
+	.pk-chosen-list::-webkit-scrollbar { display: none; }
+	.pk-chosen-chip,
+	.pk-chosen-clear {
+		flex: 0 0 auto;
+	}
+}

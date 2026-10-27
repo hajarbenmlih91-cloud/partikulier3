@@ -844,6 +844,27 @@ class Partikulier_Search_Filters {
 			) );
 		}
 
+		$pk_quartier = '';
+		if ( isset( $_GET['pk_quartier'] ) && is_scalar( $_GET['pk_quartier'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			$pk_quartier = sanitize_text_field( wp_unslash( $_GET['pk_quartier'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		}
+		if ( '' !== $pk_quartier && class_exists( 'Partikulier_Morocco_Places' ) ) {
+			$pk_known = false;
+			foreach ( Partikulier_Morocco_Places::reference() as $pk_list ) {
+				if ( in_array( $pk_quartier, $pk_list, true ) ) {
+					$pk_known = true;
+					break;
+				}
+			}
+			if ( $pk_known ) {
+				self::push_meta( $query, array(
+					'key'     => '_pk_district_name',
+					'value'   => $pk_quartier,
+					'compare' => '=',
+				) );
+			}
+		}
+
 		$known = self::amenity_catalog();
 		foreach ( self::amenity_request() as $id ) {
 			if ( ! isset( $known[ $id ] ) ) {
