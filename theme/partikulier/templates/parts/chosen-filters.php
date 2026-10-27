@@ -342,7 +342,8 @@ $pk_clear_url = $pk_drop( array( 's', 'es_city', 'location', 'es_type', 'es_acti
 </div>
 <?php if ( $pk_chips ) : ?>
 <div class="pk-chosen">
-	<div class="pk-chosen-list">
+	<div class="pk-scroll-hint" data-pk-scroll-hint>
+	<div class="pk-chosen-list" data-pk-scroll-hint-row>
 		<?php foreach ( $pk_chips as $pk_chip ) : ?>
 			<a class="pk-chosen-chip" href="<?php echo esc_url( $pk_chip['url'] ); ?>" aria-label="<?php echo esc_attr( $pk_chip['text'] . ' — ' . $pk_close ); ?>">
 				<?php if ( ! empty( $pk_chip['html'] ) ) : ?>
@@ -353,6 +354,10 @@ $pk_clear_url = $pk_drop( array( 's', 'es_city', 'location', 'es_type', 'es_acti
 				<span class="pk-chosen-x" aria-hidden="true">×</span>
 			</a>
 		<?php endforeach; ?>
+	</div>
+	<button type="button" class="pk-scroll-hint-arrow" data-pk-scroll-hint-go hidden aria-hidden="true" tabindex="-1">
+		<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+	</button>
 	</div>
 	<a class="pk-chosen-clear" href="<?php echo esc_url( $pk_clear_url ); ?>"><?php echo esc_html( $pk_clear ); ?></a>
 </div>

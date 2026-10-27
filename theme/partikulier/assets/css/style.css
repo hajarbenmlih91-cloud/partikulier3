@@ -9164,3 +9164,46 @@ html body .pk-quartiers-more-chip:focus-visible {
 }
 html.pk-places-open { overflow: hidden; }
 
+/* 6.20.202 — flèche de défilement : droite, ou gauche en arabe. */
+.pk-scroll-hint { position: relative; min-width: 0; }
+.pk-scroll-hint-arrow {
+	display: none;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	margin: 0;
+	padding: 0;
+	border: 1px solid #e6e5df;
+	border-radius: 999px;
+	background: #fff;
+	color: #161715;
+	cursor: pointer;
+}
+.pk-scroll-hint-arrow[hidden] { display: none !important; }
+.pk-scroll-hint-arrow svg { display: block; }
+html[dir="rtl"] .pk-scroll-hint-arrow svg { transform: scaleX(-1); }
+@media (max-width: 767px) {
+	html body .pk-scroll-hint-arrow {
+		display: inline-flex;
+		position: absolute;
+		z-index: 3;
+		inset-inline-end: 4px;
+		top: 50%;
+		transform: translateY(-50%);
+		box-shadow: 0 0 0 8px #fff;
+	}
+	html body .pk-scroll-hint .pk-filter-chips,
+	html body .pk-scroll-hint .pk-chosen-list {
+		padding-inline-end: 44px;
+	}
+	html body .pk-chosen .pk-scroll-hint {
+		flex: 1 1 auto;
+		width: 100%;
+		min-width: 0;
+	}
+}
+@media (min-width: 768px) {
+	html body .pk-scroll-hint-arrow { display: none !important; }
+}
+

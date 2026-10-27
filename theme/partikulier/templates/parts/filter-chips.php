@@ -41,7 +41,8 @@ $pk_chips = array(
 	array( 'label' => $pk_chip( 'Prix' ), 'icon' => '' ),
 );
 ?>
-<div class="pk-filter-chips" role="group" aria-label="<?php echo esc_attr( $pk_chip( 'Filtres' ) ); ?>">
+<div class="pk-scroll-hint" data-pk-scroll-hint>
+<div class="pk-filter-chips" data-pk-scroll-hint-row role="group" aria-label="<?php echo esc_attr( $pk_chip( 'Filtres' ) ); ?>">
 	<?php foreach ( $pk_chips as $pk_chip_row ) : ?>
 		<button type="button" class="pk-filter-chip" data-pk-open-find>
 			<?php if ( 'filter' === $pk_chip_row['icon'] ) : ?>
@@ -54,3 +55,8 @@ $pk_chips = array(
 		</button>
 	<?php endforeach; ?>
 </div>
+<button type="button" class="pk-scroll-hint-arrow" data-pk-scroll-hint-go hidden aria-hidden="true" tabindex="-1">
+	<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M10 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+</button>
+</div>
+

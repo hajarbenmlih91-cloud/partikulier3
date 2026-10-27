@@ -2407,3 +2407,67 @@ function pkLimitTitle(value) {
 	});
 }());
 
+/* 6.20.202 — flèche : droite en français et anglais, gauche en arabe. */
+(function () {
+	"use strict";
+	function rtl() {
+		return document.documentElement.getAttribute("dir") === "rtl";
+	}
+	function scrollVisual(row, dx) {
+		var child = row.querySelector(".pk-filter-chip, .pk-chosen-chip");
+		if (!child || !dx) return;
+		var before = child.getBoundingClientRect().left;
+		var start = row.scrollLeft;
+		row.scrollLeft = start + dx;
+		var moved = child.getBoundingClientRect().left - before;
+		row.scrollLeft = start;
+		if (Math.abs(moved) < 0.5) return;
+		var sign = (dx > 0 && moved < 0) || (dx < 0 && moved > 0) ? 1 : -1;
+		row.scrollBy({ left: sign * dx, behavior: "smooth" });
+	}
+	function forward(row) {
+		var box = row.getBoundingClientRect();
+		var kids = row.querySelectorAll(".pk-filter-chip, .pk-chosen-chip");
+		var toLeft = rtl();
+		for (var i = 0; i < kids.length; i++) {
+			var rect = kids[i].getBoundingClientRect();
+			if (!toLeft && rect.right > box.right + 2) return kids[i];
+			if (toLeft && rect.left < box.left - 2) return kids[i];
+		}
+		return null;
+	}
+	function paint(hint) {
+		var row = hint.querySelector("[data-pk-scroll-hint-row]");
+		var arrow = hint.querySelector("[data-pk-scroll-hint-go]");
+		if (!row || !arrow) return;
+		if (window.matchMedia("(min-width: 768px)").matches) {
+			arrow.hidden = true;
+			return;
+		}
+		arrow.hidden = !forward(row);
+	}
+	function paintAll() {
+		document.querySelectorAll("[data-pk-scroll-hint]").forEach(paint);
+	}
+	document.querySelectorAll("[data-pk-scroll-hint]").forEach(function (hint) {
+		var row = hint.querySelector("[data-pk-scroll-hint-row]");
+		if (!row) return;
+		hint.addEventListener("click", function (event) {
+			var btn = event.target.closest("[data-pk-scroll-hint-go]");
+			if (!btn) return;
+			event.preventDefault();
+			var target = forward(row);
+			if (!target) return;
+			var box = row.getBoundingClientRect();
+			var rect = target.getBoundingClientRect();
+			var dx = rtl() ? (rect.left - box.left - 12) : (rect.right - box.right + 12);
+			scrollVisual(row, dx);
+			window.setTimeout(function () { paint(hint); }, 280);
+		});
+		row.addEventListener("scroll", function () { paint(hint); }, { passive: true });
+	});
+	paintAll();
+	window.addEventListener("scroll", paintAll, { passive: true });
+	window.addEventListener("resize", paintAll);
+}());
+
