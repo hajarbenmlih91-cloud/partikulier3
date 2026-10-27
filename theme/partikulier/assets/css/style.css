@@ -8759,3 +8759,33 @@ html.pk-find-modal .pk-find-type-backdrop {
 	text-align: center;
 	margin: 1rem 0 0;
 }
+
+/* 6.20.190 — bureau : plus de colonne latérale, les annonces prennent toute la largeur. */
+@media (min-width: 768px) {
+	body .pk-archive .pk-filters,
+	body .pk-archive .pk-filter-toggle,
+	body .pk-archive .pk-filters-backdrop {
+		display: none !important;
+	}
+	body .pk-archive-layout {
+		display: block !important;
+		width: 100% !important;
+		max-width: 100% !important;
+		grid-template-columns: minmax(0, 1fr) !important;
+	}
+	body .pk-archive-content,
+	body .pk-archive-content .pk-grid.pk-grid-cards {
+		width: 100% !important;
+		max-width: 100% !important;
+	}
+}
+@media (min-width: 901px) {
+	body .pk-archive-content .pk-grid.pk-grid-cards:not(.pk-grid-list) {
+		grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+	}
+}
+@media (min-width: 768px) and (max-width: 900px) {
+	body .pk-archive-content .pk-grid.pk-grid-cards:not(.pk-grid-list) {
+		grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+	}
+}

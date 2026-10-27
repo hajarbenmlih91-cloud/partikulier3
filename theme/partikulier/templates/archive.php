@@ -33,7 +33,17 @@ $is_type = $queried instanceof WP_Term && PARTIKULIER_ESTATIK_TYPE_TAXONOMY === 
 			.pk-archive-content .pk-grid.pk-grid-cards{display:grid!important;grid-template-columns:minmax(0,1fr)!important}
 			.pk-archive-content .pk-card{width:100%!important;max-width:100%!important;margin-inline:auto!important}
 		}
-		@media (min-width:768px){.pk-intent-bar,.pk-intent-sentinel,.pk-filter-toggle,.pk-filter-close{display:none!important}}
+		@media (min-width:768px){
+			.pk-intent-bar,.pk-intent-sentinel,.pk-filter-toggle,.pk-filter-close,.pk-archive .pk-filters{display:none!important}
+			.pk-archive-layout{display:block!important;width:100%!important;max-width:100%!important;grid-template-columns:minmax(0,1fr)!important}
+			.pk-archive-content,.pk-archive-content .pk-grid.pk-grid-cards{width:100%!important;max-width:100%!important}
+		}
+		@media (min-width:901px){
+			.pk-archive-content .pk-grid.pk-grid-cards{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important}
+		}
+		@media (min-width:768px) and (max-width:900px){
+			.pk-archive-content .pk-grid.pk-grid-cards{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important}
+		}
 		</style>
 		<div class="pk-container">
                 <?php echo Partikulier_Geo::breadcrumbs_html(); // phpcs:ignore ?>
