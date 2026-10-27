@@ -267,7 +267,7 @@ class Partikulier_Amenities {
 		return array( $data, $ids );
 	}
 
-	public static function extra_labels( $post_id ) {
+	public static function selected_ids( $post_id ) {
 		$ids = get_post_meta( $post_id, '_pk_amenities', true );
 		if ( ! is_array( $ids ) ) {
 			$ids  = array();
@@ -282,9 +282,29 @@ class Partikulier_Amenities {
 				}
 			}
 		}
+		return array_values( $ids );
+	}
+
+	public static function feature_fields( $post_id ) {
+		$ids    = self::selected_ids( $post_id );
+		$oui    = class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_polylang_string( 'Oui', 'Oui', 'partikulier' ) : 'Oui';
+		$champs = array();
+		foreach ( self::items() as $item ) {
+			if ( ! in_array( $item['id'], array( 'elevator', 'garage', 'garage_m' ), true ) ) {
+				continue;
+			}
+			if ( in_array( $item['id'], $ids, true ) ) {
+				$champs[ '_pk_' . $item['id'] ] = array( $oui, self::label( $item ), '', '' );
+			}
+		}
+		return $champs;
+	}
+
+	public static function extra_labels( $post_id ) {
+		$ids    = self::selected_ids( $post_id );
 		$sortie = array();
 		foreach ( self::items() as $item ) {
-			if ( in_array( $item['id'], array( 'terrace', 'visavis' ), true ) ) {
+			if ( in_array( $item['id'], array( 'terrace', 'visavis', 'elevator', 'garage', 'garage_m' ), true ) ) {
 				continue;
 			}
 			if ( in_array( $item['id'], $ids, true ) ) {

@@ -359,7 +359,10 @@ $gallery_ids = array();
 						'_pk_rent' => array( 'saisonnier' === get_post_meta( $post->ID, '_pk_rent', true ) ? __( 'Saisonnière', 'partikulier' ) : '', __( 'Location', 'partikulier' ), '', '' ),
 						'_pk_furnished' => array( class_exists( 'Partikulier_Amenities' ) && in_array( get_post_meta( $post->ID, '_pk_furnished', true ), array( 'meuble', 'vide' ), true ) ? Partikulier_Amenities::furnish_label( get_post_meta( $post->ID, '_pk_furnished', true ) ) : '', class_exists( 'Partikulier_Amenities' ) ? Partikulier_Amenities::furnish_label( 'title' ) : '', '', '' ),
 					);
-						foreach ( $fields as $key => $f ) {
+					if ( class_exists( 'Partikulier_Amenities' ) ) {
+						$fields = array_merge( $fields, Partikulier_Amenities::feature_fields( $post->ID ) );
+					}
+					foreach ( $fields as $key => $f ) {
 							if ( '' !== $f[0] && null !== $f[0] ) {
 								printf(
 									'<div class="pk-feature %s"><dt>%s</dt><dd>%s %s</dd></div>',

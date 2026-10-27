@@ -205,6 +205,9 @@ while ( have_posts() ) :
 								'es_property_year_remodeled' => array( $renovated, Partikulier_Localization::translate_polylang_string( 'Rénovation', 'Rénovation', 'partikulier' ), '', '', 'brut' ),
 								'es_garages'                 => array( $garage, Partikulier_Localization::translate_polylang_string( 'Parkings', 'Parkings', 'partikulier' ), '', '' ),
 							);
+							if ( class_exists( 'Partikulier_Amenities' ) ) {
+								$fields = array_merge( $fields, Partikulier_Amenities::feature_fields( get_the_ID() ) );
+							}
 							foreach ( $fields as $key => $f ) {
 								if ( '' !== $f[0] && null !== $f[0] ) {
 									printf(
