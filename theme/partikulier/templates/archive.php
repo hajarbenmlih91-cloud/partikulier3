@@ -24,17 +24,14 @@ $is_type = $queried instanceof WP_Term && PARTIKULIER_ESTATIK_TYPE_TAXONOMY === 
 		<style>
 		@media (max-width:767px){
 			.pk-chosen{flex-wrap:nowrap!important}
-			.pk-chosen-list,.pk-quartiers{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto!important;scrollbar-width:none}
-			.pk-chosen-chip,.pk-chosen-clear,.pk-quartier,.pk-quartiers-more{flex:0 0 auto!important}
-			.pk-quartiers-open:checked ~ .pk-quartiers-sheet{display:flex!important;position:fixed!important;inset:0!important;z-index:1600!important;align-items:flex-end!important;justify-content:center!important}
-			.pk-quartiers-backdrop{position:absolute;inset:0;background:rgba(22,23,21,.48)}
-			.pk-quartiers-sheet-card{position:relative;z-index:1;display:flex;flex-direction:column;width:min(560px,100%);max-height:min(78vh,640px);background:#fff;border-radius:16px 16px 0 0;overflow:hidden}
-			.pk-quartiers-sheet-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:.9rem 1rem;border-bottom:1px solid #eceae4}
-			.pk-quartiers-sheet-head h2{margin:0;font-size:1.05rem}
-			.pk-quartiers-sheet-list{overflow-y:auto!important;max-height:58vh;-webkit-overflow-scrolling:touch}
-			.pk-quartier-row{display:flex;align-items:center;min-height:48px;padding:.75rem 1rem;border-bottom:1px solid #eceae4;color:#161715;text-decoration:none;font-weight:700}
-			.pk-quartiers-sheet-less{display:block;padding:.9rem 1rem;color:#FF5757;font-weight:700;text-align:center}
-			.pk-quartiers-more{color:#FF5757;font-weight:700}
+			.pk-chosen-list{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto!important;scrollbar-width:none}
+			.pk-chosen-chip,.pk-chosen-clear{flex:0 0 auto!important}
+			.pk-quartiers-box{display:flex!important;flex-direction:column!important;align-items:stretch!important;width:100%!important;max-width:100%!important}
+			.pk-quartiers-more{align-self:flex-start!important;position:static!important;color:#FF5757!important;font-weight:700}
+			.pk-quartiers-rail{display:flex!important;align-items:center;width:100%;min-width:0;max-width:100%}
+			.pk-quartiers{display:flex!important;flex:1 1 auto;flex-wrap:nowrap!important;overflow-x:auto!important;max-height:none!important;min-width:0;scrollbar-width:none}
+			.pk-quartiers-open:checked ~ .pk-quartiers-rail .pk-quartiers{flex-wrap:wrap!important;overflow:visible!important}
+			.pk-quartiers-sheet{display:none!important}
 			.pk-quartiers-more .pk-less{display:none}
 			.pk-quartiers-open:checked ~ .pk-quartiers-more .pk-more{display:none}
 			.pk-quartiers-open:checked ~ .pk-quartiers-more .pk-less{display:inline}
@@ -50,10 +47,11 @@ $is_type = $queried instanceof WP_Term && PARTIKULIER_ESTATIK_TYPE_TAXONOMY === 
 			.pk-archive-content .pk-card{width:100%!important;max-width:100%!important;margin-inline:auto!important}
 		}
 		@media (min-width:768px){
-			.pk-quartiers{display:flex;flex-wrap:nowrap;overflow:hidden;max-height:40px}
-			.pk-quartiers-open:checked ~ .pk-quartiers{flex-wrap:wrap!important;overflow:visible!important;max-height:none!important}
+			.pk-quartiers-box{display:flex;flex-direction:column;width:100%;max-width:100%}
+			.pk-quartiers-more{align-self:flex-start;color:#FF5757;font-weight:700;cursor:pointer}
+			.pk-quartiers{display:flex;flex-wrap:nowrap;overflow-x:auto;max-height:none;min-width:0}
+			.pk-quartiers-open:checked ~ .pk-quartiers-rail .pk-quartiers{flex-wrap:wrap!important;overflow:visible!important;max-height:none!important}
 			.pk-quartiers-sheet{display:none!important}
-			.pk-quartiers-more{color:#FF5757;font-weight:700;cursor:pointer}
 			.pk-quartiers-more .pk-less{display:none}
 			.pk-quartiers-open:checked ~ .pk-quartiers-more .pk-more{display:none}
 			.pk-quartiers-open:checked ~ .pk-quartiers-more .pk-less{display:inline}
