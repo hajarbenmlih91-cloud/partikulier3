@@ -114,7 +114,7 @@ class Partikulier_Header {
 		$menu_class = is_array( $args ) ? ( $args['menu_class'] ?? 'pk-menu' ) : ( is_object( $args ) && isset( $args->menu_class ) ? $args->menu_class : 'pk-menu' );
 		echo '<ul class="' . esc_attr( $menu_class ) . '">';
 		foreach ( $items as $url => $label ) {
-				$is_current = ( untrailingslashit( $url ) === untrailingslashit( $home_link ) && is_front_page() );
+				$is_current = class_exists( 'Partikulier_Menu_Walker' ) && Partikulier_Menu_Walker::url_is_current( $url );
 			printf(
 				'<li class="pk-menu-item%s"><a href="%s">%s</a></li>',
 				$is_current ? ' pk-current' : '',
@@ -133,7 +133,35 @@ Partikulier_Header::init();
  */
 class Partikulier_Menu_Walker extends Walker_Nav_Menu {
 
-	public function start_lvl( &$output, $depth = 0, $args = null ) {
+	/**
+		 * L'option choisie de la barre, y compris si WordPress ne pose pas current-menu-item.
+		 *
+		 * @param string $url Adresse de l'entrée.
+		 * @return bool
+		 */
+		public static function url_is_current( $url ) {
+			$url = is_scalar( $url ) ? (string) $url : '';
+			if ( '' === $url ) {
+				return false;
+			}
+			$item_path = untrailingslashit( (string) wp_parse_url( $url, PHP_URL_PATH ) );
+			$raw       = isset( $_SERVER['REQUEST_URI'] ) ? wp_unslash( $_SERVER['REQUEST_URI'] ) : '';
+			$raw       = is_scalar( $raw ) ? (string) $raw : '';
+			$req_path  = untrailingslashit( (string) wp_parse_url( $raw, PHP_URL_PATH ) );
+			if ( '' === $item_path || '' === $req_path ) {
+				return false;
+			}
+			$home      = function_exists( 'pk_localized_home_url' ) ? pk_localized_home_url() : home_url( '/' );
+			$home_path = untrailingslashit( (string) wp_parse_url( $home, PHP_URL_PATH ) );
+			if ( $item_path === $home_path ) {
+				return is_front_page() || $req_path === $home_path;
+			}
+			$item_slash = trailingslashit( $item_path );
+			$req_slash  = trailingslashit( $req_path );
+			return $req_slash === $item_slash || ( strlen( $item_slash ) > 1 && 0 === strpos( $req_slash, $item_slash ) );
+		}
+
+		public function start_lvl( &$output, $depth = 0, $args = null ) {
 		$indent  = str_repeat( "\t", $depth );
 		$output .= "\n$indent<ul class=\"pk-submenu\" role=\"menu\">\n";
 	}
@@ -149,7 +177,7 @@ class Partikulier_Menu_Walker extends Walker_Nav_Menu {
 		if ( in_array( 'menu-item-has-children', $classes, true ) ) {
 			$classes[] = 'pk-has-children';
 		}
-		if ( in_array( 'current-menu-item', $classes, true ) ) {
+		if ( in_array( 'current-menu-item', $classes, true ) || in_array( 'current-menu-parent', $classes, true ) || in_array( 'current-menu-ancestor', $classes, true ) || self::url_is_current( $item->url ?? '' ) ) {
 			$classes[] = 'pk-current';
 		}
 
