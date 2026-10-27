@@ -164,7 +164,7 @@ if ( ! is_string( $pk_bar_publish ) || '' === trim( $pk_bar_publish ) ) {
 		<span><?php echo esc_html( $pk_bar_t( 'Rechercher' ) ); ?></span>
 	</a>
 	<a class="pk-appbar-publish" href="<?php echo esc_url( $pk_bar_deposit ); ?>">
-		<span class="pk-appbar-plus" aria-hidden="true"><svg viewBox="0 0 24 24" width="26" height="26"><path d="M12 5v14M5 12h14" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg></span>
+		<span class="pk-appbar-plus" aria-hidden="true"><svg viewBox="0 0 16 16" width="14" height="14"><path d="M7 2.5h2v11H7zM2.5 7h11v2h-11z" fill="#fff"/></svg></span>
 		<span><?php echo esc_html( $pk_bar_publish ); ?></span>
 	</a>
 	<a class="pk-appbar-item" href="<?php echo esc_url( $pk_bar_favoris ); ?>">
