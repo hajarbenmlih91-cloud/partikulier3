@@ -2351,9 +2351,11 @@ function pkLimitTitle(value) {
 		prev.hidden = !edge(nav, -1);
 		next.hidden = !edge(nav, 1);
 	}
-	document.querySelectorAll(".pk-quartiers-rail").forEach(function (rail) {
+	function bindRail(rail) {
+		if (!rail || rail.getAttribute("data-pk-bound") === "1") return;
 		var nav = rail.querySelector(".pk-quartiers");
 		if (!nav) return;
+		rail.setAttribute("data-pk-bound", "1");
 		rail.addEventListener("click", function (event) {
 			var btn = event.target.closest("[data-pk-quartiers-dir]");
 			if (!btn) return;
@@ -2368,28 +2370,40 @@ function pkLimitTitle(value) {
 			window.setTimeout(function () { paint(rail); }, 280);
 		});
 		nav.addEventListener("scroll", function () { paint(rail); }, { passive: true });
-		window.addEventListener("resize", function () { paint(rail); });
 		var open = document.getElementById("pk-quartiers-open");
 		if (open) open.addEventListener("change", function () { paint(rail); });
 		paint(rail);
+	}
+	window.addEventListener("resize", function () {
+		document.querySelectorAll(".pk-quartiers-rail").forEach(function (rail) {
+			if (rail.getAttribute("data-pk-bound") === "1") paint(rail);
+		});
 	});
+	document.querySelectorAll(".pk-quartiers-rail").forEach(bindRail);
+	window.pkBindQuartiers = function () {
+		document.querySelectorAll(".pk-quartiers-rail").forEach(bindRail);
+	};
 }());
 
 /* 6.20.201 — fenêtre des villes ou des quartiers. */
 (function () {
 	"use strict";
-	var box = document.querySelector("[data-pk-places]");
-	if (!box) return;
+	function placesBox() {
+		return document.querySelector("[data-pk-places]");
+	}
 	function openPlaces() {
+		var box = placesBox();
+		if (!box) return;
 		box.hidden = false;
 		document.documentElement.classList.add("pk-places-open");
 		var closeBtn = box.querySelector(".pk-places-close");
 		if (closeBtn) closeBtn.focus();
 	}
 	function closePlaces() {
-		if (box.hidden) return;
-		box.hidden = true;
+		var box = placesBox();
 		document.documentElement.classList.remove("pk-places-open");
+		if (!box || box.hidden) return;
+		box.hidden = true;
 	}
 	document.addEventListener("click", function (event) {
 		if (event.target.closest("[data-pk-open-places]")) {
@@ -2449,25 +2463,144 @@ function pkLimitTitle(value) {
 	function paintAll() {
 		document.querySelectorAll("[data-pk-scroll-hint]").forEach(paint);
 	}
-	document.querySelectorAll("[data-pk-scroll-hint]").forEach(function (hint) {
+	function bindHint(hint) {
 		var row = hint.querySelector("[data-pk-scroll-hint-row]");
-		if (!row) return;
-		hint.addEventListener("click", function (event) {
-			var btn = event.target.closest("[data-pk-scroll-hint-go]");
-			if (!btn) return;
-			event.preventDefault();
-			var target = forward(row);
-			if (!target) return;
-			var box = row.getBoundingClientRect();
-			var rect = target.getBoundingClientRect();
-			var dx = rtl() ? (rect.left - box.left - 12) : (rect.right - box.right + 12);
-			scrollVisual(row, dx);
-			window.setTimeout(function () { paint(hint); }, 280);
-		});
+		if (!row || row.getAttribute("data-pk-bound") === "1") return;
+		row.setAttribute("data-pk-bound", "1");
 		row.addEventListener("scroll", function () { paint(hint); }, { passive: true });
+	}
+	document.addEventListener("click", function (event) {
+		var btn = event.target.closest("[data-pk-scroll-hint-go]");
+		if (!btn) return;
+		var hint = btn.closest("[data-pk-scroll-hint]");
+		var row = hint && hint.querySelector("[data-pk-scroll-hint-row]");
+		if (!row) return;
+		event.preventDefault();
+		var target = forward(row);
+		if (!target) return;
+		var box = row.getBoundingClientRect();
+		var rect = target.getBoundingClientRect();
+		var dx = rtl() ? (rect.left - box.left - 12) : (rect.right - box.right + 12);
+		scrollVisual(row, dx);
+		window.setTimeout(function () { paint(hint); }, 280);
 	});
+	document.querySelectorAll("[data-pk-scroll-hint]").forEach(bindHint);
+	window.pkBindScrollHints = function () {
+		document.querySelectorAll("[data-pk-scroll-hint]").forEach(function (hint) {
+			bindHint(hint);
+			paint(hint);
+		});
+	};
 	paintAll();
 	window.addEventListener("scroll", paintAll, { passive: true });
 	window.addEventListener("resize", paintAll);
+}());
+
+/* 6.20.203 — ville, quartier, retrait : seuls les résultats changent. */
+(function () {
+	"use strict";
+	var live = document.querySelector(".pk-archive-content");
+	if (!live) return;
+	var token = 0;
+
+	function sameArchive(url) {
+		var next;
+		try { next = new URL(url, location.href); }
+		catch (err) { return false; }
+		return next.origin === location.origin && next.pathname.replace(/\/$/, "") === location.pathname.replace(/\/$/, "");
+	}
+
+	function isSwapLink(a) {
+		if (!a || !a.getAttribute("href")) return false;
+		if (a.target && a.target !== "_self") return false;
+		if (a.closest(".pk-card-cta, .pk-card-media-link, .pk-card-peek, .pk-card-action")) return false;
+		return !!a.closest(".pk-chosen-chip, .pk-results-clear, .pk-chosen-clear, .pk-quartier, .pk-places-list, .pk-sort-list, .pk-pagination");
+	}
+
+	function syncForm(doc) {
+		var form = document.querySelector(".pk-archive-search .pk-find");
+		var next = doc.querySelector(".pk-archive-search .pk-find");
+		if (!form || !next) return;
+		["s", "es_city", "es_type", "es_action", "pk_rent", "es_price_min", "es_price_max", "es_size_min", "es_size_max", "es_bedrooms_min", "pk_salons_min", "pk_furnished"].forEach(function (name) {
+			var from = next.querySelector('[name="' + name + '"]');
+			var to = form.querySelector('[name="' + name + '"]');
+			if (!from || !to || to.type === "radio" || to.type === "checkbox") return;
+			to.value = from.value;
+		});
+		next.querySelectorAll('input[type="radio"][name="pk_intent"]').forEach(function (from) {
+			var to = form.querySelector('input[type="radio"][name="pk_intent"][value="' + from.value + '"]');
+			if (to) to.checked = from.checked;
+		});
+	}
+
+	function separateKicker() {
+		var kicker = document.querySelector(".pk-quartiers-kicker");
+		if (!kicker) return;
+		var bar = document.querySelector(".pk-archive-actions.is-on");
+		var limit = 12;
+		if (bar && !bar.hidden) limit = bar.getBoundingClientRect().bottom + 24;
+		var top = kicker.getBoundingClientRect().top;
+		if (top < limit && top > limit - 120) window.scrollBy(0, top - limit);
+	}
+
+	function apply(doc, url, push) {
+		var next = doc.querySelector(".pk-archive-content");
+		var box = document.querySelector(".pk-archive-content");
+		if (!next || !box) throw new Error("missing");
+		document.documentElement.classList.remove("pk-places-open");
+		document.documentElement.classList.remove("pk-sort-open");
+		box.innerHTML = next.innerHTML;
+		var sortLabel = document.querySelector(".pk-sort-float span");
+		var nextLabel = doc.querySelector(".pk-sort-float span");
+		if (sortLabel && nextLabel) sortLabel.textContent = nextLabel.textContent;
+		var sort = document.querySelector("[data-pk-sort]");
+		var nextSort = doc.querySelector("[data-pk-sort]");
+		if (sort && nextSort) {
+			sort.innerHTML = nextSort.innerHTML;
+			sort.hidden = true;
+		}
+		syncForm(doc);
+		if (doc.title) document.title = doc.title;
+		if (push) history.pushState({ pkResults: 1 }, "", url);
+		if (window.pkBindQuartiers) window.pkBindQuartiers();
+		if (window.pkBindScrollHints) window.pkBindScrollHints();
+		separateKicker();
+	}
+
+	function swap(url, push) {
+		var mine = ++token;
+		var box = document.querySelector(".pk-archive-content");
+		if (box) box.setAttribute("aria-busy", "true");
+		fetch(url, { credentials: "same-origin", headers: { "X-Requested-With": "pk-results" } })
+			.then(function (res) {
+				if (!res.ok) throw new Error("bad");
+				return res.text();
+			})
+			.then(function (html) {
+				if (mine !== token) return;
+				apply(new DOMParser().parseFromString(html, "text/html"), url, push);
+			})
+			.catch(function () {
+				if (mine === token) location.href = url;
+			})
+			.then(function () {
+				if (mine !== token) return;
+				var current = document.querySelector(".pk-archive-content");
+				if (current) current.removeAttribute("aria-busy");
+			});
+	}
+
+	document.addEventListener("click", function (event) {
+		if (event.defaultPrevented || event.button !== 0) return;
+		if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+		var link = event.target.closest("a[href]");
+		if (!isSwapLink(link) || !sameArchive(link.href)) return;
+		event.preventDefault();
+		swap(link.href, true);
+	});
+	window.addEventListener("popstate", function () {
+		if (sameArchive(location.href)) swap(location.href, false);
+	});
+	separateKicker();
 }());
 
