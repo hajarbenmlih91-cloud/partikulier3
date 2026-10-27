@@ -8498,3 +8498,53 @@ html body.home .pk-req {
 html body.home :focus-visible {
 	outline-color: #FF5757;
 }
+
+/* 6.20.182 — arabe : flèche des villes vers la gauche. Boutons connexion, recherche et explorer au rouge du logo. */
+html[dir="rtl"] .pk-editorial-place-list a {
+	direction: rtl;
+}
+html[dir="rtl"] .pk-editorial-place-list a > span[aria-hidden],
+html[dir="rtl"] .pk-editorial-link > span[aria-hidden],
+html[dir="rtl"] .pk-editorial-more span[aria-hidden] {
+	display: inline-block;
+	transform: scaleX(-1);
+}
+html body .pk-find-submit,
+html body .pk-find-submit:hover,
+html body .pk-find-submit:active,
+html body .pk-find-submit:focus-visible,
+html body .pk-editorial-places .pk-btn,
+html body .pk-editorial-places .pk-btn:hover,
+html body .pk-editorial-places .pk-btn:active,
+html body .pk-editorial-places .pk-btn:focus-visible {
+	background: #FF5757 !important;
+	border-color: #FF5757 !important;
+	color: #fff !important;
+}
+html body .pk-find-submit:hover,
+html body .pk-find-submit:active,
+html body .pk-editorial-places .pk-btn:hover,
+html body .pk-editorial-places .pk-btn:active {
+	background: #E04D4D !important;
+	border-color: #E04D4D !important;
+}
+html body .pk-topbar-contact a[href*="connexion"],
+html body .pk-topbar-contact a[href*="login"],
+html body .pk-topbar-contact a[href*="auth_item=login"] {
+	background: #FF5757 !important;
+	color: #fff !important;
+	border-radius: 980px;
+	padding: .28rem .75rem;
+}
+html body .pk-topbar-contact a[href*="connexion"]:hover,
+html body .pk-topbar-contact a[href*="login"]:hover,
+html body .pk-topbar-contact a[href*="auth_item=login"]:hover {
+	background: #E04D4D !important;
+	color: #fff !important;
+}
+html body .pk-menu a[href*="connexion"],
+html body .pk-menu a[href*="auth_item=login"],
+html body .pk-appbar a[href*="connexion"],
+html body .pk-appbar a[href*="auth_item=login"] {
+	color: #FF5757 !important;
+}
