@@ -311,6 +311,7 @@ endforeach;
 								</aside>
 
 								<div class="pk-archive-content">
+								<?php require PARTIKULIER_DIR . '/templates/parts/chosen-filters.php'; ?>
 								<?php if ( have_posts() ) : ?>
 										<div class="pk-grid pk-grid-cards">
 												<?php
@@ -325,13 +326,7 @@ endforeach;
 										</div>
 										<?php pk_pagination(); ?>
 								<?php else : ?>
-										<div class="pk-empty">
-<h2><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Aucune annonce ne correspond à votre recherche.', 'Aucune annonce ne correspond à votre recherche.', 'partikulier' ) ); ?></h2>
-														<p><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Essayez d\'élargir vos critères ou consultez les villes populaires.', 'Essayez d\'élargir vos critères ou consultez les villes populaires.', 'partikulier' ) ); ?></p>
-																<a class="pk-btn pk-btn-outline" href="<?php echo esc_url( pk_properties_archive_url() ); ?>">
-																<?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Voir toutes les annonces', 'Voir toutes les annonces', 'partikulier' ) ); ?>
-														</a>
-										</div>
+										<?php require PARTIKULIER_DIR . '/templates/parts/empty-results.php'; ?>
 								<?php endif; ?>
 						</div>
 				</div>
