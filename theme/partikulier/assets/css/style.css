@@ -8146,7 +8146,7 @@ html[dir="rtl"] .pk-filter-chips { direction: rtl; }
 	unicode-bidi: isolate;
 }
 html[dir="rtl"] .pk-filter-chip { direction: rtl; }
-.pk-filter-chip-icon { color: #C8242B; }
+.pk-filter-chip-icon { color: #FF5757; }
 .pk-filter-chip-chevron { color: #6b6b66; }
 .pk-filter-chip:hover,
 .pk-filter-chip:active,
@@ -8216,7 +8216,7 @@ html[dir="rtl"] .pk-filter-chip { direction: rtl; }
 		margin: 0;
 		padding: 0;
 		border-radius: 50%;
-		background: #C8242B;
+		background: #FF5757;
 		color: #fff;
 		line-height: 0;
 		flex: 0 0 30px;
@@ -8231,7 +8231,7 @@ html[dir="rtl"] .pk-filter-chip { direction: rtl; }
 	.pk-appbar-publish:hover > span.pk-appbar-plus,
 	.pk-appbar-publish:active > span.pk-appbar-plus,
 	.pk-appbar-publish:focus-visible > span.pk-appbar-plus {
-		background: #9A1B21;
+		background: #E04D4D;
 	}
 	.pk-appbar-publish > span:not(.pk-appbar-plus) {
 		color: #323232;
@@ -8300,26 +8300,36 @@ html[dir="rtl"] .pk-filter-chip { direction: rtl; }
 }
 
 
-/* 6.20.177 — clic du formulaire : rouge du logo #FF5757, pas le noir.
-   Pas les cases, pas la fermeture, pas les bandeaux, pas les autres boutons. */
-.pk-form .pk-choice.is-active {
-	background: #fff !important;
-	border: 2px solid #FF5757 !important;
-	border-color: #FF5757 !important;
-}
-.pk-form .pk-choice.is-active strong { color: #161715 !important; }
-.pk-form .pk-choice.is-active span { color: #5d615a !important; }
-.pk-form .pk-choice.is-active::after {
+/* 6.20.178 — clic du formulaire : fond rouge du logo #FF5757, texte blanc, pas le noir. */
+html body .pk-form .pk-choice.is-active,
+html body .pk-submit .choice[aria-pressed="true"] {
 	background: #FF5757 !important;
-	color: #161715 !important;
-}
-.pk-form .pk-toggle-btn.is-on,
-.pk-form .pk-toggle-btn.is-on:hover,
-.pk-form .pk-toggle-btn.is-on:active {
-	background: #fff !important;
 	border: 2px solid #FF5757 !important;
 	border-color: #FF5757 !important;
-	color: #161715 !important;
+	color: #fff !important;
+}
+html body .pk-form .pk-choice.is-active strong,
+html body .pk-form .pk-choice.is-active span,
+html body .pk-form .pk-choice.is-active b,
+html body .pk-form .pk-choice.is-active small,
+html body .pk-submit .choice[aria-pressed="true"] b,
+html body .pk-submit .choice[aria-pressed="true"] small {
+	color: #fff !important;
+}
+html body .pk-form .pk-choice.is-active::after,
+html body .pk-submit .choice[aria-pressed="true"]::after {
+	background: #fff !important;
+	color: #FF5757 !important;
+}
+html body .pk-form .pk-toggle-btn.is-on,
+html body .pk-form .pk-toggle-btn.is-on:hover,
+html body .pk-form .pk-toggle-btn.is-on:active,
+html body .pk-submit .pill[aria-pressed="true"],
+html body .pk-submit .chip[aria-pressed="true"] {
+	background: #FF5757 !important;
+	border: 2px solid #FF5757 !important;
+	border-color: #FF5757 !important;
+	color: #fff !important;
 }
 .pk-submit .pk-stepper-item.is-current .pk-stepper-number {
 	border-color: #FF5757 !important;
