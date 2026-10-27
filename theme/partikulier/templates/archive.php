@@ -340,8 +340,8 @@ endforeach;
 
 <?php
 $pk_sort_now = isset( $_GET['pk_order'] ) && is_scalar( $_GET['pk_order'] ) ? sanitize_key( wp_unslash( $_GET['pk_order'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-if ( ! in_array( $pk_sort_now, array( 'recent', 'price-asc', 'price-desc' ), true ) ) {
-	$pk_sort_now = '';
+if ( ! in_array( $pk_sort_now, array( 'price-asc', 'price-desc' ), true ) ) {
+	$pk_sort_now = 'recent';
 }
 $pk_sort_label = static function ( $fr ) {
 	return class_exists( 'Partikulier_Localization' )
@@ -349,8 +349,7 @@ $pk_sort_label = static function ( $fr ) {
 		: $fr;
 };
 $pk_sort_rows = array(
-	''           => 'Pertinence',
-	'recent'     => 'Date de publication',
+	'recent'     => 'Plus récentes',
 	'price-asc'  => 'Prix croissant',
 	'price-desc' => 'Prix décroissant',
 );
@@ -359,14 +358,14 @@ $pk_sort_base = remove_query_arg( array( 'pk_order', 'paged' ) );
 <div class="pk-scroll-actions pk-archive-actions" data-pk-archive-actions hidden>
 	<div class="pk-container pk-scroll-actions__inner">
 		<button type="button" class="pk-btn pk-btn-primary" data-pk-open-find><?php echo esc_html( $pk_sort_label( 'Affiner la recherche' ) ); ?></button>
-		<button type="button" class="pk-btn pk-btn-primary" data-pk-open-sort><?php echo esc_html( $pk_sort_label( 'Trier par' ) ); ?></button>
+		<button type="button" class="pk-btn pk-btn-primary" data-pk-open-sort><?php echo esc_html( $pk_sort_label( 'Trier les annonces' ) ); ?></button>
 	</div>
 </div>
 <div class="pk-sort" data-pk-sort hidden>
 	<button type="button" class="pk-sort-backdrop" data-pk-sort-close aria-label="<?php echo esc_attr( $pk_sort_label( 'Fermer' ) ); ?>"></button>
 	<div class="pk-sort-card" role="dialog" aria-modal="true" aria-labelledby="pk-sort-title">
 		<div class="pk-sort-head">
-			<h2 id="pk-sort-title"><?php echo esc_html( $pk_sort_label( 'Trier par' ) ); ?></h2>
+			<h2 id="pk-sort-title"><?php echo esc_html( $pk_sort_label( 'Trier les annonces' ) ); ?></h2>
 			<button type="button" class="pk-sort-close" data-pk-sort-close aria-label="<?php echo esc_attr( $pk_sort_label( 'Fermer' ) ); ?>">×</button>
 		</div>
 		<ul class="pk-sort-list">
