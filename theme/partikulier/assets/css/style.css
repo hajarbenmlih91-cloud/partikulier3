@@ -8548,3 +8548,41 @@ html body .pk-appbar a[href*="connexion"],
 html body .pk-appbar a[href*="auth_item=login"] {
 	color: #FF5757 !important;
 }
+
+/* 6.20.183 — accueil : recherche, connexion, exploration au rouge du logo, dans la page. */
+html body.home .pk-find-submit,
+html body.home .pk-find-submit:hover,
+html body.home .pk-find-submit:active,
+html body.home .pk-find-submit:focus-visible,
+html body.home .pk-editorial-places a.pk-btn,
+html body.home .pk-editorial-places a.pk-btn:hover,
+html body.home .pk-editorial-places a.pk-btn:active,
+html body.home .pk-editorial-places a.pk-btn:focus-visible,
+html body.home .pk-header-search button[type="submit"],
+html body.home .pk-header-search button[type="submit"]:hover,
+html body.home .pk-header-search button[type="submit"]:active,
+html body.home .pk-topbar-contact a[href*="connexion"],
+html body.home .pk-topbar-contact a[href*="connexion"]:hover,
+html body.home .pk-main-nav a[href*="connexion"],
+html body.home .pk-main-nav a[href*="connexion"]:hover,
+html body.home .pk-mobile-menu a[href*="connexion"],
+html body.home .pk-mobile-menu a[href*="connexion"]:hover {
+	background: #FF5757 !important;
+	background-color: #FF5757 !important;
+	background-image: none !important;
+	border-color: #FF5757 !important;
+	color: #fff !important;
+}
+html body.home .pk-find-submit:hover,
+html body.home .pk-find-submit:active,
+html body.home .pk-editorial-places a.pk-btn:hover,
+html body.home .pk-editorial-places a.pk-btn:active,
+html body.home .pk-header-search button[type="submit"]:hover,
+html body.home .pk-header-search button[type="submit"]:active,
+html body.home .pk-topbar-contact a[href*="connexion"]:hover,
+html body.home .pk-main-nav a[href*="connexion"]:hover,
+html body.home .pk-mobile-menu a[href*="connexion"]:hover {
+	background: #E04D4D !important;
+	background-color: #E04D4D !important;
+	border-color: #E04D4D !important;
+}

@@ -22,6 +22,42 @@ if ( ! defined( 'ABSPATH' ) ) {
 <meta name="theme-color" content="#111111">
 <link rel="profile" href="https://gmpg.org/xfn/11">
 <?php wp_head(); ?>
+<?php if ( is_front_page() ) : ?>
+<style id="pk-home-logo-red">
+body.home .pk-find-submit,
+body.home .pk-editorial-places a.pk-btn,
+body.home .pk-header-search button[type="submit"],
+body.home .pk-topbar-contact a[href*="connexion"],
+body.home .pk-main-nav a[href*="connexion"],
+body.home .pk-mobile-menu a[href*="connexion"] {
+	background: #FF5757 !important;
+	background-color: #FF5757 !important;
+	background-image: none !important;
+	border-color: #FF5757 !important;
+	color: #fff !important;
+}
+body.home .pk-find-submit:hover,
+body.home .pk-find-submit:active,
+body.home .pk-editorial-places a.pk-btn:hover,
+body.home .pk-editorial-places a.pk-btn:active,
+body.home .pk-header-search button[type="submit"]:hover,
+body.home .pk-header-search button[type="submit"]:active,
+body.home .pk-topbar-contact a[href*="connexion"]:hover,
+body.home .pk-main-nav a[href*="connexion"]:hover,
+body.home .pk-mobile-menu a[href*="connexion"]:hover {
+	background: #E04D4D !important;
+	background-color: #E04D4D !important;
+	border-color: #E04D4D !important;
+	color: #fff !important;
+}
+body.home .pk-topbar-contact a[href*="connexion"],
+body.home .pk-main-nav a[href*="connexion"],
+body.home .pk-mobile-menu a[href*="connexion"] {
+	border-radius: 980px;
+	padding: .4rem .9rem !important;
+}
+</style>
+<?php endif; ?>
 </head>
 
 <body <?php body_class(); ?>>
