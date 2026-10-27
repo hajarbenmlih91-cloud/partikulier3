@@ -26,7 +26,12 @@ $is_type = $queried instanceof WP_Term && PARTIKULIER_ESTATIK_TYPE_TAXONOMY === 
 			.pk-header-search,.pk-archive>.pk-container>.pk-breadcrumb,.pk-intent-bar,.pk-intent-sentinel,.pk-archive-toolbar{display:none!important}
 			.pk-archive-head,.pk-archive-search,.pk-archive-search .pk-search,.pk-archive-search .pk-archive-trust{display:block!important}
 			.pk-archive-search .pk-archive-trust{display:flex!important}
-			.pk-filter-toggle{display:flex!important;width:100%}
+			.pk-filter-toggle{display:none!important}
+			.pk-archive>.pk-container{padding-inline:16px}
+			.pk-archive-layout{display:block!important;width:100%}
+			.pk-archive-content,.pk-archive-content .pk-grid.pk-grid-cards{width:100%!important;max-width:100%!important;margin-inline:auto!important}
+			.pk-archive-content .pk-grid.pk-grid-cards{display:grid!important;grid-template-columns:minmax(0,1fr)!important}
+			.pk-archive-content .pk-card{width:100%!important;max-width:100%!important;margin-inline:auto!important}
 		}
 		@media (min-width:768px){.pk-intent-bar,.pk-intent-sentinel,.pk-filter-toggle,.pk-filter-close{display:none!important}}
 		</style>
@@ -332,6 +337,54 @@ endforeach;
 				</div>
 		</div>
 </section>
+
+<?php
+$pk_sort_now = isset( $_GET['pk_order'] ) && is_scalar( $_GET['pk_order'] ) ? sanitize_key( wp_unslash( $_GET['pk_order'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+if ( ! in_array( $pk_sort_now, array( 'recent', 'price-asc', 'price-desc' ), true ) ) {
+	$pk_sort_now = '';
+}
+$pk_sort_label = static function ( $fr ) {
+	return class_exists( 'Partikulier_Localization' )
+		? Partikulier_Localization::translate_polylang_string( $fr, $fr, 'partikulier' )
+		: $fr;
+};
+$pk_sort_rows = array(
+	''           => 'Pertinence',
+	'recent'     => 'Date de publication',
+	'price-asc'  => 'Prix croissant',
+	'price-desc' => 'Prix décroissant',
+);
+$pk_sort_base = remove_query_arg( array( 'pk_order', 'paged' ) );
+?>
+<div class="pk-scroll-actions pk-archive-actions" data-pk-archive-actions hidden>
+	<div class="pk-container pk-scroll-actions__inner">
+		<button type="button" class="pk-btn pk-btn-primary" data-pk-open-find><?php echo esc_html( $pk_sort_label( 'Affiner la recherche' ) ); ?></button>
+		<button type="button" class="pk-btn pk-btn-primary" data-pk-open-sort><?php echo esc_html( $pk_sort_label( 'Trier par' ) ); ?></button>
+	</div>
+</div>
+<div class="pk-sort" data-pk-sort hidden>
+	<button type="button" class="pk-sort-backdrop" data-pk-sort-close aria-label="<?php echo esc_attr( $pk_sort_label( 'Fermer' ) ); ?>"></button>
+	<div class="pk-sort-card" role="dialog" aria-modal="true" aria-labelledby="pk-sort-title">
+		<div class="pk-sort-head">
+			<h2 id="pk-sort-title"><?php echo esc_html( $pk_sort_label( 'Trier par' ) ); ?></h2>
+			<button type="button" class="pk-sort-close" data-pk-sort-close aria-label="<?php echo esc_attr( $pk_sort_label( 'Fermer' ) ); ?>">×</button>
+		</div>
+		<ul class="pk-sort-list">
+			<?php foreach ( $pk_sort_rows as $pk_sort_key => $pk_sort_fr ) : ?>
+				<?php
+				$pk_sort_href = '' === $pk_sort_key ? $pk_sort_base : add_query_arg( 'pk_order', $pk_sort_key, $pk_sort_base );
+				$pk_sort_on   = $pk_sort_now === $pk_sort_key;
+				?>
+			<li>
+				<a href="<?php echo esc_url( $pk_sort_href ); ?>"<?php echo $pk_sort_on ? ' class="is-current" aria-current="true"' : ''; ?>>
+					<span><?php echo esc_html( $pk_sort_label( $pk_sort_fr ) ); ?></span>
+					<svg class="pk-sort-chevron" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+				</a>
+			</li>
+			<?php endforeach; ?>
+		</ul>
+	</div>
+</div>
 
 <?php
 get_footer();

@@ -2069,3 +2069,93 @@ function pkLimitTitle(value) {
 	window.addEventListener("scroll", sync, { passive: true });
 	window.addEventListener("resize", sync);
 }());
+
+
+/* 6.20.170 — suivi des annonces, filtre et tri. */
+(function () {
+	"use strict";
+	var bar = document.querySelector("[data-pk-archive-actions]");
+	var search = document.querySelector(".pk-archive-search");
+	var sort = document.querySelector("[data-pk-sort]");
+
+	function headerTop() {
+		var top = 0;
+		[document.querySelector(".pk-site-header"), document.querySelector(".pk-main-nav")].forEach(function (el) {
+			if (!el) return;
+			var box = el.getBoundingClientRect();
+			if (box.bottom > top && box.top < 120) top = Math.round(box.bottom);
+		});
+		return Math.max(0, top);
+	}
+
+	function syncBar() {
+		if (!bar || !search) return;
+		if (window.matchMedia("(min-width: 768px)").matches) {
+			bar.classList.remove("is-on");
+			bar.hidden = true;
+			return;
+		}
+		var top = headerTop();
+		document.documentElement.style.setProperty("--pk-header-h", top + "px");
+		var past = search.getBoundingClientRect().bottom < top + 4;
+		bar.hidden = !past;
+		bar.classList.toggle("is-on", past);
+	}
+
+	function openFind() {
+		var opener = document.querySelector(".pk-find-open");
+		if (!opener) return;
+		opener.checked = true;
+		opener.dispatchEvent(new Event("change", { bubbles: true }));
+	}
+
+	function openSort() {
+		if (!sort) return;
+		sort.hidden = false;
+		document.documentElement.classList.add("pk-sort-open");
+		var closeBtn = sort.querySelector(".pk-sort-close");
+		if (closeBtn) closeBtn.focus();
+	}
+
+	function closeSort() {
+		if (!sort || sort.hidden) return;
+		sort.hidden = true;
+		document.documentElement.classList.remove("pk-sort-open");
+	}
+
+	document.addEventListener("click", function (event) {
+		if (event.target.closest("[data-pk-open-find]")) {
+			event.preventDefault();
+			openFind();
+			return;
+		}
+		var submit = event.target.closest(".pk-find-submit");
+		if (submit && window.matchMedia("(max-width: 767px)").matches) {
+			var opener = document.querySelector(".pk-find-open");
+			if (opener && !opener.checked) {
+				event.preventDefault();
+				openFind();
+				return;
+			}
+		}
+		if (event.target.closest("[data-pk-open-sort]")) {
+			event.preventDefault();
+			openSort();
+			return;
+		}
+		if (event.target.closest("[data-pk-sort-close]")) {
+			event.preventDefault();
+			closeSort();
+		}
+	});
+
+	document.addEventListener("keydown", function (event) {
+		if (event.key === "Escape") closeSort();
+	});
+
+	if (bar && search) {
+		syncBar();
+		window.addEventListener("scroll", syncBar, { passive: true });
+		window.addEventListener("resize", syncBar);
+	}
+}());
