@@ -2159,3 +2159,32 @@ function pkLimitTitle(value) {
 		window.addEventListener("resize", syncBar);
 	}
 }());
+
+/* 6.20.174 — barre mobile : menu existant, recherche existante. */
+(function () {
+	"use strict";
+	var menu = document.querySelector("[data-pk-app-menu]");
+	var toggle = document.querySelector(".pk-nav-toggle");
+	function closeMenu() {
+		if (toggle && toggle.classList.contains("pk-open")) toggle.click();
+		if (menu) menu.setAttribute("aria-expanded", "false");
+	}
+	if (menu && toggle) {
+		menu.addEventListener("click", function () {
+			toggle.click();
+			menu.setAttribute("aria-expanded", toggle.getAttribute("aria-expanded") || "false");
+		});
+	}
+	document.addEventListener("click", function (event) {
+		var search = event.target.closest("[data-pk-app-search]");
+		var chip = event.target.closest("[data-pk-open-find]");
+		if (!search && !chip) return;
+		if (chip || search) closeMenu();
+		if (!search) return;
+		var opener = document.querySelector(".pk-find-open");
+		if (!opener) return;
+		event.preventDefault();
+		opener.checked = true;
+		opener.dispatchEvent(new Event("change", { bubbles: true }));
+	});
+}());

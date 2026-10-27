@@ -355,10 +355,46 @@ $pk_sort_rows = array(
 );
 $pk_sort_base = remove_query_arg( array( 'pk_order', 'paged' ) );
 ?>
+<?php
+$pk_chip = static function ( $fr ) {
+	$lang = class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::current_language() : 'fr';
+	$out  = class_exists( 'Partikulier_Localization' )
+		? Partikulier_Localization::translate_polylang_string( $fr, $fr, 'partikulier' )
+		: $fr;
+	if ( 'ar' === $lang && 'Salons' === $fr ) {
+		return 'غرف الجلوس';
+	}
+	if ( 'fr' === $lang || $out !== $fr ) {
+		return $out;
+	}
+	$extra = array(
+		'À vendre'    => array( 'en' => 'For sale', 'ar' => 'للبيع' ),
+		'À louer'     => array( 'en' => 'For rent', 'ar' => 'للكراء' ),
+		'Saisonnière' => array( 'en' => 'Seasonal', 'ar' => 'موسمية' ),
+		'Prix'        => array( 'en' => 'Price', 'ar' => 'السعر' ),
+	);
+	return isset( $extra[ $fr ][ $lang ] ) ? $extra[ $fr ][ $lang ] : $fr;
+};
+$pk_chip_lang   = class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::current_language() : 'fr';
+$pk_chip_season = ( 'fr' === $pk_chip_lang ) ? 'Location saisonnière' : $pk_chip( 'Saisonnière' );
+$pk_chips       = array(
+	$pk_chip( 'Type de bien' ),
+	$pk_chip( 'Chambres' ),
+	$pk_chip( 'À vendre' ),
+	$pk_chip( 'À louer' ),
+	$pk_chip_season,
+	$pk_chip( 'Prix' ),
+	$pk_chip( 'Surface' ),
+	$pk_chip( 'Salons' ),
+	$pk_chip( 'Ville' ),
+	$pk_chip( 'Filtres' ),
+);
+?>
 <div class="pk-scroll-actions pk-archive-actions" data-pk-archive-actions hidden>
-	<div class="pk-container pk-scroll-actions__inner">
-		<button type="button" class="pk-btn pk-btn-primary" data-pk-open-find><?php echo esc_html( $pk_sort_label( 'Affiner la recherche' ) ); ?></button>
-		<button type="button" class="pk-btn pk-btn-primary" data-pk-open-sort><?php echo esc_html( $pk_sort_label( 'Trier les annonces' ) ); ?></button>
+	<div class="pk-filter-chips" dir="ltr" role="group" aria-label="<?php echo esc_attr( $pk_chip( 'Filtres' ) ); ?>">
+		<?php foreach ( $pk_chips as $pk_chip_label ) : ?>
+			<button type="button" class="pk-filter-chip" data-pk-open-find><?php echo esc_html( $pk_chip_label ); ?></button>
+		<?php endforeach; ?>
 	</div>
 </div>
 <div class="pk-sort" data-pk-sort hidden>
