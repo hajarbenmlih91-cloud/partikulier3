@@ -1141,6 +1141,130 @@ class Partikulier_Search_Filters {
 	 *
 	 * @return void
 	 */
+	/**
+	 * Annonces publiées pour les filtres courants, sans les clés retirées.
+	 *
+	 * @param array<int,string> $drop Clés GET ignorées pour cette facette.
+	 * @return array<int,int>
+	 */
+	public static function matching_ids( array $drop ) {
+		$saved = $_GET;
+		foreach ( $drop as $key ) {
+			unset( $_GET[ $key ] );
+		}
+		$lang = function_exists( 'pll_current_language' ) ? (string) pll_current_language( 'slug' ) : '';
+		$args = array(
+			'post_type'              => PARTIKULIER_ESTATIK_POST_TYPE,
+			'post_status'            => 'publish',
+			'posts_per_page'         => -1,
+			'nopaging'               => true,
+			'fields'                 => 'ids',
+			'no_found_rows'          => true,
+			'update_post_meta_cache' => false,
+			'update_post_term_cache' => false,
+			'ignore_sticky_posts'    => true,
+			'pk_count'               => 1,
+		);
+		if ( class_exists( 'Partikulier_Dashboard' ) ) {
+			$args['meta_query'] = array( Partikulier_Dashboard::active_listing_meta_query() ); // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- une requête, identifiants seulement
+		}
+		if ( in_array( $lang, array( 'fr', 'en', 'ar' ), true ) ) {
+			$args['lang'] = $lang;
+		}
+		try {
+			$query = new WP_Query( $args );
+			$ids   = array_map( 'absint', (array) $query->posts );
+			wp_reset_postdata();
+			return array_values( array_filter( $ids ) );
+		} finally {
+			$_GET = $saved;
+		}
+	}
+
+	/**
+	 * Nombre d'annonces par ville du référentiel, hors ville choisie.
+	 *
+	 * @param array<string,array<int,int>> $term_sets Ville => identifiants de termes.
+	 * @return array<string,int>
+	 */
+	public static function city_counts( array $term_sets ) {
+		$counts = array();
+		foreach ( $term_sets as $key => $term_ids ) {
+			$counts[ (string) $key ] = 0;
+		}
+		$post_ids = self::matching_ids( array( 'es_city', 'location', 'pk_quartier', 's', 'paged' ) );
+		if ( ! $post_ids || ! $term_sets ) {
+			return $counts;
+		}
+		global $wpdb;
+		$in   = implode( ',', array_map( 'absint', $post_ids ) );
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT tr.object_id, tt.term_id FROM {$wpdb->term_relationships} tr INNER JOIN {$wpdb->term_taxonomy} tt ON tt.term_taxonomy_id = tr.term_taxonomy_id WHERE tt.taxonomy = %s AND tr.object_id IN ({$in})",
+				PARTIKULIER_ESTATIK_LOCATION_TAXONOMY
+			)
+		); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- identifiants déjà absint
+		$map = array();
+		foreach ( $term_sets as $key => $term_ids ) {
+			foreach ( (array) $term_ids as $term_id ) {
+				$map[ (int) $term_id ][] = (string) $key;
+			}
+		}
+		$seen = array();
+		foreach ( (array) $rows as $row ) {
+			$term_id = (int) $row->term_id;
+			if ( empty( $map[ $term_id ] ) ) {
+				continue;
+			}
+			foreach ( $map[ $term_id ] as $key ) {
+				$mark = $key . ':' . (int) $row->object_id;
+				if ( isset( $seen[ $mark ] ) ) {
+					continue;
+				}
+				$seen[ $mark ] = true;
+				$counts[ $key ]++;
+			}
+		}
+		return $counts;
+	}
+
+	/**
+	 * Nombre d'annonces par quartier, dans la ville déjà filtrée.
+	 *
+	 * @param array<int,string> $names Noms stockés.
+	 * @return array<string,int>
+	 */
+	public static function district_counts( array $names ) {
+		$counts = array();
+		foreach ( $names as $name ) {
+			$counts[ (string) $name ] = 0;
+		}
+		$post_ids = self::matching_ids( array( 'pk_quartier', 'paged' ) );
+		if ( ! $post_ids || ! $names ) {
+			return $counts;
+		}
+		global $wpdb;
+		$in   = implode( ',', array_map( 'absint', $post_ids ) );
+		$rows = $wpdb->get_results(
+			"SELECT post_id, meta_value FROM {$wpdb->postmeta} WHERE meta_key = '_pk_district_name' AND post_id IN ({$in}) AND meta_value <> ''"
+		); // phpcs:ignore WordPress.DB.DirectDatabaseQuery,WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- identifiants déjà absint
+		$allow = array_fill_keys( array_map( 'strval', $names ), true );
+		$seen  = array();
+		foreach ( (array) $rows as $row ) {
+			$name = (string) $row->meta_value;
+			if ( ! isset( $allow[ $name ] ) ) {
+				continue;
+			}
+			$mark = $name . ':' . (int) $row->post_id;
+			if ( isset( $seen[ $mark ] ) ) {
+				continue;
+			}
+			$seen[ $mark ] = true;
+			$counts[ $name ]++;
+		}
+		return $counts;
+	}
+
 	public static function ajax_count() {
 		check_ajax_referer( 'pk_public', 'nonce' );
 		$allowed = array(

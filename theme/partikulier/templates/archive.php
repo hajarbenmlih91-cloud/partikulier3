@@ -56,7 +56,6 @@ $is_type = $queried instanceof WP_Term && PARTIKULIER_ESTATIK_TYPE_TAXONOMY === 
 		@media (min-width:768px){
 			.pk-quartiers-box{display:flex;flex-direction:column;width:100%;max-width:100%}
 			.pk-quartiers-more{align-self:flex-start;color:#FF5757;font-weight:700;cursor:pointer}
-			.pk-quartiers-more-chip{display:none!important}
 			.pk-results-clear{display:none!important}
 			.pk-quartiers{display:flex;flex-wrap:nowrap;overflow-x:auto;max-height:none;min-width:0}
 			.pk-quartiers-open:checked ~ .pk-quartiers-rail .pk-quartiers{flex-wrap:wrap!important;overflow:visible!important;max-height:none!important}
