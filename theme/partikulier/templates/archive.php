@@ -41,7 +41,8 @@ $is_type = $queried instanceof WP_Term && PARTIKULIER_ESTATIK_TYPE_TAXONOMY === 
 			.pk-results-tools.has-chips .pk-results-meta,.pk-chosen-clear{display:none!important}
 			.pk-results-clear{display:inline-flex!important;margin-top:.45rem;color:#FF5757;font-weight:700;text-decoration:none}
 			.pk-chosen-list{width:100%!important}
-			.pk-quartiers-kicker{margin-top:16px!important}
+			.pk-archive-search{margin:0 0 32px!important}
+			.pk-quartiers-kicker{margin-top:28px!important}
 
 			.pk-header-search,.pk-archive>.pk-container>.pk-breadcrumb,.pk-intent-bar,.pk-intent-sentinel,.pk-archive-toolbar{display:none!important}
 			.pk-archive-head,.pk-archive-search,.pk-archive-search .pk-search,.pk-archive-search .pk-archive-trust{display:block!important}
@@ -349,7 +350,7 @@ endforeach;
 														</div>
 								</aside>
 
-								<div class="pk-archive-content">
+								<div class="pk-archive-content" id="pk-archive-results">
 <?php
 				$pk_sort_now = isset( $_GET['pk_order'] ) && is_scalar( $_GET['pk_order'] ) ? sanitize_key( wp_unslash( $_GET['pk_order'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 				if ( ! in_array( $pk_sort_now, array( 'recent', 'date-asc', 'price-asc', 'price-desc' ), true ) ) {

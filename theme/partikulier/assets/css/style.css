@@ -9017,7 +9017,7 @@ html body .pk-find-panel .pk-find-chip:has(input:checked):not(.pk-find-check) * 
 /* 6.20.200 — la barre suit au scroll, avec un blanc sous les pastilles. */
 @media (max-width: 767px) {
 	html body .pk-archive-actions.is-on {
-		padding-bottom: 28px;
+		padding-bottom: 40px;
 		background: #fff;
 	}
 	html body .pk-quartiers-more-chip,
@@ -9205,5 +9205,18 @@ html[dir="rtl"] .pk-scroll-hint-arrow svg { transform: scaleX(-1); }
 }
 @media (min-width: 768px) {
 	html body .pk-scroll-hint-arrow { display: none !important; }
+}
+
+/* 6.20.203 — espace sous la recherche, résultats seuls. */
+@media (max-width: 767px) {
+	html body .pk-archive-search {
+		margin-bottom: 32px !important;
+	}
+	html body .pk-quartiers-kicker {
+		margin-top: 28px !important;
+	}
+}
+html body .pk-archive-content[aria-busy="true"] {
+	opacity: .55;
 }
 
