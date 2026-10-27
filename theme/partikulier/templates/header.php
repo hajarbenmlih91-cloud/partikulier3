@@ -39,9 +39,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 	html body .pk-header-search .pk-search-bar button[type="submit"],
 	html body .pk-header-search .pk-search-bar button[type="submit"]:hover,
 	html body .pk-header-search .pk-search-bar button[type="submit"]:active,
-	html body button.pk-find-submit,
-	html body button.pk-find-submit:hover,
-	html body button.pk-find-submit:active {
+	html body button.pk-find-submit[type="submit"]:not(:disabled),
+	html body button.pk-find-submit[type="submit"]:hover:not(:disabled),
+	html body button.pk-find-submit[type="submit"]:active:not(:disabled),
+	html body button.pk-find-submit[type="submit"]:focus-visible:not(:disabled) {
 		background: #FF5757 !important;
 		background-color: #FF5757 !important;
 		border-color: #FF5757 !important;
@@ -52,8 +53,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 	html body a.pk-header-cta.pk-btn-primary:active,
 	html body .pk-header-search .pk-search-bar button[type="submit"]:hover,
 	html body .pk-header-search .pk-search-bar button[type="submit"]:active,
-	html body button.pk-find-submit:hover,
-	html body button.pk-find-submit:active {
+	html body button.pk-find-submit[type="submit"]:hover:not(:disabled),
+	html body button.pk-find-submit[type="submit"]:active:not(:disabled),
+	html body button.pk-find-submit[type="submit"]:focus-visible:not(:disabled) {
 		background: #E04D4D !important;
 		background-color: #E04D4D !important;
 		border-color: #E04D4D !important;
