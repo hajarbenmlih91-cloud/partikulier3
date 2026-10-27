@@ -9014,24 +9014,35 @@ html body .pk-find-panel .pk-find-chip:has(input:checked):not(.pk-find-check) * 
 	.pk-sort-float { display: none !important; }
 }
 
-/* 6.20.199 — mobile : la barre de filtre est le départ, le reste vient après. */
+/* 6.20.200 — la barre suit au scroll, avec un blanc sous les pastilles. */
 @media (max-width: 767px) {
-	html body .pk-archive-head,
-	html body .pk-archive-search .pk-find-tabs,
-	html body .pk-archive-search .pk-find-card,
-	html body .pk-archive-search .pk-archive-trust,
-	html body .pk-archive-search .pk-find-need {
+	html body .pk-archive-actions.is-on {
+		padding-bottom: 28px;
+		background: #fff;
+	}
+	html body .pk-quartiers-more-chip,
+	html body .pk-quartiers-more-chip:hover,
+	html body .pk-quartiers-more-chip:focus-visible {
+		color: #FF5757 !important;
+		background: #fff;
+		border-color: #e6e5df;
+	}
+	html body .pk-results-tools.has-chips .pk-results-meta,
+	html body .pk-chosen-clear {
 		display: none !important;
 	}
-	html body .pk-archive-actions,
-	html body .pk-archive-actions[hidden] {
-		display: block !important;
-		position: sticky;
-		top: var(--pk-header-h, 0px);
-		z-index: 40;
-		margin: 0 0 .75rem;
-		background: #fff;
-		border-bottom: 1px solid #e6e5df;
+	html body .pk-results-clear {
+		display: inline-flex;
+		margin-top: .45rem;
+		color: #FF5757;
+		font-weight: 700;
+		text-decoration: none;
+	}
+}
+@media (min-width: 768px) {
+	html body .pk-quartiers-more-chip,
+	html body .pk-results-clear {
+		display: none !important;
 	}
 }
 

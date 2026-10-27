@@ -27,18 +27,25 @@ $is_type = $queried instanceof WP_Term && PARTIKULIER_ESTATIK_TYPE_TAXONOMY === 
 			.pk-chosen-list{display:flex!important;flex-wrap:nowrap!important;overflow-x:auto!important;scrollbar-width:none}
 			.pk-chosen-chip,.pk-chosen-clear{flex:0 0 auto!important}
 			.pk-quartiers-box{display:flex!important;flex-direction:column!important;align-items:stretch!important;width:100%!important;max-width:100%!important}
-			.pk-quartiers-more{align-self:flex-start!important;position:static!important;color:#FF5757!important;font-weight:700}
+			.pk-quartiers-more-line{display:none!important}
+			.pk-quartiers-more-chip{display:inline-flex!important;align-items:center;flex:0 0 auto;min-height:36px;margin:0;padding:0 14px;border:1px solid #e6e5df;border-radius:999px;background:#fff;color:#FF5757!important;font-weight:700;white-space:nowrap}
 			.pk-quartiers-rail{display:flex!important;align-items:center;width:100%;min-width:0;max-width:100%}
 			.pk-quartiers{display:flex!important;flex:1 1 auto;flex-wrap:nowrap!important;overflow-x:auto!important;max-height:none!important;min-width:0;scrollbar-width:none}
 			.pk-quartiers-open:checked ~ .pk-quartiers-rail .pk-quartiers{flex-wrap:wrap!important;overflow:visible!important}
 			.pk-quartiers-sheet{display:none!important}
 			.pk-quartiers-more .pk-less{display:none}
-			.pk-quartiers-open:checked ~ .pk-quartiers-more .pk-more{display:none}
-			.pk-quartiers-open:checked ~ .pk-quartiers-more .pk-less{display:inline}
+			.pk-quartiers-open:checked ~ .pk-quartiers-more .pk-more,
+			.pk-quartiers-open:checked ~ .pk-quartiers-rail .pk-quartiers-more .pk-more{display:none}
+			.pk-quartiers-open:checked ~ .pk-quartiers-more .pk-less,
+			.pk-quartiers-open:checked ~ .pk-quartiers-rail .pk-quartiers-more .pk-less{display:inline}
+			.pk-results-tools.has-chips .pk-results-meta,.pk-chosen-clear{display:none!important}
+			.pk-results-clear{display:inline-flex!important;margin-top:.45rem;color:#FF5757;font-weight:700;text-decoration:none}
+			.pk-chosen-list{width:100%!important}
+			.pk-quartiers-kicker{margin-top:16px!important}
 
 			.pk-header-search,.pk-archive>.pk-container>.pk-breadcrumb,.pk-intent-bar,.pk-intent-sentinel,.pk-archive-toolbar{display:none!important}
-			.pk-archive-head,.pk-archive-search .pk-find-tabs,.pk-archive-search .pk-find-card,.pk-archive-search .pk-archive-trust,.pk-archive-search .pk-find-need{display:none!important}
-			.pk-archive-actions,.pk-archive-actions[hidden]{display:block!important;position:sticky;top:0;z-index:40;background:#fff}
+			.pk-archive-head,.pk-archive-search,.pk-archive-search .pk-search,.pk-archive-search .pk-archive-trust{display:block!important}
+			.pk-archive-search .pk-archive-trust{display:flex!important}
 			.pk-filter-toggle{display:none!important}
 			.pk-archive>.pk-container{padding-inline:16px}
 			.pk-archive-layout{display:block!important;width:100%}
@@ -49,6 +56,8 @@ $is_type = $queried instanceof WP_Term && PARTIKULIER_ESTATIK_TYPE_TAXONOMY === 
 		@media (min-width:768px){
 			.pk-quartiers-box{display:flex;flex-direction:column;width:100%;max-width:100%}
 			.pk-quartiers-more{align-self:flex-start;color:#FF5757;font-weight:700;cursor:pointer}
+			.pk-quartiers-more-chip{display:none!important}
+			.pk-results-clear{display:none!important}
 			.pk-quartiers{display:flex;flex-wrap:nowrap;overflow-x:auto;max-height:none;min-width:0}
 			.pk-quartiers-open:checked ~ .pk-quartiers-rail .pk-quartiers{flex-wrap:wrap!important;overflow:visible!important;max-height:none!important}
 			.pk-quartiers-sheet{display:none!important}
@@ -342,9 +351,6 @@ endforeach;
 								</aside>
 
 								<div class="pk-archive-content">
-<div class="pk-scroll-actions pk-archive-actions" data-pk-archive-actions>
-	<?php require PARTIKULIER_DIR . '/templates/parts/filter-chips.php'; ?>
-</div>
 <?php
 				$pk_sort_now = isset( $_GET['pk_order'] ) && is_scalar( $_GET['pk_order'] ) ? sanitize_key( wp_unslash( $_GET['pk_order'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 				if ( ! in_array( $pk_sort_now, array( 'recent', 'date-asc', 'price-asc', 'price-desc' ), true ) ) {
@@ -411,6 +417,10 @@ endforeach;
 				</div>
 		</div>
 </section>
+
+<div class="pk-scroll-actions pk-archive-actions" data-pk-archive-actions hidden>
+	<?php require PARTIKULIER_DIR . '/templates/parts/filter-chips.php'; ?>
+</div>
 
 <button type="button" class="pk-sort-float" data-pk-open-sort>
 	<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M8 7v10M8 7l-3 3M8 7l3 3M16 17V7M16 17l-3-3M16 17l3-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>

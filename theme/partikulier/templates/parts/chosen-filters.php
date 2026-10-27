@@ -317,10 +317,12 @@ if ( ! isset( $pk_sort_button ) ) {
 $pk_clear = ( 'ar' === $pk_lang ) ? 'مسح الفلتر' : $pk_say( 'Réinitialiser' );
 $pk_clear_url = $pk_drop( array( 's', 'es_city', 'location', 'es_type', 'es_action', 'pk_intent', 'pk_rent', 'es_price_min', 'es_price_max', 'es_size_min', 'es_size_max', 'es_bedrooms_min', 'pk_salons_min', 'pk_amenity', 'pk_furnished', 'pk_quartier' ) );
 ?>
-<div class="pk-results-tools">
-	<?php if ( '' !== $pk_results_title ) : ?>
+<div class="pk-results-tools<?php echo $pk_chips ? ' has-chips' : ''; ?>">
+	<?php if ( '' !== $pk_results_title || $pk_chips ) : ?>
 	<div class="pk-results-copy">
+		<?php if ( '' !== $pk_results_title ) : ?>
 		<h2 class="pk-results-title"><?php echo esc_html( $pk_results_title ); ?></h2>
+		<?php endif; ?>
 		<p class="pk-results-meta">
 			<?php if ( '' !== $pk_results_sub && $pk_results_sub !== $pk_results_title ) : ?>
 				<span><?php echo esc_html( $pk_results_sub ); ?></span>
@@ -328,6 +330,9 @@ $pk_clear_url = $pk_drop( array( 's', 'es_city', 'location', 'es_type', 'es_acti
 			<?php endif; ?>
 			<span class="pk-results-count"><span dir="ltr"><?php echo esc_html( $pk_found_txt ); ?></span> <?php echo esc_html( $pk_ads ); ?></span>
 		</p>
+		<?php if ( $pk_chips ) : ?>
+		<a class="pk-results-clear" href="<?php echo esc_url( $pk_clear_url ); ?>"><?php echo esc_html( $pk_clear ); ?></a>
+		<?php endif; ?>
 	</div>
 	<?php endif; ?>
 	<button type="button" class="pk-sort-inline" data-pk-open-sort>
@@ -419,13 +424,14 @@ if ( $pk_districts ) {
 $pk_more = ( 'ar' === $pk_lang ) ? 'اعرض المزيد' : $pk_say( 'Tout voir' );
 $pk_less = ( 'ar' === $pk_lang ) ? 'اعرض أقل' : $pk_say( 'Fermer' );
 $pk_need_more = count( $pk_place_links ) > 4;
+$pk_need_chip = count( $pk_place_links ) > 8;
 ?>
 <?php if ( $pk_place_links ) : ?>
 <p class="pk-quartiers-kicker"><?php echo esc_html( $pk_place_kicker ); ?></p>
 <div class="pk-quartiers-box">
 	<input class="pk-quartiers-open" type="checkbox" id="pk-quartiers-open"<?php echo $pk_need_more ? '' : ' disabled'; ?>>
 	<?php if ( $pk_need_more ) : ?>
-		<label class="pk-quartiers-more" for="pk-quartiers-open">
+		<label class="pk-quartiers-more pk-quartiers-more-line" for="pk-quartiers-open">
 			<span class="pk-more"><?php echo esc_html( $pk_more ); ?></span>
 			<span class="pk-less"><?php echo esc_html( $pk_less ); ?></span>
 		</label>
@@ -435,7 +441,13 @@ $pk_need_more = count( $pk_place_links ) > 4;
 			<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M14 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
 		</button>
 		<nav class="pk-quartiers" aria-label="<?php echo esc_attr( $pk_place_nav ); ?>">
-			<?php foreach ( $pk_place_links as $pk_link ) : ?>
+			<?php foreach ( $pk_place_links as $pk_i => $pk_link ) : ?>
+				<?php if ( 8 === $pk_i && $pk_need_chip ) : ?>
+				<label class="pk-quartiers-more pk-quartiers-more-chip" for="pk-quartiers-open">
+					<span class="pk-more"><?php echo esc_html( $pk_more ); ?></span>
+					<span class="pk-less"><?php echo esc_html( $pk_less ); ?></span>
+				</label>
+				<?php endif; ?>
 				<a class="pk-quartier<?php echo $pk_link['on'] ? ' is-on' : ''; ?>" href="<?php echo esc_url( $pk_link['href'] ); ?>"<?php echo $pk_link['on'] ? ' aria-current="true"' : ''; ?>><?php echo esc_html( $pk_link['label'] ); ?></a>
 			<?php endforeach; ?>
 		</nav>

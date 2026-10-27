@@ -2093,15 +2093,17 @@ function pkLimitTitle(value) {
 	}
 
 	function syncBar() {
-		if (!bar) return;
+		if (!bar || !search) return;
 		if (window.matchMedia("(min-width: 768px)").matches) {
 			bar.classList.remove("is-on");
 			bar.hidden = true;
 			return;
 		}
-		document.documentElement.style.setProperty("--pk-header-h", headerTop() + "px");
-		bar.hidden = false;
-		bar.classList.add("is-on");
+		var top = headerTop();
+		document.documentElement.style.setProperty("--pk-header-h", top + "px");
+		var past = search.getBoundingClientRect().bottom < top + 4;
+		bar.hidden = !past;
+		bar.classList.toggle("is-on", past);
 	}
 
 	function openFind() {
