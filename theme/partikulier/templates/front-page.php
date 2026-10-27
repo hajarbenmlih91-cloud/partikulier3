@@ -78,6 +78,7 @@ get_header();
 	?>
 
 	<style>
+	html[dir="rtl"] body.home .pk-editorial-hero h1 .pk-hero-accent { color: #FF5757 !important; }
 	@media (max-width:767px){
 		body.home .pk-header-search{display:none!important}
 		body.home .pk-editorial-hero__inner{padding:1.1rem 20px 1.4rem!important;gap:1rem}
@@ -93,7 +94,8 @@ get_header();
 			if ( count( $pk_parts ) > 2 ) {
 				$pk_tail = implode( ' ', array_slice( $pk_parts, -2 ) );
 				$pk_head = implode( ' ', array_slice( $pk_parts, 0, -2 ) );
-				echo esc_html( $pk_head ) . ' <span class="pk-hero-accent">' . esc_html( $pk_tail ) . '</span>';
+				$pk_accent_attr = ( 'ar' === $pk_home_lang ) ? ' style="color:#FF5757"' : '';
+				echo esc_html( $pk_head ) . ' <span class="pk-hero-accent"' . $pk_accent_attr . '>' . esc_html( $pk_tail ) . '</span>';
 			} else {
 				echo esc_html( $tagline );
 			}
