@@ -8636,3 +8636,8 @@ html body.home .pk-header-search button[type="submit"]:active {
 html[dir="rtl"] body.home .pk-editorial-hero h1 .pk-hero-accent {
 	color: #FF5757 !important;
 }
+
+/* 6.20.188 — points entre les mentions sous le filtre, au rouge du logo. */
+body.home .pk-hero-trust li + li::before {
+	background: #FF5757 !important;
+}
