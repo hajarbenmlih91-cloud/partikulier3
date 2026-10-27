@@ -81,13 +81,16 @@ class Partikulier_Header {
 		if ( false !== strpos( $url, 'auth_item=login' ) ) {
 			return true;
 		}
-		return in_array( $title, array( 'Mon espace', 'Se connecter', 'Connexion', 'My account', 'Sign in', 'مساحتي', 'تسجيل الدخول' ), true );
+		return in_array( $title, array( 'Mon espace', 'Se connecter', 'Connexion', 'My account', 'Sign in', 'مساحتي', 'حسابي', 'تسجيل الدخول' ), true );
 	}
 
 	/**
 	 * @param string $source Libellé français déjà enregistré.
 	 */
 	private static function account_label( $source ) {
+		if ( 'Mon espace' === $source && function_exists( 'pk_account_space_label' ) ) {
+			return pk_account_space_label();
+		}
 		if ( class_exists( 'Partikulier_Localization' ) ) {
 			return Partikulier_Localization::translate_polylang_string( $source, $source, 'partikulier' );
 		}

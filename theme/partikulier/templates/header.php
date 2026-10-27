@@ -36,7 +36,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 				<div class="pk-topbar-contact">
 						<a href="<?php echo esc_url( pk_properties_archive_url() ); ?>"><?php esc_html_e( 'Toutes les annonces', 'partikulier' ); ?></a>
 						<?php if ( is_user_logged_in() ) : ?>
-								<a href="<?php echo esc_url( pk_page_url( 'mes-annonces', '/mes-annonces/' ) ); ?>"><?php esc_html_e( 'Mon espace', 'partikulier' ); ?></a>
+								<a href="<?php echo esc_url( pk_page_url( 'mes-annonces', '/mes-annonces/' ) ); ?>"><?php echo esc_html( pk_account_space_label() ); ?></a>
 						<?php else : ?>
 								<a href="<?php echo esc_url( pk_login_page_url( pk_page_url( 'mes-annonces', '/mes-annonces/' ) ) ); ?>"><?php esc_html_e( 'Se connecter', 'partikulier' ); ?></a>
 						<?php endif; ?>
@@ -156,7 +156,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 						</a>
 						<?php if ( is_user_logged_in() ) : ?>
 								<a class="pk-header-icon pk-header-cta pk-btn pk-btn-primary pk-btn-sm" href="<?php echo esc_url( pk_page_url( 'mes-annonces', '/mes-annonces/' ) ); ?>">
-										<?php esc_html_e( 'Mon espace', 'partikulier' ); ?>
+										<?php echo esc_html( pk_account_space_label() ); ?>
 								</a>
 						<?php else : ?>
 								<a class="pk-header-icon pk-header-cta pk-btn pk-btn-primary pk-btn-sm" href="<?php echo esc_url( pk_page_url( 'deposer', '/deposer/' ) ); ?>">
