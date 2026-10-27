@@ -395,6 +395,47 @@
     .go, .ghost { min-height: 48px; }
   }
 
+  /* 6.20.178 — clic du formulaire : rouge du logo #FF5757, pas le noir. */
+  :focus-visible { outline-color: #FF5757; }
+  .choice[aria-pressed="true"] {
+    background: #FF5757;
+    border-color: #FF5757;
+    color: #fff;
+  }
+  .choice[aria-pressed="true"] b,
+  .choice[aria-pressed="true"] small { color: #fff; }
+  .choice[aria-pressed="true"]::after { background: #fff; color: #FF5757; }
+  .pill[aria-pressed="true"],
+  .chip[aria-pressed="true"] {
+    background: #FF5757;
+    border-color: #FF5757;
+    color: #fff;
+  }
+  .pill:hover, .chip:hover, .choice:hover { border-color: #FF5757; }
+  .pk-stepper-item.is-current::after,
+  .pk-stepper-item.is-complete::after { background: #FF5757; }
+  .pk-stepper-item.is-current .pk-stepper-number {
+    background: #FF5757;
+    border-color: #FF5757;
+    color: #fff;
+  }
+  .pk-stepper-item.is-complete .pk-stepper-number {
+    border-color: #FF5757;
+    color: #FF5757;
+    background: #fff;
+  }
+  .photo.is-cover { border-color: #FF5757; }
+  .photo.is-cover .photo-actions button.pick { background: #FF5757; color: #fff; }
+  .field textarea:focus,
+  .field input:focus,
+  .suffix input:focus,
+  .suffix:focus-within {
+    border-color: #FF5757;
+    box-shadow: 0 0 0 4px rgba(255, 87, 87, .18);
+  }
+  .go { background: #FF5757; color: #fff; }
+  .go:hover, .go:active { background: #E04D4D; color: #fff; }
+
   .pk-lang-bar {
     position: sticky; top: 0; z-index: 80;
     display: flex; justify-content: space-between; align-items: center;
