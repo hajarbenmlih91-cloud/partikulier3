@@ -9220,3 +9220,29 @@ html body .pk-archive-content[aria-busy="true"] {
 	opacity: .55;
 }
 
+/* 6.20.206 — mobile : le formulaire noir de la fiche laisse place au bouton WhatsApp, collé au-dessus de la barre du bas. */
+.pk-wa-sticky { display: none; }
+@media (max-width: 767px) {
+	.pk-single .pk-contact-card--dark { display: none !important; }
+	.pk-wa-sticky {
+		display: block;
+		position: fixed;
+		left: 0;
+		right: 0;
+		bottom: var(--pk-appbar-h, 68px);
+		z-index: 1090;
+		padding: 8px 12px;
+		background: #fff;
+		border-top: 1px solid #e6e5df;
+	}
+	.pk-wa-sticky .pk-btn { width: 100%; }
+	.pk-wa-sticky.is-done { display: none; }
+	body.pk-wa-sticky-on { padding-bottom: calc(var(--pk-appbar-h, 68px) + 64px); }
+	body.pk-cookie-open .pk-wa-sticky,
+	html.pk-find-modal .pk-wa-sticky,
+	body:has(.pk-find-open:checked) .pk-wa-sticky { display: none !important; }
+}
+@media (min-width: 768px) {
+	.pk-wa-sticky { display: none !important; }
+}
+
