@@ -82,6 +82,10 @@ $pk_views   = (int) get_post_meta( $post->ID, '_pk_views', true );
 	$owner_role  = get_post_meta( $post->ID, '_pk_owner_role', true );
 	$buyer_contact_url = ! $is_closed && class_exists( 'Partikulier_Buyer_Qualification' ) ? Partikulier_Buyer_Qualification::contact_url( $post->ID ) : '';
 	$buyer_reference = class_exists( 'Partikulier_Buyer_Qualification' ) ? Partikulier_Buyer_Qualification::reference_for( $post->ID ) : '';
+	$pk_wa_href = $buyer_contact_url;
+	if ( ! $pk_wa_href && ! $is_closed ) {
+		$pk_wa_href = 'https://wa.me/?text=' . rawurlencode( sprintf( __( 'Bonjour, je suis intéressé par « %1$s » — %2$s', 'partikulier' ), get_the_title( $post ), $pk_property_url ) );
+	}
 
 // Galerie : images Estatik + fallback featured.
 $gallery_ids = array();
@@ -433,10 +437,9 @@ $gallery_ids = array();
 							// Repli quand aucun numero WhatsApp n'est encore configure :
 							// on garde un bouton actif (wa.me sans destinataire) pour ne pas
 							// laisser la carte de contact sans action, comme le preview.
-							$pk_wa_text = rawurlencode( sprintf( __( 'Bonjour, je suis intéressé par « %1$s » — %2$s', 'partikulier' ), get_the_title( $post ), $pk_property_url ) );
-							?>
-							<div class="pk-buyer-contact-flow">
-								<a class="pk-btn pk-btn-primary pk-btn-block pk-btn-whatsapp" href="https://wa.me/?text=<?php echo esc_attr( $pk_wa_text ); ?>" target="_blank" rel="noopener nofollow">
+						?>
+						<div class="pk-buyer-contact-flow">
+							<a class="pk-btn pk-btn-primary pk-btn-block pk-btn-whatsapp" href="<?php echo esc_url( $pk_wa_href ); ?>" target="_blank" rel="noopener nofollow">
 									<svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor" aria-hidden="true"><path d="M12.04 2a9.9 9.9 0 0 0-8.5 14.95L2 22l5.2-1.5A9.9 9.9 0 1 0 12.04 2zm0 1.8a8.1 8.1 0 1 1-4.13 15.06l-.3-.18-3.08.89.9-3-.2-.31A8.1 8.1 0 0 1 12.04 3.8zm4.6 10.2c-.25-.13-1.46-.72-1.69-.8-.22-.09-.39-.13-.55.12s-.63.8-.77.96c-.14.17-.28.19-.53.06a6.6 6.6 0 0 1-3.3-2.88c-.25-.43.25-.4.71-1.33.08-.17.04-.31-.02-.44s-.55-1.33-.76-1.82c-.2-.48-.4-.41-.55-.42h-.47a.9.9 0 0 0-.65.3 2.75 2.75 0 0 0-.86 2.05c0 1.2.88 2.37 1 2.53.12.17 1.72 2.63 4.17 3.69 1.55.67 2.16.73 2.94.61.47-.07 1.46-.6 1.67-1.18.2-.58.2-1.07.14-1.18-.06-.1-.23-.17-.48-.29z"/></svg>
 									<?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Demander sur WhatsApp', 'Demander sur WhatsApp', 'partikulier' ) ); ?>
 								</a>
@@ -461,6 +464,14 @@ $gallery_ids = array();
 			</aside>
 		</div>
 	</div>
+	<?php if ( ! empty( $pk_wa_href ) ) : ?>
+		<div class="pk-wa-sticky" data-pk-wa-sticky>
+			<a class="pk-btn pk-btn-primary pk-btn-block pk-btn-whatsapp" href="<?php echo esc_url( $pk_wa_href ); ?>" target="_blank" rel="noopener nofollow">
+				<svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor" aria-hidden="true"><path d="M12.04 2a9.9 9.9 0 0 0-8.5 14.95L2 22l5.2-1.5A9.9 9.9 0 1 0 12.04 2zm0 1.8a8.1 8.1 0 1 1-4.13 15.06l-.3-.18-3.08.89.9-3-.2-.31A8.1 8.1 0 0 1 12.04 3.8zm4.6 10.2c-.25-.13-1.46-.72-1.69-.8-.22-.09-.39-.13-.55.12s-.63.8-.77.96c-.14.17-.28.19-.53.06a6.6 6.6 0 0 1-3.3-2.88c-.25-.43.25-.4.71-1.33.08-.17.04-.31-.02-.44s-.55-1.33-.76-1.82c-.2-.48-.4-.41-.55-.42h-.47a.9.9 0 0 0-.65.3 2.75 2.75 0 0 0-.86 2.05c0 1.2.88 2.37 1 2.53.12.17 1.72 2.63 4.17 3.69 1.55.67 2.16.73 2.94.61.47-.07 1.46-.6 1.67-1.18.2-.58.2-1.07.14-1.18-.06-.1-.23-.17-.48-.29z"/></svg>
+				<?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Demander sur WhatsApp', 'Demander sur WhatsApp', 'partikulier' ) ); ?>
+			</a>
+		</div>
+	<?php endif; ?>
 </article>
 
 <?php

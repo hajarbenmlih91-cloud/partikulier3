@@ -272,6 +272,13 @@ while ( have_posts() ) :
 				</aside>
 			</div>
 		</div>
+		<?php if ( ! empty( $pk_wa_text ) ) : ?>
+			<div class="pk-wa-sticky" data-pk-wa-sticky>
+				<a class="pk-btn pk-btn-primary pk-btn-block pk-btn-whatsapp" href="https://wa.me/?text=<?php echo esc_attr( $pk_wa_text ); ?>" target="_blank" rel="noopener nofollow">
+					<?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Demander sur WhatsApp', 'Demander sur WhatsApp', 'partikulier' ) ); ?>
+				</a>
+			</div>
+		<?php endif; ?>
 	</article>
 
 	<?php

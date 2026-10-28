@@ -2604,3 +2604,34 @@ function pkLimitTitle(value) {
 	separateKicker();
 }());
 
+(function () {
+	var bar = document.querySelector("[data-pk-wa-sticky]");
+	if (!bar) return;
+	var article = document.querySelector("article.pk-single");
+	var related = document.querySelector(".pk-single-related");
+	function line() {
+		var raw = window.getComputedStyle(document.documentElement).getPropertyValue("--pk-appbar-h");
+		var height = parseFloat(raw);
+		return window.innerHeight - (height || 68);
+	}
+	function place() {
+		if (window.matchMedia("(min-width: 768px)").matches) {
+			bar.classList.add("is-done");
+			document.body.classList.remove("pk-wa-sticky-on");
+			return;
+		}
+		var stop = false;
+		var edge = line();
+		if (related) {
+			stop = related.getBoundingClientRect().top <= edge;
+		} else if (article) {
+			stop = article.getBoundingClientRect().bottom <= edge;
+		}
+		bar.classList.toggle("is-done", stop);
+		document.body.classList.toggle("pk-wa-sticky-on", !stop);
+	}
+	window.addEventListener("scroll", place, { passive: true });
+	window.addEventListener("resize", place);
+	place();
+}());
+
