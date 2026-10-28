@@ -94,7 +94,7 @@ final class FormsDictionary
 										'Local'            => array( 'fr' => 'Local', 'en' => 'Commercial', 'ar' => 'محل تجاري' ),
 										'Caractéristiques' => array( 'fr' => 'Caractéristiques', 'en' => 'Features', 'ar' => 'المميزات' ),
 										'Description'      => array( 'fr' => 'Description', 'en' => 'Description', 'ar' => 'الوصف' ),
-										'Demander sur WhatsApp' => array( 'fr' => 'Demander sur WhatsApp', 'en' => 'Ask on WhatsApp', 'ar' => 'الطلب عبر واتساب' ),
+										'Demander sur WhatsApp' => array( 'fr' => 'Contacter sur WhatsApp', 'en' => 'Ask on WhatsApp', 'ar' => 'الطلب عبر واتساب' ),
 										'Chambres'         => array( 'fr' => 'Chambres', 'en' => 'Bedrooms', 'ar' => 'غرف النوم' ),
 										'Salons'           => array( 'fr' => 'Salons', 'en' => 'Living rooms', 'ar' => 'صالونات' ),
 										'Salles de bains'  => array( 'fr' => 'Salles de bains', 'en' => 'Bathrooms', 'ar' => 'حمامات' ),
