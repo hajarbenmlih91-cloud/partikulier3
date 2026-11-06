@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       run_uat_audit:
-        description: Lancer l'audit complet du staging UAT (sécurité, navigateur, charge)
+        description: Lancer l'audit public du staging UAT (sans secrets ni connexion propriétaire)
         required: true
         default: false
         type: boolean
@@ -20,6 +20,7 @@ permissions:
 jobs:
   php-version:
     name: Version PHP du serveur
+    if: ${{ !inputs.run_uat_audit }}
     runs-on: ubuntu-latest
     environment: uat
     env:
@@ -86,11 +87,9 @@ jobs:
         if: always()
         run: rm -f "$HOME/.ssh/id_ed25519" "$HOME/.ssh/known_hosts" "$HOME/.ssh/config"
 
-  audit-uat:
-    name: Audit réel du staging (sans déploiement)
+  audit-uat-public:
+    name: Audit public du staging (sans secrets ni déploiement)
     if: ${{ inputs.run_uat_audit }}
-    needs: [php-version]
-    uses: ./.github/workflows/audit-uat.yml
+    uses: ./.github/workflows/audit-uat-public.yml
     with:
       load_test: true
-    secrets: inherit

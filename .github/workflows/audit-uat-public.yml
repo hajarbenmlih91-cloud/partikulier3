@@ -1,0 +1,196 @@
+name: Audit public du staging UAT
+
+# Réutilisable sans secrets/environnement protégé : audit HTTP public, charge,
+# navigateur et Lighthouse. Les parcours authentifiés appartiennent au workflow
+# audit-uat.yml et restent soumis à la policy de branche UAT.
+on:
+  workflow_call:
+    inputs:
+      load_test:
+        description: Exécuter la sonde 10 rps puis 100 rps si elle tient
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  public-audit:
+    name: Tests publics UAT (sans secrets)
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    env:
+      SITE_URL: https://darkcyan-yak-151002.hostingersite.com
+      AUDIT_OUT_DIR: ${{ github.workspace }}/.audit-uat-public-artifacts
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      - name: Confirmer la cible (staging uniquement)
+        run: |
+          set -euo pipefail
+          test "$SITE_URL" = 'https://darkcyan-yak-151002.hostingersite.com'
+          mkdir -p "$AUDIT_OUT_DIR"
+          printf '# Audit public UAT\n\nCible : %s\nCommit : `%s`\n\nAucun secret utilisé; aucun formulaire valide soumis.\n' "$SITE_URL" "$GITHUB_SHA" > "$AUDIT_OUT_DIR/README.md"
+
+      - name: Installer PHP CLI et cURL
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: curl, mbstring
+          coverage: none
+
+      - name: Installer Node, Playwright et Chromium
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          set -euo pipefail
+          cd theme/partikulier
+          npm ci
+          npm install --no-save axe-core@4.10.3
+          npx playwright install --with-deps chromium
+
+      - name: Sécurité live publique (POST anonymes, endpoints, en-têtes)
+        id: security
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          php theme/partikulier/tests/staging-securite.php "$SITE_URL" 2>&1 | tee "$AUDIT_OUT_DIR/security.txt"
+
+      - name: Cache, en-têtes et TTFB extérieur
+        id: cache
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          php theme/partikulier/tests/staging-cache.php "$SITE_URL" /fr/annonces/ 20 2>&1 | tee "$AUDIT_OUT_DIR/cache-ttfb.txt"
+
+      - name: Sondage prudent (10 req/s pendant 10 s)
+        id: load_smoke
+        if: ${{ inputs.load_test }}
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          php theme/partikulier/tests/staging-charge.php "$SITE_URL" 10 10 /fr/annonces/ /fr/ /fr/annonces/?es_city=casablanca 2>&1 | tee "$AUDIT_OUT_DIR/load-smoke.txt"
+
+      - name: Charge complète (100 req/s pendant 30 s si la sonde tient)
+        id: load_full
+        if: ${{ inputs.load_test && steps.load_smoke.outcome == 'success' }}
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          php theme/partikulier/tests/staging-charge.php "$SITE_URL" 100 30 /fr/annonces/ /fr/ /fr/annonces/?es_city=casablanca 2>&1 | tee "$AUDIT_OUT_DIR/load-full.txt"
+
+      - name: Responsive, SEO, Axe et XSS réfléchi avec Chromium
+        id: browser_audit
+        continue-on-error: true
+        working-directory: theme/partikulier
+        env:
+          PK_BASE: https://darkcyan-yak-151002.hostingersite.com
+        run: |
+          set -euo pipefail
+          node tests/audit-uat.mjs 2>&1 | tee "$AUDIT_OUT_DIR/browser-audit.txt"
+
+      - name: Frontière d'authentification et formulaire de connexion (sans identifiants)
+        id: auth_boundary
+        continue-on-error: true
+        working-directory: theme/partikulier
+        env:
+          PK_BASE: https://darkcyan-yak-151002.hostingersite.com
+        run: |
+          set -euo pipefail
+          node tests/audit-uat-login.mjs 2>&1 | tee "$AUDIT_OUT_DIR/auth-boundary.txt"
+
+      - name: Lighthouse (mobile FR/EN/AR, archive FR et desktop)
+        id: lighthouse
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          npm install --global lighthouse@12.8.2
+          chrome_path="$(cd theme/partikulier && node --input-type=module -e 'import { chromium } from "playwright"; console.log(chromium.executablePath())')"
+          run_lh() {
+            local label="$1" url="$2" form="$3"
+            lighthouse "$url" \
+              --chrome-path="$chrome_path" \
+              --chrome-flags='--headless --no-sandbox --disable-dev-shm-usage' \
+              --only-categories=performance,accessibility,best-practices,seo \
+              --form-factor="$form" \
+              --output=json \
+              --output-path="$AUDIT_OUT_DIR/lighthouse-$label.json" \
+              --quiet
+          }
+          run_lh fr-home-mobile "$SITE_URL/fr/" mobile
+          run_lh en-home-mobile "$SITE_URL/en/" mobile
+          run_lh ar-home-mobile "$SITE_URL/ar/" mobile
+          run_lh fr-listings-mobile "$SITE_URL/fr/annonces/" mobile
+          run_lh fr-home-desktop "$SITE_URL/fr/" desktop
+          python - "$AUDIT_OUT_DIR" <<'PY'
+          import json, pathlib, sys
+          root = pathlib.Path(sys.argv[1])
+          lines = ['## Lighthouse scores', '', '| Page | Perf | A11y | Best practices | SEO |', '|---|---:|---:|---:|---:|']
+          for f in sorted(root.glob('lighthouse-*.json')):
+              data = json.loads(f.read_text())
+              cats = data.get('categories', {})
+              score = lambda name: round((cats.get(name, {}).get('score') or 0) * 100)
+              lines.append(f"| {f.stem.removeprefix('lighthouse-')} | {score('performance')} | {score('accessibility')} | {score('best-practices')} | {score('seo')} |")
+          (root / 'lighthouse-summary.md').write_text('\n'.join(lines) + '\n')
+          print('\n'.join(lines))
+          PY
+
+      - name: Ajouter le résultat des suites au rapport
+        if: always()
+        env:
+          SECURITY_RESULT: ${{ steps.security.outcome }}
+          CACHE_RESULT: ${{ steps.cache.outcome }}
+          SMOKE_RESULT: ${{ steps.load_smoke.outcome }}
+          FULL_LOAD_RESULT: ${{ steps.load_full.outcome }}
+          BROWSER_RESULT: ${{ steps.browser_audit.outcome }}
+          LIGHTHOUSE_RESULT: ${{ steps.lighthouse.outcome }}
+          AUTH_RESULT: ${{ steps.auth_boundary.outcome }}
+        run: |
+          {
+            echo ''
+            echo '## Résultat des suites publiques'
+            echo ''
+            echo '| Suite | Résultat |'
+            echo '|---|---|'
+            echo "| Sécurité publique | ${SECURITY_RESULT:-skipped} |"
+            echo "| Cache/TTFB | ${CACHE_RESULT:-skipped} |"
+            echo "| Charge 10 rps | ${SMOKE_RESULT:-skipped} |"
+            echo "| Charge 100 rps | ${FULL_LOAD_RESULT:-skipped} |"
+            echo "| Chromium/Axe | ${BROWSER_RESULT:-skipped} |"
+            echo "| Auth anonyme + formulaire de connexion | ${AUTH_RESULT:-skipped} |"
+            echo "| Lighthouse | ${LIGHTHOUSE_RESULT:-skipped} |"
+          } | tee -a "$AUDIT_OUT_DIR/README.md"
+
+      - name: Publier les rapports et captures UAT
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-uat-public-${{ github.run_number }}
+          path: ${{ github.workspace }}/.audit-uat-public-artifacts/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Verdict final
+        if: always()
+        env:
+          SECURITY_RESULT: ${{ steps.security.outcome }}
+          CACHE_RESULT: ${{ steps.cache.outcome }}
+          SMOKE_RESULT: ${{ steps.load_smoke.outcome }}
+          FULL_LOAD_RESULT: ${{ steps.load_full.outcome }}
+          BROWSER_RESULT: ${{ steps.browser_audit.outcome }}
+          LIGHTHOUSE_RESULT: ${{ steps.lighthouse.outcome }}
+          AUTH_RESULT: ${{ steps.auth_boundary.outcome }}
+        run: |
+          set -euo pipefail
+          for result in "$SECURITY_RESULT" "$CACHE_RESULT" "$SMOKE_RESULT" "$FULL_LOAD_RESULT" "$BROWSER_RESULT" "$LIGHTHOUSE_RESULT" "$AUTH_RESULT"; do
+            if [ "$result" != success ]; then
+              echo "Audit public incomplet ou en échec; consulter l'artefact audit-uat-public-${GITHUB_RUN_NUMBER}."
+              exit 1
+            fi
+          done
