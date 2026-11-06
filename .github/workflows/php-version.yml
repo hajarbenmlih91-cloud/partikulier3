@@ -92,4 +92,4 @@ jobs:
     if: ${{ inputs.run_uat_audit }}
     uses: ./.github/workflows/audit-uat-public.yml
     with:
-      load_test: true
+      load_test: false

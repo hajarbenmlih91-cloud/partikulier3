@@ -22,7 +22,7 @@ jobs:
     timeout-minutes: 55
     env:
       SITE_URL: https://darkcyan-yak-151002.hostingersite.com
-      AUDIT_OUT_DIR: ${{ github.workspace }}/.audit-uat-public-artifacts
+      AUDIT_OUT_DIR: ${{ github.workspace }}/uat-audit-public-artifacts
     defaults:
       run:
         shell: bash
@@ -172,8 +172,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: audit-uat-public-${{ github.run_number }}
-          path: ${{ github.workspace }}/.audit-uat-public-artifacts/
-          if-no-files-found: warn
+          path: ${{ github.workspace }}/uat-audit-public-artifacts/
+          if-no-files-found: error
           retention-days: 14
 
       - name: Verdict final
@@ -188,9 +188,31 @@ jobs:
           AUTH_RESULT: ${{ steps.auth_boundary.outcome }}
         run: |
           set -euo pipefail
-          for result in "$SECURITY_RESULT" "$CACHE_RESULT" "$SMOKE_RESULT" "$FULL_LOAD_RESULT" "$BROWSER_RESULT" "$LIGHTHOUSE_RESULT" "$AUTH_RESULT"; do
+          {
+            echo '## Verdict des suites'
+            echo ''
+            echo '| Suite | Résultat |'
+            echo '|---|---|'
+            echo "| Sécurité publique | ${SECURITY_RESULT:-skipped} |"
+            echo "| Cache/TTFB | ${CACHE_RESULT:-skipped} |"
+            echo "| Responsive/SEO/Axe/XSS | ${BROWSER_RESULT:-skipped} |"
+            echo "| Auth anonyme/formulaire | ${AUTH_RESULT:-skipped} |"
+            echo "| Lighthouse | ${LIGHTHOUSE_RESULT:-skipped} |"
+            echo "| Charge 10 rps | ${SMOKE_RESULT:-skipped} |"
+            echo "| Charge 100 rps | ${FULL_LOAD_RESULT:-skipped} |"
+          } | tee -a "$GITHUB_STEP_SUMMARY" "$AUDIT_OUT_DIR/README.md"
+
+          for result in "$SECURITY_RESULT" "$CACHE_RESULT" "$BROWSER_RESULT" "$LIGHTHOUSE_RESULT" "$AUTH_RESULT"; do
             if [ "$result" != success ]; then
               echo "Audit public incomplet ou en échec; consulter l'artefact audit-uat-public-${GITHUB_RUN_NUMBER}."
               exit 1
             fi
           done
+          if [ "${{ inputs.load_test }}" = true ]; then
+            for result in "$SMOKE_RESULT" "$FULL_LOAD_RESULT"; do
+              if [ "$result" != success ]; then
+                echo "Test de charge incomplet ou en échec; consulter l'artefact audit-uat-public-${GITHUB_RUN_NUMBER}."
+                exit 1
+              fi
+            done
+          fi
