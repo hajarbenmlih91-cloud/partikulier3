@@ -1,11 +1,18 @@
-name: Lecture version PHP
+name: Contrôle PHP et audit manuel du staging UAT
 
-# Lecture seule. N'affiche que la version et la date de compilation.
-# Ne déploie rien. N'imprime aucun secret.
-# Environnement dev : mêmes secrets SSH que la recette, sans tag pre-release.
+# Par défaut, lecture seule : version PHP uniquement. L'option d'audit UAT
+# appelle un workflow de recette isolé : pas de déploiement, compte temporaire
+# supprimé après le parcours, charge appliquée uniquement au staging confirmé.
+# Aucun secret n'est imprimé.
 
 on:
   workflow_dispatch:
+    inputs:
+      run_uat_audit:
+        description: Lancer l'audit complet du staging UAT (sécurité, navigateur, charge)
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -78,3 +85,12 @@ jobs:
       - name: Nettoyer la clé SSH
         if: always()
         run: rm -f "$HOME/.ssh/id_ed25519" "$HOME/.ssh/known_hosts" "$HOME/.ssh/config"
+
+  audit-uat:
+    name: Audit réel du staging (sans déploiement)
+    if: ${{ inputs.run_uat_audit }}
+    needs: [php-version]
+    uses: ./.github/workflows/audit-uat.yml
+    with:
+      load_test: true
+    secrets: inherit

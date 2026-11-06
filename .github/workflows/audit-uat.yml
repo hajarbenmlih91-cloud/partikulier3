@@ -11,6 +11,13 @@ on:
         required: true
         default: true
         type: boolean
+  workflow_call:
+    inputs:
+      load_test:
+        description: Exécuter le test de charge complet (sonde 10 rps puis 100 rps si la sonde tient)
+        required: false
+        default: true
+        type: boolean
 
 permissions:
   contents: read
