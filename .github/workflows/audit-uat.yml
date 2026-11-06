@@ -35,7 +35,6 @@ jobs:
       name: uat
       url: https://darkcyan-yak-151002.hostingersite.com
     env:
-      SITE_URL: https://darkcyan-yak-151002.hostingersite.com
       PK_SECRET: ${{ secrets.PARTIKULIER_N8N_SECRET }}
       SSH_HOST: ${{ secrets.SSH_HOST }}
       SSH_PORT: ${{ secrets.SSH_PORT }}
@@ -55,7 +54,9 @@ jobs:
       - name: Vérifier la cible UAT (interdit de viser la production)
         run: |
           set -euo pipefail
-          : "${SITE_URL:?Variable SITE_URL absente de l'environnement GitHub uat}"
+          SITE_URL='https://darkcyan-yak-151002.hostingersite.com'
+          export SITE_URL
+          printf 'SITE_URL=%s\n' "$SITE_URL" >> "$GITHUB_ENV"
           python - <<'PY'
           import os
           from urllib.parse import urlparse
