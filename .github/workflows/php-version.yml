@@ -23,6 +23,11 @@ on:
         required: false
         default: ''
         type: string
+      summarize_connected_uat_run_id:
+        description: Ajouter un artefact d'audit connecté déjà existant (run ID numérique, facultatif)
+        required: false
+        default: ''
+        type: string
 
 permissions:
   contents: read
@@ -31,7 +36,7 @@ permissions:
 jobs:
   php-version:
     name: Version PHP du serveur
-    if: ${{ !inputs.run_uat_audit && !inputs.run_connected_uat_audit && inputs.summarize_uat_run_id == '' }}
+    if: ${{ !inputs.run_uat_audit && !inputs.run_connected_uat_audit && inputs.summarize_uat_run_id == '' && inputs.summarize_connected_uat_run_id == '' }}
     runs-on: ubuntu-latest
     environment: uat
     env:
@@ -100,14 +105,14 @@ jobs:
 
   audit-uat-public:
     name: Audit public du staging (sans secrets ni déploiement)
-    if: ${{ inputs.run_uat_audit && !inputs.run_connected_uat_audit && inputs.summarize_uat_run_id == '' }}
+    if: ${{ inputs.run_uat_audit && !inputs.run_connected_uat_audit && inputs.summarize_uat_run_id == '' && inputs.summarize_connected_uat_run_id == '' }}
     uses: ./.github/workflows/audit-uat-public.yml
     with:
       load_test: false
 
   audit-uat-connected:
     name: Audit complet protégé UAT (compte temporaire, sans déploiement)
-    if: ${{ inputs.run_connected_uat_audit && inputs.summarize_uat_run_id == '' }}
+    if: ${{ inputs.run_connected_uat_audit && inputs.summarize_uat_run_id == '' && inputs.summarize_connected_uat_run_id == '' }}
     uses: ./.github/workflows/audit-uat.yml
     with:
       load_test: true
@@ -119,3 +124,4 @@ jobs:
     uses: ./.github/workflows/audit-uat-report.yml
     with:
       run_id: ${{ inputs.summarize_uat_run_id }}
+      connected_run_id: ${{ inputs.summarize_connected_uat_run_id }}
