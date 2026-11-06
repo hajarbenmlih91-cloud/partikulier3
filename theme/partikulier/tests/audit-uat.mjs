@@ -98,8 +98,8 @@ try {
             missingAlt,
             cards,
             whatsapp,
-            lcp: 0,
-            cls: 0,
+            lcp: null,
+            cls: null,
             navTiming: (() => {
               const entry = performance.getEntriesByType('navigation')[0];
               return entry ? { responseStart: entry.responseStart, domContentLoaded: entry.domContentLoadedEventEnd, load: entry.loadEventEnd, transferSize: entry.transferSize } : null;

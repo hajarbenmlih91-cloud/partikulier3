@@ -105,6 +105,16 @@ jobs:
           set -euo pipefail
           node tests/audit-uat-login.mjs 2>&1 | tee "$AUDIT_OUT_DIR/auth-boundary.txt"
 
+      - name: Interactions JavaScript, captures mobile, LCP, CLS et INP laboratoire
+        id: interactions
+        continue-on-error: true
+        working-directory: theme/partikulier
+        env:
+          PK_BASE: https://darkcyan-yak-151002.hostingersite.com
+        run: |
+          set -euo pipefail
+          node tests/audit-uat-interactions.mjs 2>&1 | tee "$AUDIT_OUT_DIR/interactions-vitals.txt"
+
       - name: Lighthouse (mobile FR/EN/AR, archive FR et desktop)
         id: lighthouse
         continue-on-error: true
@@ -131,12 +141,20 @@ jobs:
           python - "$AUDIT_OUT_DIR" <<'PY'
           import json, pathlib, sys
           root = pathlib.Path(sys.argv[1])
-          lines = ['## Lighthouse scores', '', '| Page | Perf | A11y | Best practices | SEO |', '|---|---:|---:|---:|---:|']
+          lines = ['## Lighthouse scores et métriques', '', '| Page | Perf | A11y | Best practices | SEO | LCP ms | INP ms | CLS | TBT ms |', '|---|---:|---:|---:|---:|---:|---:|---:|---:|']
           for f in sorted(root.glob('lighthouse-*.json')):
               data = json.loads(f.read_text())
               cats = data.get('categories', {})
+              audits = data.get('audits', {})
               score = lambda name: round((cats.get(name, {}).get('score') or 0) * 100)
-              lines.append(f"| {f.stem.removeprefix('lighthouse-')} | {score('performance')} | {score('accessibility')} | {score('best-practices')} | {score('seo')} |")
+              def metric(*ids):
+                  for audit_id in ids:
+                      value = audits.get(audit_id, {}).get('numericValue')
+                      if value is not None:
+                          return round(value)
+                  return 'n/a'
+              lines.append(f"| {f.stem.removeprefix('lighthouse-')} | {score('performance')} | {score('accessibility')} | {score('best-practices')} | {score('seo')} | {metric('largest-contentful-paint')} | {metric('interaction-to-next-paint', 'experimental-interaction-to-next-paint')} | {metric('cumulative-layout-shift')} | {metric('total-blocking-time')} |")
+          lines.extend(['', 'Note : INP peut être n/a en Lighthouse navigation; le fichier interaction-web-vitals.json contient le proxy INP laboratoire des interactions Playwright.'])
           (root / 'lighthouse-summary.md').write_text('\n'.join(lines) + '\n')
           print('\n'.join(lines))
           PY
@@ -151,6 +169,7 @@ jobs:
           BROWSER_RESULT: ${{ steps.browser_audit.outcome }}
           LIGHTHOUSE_RESULT: ${{ steps.lighthouse.outcome }}
           AUTH_RESULT: ${{ steps.auth_boundary.outcome }}
+          INTERACTIONS_RESULT: ${{ steps.interactions.outcome }}
         run: |
           {
             echo ''
@@ -164,8 +183,12 @@ jobs:
             echo "| Charge 100 rps | ${FULL_LOAD_RESULT:-skipped} |"
             echo "| Chromium/Axe | ${BROWSER_RESULT:-skipped} |"
             echo "| Auth anonyme + formulaire de connexion | ${AUTH_RESULT:-skipped} |"
+            echo "| Interactions JavaScript + LCP/INP | ${INTERACTIONS_RESULT:-skipped} |"
             echo "| Lighthouse | ${LIGHTHOUSE_RESULT:-skipped} |"
           } | tee -a "$AUDIT_OUT_DIR/README.md"
+          for summary in "$AUDIT_OUT_DIR/interaction-web-vitals.md" "$AUDIT_OUT_DIR/lighthouse-summary.md"; do
+            if [ -f "$summary" ]; then cat "$summary" | tee -a "$GITHUB_STEP_SUMMARY" "$AUDIT_OUT_DIR/README.md"; fi
+          done
 
       - name: Publier les rapports et captures UAT
         if: always()
@@ -186,6 +209,7 @@ jobs:
           BROWSER_RESULT: ${{ steps.browser_audit.outcome }}
           LIGHTHOUSE_RESULT: ${{ steps.lighthouse.outcome }}
           AUTH_RESULT: ${{ steps.auth_boundary.outcome }}
+          INTERACTIONS_RESULT: ${{ steps.interactions.outcome }}
         run: |
           set -euo pipefail
           {
@@ -197,12 +221,13 @@ jobs:
             echo "| Cache/TTFB | ${CACHE_RESULT:-skipped} |"
             echo "| Responsive/SEO/Axe/XSS | ${BROWSER_RESULT:-skipped} |"
             echo "| Auth anonyme/formulaire | ${AUTH_RESULT:-skipped} |"
+            echo "| Interactions JavaScript + LCP/INP | ${INTERACTIONS_RESULT:-skipped} |"
             echo "| Lighthouse | ${LIGHTHOUSE_RESULT:-skipped} |"
             echo "| Charge 10 rps | ${SMOKE_RESULT:-skipped} |"
             echo "| Charge 100 rps | ${FULL_LOAD_RESULT:-skipped} |"
           } | tee -a "$GITHUB_STEP_SUMMARY" "$AUDIT_OUT_DIR/README.md"
 
-          for result in "$SECURITY_RESULT" "$CACHE_RESULT" "$BROWSER_RESULT" "$LIGHTHOUSE_RESULT" "$AUTH_RESULT"; do
+          for result in "$SECURITY_RESULT" "$CACHE_RESULT" "$BROWSER_RESULT" "$LIGHTHOUSE_RESULT" "$AUTH_RESULT" "$INTERACTIONS_RESULT"; do
             if [ "$result" != success ]; then
               echo "Audit public incomplet ou en échec; consulter l'artefact audit-uat-public-${GITHUB_RUN_NUMBER}."
               exit 1
