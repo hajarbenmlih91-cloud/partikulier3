@@ -1,0 +1,158 @@
+name: Analyser le rapport d'audit UAT
+
+on:
+  workflow_call:
+    inputs:
+      run_id:
+        description: Identifiant du run UAT à analyser (aucun nouvel appel au site)
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  summarize:
+    name: Extraire les constats détaillés de l'artefact existant
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Valider le run et retrouver son artefact
+        id: meta
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ inputs.run_id }}
+        run: |
+          set -euo pipefail
+          [[ "$RUN_ID" =~ ^[0-9]+$ ]] || { echo 'run_id doit être numérique' >&2; exit 2; }
+          run_json="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID")"
+          run_number="$(python -c 'import json,sys; print(json.load(sys.stdin)["run_number"])' <<<"$run_json")"
+          run_sha="$(python -c 'import json,sys; print(json.load(sys.stdin)["head_sha"])' <<<"$run_json")"
+          run_branch="$(python -c 'import json,sys; print(json.load(sys.stdin)["head_branch"])' <<<"$run_json")"
+          [[ "$run_branch" == 'arena/0e605e79-partikulier3' ]] || { echo "Run branch refusée: $run_branch" >&2; exit 2; }
+          artifact="audit-uat-public-$run_number"
+          echo "run_number=$run_number" >> "$GITHUB_OUTPUT"
+          echo "run_sha=$run_sha" >> "$GITHUB_OUTPUT"
+          echo "artifact=$artifact" >> "$GITHUB_OUTPUT"
+          echo "Run $RUN_ID · $artifact · commit $run_sha"
+
+      - name: Télécharger l'artefact public déjà produit
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ steps.meta.outputs.artifact }}
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ github.token }}
+          path: uat-audit-source
+
+      - name: Résumer échecs, avertissements, métriques et captures
+        id: report
+        env:
+          SOURCE_DIR: uat-audit-source
+          REPORT_RUN_ID: ${{ inputs.run_id }}
+          REPORT_SHA: ${{ steps.meta.outputs.run_sha }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os, pathlib, re
+          root = pathlib.Path(os.environ['SOURCE_DIR'])
+          lines = [
+              '# Analyse détaillée de l’audit UAT', '',
+              f"Run source : {os.environ['REPORT_RUN_ID']}",
+              f"Commit testé : `{os.environ['REPORT_SHA']}`", '',
+              'Cette analyse lit uniquement l’artefact existant; elle ne fait aucun appel au staging.', ''
+          ]
+          annotations = []
+
+          def annotate(level, title, message):
+              msg = str(message).replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+              title = str(title).replace('%', '%25').replace('\r', '%0D').replace('\n', ' ')
+              annotations.append(f'::{level} title={title}::{msg}')
+
+          # Résultats des scripts PHP live : KO/ATT/SAUTÉS avec verbatim concis.
+          for filename, label in [('security.txt', 'Sécurité live'), ('cache-ttfb.txt', 'Cache/TTFB'), ('auth-boundary.txt', 'Frontière auth')]:
+              p = root / filename
+              if not p.exists():
+                  continue
+              lines.extend([f'## {label}', ''])
+              matches = [x.strip() for x in p.read_text(errors='replace').splitlines() if re.match(r'^\s*(KO|ATT|SAUTÉ|FAIL|WARN|SKIPPED)\b', x, re.I)]
+              if matches:
+                  lines.extend(f'- {x}' for x in matches)
+                  for item in matches[:15]: annotate('error' if re.match(r'^(KO|FAIL)\b', item, re.I) else 'warning', label, item)
+              else:
+                  lines.append('Aucune ligne KO/ATT/SAUTÉ trouvée; consulter le log brut ci-dessous.')
+              lines.append('')
+
+          # Browser/SEO/a11y/XSS: conserver les IDs et détails, pas seulement le statut global.
+          p = root / 'browser-audit.json'
+          if p.exists():
+              data = json.loads(p.read_text())
+              failed = [r for r in data.get('results', []) if r.get('status') == 'FAIL']
+              lines += ['## Chromium, responsive, SEO, Axe, JavaScript et XSS', '',
+                        f"Statut : **{data.get('status')}** · {data.get('total_checks')} contrôles · {data.get('failed_checks')} échec(s) enregistrés.", '']
+              for row in failed:
+                  detail = f"{row.get('category')} — {row.get('check')}: {row.get('detail')}"
+                  lines.append(f'- **{row.get("severity", "error").upper()}** {detail}')
+                  annotate('error' if row.get('severity') == 'error' else 'warning', row.get('check', 'Browser finding'), detail)
+              if not failed: lines.append('Aucun contrôle browser en statut FAIL.')
+              lines.append('')
+
+          # Interactions, captures et Web Vitals de laboratoire.
+          p = root / 'interaction-web-vitals.json'
+          if p.exists():
+              data = json.loads(p.read_text())
+              lines += ['## Interactions JavaScript et Web Vitals', '',
+                        f"Statut fonctionnel : **{data.get('status')}** · INP lab proxy max : **{data.get('interaction_inp_lab_max_ms') if data.get('interaction_inp_lab_max_ms') is not None else 'n/a'} ms**.", '',
+                        '| Écran | Largeur | LCP lab (ms) | CLS lab |', '|---|---:|---:|---:|']
+              for m in data.get('metrics', []):
+                  lines.append(f"| {m.get('label')} | {m.get('width')} | {m.get('lcp_ms') if m.get('lcp_ms') is not None else 'n/a'} | {m.get('cls') if m.get('cls') is not None else 'n/a'} |")
+              lines += ['', '### Interactions testées', '']
+              for item in data.get('checks', []):
+                  if item.get('category') == 'interaction':
+                      text = f"{item.get('status')} — {item.get('check')}: {item.get('detail')}"
+                      lines.append(f'- {text}')
+                      if item.get('status') == 'FAIL': annotate('error', item.get('check', 'Interaction'), item.get('detail', ''))
+              lines += ['', '**Interprétation :** LCP/CLS sont des mesures de laboratoire. L’INP de ce script est le maximum des durées `PerformanceEventTiming` des interactions simulées; ce n’est pas le p98 terrain CrUX/RUM.', '']
+
+          # Lighthouse JSON, y compris scores et Core Web Vitals disponibles.
+          p = root / 'lighthouse-summary.md'
+          if p.exists():
+              lines += ['## Lighthouse', '', p.read_text(errors='replace'), '']
+          else:
+              json_files = sorted(root.glob('lighthouse-*.json'))
+              if json_files:
+                  lines += ['## Lighthouse', '', '| Page | Perf | A11y | Best practices | SEO | LCP ms | INP ms | CLS | TBT ms |', '|---|---:|---:|---:|---:|---:|---:|---:|---:|']
+                  for f in json_files:
+                      data = json.loads(f.read_text()); cats = data.get('categories', {}); audits = data.get('audits', {})
+                      def score(k): return round((cats.get(k, {}).get('score') or 0) * 100)
+                      def metric(*keys):
+                          for k in keys:
+                              v = audits.get(k, {}).get('numericValue')
+                              if v is not None: return round(v)
+                          return 'n/a'
+                      row = f"| {f.stem} | {score('performance')} | {score('accessibility')} | {score('best-practices')} | {score('seo')} | {metric('largest-contentful-paint')} | {metric('interaction-to-next-paint', 'experimental-interaction-to-next-paint')} | {metric('cumulative-layout-shift')} | {metric('total-blocking-time')} |"
+                      lines.append(row)
+                      annotate('notice', f'Lighthouse {f.stem}', row)
+                  lines.append('')
+
+          # Mobile screenshots shipped with this artifact.
+          shots = sorted((root / 'screenshots').glob('*.png')) if (root / 'screenshots').exists() else []
+          lines += ['## Captures', '']
+          lines.extend(f'- `{f.relative_to(root)}` ({f.stat().st_size:,} octets)' for f in shots)
+          if not shots: lines.append('Aucune capture trouvée dans l’artefact.')
+          lines.append('')
+
+          out = pathlib.Path('audit-uat-analysis.md')
+          out.write_text('\n'.join(lines) + '\n')
+          pathlib.Path(os.environ['GITHUB_STEP_SUMMARY']).write_text('\n'.join(lines) + '\n')
+          print('\n'.join(annotations[:45]))
+          print(f"Analyse produite : {out}; {len(shots)} captures trouvées.")
+          PY
+
+      - name: Publier l'analyse détaillée
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-uat-analysis-${{ inputs.run_id }}
+          path: audit-uat-analysis.md
+          if-no-files-found: error
+          retention-days: 14
