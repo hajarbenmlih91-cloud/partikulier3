@@ -1,0 +1,316 @@
+name: Audit réel du staging UAT
+
+# Audit déclenché manuellement uniquement : aucune installation ni aucun déploiement.
+# Le job lit le staging, sauf création puis suppression d'un compte propriétaire
+# temporaire pour vérifier réellement la connexion et le tableau de bord.
+on:
+  workflow_dispatch:
+    inputs:
+      load_test:
+        description: Exécuter le test de charge complet (sonde 10 rps puis 100 rps si la sonde tient)
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: audit-uat-partikulier
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    name: SEO, sécurité, navigateur, authentification et performance
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment:
+      name: uat
+      url: ${{ vars.SITE_URL }}
+    env:
+      SITE_URL: ${{ vars.SITE_URL }}
+      PK_SECRET: ${{ secrets.PARTIKULIER_N8N_SECRET }}
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+      SSH_PORT: ${{ secrets.SSH_PORT }}
+      SSH_USER: ${{ secrets.SSH_USER }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+      WP_PATH: ${{ secrets.WP_PATH }}
+      AUDIT_OUT_DIR: ${{ github.workspace }}/.audit-uat-artifacts
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+
+      - name: Vérifier la cible UAT (interdit de viser la production)
+        run: |
+          set -euo pipefail
+          : "${SITE_URL:?Variable SITE_URL absente de l'environnement GitHub uat}"
+          python - <<'PY'
+          import os
+          from urllib.parse import urlparse
+          site = os.environ['SITE_URL'].rstrip('/')
+          parsed = urlparse(site)
+          expected = 'darkcyan-yak-151002.hostingersite.com'
+          if parsed.scheme != 'https' or parsed.hostname != expected:
+              raise SystemExit(f"Cible refusée : {site!r}; UAT attendue https://{expected}")
+          print(f"Cible UAT validée : {site}")
+          PY
+          mkdir -p "$AUDIT_OUT_DIR"
+          printf '# Audit UAT — %s\n\nCommit testé : `%s`\n\n' "$SITE_URL" "$GITHUB_SHA" > "$AUDIT_OUT_DIR/README.md"
+
+      - name: Installer PHP CLI et cURL
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: curl, mbstring
+          coverage: none
+
+      - name: Installer Node, Playwright et Chromium
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          set -euo pipefail
+          cd theme/partikulier
+          npm ci
+          npm install --no-save axe-core@4.10.3
+          npx playwright install --with-deps chromium
+
+      - name: Configurer SSH strict vers l'environnement UAT
+        id: ssh
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          : "${SSH_HOST:?Secret SSH_HOST absent}"
+          : "${SSH_PORT:?Secret SSH_PORT absent}"
+          : "${SSH_USER:?Secret SSH_USER absent}"
+          : "${SSH_PRIVATE_KEY:?Secret SSH_PRIVATE_KEY absent}"
+          : "${SSH_KNOWN_HOSTS:?Secret SSH_KNOWN_HOSTS absent}"
+          : "${WP_PATH:?Secret WP_PATH absent}"
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
+          chmod 600 "$HOME/.ssh/id_ed25519"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 644 "$HOME/.ssh/known_hosts"
+          {
+            echo "Host partikulier-uat"
+            echo "  HostName $SSH_HOST"
+            echo "  Port $SSH_PORT"
+            echo "  User $SSH_USER"
+            echo "  IdentityFile $HOME/.ssh/id_ed25519"
+            echo "  UserKnownHostsFile $HOME/.ssh/known_hosts"
+            echo "  StrictHostKeyChecking yes"
+            echo "  IdentitiesOnly yes"
+            echo "  BatchMode yes"
+            echo "  ConnectionAttempts 4"
+            echo "  ConnectTimeout 15"
+            echo "  ServerAliveInterval 15"
+            echo "  ServerAliveCountMax 3"
+          } > "$HOME/.ssh/config"
+          chmod 600 "$HOME/.ssh/config"
+          ssh -F "$HOME/.ssh/config" partikulier-uat 'bash -s' -- "$WP_PATH" <<'REMOTE'
+          set -euo pipefail
+          test -f "$1/wp-config.php" || { echo 'wp-config.php absent' >&2; exit 1; }
+          REMOTE
+          echo "SSH vérifié; aucune commande de déploiement ne sera exécutée."
+
+      - name: Créer un compte propriétaire jetable pour le parcours connecté
+        id: seed
+        if: steps.ssh.outcome == 'success'
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          login="pk_audit_${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}"
+          email="${login}@example.invalid"
+          password="$(openssl rand -hex 24)"
+          echo "::add-mask::$password"
+          user_id="$(ssh -F "$HOME/.ssh/config" partikulier-uat 'bash -s' -- "$WP_PATH" "$login" "$email" "$password" <<'REMOTE'
+          set -euo pipefail
+          wp_path="$1"; login="$2"; email="$3"; password="$4"
+          cd "$wp_path"
+          command -v wp >/dev/null 2>&1 || { echo 'WP-CLI absent' >&2; exit 1; }
+          if wp user get "$login" --field=ID >/dev/null 2>&1; then
+            echo "Le compte jetable existe déjà; arrêt sans toucher au compte." >&2
+            exit 1
+          fi
+          wp user create "$login" "$email" --role=contributor --user_pass="$password" --porcelain
+          REMOTE
+          )"
+          [[ "$user_id" =~ ^[0-9]+$ ]] || { echo "WP-CLI n'a pas renvoyé un ID utilisateur" >&2; exit 1; }
+          {
+            echo "user_id=$user_id"
+            echo "login=$login"
+            echo "email=$email"
+            echo "password=$password"
+          } >> "$GITHUB_OUTPUT"
+          echo "Compte temporaire contributor créé (ID $user_id); aucune annonce n'est créée."
+
+      - name: Contrats sécurité live (GET et POST négatifs/HMAC)
+        id: security
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          php theme/partikulier/tests/staging-securite.php "$SITE_URL" 2>&1 | tee "$AUDIT_OUT_DIR/security.txt"
+
+      - name: Contrat cache et TTFB extérieur
+        id: cache
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          php theme/partikulier/tests/staging-cache.php "$SITE_URL" /fr/annonces/ 20 2>&1 | tee "$AUDIT_OUT_DIR/cache-ttfb.txt"
+
+      - name: Sondage de charge prudent (10 req/s pendant 10 s)
+        id: load_smoke
+        if: ${{ inputs.load_test }}
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          php theme/partikulier/tests/staging-charge.php "$SITE_URL" 10 10 /fr/annonces/ /fr/ /fr/annonces/?es_city=casablanca 2>&1 | tee "$AUDIT_OUT_DIR/load-smoke.txt"
+
+      - name: Charge complète (100 req/s pendant 30 s; uniquement si la sonde tient)
+        id: load_full
+        if: ${{ inputs.load_test && steps.load_smoke.outcome == 'success' }}
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          php theme/partikulier/tests/staging-charge.php "$SITE_URL" 100 30 /fr/annonces/ /fr/ /fr/annonces/?es_city=casablanca 2>&1 | tee "$AUDIT_OUT_DIR/load-full.txt"
+
+      - name: Audit réel des pages en Chromium (3 langues, 4 largeurs, Axe, XSS réfléchi)
+        id: browser_audit
+        continue-on-error: true
+        working-directory: theme/partikulier
+        env:
+          PK_BASE: ${{ vars.SITE_URL }}
+        run: |
+          set -euo pipefail
+          node tests/audit-uat.mjs 2>&1 | tee "$AUDIT_OUT_DIR/browser-audit.txt"
+
+      - name: Parcours connecté du propriétaire temporaire
+        id: owner_journey
+        if: steps.seed.outcome == 'success'
+        continue-on-error: true
+        working-directory: theme/partikulier
+        env:
+          PK_BASE: ${{ vars.SITE_URL }}
+          AUDIT_LOGIN_EMAIL: ${{ steps.seed.outputs.email }}
+          AUDIT_LOGIN_PASSWORD: ${{ steps.seed.outputs.password }}
+        run: |
+          set -euo pipefail
+          node tests/audit-uat-login.mjs 2>&1 | tee "$AUDIT_OUT_DIR/owner-journey.txt"
+
+      - name: Supprimer le compte de test UAT (même après échec)
+        if: always() && steps.ssh.outcome == 'success' && steps.seed.outputs.user_id != ''
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          ssh -F "$HOME/.ssh/config" partikulier-uat 'bash -s' -- "$WP_PATH" "${{ steps.seed.outputs.user_id }}" <<'REMOTE'
+          set -euo pipefail
+          wp_path="$1"; user_id="$2"
+          cd "$wp_path"
+          wp user delete "$user_id" --yes
+          REMOTE
+          echo "Utilisateur temporaire supprimé; aucune annonce à réattribuer."
+
+      - name: Lighthouse mobile et desktop (Performance, Accessibilité, SEO, Best Practices)
+        id: lighthouse
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          npm install --global lighthouse@12.8.2
+          chrome_path="$(cd theme/partikulier && node --input-type=module -e 'import { chromium } from "playwright"; console.log(chromium.executablePath())')"
+          run_lh() {
+            local label="$1" url="$2" form="$3"
+            echo "Lighthouse $label — $url ($form)"
+            lighthouse "$url" \
+              --chrome-path="$chrome_path" \
+              --chrome-flags='--headless --no-sandbox --disable-dev-shm-usage' \
+              --only-categories=performance,accessibility,best-practices,seo \
+              --form-factor="$form" \
+              --output=json \
+              --output-path="$AUDIT_OUT_DIR/lighthouse-$label.json" \
+              --quiet
+          }
+          run_lh fr-home-mobile "$SITE_URL/fr/" mobile
+          run_lh en-home-mobile "$SITE_URL/en/" mobile
+          run_lh ar-home-mobile "$SITE_URL/ar/" mobile
+          run_lh fr-listings-mobile "$SITE_URL/fr/annonces/" mobile
+          run_lh fr-home-desktop "$SITE_URL/fr/" desktop
+          python - "$AUDIT_OUT_DIR" <<'PY'
+          import json, pathlib, sys
+          root = pathlib.Path(sys.argv[1])
+          lines = ['## Lighthouse scores', '', '| Page | Perf | A11y | Best practices | SEO |', '|---|---:|---:|---:|---:|']
+          for f in sorted(root.glob('lighthouse-*.json')):
+              data = json.loads(f.read_text())
+              cats = data.get('categories', {})
+              score = lambda name: round((cats.get(name, {}).get('score') or 0) * 100)
+              lines.append(f"| {f.stem.removeprefix('lighthouse-')} | {score('performance')} | {score('accessibility')} | {score('best-practices')} | {score('seo')} |")
+          (root / 'lighthouse-summary.md').write_text('\n'.join(lines) + '\n')
+          print('\n'.join(lines))
+          PY
+
+      - name: Résumé des contrôles et nettoyage des clés SSH
+        if: always()
+        env:
+          SSH_RESULT: ${{ steps.ssh.outcome }}
+          SEED_RESULT: ${{ steps.seed.outcome }}
+          SECURITY_RESULT: ${{ steps.security.outcome }}
+          CACHE_RESULT: ${{ steps.cache.outcome }}
+          SMOKE_RESULT: ${{ steps.load_smoke.outcome }}
+          FULL_LOAD_RESULT: ${{ steps.load_full.outcome }}
+          BROWSER_RESULT: ${{ steps.browser_audit.outcome }}
+          OWNER_RESULT: ${{ steps.owner_journey.outcome }}
+          LIGHTHOUSE_RESULT: ${{ steps.lighthouse.outcome }}
+        run: |
+          set -u
+          {
+            echo ''
+            echo '## Résultat des suites UAT'
+            echo ''
+            echo '| Suite | Résultat |'
+            echo '|---|---|'
+            echo "| SSH UAT | ${SSH_RESULT:-skipped} |"
+            echo "| Compte temporaire | ${SEED_RESULT:-skipped} |"
+            echo "| Sécurité live | ${SECURITY_RESULT:-skipped} |"
+            echo "| Cache/TTFB | ${CACHE_RESULT:-skipped} |"
+            echo "| Charge 10 rps | ${SMOKE_RESULT:-skipped} |"
+            echo "| Charge 100 rps | ${FULL_LOAD_RESULT:-skipped} |"
+            echo "| Chromium/Axe | ${BROWSER_RESULT:-skipped} |"
+            echo "| Connexion propriétaire | ${OWNER_RESULT:-skipped} |"
+            echo "| Lighthouse | ${LIGHTHOUSE_RESULT:-skipped} |"
+          } | tee -a "$AUDIT_OUT_DIR/README.md" || true
+          rm -f "$HOME/.ssh/id_ed25519" "$HOME/.ssh/known_hosts" "$HOME/.ssh/config"
+
+      - name: Publier le rapport et les captures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-uat-${{ github.run_number }}
+          path: ${{ github.workspace }}/.audit-uat-artifacts/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Verdict final (échec visible si une suite échoue)
+        if: always()
+        env:
+          SSH_RESULT: ${{ steps.ssh.outcome }}
+          SEED_RESULT: ${{ steps.seed.outcome }}
+          SECURITY_RESULT: ${{ steps.security.outcome }}
+          CACHE_RESULT: ${{ steps.cache.outcome }}
+          SMOKE_RESULT: ${{ steps.load_smoke.outcome }}
+          FULL_LOAD_RESULT: ${{ steps.load_full.outcome }}
+          BROWSER_RESULT: ${{ steps.browser_audit.outcome }}
+          OWNER_RESULT: ${{ steps.owner_journey.outcome }}
+          LIGHTHOUSE_RESULT: ${{ steps.lighthouse.outcome }}
+        run: |
+          set -euo pipefail
+          for result in "$SSH_RESULT" "$SEED_RESULT" "$SECURITY_RESULT" "$CACHE_RESULT" "$SMOKE_RESULT" "$FULL_LOAD_RESULT" "$BROWSER_RESULT" "$OWNER_RESULT" "$LIGHTHOUSE_RESULT"; do
+            if [ "$result" != success ]; then
+              echo "Audit incomplet ou en échec; consulter l'artefact audit-uat-${GITHUB_RUN_NUMBER}."
+              exit 1
+            fi
+          done
+          echo "Toutes les suites sélectionnées ont terminé sans échec de commande. Lire l'artefact pour les scores et constats non bloquants."
