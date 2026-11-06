@@ -9,7 +9,12 @@ on:
   workflow_dispatch:
     inputs:
       run_uat_audit:
-        description: Lancer l'audit public du staging UAT (sans secrets ni connexion propriétaire)
+        description: Lancer l'audit public UAT (sans secrets ni connexion propriétaire)
+        required: true
+        default: false
+        type: boolean
+      run_connected_uat_audit:
+        description: Audit complet UAT avec accès protégé aux secrets et compte propriétaire temporaire
         required: true
         default: false
         type: boolean
@@ -20,7 +25,7 @@ permissions:
 jobs:
   php-version:
     name: Version PHP du serveur
-    if: ${{ !inputs.run_uat_audit }}
+    if: ${{ !inputs.run_uat_audit && !inputs.run_connected_uat_audit }}
     runs-on: ubuntu-latest
     environment: uat
     env:
@@ -89,7 +94,15 @@ jobs:
 
   audit-uat-public:
     name: Audit public du staging (sans secrets ni déploiement)
-    if: ${{ inputs.run_uat_audit }}
+    if: ${{ inputs.run_uat_audit && !inputs.run_connected_uat_audit }}
     uses: ./.github/workflows/audit-uat-public.yml
     with:
       load_test: false
+
+  audit-uat-connected:
+    name: Audit complet protégé UAT (compte temporaire, sans déploiement)
+    if: ${{ inputs.run_connected_uat_audit }}
+    uses: ./.github/workflows/audit-uat.yml
+    with:
+      load_test: true
+    secrets: inherit
