@@ -33,9 +33,9 @@ jobs:
     timeout-minutes: 60
     environment:
       name: uat
-      url: ${{ vars.SITE_URL }}
+      url: ${{ vars.SITE_URL || 'https://darkcyan-yak-151002.hostingersite.com' }}
     env:
-      SITE_URL: ${{ vars.SITE_URL }}
+      SITE_URL: ${{ vars.SITE_URL || 'https://darkcyan-yak-151002.hostingersite.com' }}
       PK_SECRET: ${{ secrets.PARTIKULIER_N8N_SECRET }}
       SSH_HOST: ${{ secrets.SSH_HOST }}
       SSH_PORT: ${{ secrets.SSH_PORT }}
@@ -43,7 +43,7 @@ jobs:
       SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
       SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
       WP_PATH: ${{ secrets.WP_PATH }}
-      AUDIT_OUT_DIR: ${{ github.workspace }}/.audit-uat-artifacts
+      AUDIT_OUT_DIR: ${{ github.workspace }}/uat-audit-artifacts
     defaults:
       run:
         shell: bash
@@ -191,7 +191,7 @@ jobs:
         continue-on-error: true
         working-directory: theme/partikulier
         env:
-          PK_BASE: ${{ vars.SITE_URL }}
+          PK_BASE: ${{ vars.SITE_URL || 'https://darkcyan-yak-151002.hostingersite.com' }}
         run: |
           set -euo pipefail
           node tests/audit-uat.mjs 2>&1 | tee "$AUDIT_OUT_DIR/browser-audit.txt"
@@ -202,7 +202,7 @@ jobs:
         continue-on-error: true
         working-directory: theme/partikulier
         env:
-          PK_BASE: ${{ vars.SITE_URL }}
+          PK_BASE: ${{ vars.SITE_URL || 'https://darkcyan-yak-151002.hostingersite.com' }}
           AUDIT_LOGIN_EMAIL: ${{ steps.seed.outputs.email }}
           AUDIT_LOGIN_PASSWORD: ${{ steps.seed.outputs.password }}
         run: |
@@ -296,7 +296,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: audit-uat-${{ github.run_number }}
-          path: ${{ github.workspace }}/.audit-uat-artifacts/
+          path: ${{ github.workspace }}/uat-audit-artifacts/
           if-no-files-found: warn
           retention-days: 14
 
