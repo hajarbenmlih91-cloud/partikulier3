@@ -18,6 +18,11 @@ on:
         required: true
         default: false
         type: boolean
+      run_uat_load_test:
+        description: Ajouter un test de charge UAT (10 puis 100 req/s si la sonde tient); nécessite un audit public ou connecté
+        required: true
+        default: false
+        type: boolean
       summarize_uat_run_id:
         description: Analyser un artefact UAT existant sans refaire de tests live (run ID numérique)
         required: false
@@ -34,9 +39,41 @@ permissions:
   actions: read
 
 jobs:
+  validate-dispatch:
+    name: Valider le mode de lancement avant tout accès externe
+    runs-on: ubuntu-latest
+    steps:
+      - name: Vérifier que les options sont exclusives et cohérentes
+        env:
+          RUN_PUBLIC: ${{ inputs.run_uat_audit }}
+          RUN_CONNECTED: ${{ inputs.run_connected_uat_audit }}
+          RUN_LOAD: ${{ inputs.run_uat_load_test }}
+          PUBLIC_RUN_ID: ${{ inputs.summarize_uat_run_id }}
+          CONNECTED_RUN_ID: ${{ inputs.summarize_connected_uat_run_id }}
+        run: |
+          set -euo pipefail
+          if [[ "$RUN_LOAD" == true && "$RUN_PUBLIC" != true && "$RUN_CONNECTED" != true ]]; then
+            echo 'Le test de charge nécessite un audit public ou connecté.' >&2; exit 2
+          fi
+          if [[ "$RUN_PUBLIC" == true ]]; then
+            if [[ "$RUN_CONNECTED" == true || -n "$PUBLIC_RUN_ID" || -n "$CONNECTED_RUN_ID" ]]; then
+              echo 'Audit public, audit connecté et analyse d’artefact sont mutuellement exclusifs.' >&2; exit 2
+            fi
+          elif [[ "$RUN_CONNECTED" == true ]]; then
+            if [[ -n "$PUBLIC_RUN_ID" || -n "$CONNECTED_RUN_ID" ]]; then
+              echo 'Audit connecté et analyse d’artefact sont mutuellement exclusifs.' >&2; exit 2
+            fi
+          elif [[ -n "$PUBLIC_RUN_ID" ]]; then
+            : # Rapport public; l’artefact connecté est facultatif.
+          elif [[ -n "$CONNECTED_RUN_ID" ]]; then
+            echo 'Un run connecté ne peut être analysé sans son run public associé.' >&2; exit 2
+          fi
+          echo 'Options cohérentes; aucun secret ni appel externe dans cette validation.'
+
   php-version:
     name: Version PHP du serveur
-    if: ${{ !inputs.run_uat_audit && !inputs.run_connected_uat_audit && inputs.summarize_uat_run_id == '' && inputs.summarize_connected_uat_run_id == '' }}
+    needs: validate-dispatch
+    if: ${{ !inputs.run_uat_audit && !inputs.run_connected_uat_audit && !inputs.run_uat_load_test && inputs.summarize_uat_run_id == '' && inputs.summarize_connected_uat_run_id == '' }}
     runs-on: ubuntu-latest
     environment: uat
     env:
@@ -105,22 +142,25 @@ jobs:
 
   audit-uat-public:
     name: Audit public du staging (sans secrets ni déploiement)
+    needs: validate-dispatch
     if: ${{ inputs.run_uat_audit && !inputs.run_connected_uat_audit && inputs.summarize_uat_run_id == '' && inputs.summarize_connected_uat_run_id == '' }}
     uses: ./.github/workflows/audit-uat-public.yml
     with:
-      load_test: false
+      load_test: ${{ inputs.run_uat_load_test }}
 
   audit-uat-connected:
     name: Audit complet protégé UAT (compte temporaire, sans déploiement)
+    needs: validate-dispatch
     if: ${{ inputs.run_connected_uat_audit && inputs.summarize_uat_run_id == '' && inputs.summarize_connected_uat_run_id == '' }}
     uses: ./.github/workflows/audit-uat.yml
     with:
-      load_test: true
+      load_test: ${{ inputs.run_uat_load_test }}
     secrets: inherit
 
   audit-report:
     name: Analyser l'artefact existant sans nouvel appel au staging
-    if: ${{ inputs.summarize_uat_run_id != '' && !inputs.run_uat_audit && !inputs.run_connected_uat_audit }}
+    needs: validate-dispatch
+    if: ${{ inputs.summarize_uat_run_id != '' && !inputs.run_uat_audit && !inputs.run_connected_uat_audit && !inputs.run_uat_load_test }}
     uses: ./.github/workflows/audit-uat-report.yml
     with:
       run_id: ${{ inputs.summarize_uat_run_id }}

@@ -9,8 +9,9 @@
  * pk_automation_signature, pk_n8n_secret_missing), mêmes en-têtes de
  * webhook sortant, même promotion « secret présent + mode off = enforce »
  * (LOT 2 — Isolation : un secret configuré ne doit jamais suffire seul),
- * même plafond d'échecs HMAC par heure (100) et même idempotence des
- * accusés d'événements (UNIQUE KEY event_id → duplicate = 200 accepted).
+ * même plafond d'échecs HMAC par heure (100) et idempotence des accusés
+ * d'événements (UNIQUE KEY event_id : rejeu strictement identique → 200
+ * duplicate=true ; réutilisation avec contenu/type/source différent → 409).
  *
  * Le pont ne reçoit QUE des événements normalisés par n8n après
  * vérification côté n8n du webhook fournisseur : ce service n'appelle
@@ -72,26 +73,38 @@ final class AutomationService
 	 */
 	public static function receive_event( \WP_REST_Request $request )
 	{
-		$event_id      = substr(sanitize_text_field( (string) $request->get_param('event_id')), 0, 191);
-		$event_type    = sanitize_key( (string) $request->get_param('event_type'));
-		$source        = sanitize_key( (string) $request->get_param('source'));
-		$payload       = $request->get_param('payload');
+		$raw_event_id   = $request->get_param('event_id');
+		$raw_event_type = $request->get_param('event_type');
+		$raw_source     = $request->get_param('source');
+		$event_id       = is_string($raw_event_id) ? $raw_event_id : '';
+		$event_type     = is_string($raw_event_type) ? sanitize_key($raw_event_type) : '';
+		$source         = is_string($raw_source) ? sanitize_key($raw_source) : '';
+		$payload        = $request->get_param('payload');
 		$allowed_types = ['whatsapp_inbound', 'whatsapp_status', 'payment_status'];
 		$prefix        = 'n8n' === $source ? 'n8n-' : ( 'payment_provider' === $source ? 'pay-' : '' );
-		if ( ! $event_id || ! $prefix || 0 !== strpos($event_id, $prefix) || strlen($event_id) > 191 || ! in_array($event_type, $allowed_types, true) || ! in_array($source, ['n8n', 'payment_provider'], true) ) {
+		if ( ! $event_id || $event_id !== sanitize_text_field($event_id)
+			|| ! preg_match('/\\A[A-Za-z0-9][A-Za-z0-9._:-]{0,190}\\z/', $event_id)
+			|| ! $prefix || 0 !== strpos($event_id, $prefix)
+			|| $raw_event_type !== $event_type || $raw_source !== $source
+			|| ! in_array($event_type, $allowed_types, true)
+			|| ! in_array($source, ['n8n', 'payment_provider'], true) ) {
 			return new \WP_Error('pk_automation_payload', __('Événement d’automatisation invalide.', 'partikulier'), ['status' => 400]);
 		}
 
 		global $wpdb;
 		$table           = self::events_table();
 		$encoded_payload = wp_json_encode(is_array($payload) || is_object($payload) ? $payload : ['value' => (string) $payload]);
-		$stored          = $wpdb->insert(
+		if ( false === $encoded_payload ) {
+			return new \WP_Error('pk_automation_payload', __('Événement d’automatisation invalide.', 'partikulier'), ['status' => 400]);
+		}
+		$payload_hash = hash_hmac('sha256', $encoded_payload, wp_salt('auth'));
+		$stored       = $wpdb->insert(
 			$table,
 			[
 				'event_id'     => $event_id,
 				'event_type'   => $event_type,
 				'source'       => $source,
-				'payload_hash' => hash_hmac('sha256', (string) $encoded_payload, wp_salt('auth')),
+				'payload_hash' => $payload_hash,
 				'status'       => 'received',
 				'received_at'  => current_time('mysql', true),
 			],
@@ -100,8 +113,25 @@ final class AutomationService
 		if ( false === $stored ) {
 			$error = strtolower( (string) $wpdb->last_error);
 			if ( false !== strpos($error, 'duplicate') || false !== strpos($error, 'unique') ) {
-				self::audit()->record('automation_event_duplicate', 'automation', null, ['event_id' => $event_id, 'event_type' => $event_type, 'source' => $source]);
-				return new \WP_REST_Response(['accepted' => true, 'duplicate' => true, 'processing' => 'disabled'], 200);
+				$existing = $wpdb->get_row(
+					$wpdb->prepare(
+						"SELECT event_id, event_type, source, payload_hash FROM {$table} WHERE event_id = %s LIMIT 1",
+						$event_id
+					),
+					ARRAY_A
+				);
+				if ( is_array($existing) ) {
+					$same_event = hash_equals((string) $existing['event_id'], $event_id)
+						&& hash_equals((string) $existing['event_type'], $event_type)
+						&& hash_equals((string) $existing['source'], $source)
+						&& hash_equals((string) $existing['payload_hash'], $payload_hash);
+					if ( $same_event ) {
+						self::audit()->record('automation_event_duplicate', 'automation', null, ['event_id' => $event_id, 'event_type' => $event_type, 'source' => $source]);
+						return new \WP_REST_Response(['accepted' => true, 'duplicate' => true, 'processing' => 'disabled'], 200);
+					}
+					self::audit()->record('automation_event_conflict', 'automation', null, ['event_id' => $event_id, 'event_type' => $event_type, 'source' => $source]);
+					return new \WP_Error('pk_automation_event_conflict', __('Identifiant d’événement déjà utilisé avec un contenu différent.', 'partikulier'), ['status' => 409]);
+				}
 			}
 			return new \WP_Error('pk_automation_storage', __('Impossible de journaliser l’événement.', 'partikulier'), ['status' => 500]);
 		}

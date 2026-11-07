@@ -9,7 +9,7 @@ on:
       load_test:
         description: Exécuter la sonde 10 rps puis 100 rps si elle tient
         required: false
-        default: true
+        default: false
         type: boolean
 
 permissions:

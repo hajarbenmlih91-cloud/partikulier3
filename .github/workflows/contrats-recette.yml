@@ -473,7 +473,7 @@ jobs:
           curl --retry 5 --retry-connrefused --retry-delay 1 --fail --silent http://127.0.0.1:8099/fr/ > /dev/null
           PK_BASE=http://127.0.0.1:8099 PK_MERGE_FIXTURE=$PWD/preuves-run/integration/browser-fixture.json \
             node theme/partikulier/tests/merge-v3.mjs > preuves-run/integration/merge-browser.json
-      - name: Vérifier l'oracle 454/454 (durci, 44 suites — schéma, cohérence, unicité, totaux épinglés, results exigé hors suites historiques ; reprise F3 + tests v3 §9.2)
+      - name: Vérifier l'oracle 455/455 (durci, 44 suites — schéma, cohérence, unicité, totaux épinglés, results exigé hors suites historiques ; reprise F3 + tests v3 §9.2)
         run: |
           # Validateur durci (reprise du 20/09/2026 F3, durci le 21/09/2026
           # §9.2) : l'ancien validateur additionnait total/passed DECLARES et
@@ -495,7 +495,7 @@ jobs:
           $attendues = array(
                     "alerts-domain-contract.json" => 15,
           "artifact-hygiene-contract.json" => 3,
-          "automation-domain-contract.json" => 23,
+          "automation-domain-contract.json" => 24,
           "avif-security-contract.json" => 15,
           "core-contract.json" => 8,
           "dp9-availability-contract.json" => 20,
@@ -588,7 +588,7 @@ jobs:
           }
           $tot += $d["total"]; $pas += $d["passed"];
           }
-          if ($tot !== 454 || $pas !== 454) { fwrite(STDERR, "oracle inattendu (attendu 454/454 — 44 suites : 382 reference + 5 extensions SE-044/DP-9 + 67 dp9)\n"); exit(1); }
+          if ($tot !== 455 || $pas !== 455) { fwrite(STDERR, "oracle inattendu (attendu 455/455 — 44 suites : 383 reference + 5 extensions SE-044/DP-9 + 67 dp9)\n"); exit(1); }
           echo "contrats dynamiques : $pas/$tot (" . count($bases) . " suites, schema, coherence, unicitte, totaux epingles, ensemble exact et results exig hors historiques verifies)\n";
           ORACLE
       - name: Publier les résultats

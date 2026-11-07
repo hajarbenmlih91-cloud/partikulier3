@@ -9,14 +9,14 @@ on:
       load_test:
         description: Exécuter le test de charge complet (sonde 10 rps puis 100 rps si la sonde tient)
         required: true
-        default: true
+        default: false
         type: boolean
   workflow_call:
     inputs:
       load_test:
         description: Exécuter le test de charge complet (sonde 10 rps puis 100 rps si la sonde tient)
         required: false
-        default: true
+        default: false
         type: boolean
 
 permissions:
@@ -99,6 +99,10 @@ jobs:
           : "${SSH_PRIVATE_KEY:?Secret SSH_PRIVATE_KEY absent}"
           : "${SSH_KNOWN_HOSTS:?Secret SSH_KNOWN_HOSTS absent}"
           : "${WP_PATH:?Secret WP_PATH absent}"
+          [[ "$SSH_HOST" =~ ^[A-Za-z0-9][A-Za-z0-9.-]*$ ]] || { echo 'SSH_HOST refusé par la validation stricte' >&2; exit 2; }
+          [[ "$SSH_USER" =~ ^[A-Za-z0-9._-]+$ ]] || { echo 'SSH_USER refusé par la validation stricte' >&2; exit 2; }
+          [[ "$SSH_PORT" =~ ^[1-9][0-9]{0,4}$ ]] && (( SSH_PORT <= 65535 )) || { echo 'SSH_PORT doit être numérique (1..65535, sans zéro initial)' >&2; exit 2; }
+          [[ "$WP_PATH" == /* && "$WP_PATH" != *$'\n'* ]] || { echo 'WP_PATH doit être un chemin absolu sur une ligne' >&2; exit 2; }
           install -m 700 -d "$HOME/.ssh"
           printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
           chmod 600 "$HOME/.ssh/id_ed25519"
@@ -120,11 +124,25 @@ jobs:
             echo "  ServerAliveCountMax 3"
           } > "$HOME/.ssh/config"
           chmod 600 "$HOME/.ssh/config"
-          ssh -F "$HOME/.ssh/config" partikulier-uat 'bash -s' -- "$WP_PATH" <<'REMOTE'
+          key_id="$(ssh -F "$HOME/.ssh/config" partikulier-uat 'bash -s' -- "$WP_PATH" <<'REMOTE'
           set -euo pipefail
-          test -f "$1/wp-config.php" || { echo 'wp-config.php absent' >&2; exit 1; }
+          wp_path="$1"
+          test -f "$wp_path/wp-config.php" || { echo 'wp-config.php absent' >&2; exit 1; }
+          cd "$wp_path"
+          command -v wp >/dev/null 2>&1 || { echo 'WP-CLI absent sur la cible SSH' >&2; exit 1; }
+          expected='darkcyan-yak-151002.hostingersite.com'
+          home="$(wp option get home --quiet)"
+          siteurl="$(wp option get siteurl --quiet)"
+          case "${home%/}" in "https://$expected") ;; *) echo 'WordPress home ne correspond pas à la cible UAT autorisée' >&2; exit 1 ;; esac
+          case "${siteurl%/}" in "https://$expected"|"https://$expected/"*) ;; *) echo 'WordPress siteurl ne correspond pas à la cible UAT autorisée' >&2; exit 1 ;; esac
+          key_id="$(wp eval 'echo array_key_first(\Partikulier\Core\Domain\Automation\AutomationService::secret_keys());' --quiet)"
+          [[ "$key_id" =~ ^[A-Za-z0-9_-]{1,64}$ ]] || { echo 'Aucune clé HMAC active exploitable; arrêt avant création de compte.' >&2; exit 1; }
+          printf '%s\n' "$key_id"
           REMOTE
-          echo "SSH vérifié; aucune commande de déploiement ne sera exécutée."
+          )"
+          [[ "$key_id" =~ ^[A-Za-z0-9_-]{1,64}$ ]] || { echo 'Réponse SSH inattendue; arrêt sûr.' >&2; exit 1; }
+          echo "hmac_key_id=$key_id" >> "$GITHUB_OUTPUT"
+          echo "SSH et origine WordPress UAT vérifiés; identifiant HMAC actif=$key_id (aucun secret exposé)."
 
       - name: Créer un compte propriétaire jetable pour le parcours connecté
         id: seed
@@ -134,25 +152,30 @@ jobs:
           set -euo pipefail
           login="pk_audit_${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}"
           email="${login}@example.invalid"
+          marker="$(openssl rand -hex 24)"
           password="$(openssl rand -hex 24)"
           echo "::add-mask::$password"
-          user_id="$(ssh -F "$HOME/.ssh/config" partikulier-uat 'bash -s' -- "$WP_PATH" "$login" "$email" "$password" <<'REMOTE'
+          {
+            echo "login=$login"
+            echo "email=$email"
+            echo "marker=$marker"
+          } >> "$GITHUB_OUTPUT"
+          user_id="$(ssh -F "$HOME/.ssh/config" partikulier-uat 'bash -s' -- "$WP_PATH" "$login" "$email" "$password" "$marker" <<'REMOTE'
           set -euo pipefail
-          wp_path="$1"; login="$2"; email="$3"; password="$4"
+          wp_path="$1"; login="$2"; email="$3"; password="$4"; marker="$5"
           cd "$wp_path"
           command -v wp >/dev/null 2>&1 || { echo 'WP-CLI absent' >&2; exit 1; }
           if wp user get "$login" --field=ID >/dev/null 2>&1; then
             echo "Le compte jetable existe déjà; arrêt sans toucher au compte." >&2
             exit 1
           fi
-          wp user create "$login" "$email" --role=contributor --user_pass="$password" --porcelain
+          meta_input="{\"_pk_uat_audit_marker\":\"$marker\"}"
+          wp user create "$login" "$email" --role=contributor --user_pass="$password" --meta_input="$meta_input" --porcelain
           REMOTE
           )"
           [[ "$user_id" =~ ^[0-9]+$ ]] || { echo "WP-CLI n'a pas renvoyé un ID utilisateur" >&2; exit 1; }
           {
             echo "user_id=$user_id"
-            echo "login=$login"
-            echo "email=$email"
             echo "password=$password"
           } >> "$GITHUB_OUTPUT"
           echo "Compte temporaire contributor créé (ID $user_id); aucune annonce n'est créée."
@@ -160,6 +183,8 @@ jobs:
       - name: Contrats sécurité live (GET et POST négatifs/HMAC)
         id: security
         continue-on-error: true
+        env:
+          PK_KEY_ID: ${{ steps.ssh.outputs.hmac_key_id }}
         run: |
           set -euo pipefail
           php theme/partikulier/tests/staging-securite.php "$SITE_URL" 2>&1 | tee "$AUDIT_OUT_DIR/security.txt"
@@ -221,17 +246,34 @@ jobs:
           node tests/audit-uat-login.mjs 2>&1 | tee "$AUDIT_OUT_DIR/owner-journey.txt"
 
       - name: Supprimer le compte de test UAT (même après échec)
-        if: always() && steps.ssh.outcome == 'success' && steps.seed.outputs.user_id != ''
+        id: cleanup
+        if: always() && steps.ssh.outcome == 'success' && steps.seed.outputs.login != ''
         continue-on-error: true
+        env:
+          AUDIT_LOGIN: ${{ steps.seed.outputs.login }}
+          AUDIT_EMAIL: ${{ steps.seed.outputs.email }}
+          AUDIT_MARKER: ${{ steps.seed.outputs.marker }}
         run: |
           set -euo pipefail
-          ssh -F "$HOME/.ssh/config" partikulier-uat 'bash -s' -- "$WP_PATH" "${{ steps.seed.outputs.user_id }}" <<'REMOTE'
+          ssh -F "$HOME/.ssh/config" partikulier-uat 'bash -s' -- "$WP_PATH" "$AUDIT_LOGIN" "$AUDIT_EMAIL" "$AUDIT_MARKER" <<'REMOTE'
           set -euo pipefail
-          wp_path="$1"; user_id="$2"
+          wp_path="$1"; login="$2"; expected_email="$3"; expected_marker="$4"
           cd "$wp_path"
-          wp user delete "$user_id" --yes
+          user_id="$(wp user get "$login" --field=ID 2>/dev/null || true)"
+          if [[ -z "$user_id" ]]; then echo 'Compte temporaire absent; aucun nettoyage requis.'; exit 0; fi
+          [[ "$user_id" =~ ^[0-9]+$ ]] || { echo 'ID utilisateur non numérique; arrêt sûr.' >&2; exit 1; }
+          email="$(wp user get "$user_id" --field=user_email)"
+          role="$(wp user get "$user_id" --field=roles)"
+          marker="$(wp user meta get "$user_id" _pk_uat_audit_marker 2>/dev/null || true)"
+          [[ "$email" == "$expected_email" && "$role" == 'contributor' && "$marker" == "$expected_marker" ]] || {
+            echo 'Compte trouvé mais identité/marker hors contrat; aucune suppression effectuée.' >&2
+            exit 1
+          }
+          admin_id="$(wp user list --role=administrator --field=ID --format=ids | awk '{print $1}')"
+          [[ "$admin_id" =~ ^[0-9]+$ ]] || { echo 'Aucun administrateur de réaffectation sûr; compte conservé.' >&2; exit 1; }
+          wp user delete "$user_id" --yes --reassign="$admin_id"
           REMOTE
-          echo "Utilisateur temporaire supprimé; aucune annonce à réattribuer."
+          echo "Compte temporaire supprimé et contenu réaffecté à un administrateur si nécessaire."
 
       - name: Lighthouse mobile et desktop (Performance, Accessibilité, SEO, Best Practices)
         id: lighthouse
@@ -283,6 +325,7 @@ jobs:
         env:
           SSH_RESULT: ${{ steps.ssh.outcome }}
           SEED_RESULT: ${{ steps.seed.outcome }}
+          CLEANUP_RESULT: ${{ steps.cleanup.outcome }}
           SECURITY_RESULT: ${{ steps.security.outcome }}
           CACHE_RESULT: ${{ steps.cache.outcome }}
           SMOKE_RESULT: ${{ steps.load_smoke.outcome }}
@@ -301,6 +344,7 @@ jobs:
             echo '|---|---|'
             echo "| SSH UAT | ${SSH_RESULT:-skipped} |"
             echo "| Compte temporaire | ${SEED_RESULT:-skipped} |"
+            echo "| Nettoyage du compte temporaire | ${CLEANUP_RESULT:-skipped} |"
             echo "| Sécurité live | ${SECURITY_RESULT:-skipped} |"
             echo "| Cache/TTFB | ${CACHE_RESULT:-skipped} |"
             echo "| Charge 10 rps | ${SMOKE_RESULT:-skipped} |"
@@ -329,6 +373,7 @@ jobs:
         env:
           SSH_RESULT: ${{ steps.ssh.outcome }}
           SEED_RESULT: ${{ steps.seed.outcome }}
+          CLEANUP_RESULT: ${{ steps.cleanup.outcome }}
           SECURITY_RESULT: ${{ steps.security.outcome }}
           CACHE_RESULT: ${{ steps.cache.outcome }}
           SMOKE_RESULT: ${{ steps.load_smoke.outcome }}
@@ -339,10 +384,18 @@ jobs:
           INTERACTIONS_RESULT: ${{ steps.interactions.outcome }}
         run: |
           set -euo pipefail
-          for result in "$SSH_RESULT" "$SEED_RESULT" "$SECURITY_RESULT" "$CACHE_RESULT" "$SMOKE_RESULT" "$FULL_LOAD_RESULT" "$BROWSER_RESULT" "$OWNER_RESULT" "$LIGHTHOUSE_RESULT" "$INTERACTIONS_RESULT"; do
+          for result in "$SSH_RESULT" "$SEED_RESULT" "$CLEANUP_RESULT" "$SECURITY_RESULT" "$CACHE_RESULT" "$BROWSER_RESULT" "$OWNER_RESULT" "$LIGHTHOUSE_RESULT" "$INTERACTIONS_RESULT"; do
             if [ "$result" != success ]; then
               echo "Audit incomplet ou en échec; consulter l'artefact audit-uat-${GITHUB_RUN_NUMBER}."
               exit 1
             fi
           done
+          if [ "${{ inputs.load_test }}" = true ]; then
+            for result in "$SMOKE_RESULT" "$FULL_LOAD_RESULT"; do
+              if [ "$result" != success ]; then
+                echo "Test de charge incomplet ou en échec; consulter l'artefact audit-uat-${GITHUB_RUN_NUMBER}."
+                exit 1
+              fi
+            done
+          fi
           echo "Toutes les suites sélectionnées ont terminé sans échec de commande. Lire l'artefact pour les scores et constats non bloquants."
