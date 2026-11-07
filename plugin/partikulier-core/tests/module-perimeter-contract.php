@@ -16,7 +16,7 @@
  * Assertions DA-001 à DA-011 :
  *  - DA-001 : métrique CA-4 côté plugin — zéro fichier PHP >400 lignes dans
  *    src/ (runtime, hors tests) ;
- *  - DA-002 : modules du lot D (4 shells + 11 traits) ≤300 lignes chacun ;
+ *  - DA-002 : modules du lot D (4 shells + 14 traits) ≤300 lignes chacun ;
  *  - DA-003..006 : les quatre shells composent leurs traits et portent leur
  *    API publique intégrale (aucune méthode perdue au découpage) ;
  *  - DA-007 : VERBATIM — chaque méthode déplacée résout vers SON fichier de
@@ -83,10 +83,12 @@ foreach ($pluginFiles as $file) {
 $assert('DA-001', $oversizedPlugin === [],
     $oversizedPlugin === [] ? 'plugin src/ : zéro fichier PHP >400 lignes (métrique CA-4 satisfaite côté plugin)' : 'fichiers >400 l. : ' . implode(', ', $oversizedPlugin));
 
-/* DA-002 — modules du lot D + SE-016 : 4 shells + 12 traits, chacun ≤300 lignes. */
+/* DA-002 — modules du lot D + SE-016 : 4 shells + 14 traits, chacun ≤300 lignes. */
 $lotDModules = [
     'src/Domain/Leads/LeadService.php',
     'src/Domain/Leads/LeadsContactTrait.php',
+    'src/Domain/Leads/LeadsQualificationTrait.php',
+    'src/Domain/Leads/LeadsIdempotencyTrait.php',
     'src/Domain/Leads/LeadsRestTrait.php',
     'src/Domain/Leads/LeadsPrivacyTrait.php',
     'src/Domain/Leads/LeadsAdminTrait.php',
@@ -115,8 +117,8 @@ $assert('DA-002', $modulesOk, 'modules lot D ≤300 l. : ' . implode(', ', $modu
 
 /* DA-003..006 — shells : traits composés + API publique intégrale. */
 $apiMatrix = [
-    ['DA-003', LeadService::class, ['LeadsContactTrait', 'LeadsRestTrait', 'LeadsPrivacyTrait', 'LeadsAdminTrait', 'LeadsEraseGuardTrait'],
-        ['table', 'leads_table', 'daily_limit', 'reference_for', 'authorize_contact', 'register_api_lead', 'rest_contact_authorization', 'rest_set_qualification', 'rest_preferences', 'rest_consent', 'rest_opt_out', 'rest_erase_request', 'handle_stop', 'retention_days', 'maybe_schedule_retention', 'lead_id_for_phone', 'erase_lead', 'purge_expired', 'has_active_consent', 'admin_summary', 'admin_rows', 'followup_status_values', 'update_followup', 'lead_id_for_wa_id', 'decrypt_phone_for_admin', 'check_erase_secret']],
+    ['DA-003', LeadService::class, ['LeadsContactTrait', 'LeadsQualificationTrait', 'LeadsIdempotencyTrait', 'LeadsRestTrait', 'LeadsPrivacyTrait', 'LeadsAdminTrait', 'LeadsEraseGuardTrait'],
+        ['table', 'leads_table', 'daily_limit', 'reference_for', 'authorize_contact', 'register_api_lead', 'rest_contact_authorization', 'set_qualification', 'rest_set_qualification', 'rest_preferences', 'rest_consent', 'rest_opt_out', 'rest_erase_request', 'handle_stop', 'retention_days', 'maybe_schedule_retention', 'lead_id_for_phone', 'erase_lead', 'purge_expired', 'has_active_consent', 'admin_summary', 'admin_rows', 'followup_status_values', 'update_followup', 'lead_id_for_wa_id', 'decrypt_phone_for_admin', 'check_erase_secret']],
     ['DA-004', PaymentService::class, ['PaymentsOrdersTrait', 'PaymentsSubscriptionsTrait'],
         ['orders_table', 'subscriptions_table', 'is_gateway_enabled', 'create_order', 'record_order', 'get_order', 'update_order', 'mark_order_failed', 'mark_order_paid', 'delete_order', 'create_subscription', 'get_subscription', 'update_subscription', 'activate_subscription', 'revoke_subscription', 'delete_subscription']],
     ['DA-005', AutomationService::class, ['AutomationPolicyTrait', 'AutomationHmacTrait'],
@@ -137,7 +139,9 @@ foreach ($apiMatrix as [$id, $class, $traits, $methods]) {
 /* DA-007 — VERBATIM : chaque méthode déplacée résout vers SON fichier de trait. */
 $movedMap = [
     LeadService::class => [
-        'LeadsContactTrait.php' => ['authorize_contact', 'register_api_lead', 'seed_followup', 'set_qualification', 'rest_set_qualification'],
+        'LeadsContactTrait.php' => ['authorize_contact', 'register_api_lead', 'seed_followup'],
+        'LeadsQualificationTrait.php' => ['set_qualification', 'rest_set_qualification'],
+        'LeadsIdempotencyTrait.php' => ['provider_message_id', 'claim_provider_message'],
         'LeadsRestTrait.php' => ['rest_contact_authorization', 'rest_preferences', 'rest_consent', 'rest_opt_out', 'rest_erase_request', 'handle_stop'],
         'LeadsPrivacyTrait.php' => ['retention_days', 'maybe_schedule_retention', 'lead_id_for_phone', 'erase_lead', 'purge_expired', 'has_active_consent', 'lead_id_for_wa_id', 'normalize_phone', 'encrypt_phone', 'decrypt_phone_for_admin'],
         'LeadsAdminTrait.php' => ['admin_summary', 'admin_rows', 'followup_status_values', 'update_followup'],
