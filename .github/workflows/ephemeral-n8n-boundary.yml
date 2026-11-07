@@ -167,7 +167,7 @@ jobs:
           record() {
             python3 "$RUNNER_TEMP/evidence.py" "$RUNNER_TEMP/evidence.json" update "$1" "$2" "$3" "$4" "$5"
             case "$1" in
-              n8n-first|n8n-replay|n8n-row|n8n-diagnostic) printf '::notice title=%s::%s\n' "$1" "$5" ;;
+              n8n-owner|n8n-egress|n8n-static|n8n-first|n8n-replay|n8n-row|n8n-diagnostic) printf '::notice title=%s::%s\n' "$1" "$5" ;;
             esac
           }
 
@@ -503,6 +503,11 @@ jobs:
           docker cp "$RUNNER_TEMP/ci-n8n-workflow.json" "$N8N_CONTAINER:/tmp/ci-n8n-workflow.json"
           docker exec -u 0:0 "$N8N_CONTAINER" chown node:node /tmp/ci-n8n-workflow.json && docker exec -u 0:0 "$N8N_CONTAINER" chmod 600 /tmp/ci-n8n-workflow.json
           WORKFLOW_ID="$(cat "$RUNNER_TEMP/ci-n8n-workflow-id")"
+          set +e
+          docker exec -e N8N_DISABLED_MODULES=mcp-registry -e N8N_LOG_LEVEL=debug "$N8N_CONTAINER" n8n import:workflow --input=/tmp/ci-n8n-workflow.json > "$RUNNER_TEMP/n8n-import.log" 2>&1
+          n8n_import_rc=$?
+          set -e
+          printf '::notice title=n8n-import::import_exit=%s\n' "$n8n_import_rc"
           if [ "$n8n_import_rc" -eq 0 ]; then
             set +e
             N8N_BASE="$N8N_BASE" N8N_OWNER_PASSWORD="$N8N_OWNER_PASSWORD" WORKFLOW_ID="$WORKFLOW_ID" python3 - <<'PY' > "$RUNNER_TEMP/n8n-execution.stdout" 2> "$RUNNER_TEMP/n8n-execution.stderr"
