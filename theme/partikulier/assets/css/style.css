@@ -9300,6 +9300,15 @@ html body .pk-editorial-places .pk-btn:active {
 	color: #fff !important;
 }
 html body.home .pk-req { color: #C8242B !important; }
+html body .pk-lang-code,
+html body .pk-submit-back,
+html body .pk-submit-subtitle {
+	color: #323232 !important;
+}
+html body .pk-submit-back:hover,
+html body .pk-submit-back:focus-visible {
+	color: #161715 !important;
+}
 html body .pk-form .pk-choice.is-active,
 html body .pk-submit .choice[aria-pressed="true"],
 html body .pk-form .pk-toggle-btn.is-on,
