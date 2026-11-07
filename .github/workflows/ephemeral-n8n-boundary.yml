@@ -90,9 +90,9 @@ jobs:
               ('n8n-owner', 'POST http://127.0.0.1:5678/rest/owner/setup with generated throwaway credentials', 'HTTP 200; owner created locally', 'non mesuré'),
               ('n8n-static', 'Inspect imported n8n workflow HTTP destinations', 'exactly two requests, same WordPress IP:80 endpoint only', 'No other URL; no WhatsApp, Meta, or Evolution node'),
               ('n8n-egress', 'DOCKER-USER egress rule for n8n container', 'allow only WordPress container IP:80; drop all other forwarded destinations', 'Only WordPress job service permitted'),
-              ('n8n-first', 'n8n CLI execute: first signed POST /automation-event', 'HTTP 200; accepted=true; duplicate=false', 'non mesuré'),
-              ('n8n-replay', 'n8n CLI execute: exact same signed POST replayed', 'HTTP 200; accepted=true; duplicate=true', 'non mesuré'),
-              ('n8n-diagnostic', 'Sanitized n8n CLI failure diagnostic', 'process exit code; failed node; one redacted error line', 'non mesuré'),
+              ('n8n-first', 'n8n manual workflow execution: first signed POST /automation-event', 'HTTP 200; accepted=true; duplicate=false', 'non mesuré'),
+              ('n8n-replay', 'n8n manual workflow execution: exact same signed POST replayed', 'HTTP 200; accepted=true; duplicate=true', 'non mesuré'),
+              ('n8n-diagnostic', 'Sanitized n8n manual execution failure diagnostic', 'process exit code; failed node; one redacted error line', 'non mesuré'),
               ('n8n-row', 'Query pk_automation_events for the CI event_id', 'exactly one row; payload_hash is 64 hex chars', 'non mesuré'),
               ('xmlrpc-list', 'POST /xmlrpc.php system.listMethods', 'HTTP 200; exactly system.multicall, system.listMethods, system.getCapabilities', 'non mesuré'),
               ('xmlrpc-hello', 'POST /xmlrpc.php demo.sayHello', 'HTTP 200; XML-RPC fault -32601', 'non mesuré'),
@@ -502,24 +502,98 @@ jobs:
           docker cp "$RUNNER_TEMP/ci-n8n-workflow.json" "$N8N_CONTAINER:/tmp/ci-n8n-workflow.json"
           docker exec -u 0:0 "$N8N_CONTAINER" chown node:node /tmp/ci-n8n-workflow.json && docker exec -u 0:0 "$N8N_CONTAINER" chmod 600 /tmp/ci-n8n-workflow.json
           WORKFLOW_ID="$(cat "$RUNNER_TEMP/ci-n8n-workflow-id")"
-          CLI_N8N_LOG="n8n-cli-execution-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.log"
-          set +e
-          docker exec -e N8N_DISABLED_MODULES=mcp-registry -e N8N_LOG_LEVEL=debug "$N8N_CONTAINER" n8n import:workflow --input=/tmp/ci-n8n-workflow.json > "$RUNNER_TEMP/n8n-import.log" 2>&1
-          n8n_import_rc=$?
-          set -e
           if [ "$n8n_import_rc" -eq 0 ]; then
             set +e
-            docker exec -e N8N_DISABLED_MODULES=mcp-registry -e N8N_LOG_LEVEL=debug -e N8N_LOG_OUTPUT=console,file -e N8N_LOG_FORMAT=json -e N8N_LOG_FILE_LOCATION="$CLI_N8N_LOG" "$N8N_CONTAINER" n8n execute --id="$WORKFLOW_ID" --rawOutput > "$RUNNER_TEMP/n8n-execution.stdout" 2> "$RUNNER_TEMP/n8n-execution.stderr"
+            N8N_BASE="$N8N_BASE" N8N_OWNER_PASSWORD="$N8N_OWNER_PASSWORD" WORKFLOW_ID="$WORKFLOW_ID" python3 - <<'PY' > "$RUNNER_TEMP/n8n-execution.stdout" 2> "$RUNNER_TEMP/n8n-execution.stderr"
+          import http.cookiejar, json, os, pathlib, re, sys, time, urllib.error, urllib.request
+          base=os.environ['N8N_BASE'].rstrip('/')
+          password=os.environ['N8N_OWNER_PASSWORD']
+          workflow_id=os.environ['WORKFLOW_ID']
+          jar=http.cookiejar.CookieJar()
+          client=urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
+          def call(method,path,payload=None):
+              data=None if payload is None else json.dumps(payload,separators=(',',':')).encode()
+              request=urllib.request.Request(base+path,data=data,method=method,headers={'Content-Type':'application/json','Accept':'application/json'})
+              try:
+                  with client.open(request,timeout=20) as response:
+                      raw=response.read().decode('utf-8','replace')
+                      return response.status,json.loads(raw) if raw else {}
+              except urllib.error.HTTPError as error:
+                  raw=error.read().decode('utf-8','replace')
+                  try: parsed=json.loads(raw)
+                  except Exception: parsed={}
+                  return error.code,parsed
+          def find(value,key):
+              if isinstance(value,dict):
+                  if key in value: return value[key]
+                  for child in value.values():
+                      result=find(child,key)
+                      if result is not None: return result
+              elif isinstance(value,list):
+                  for child in value:
+                      result=find(child,key)
+                      if result is not None: return result
+              elif isinstance(value,str) and value[:1] in ('{','['):
+                  try: return find(json.loads(value),key)
+                  except Exception: pass
+              return None
+          def safe_error(value):
+              if isinstance(value,dict):
+                  for key in ('message','description','cause','error'):
+                      if key in value:
+                          result=safe_error(value[key])
+                          if result: return result
+                  return ' '.join(str(value[k]) for k in ('name','code','httpCode','statusCode') if value.get(k) is not None)
+              if isinstance(value,list): return next((safe_error(v) for v in value if safe_error(v)), '')
+              text=str(value or '')
+              text=re.sub(r'(?s)\s*\{.*\}', ' [structured data redacted]', text)
+              text=re.sub(r'(?i)(x-partikulier-(?:automation|signature|timestamp|key-id)\s*[:=]\s*)[^\s,;]+',r'\1[redacted]',text)
+              text=re.sub(r'(?i)(event_id|ci_probe|whatsapp_status)\s*[:=]\s*(?:"[^"]*"|\'[^\']*\'|[^,;\s}]+)',r'\1=[redacted]',text)
+              text=re.sub(r'(?is)\b(?:request body|body|payload)\b\s*[:=].*','[request data redacted]',text)
+              return ' '.join(text.split())[:200]
+          try:
+              login_code,_=call('POST','/rest/login',{'emailOrLdapLoginId':'ci-owner@example.invalid','password':password})
+              if login_code != 200: raise RuntimeError(f'n8n owner login failed (HTTP {login_code})')
+              start_code,started=call('POST',f'/rest/workflows/{workflow_id}/run',{'triggerToStartFrom':{'name':'Manual Trigger'}})
+              if start_code != 200: raise RuntimeError(f'n8n manual workflow start failed (HTTP {start_code})')
+              execution_id=find(started,'executionId')
+              if not execution_id: raise RuntimeError('n8n manual workflow response omitted executionId')
+              execution={}
+              for _ in range(60):
+                  read_code,execution=call('GET',f'/rest/executions/{execution_id}')
+                  if read_code == 200:
+                      finished=find(execution,'finished')
+                      status=find(execution,'status')
+                      result_data=find(execution,'resultData')
+                      failure=find(result_data,'error') if result_data is not None else None
+                      if finished is True or status in ('success','error','crashed','canceled') or failure is not None: break
+                  time.sleep(1)
+              else: raise RuntimeError('n8n manual execution did not finish within 60 seconds')
+              if failure is not None:
+                  node=find(failure,'node')
+                  if isinstance(node,dict): node=node.get('name')
+                  detail=safe_error(failure)
+                  raise RuntimeError('n8n execution failed'+(f' at {node}' if node else '')+(f': {detail}' if detail else ''))
+              run_data=find(execution,'runData')
+              assertion=(run_data or {}).get('Assert the existing idempotency contract') if isinstance(run_data,dict) else None
+              items=assertion[0].get('data',{}).get('main',[]) if isinstance(assertion,list) and assertion else []
+              item=(items[0][0].get('json',{}) if items and items[0] else {})
+              required={'first_http','first_accepted','first_duplicate','replay_http','replay_accepted','replay_duplicate'}
+              if not required.issubset(item): raise RuntimeError('n8n completed without the idempotency assertion output')
+              print(json.dumps({key:item[key] for key in required},separators=(',',':')))
+          except Exception as error:
+              print(str(error),file=sys.stderr)
+              raise SystemExit(1)
+          PY
             n8n_rc=$?
             set -e
-            docker cp "$N8N_CONTAINER:/home/node/.n8n/$CLI_N8N_LOG" "$RUNNER_TEMP/n8n-cli-execution.log" >/dev/null 2>&1 || true
           else
             : > "$RUNNER_TEMP/n8n-execution.stdout"
             cp "$RUNNER_TEMP/n8n-import.log" "$RUNNER_TEMP/n8n-execution.stderr"
             n8n_rc=$n8n_import_rc
           fi
 
-          # CLI execution data can contain the transient signed request. Parse privately and emit only HTTP codes/booleans.
+          # Manual n8n execution data can contain the transient signed request. Parse privately and emit only HTTP codes/booleans.
           set +e
           summary="$(python3 - "$RUNNER_TEMP/n8n-execution.stdout" <<'PY'
           import json, pathlib, sys
@@ -562,24 +636,23 @@ jobs:
             replay_http="$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])["replay_http"])' "$summary")"
             replay_duplicate="$(python3 -c 'import json,sys; print(str(json.loads(sys.argv[1])["replay_duplicate"]).lower())' "$summary")"
             replay_accepted="$(python3 -c 'import json,sys; print(str(json.loads(sys.argv[1])["replay_accepted"]).lower())' "$summary")"
-            record n8n-first 'n8n CLI execute: first signed POST /automation-event' "$first_http" 'HTTP 200; accepted=true; duplicate=false' "HTTP $first_http; accepted=$first_accepted; duplicate=$first_duplicate"
-            record n8n-replay 'n8n CLI execute: exact same signed POST replayed' "$replay_http" 'HTTP 200; accepted=true; duplicate=true' "HTTP $replay_http; accepted=$replay_accepted; duplicate=$replay_duplicate"
+            record n8n-first 'n8n manual workflow execution: first signed POST /automation-event' "$first_http" 'HTTP 200; accepted=true; duplicate=false' "HTTP $first_http; accepted=$first_accepted; duplicate=$first_duplicate"
+            record n8n-replay 'n8n manual workflow execution: exact same signed POST replayed' "$replay_http" 'HTTP 200; accepted=true; duplicate=true' "HTTP $replay_http; accepted=$replay_accepted; duplicate=$replay_duplicate"
             if [ "$first_http" != 200 ] || [ "$first_accepted" != true ] || [ "$first_duplicate" != false ] || [ "$replay_http" != 200 ] || [ "$replay_accepted" != true ] || [ "$replay_duplicate" != true ]; then FAIL=1; fi
           else
-            record n8n-first 'n8n CLI execute: first signed POST /automation-event' 'non mesuré' 'HTTP 200; accepted=true; duplicate=false' 'non mesuré — n8n execution failed or sanitized result unavailable'
-            record n8n-replay 'n8n CLI execute: exact same signed POST replayed' 'non mesuré' 'HTTP 200; accepted=true; duplicate=true' 'non mesuré — n8n execution failed or sanitized result unavailable'
+            record n8n-first 'n8n manual workflow execution: first signed POST /automation-event' 'non mesuré' 'HTTP 200; accepted=true; duplicate=false' 'non mesuré — n8n execution failed or sanitized result unavailable'
+            record n8n-replay 'n8n manual workflow execution: exact same signed POST replayed' 'non mesuré' 'HTTP 200; accepted=true; duplicate=true' 'non mesuré — n8n execution failed or sanitized result unavailable'
             FAIL=1
           fi
 
           # Preserve the process status even if diagnostic parsing itself fails. Never publish raw CLI output.
           set +e
-          n8n_diagnostic="$(python3 - "$RUNNER_TEMP/n8n-execution.stdout" "$RUNNER_TEMP/n8n-execution.stderr" "$RUNNER_TEMP/n8n-cli-execution.log" "$RUNNER_TEMP/ci-n8n-workflow.json" "$n8n_rc" <<'PY' 2>"$RUNNER_TEMP/n8n-diagnostic-parser.stderr"
+          n8n_diagnostic="$(python3 - "$RUNNER_TEMP/n8n-execution.stdout" "$RUNNER_TEMP/n8n-execution.stderr" "$RUNNER_TEMP/ci-n8n-workflow.json" "$n8n_rc" <<'PY' 2>"$RUNNER_TEMP/n8n-diagnostic-parser.stderr"
           import json, pathlib, re, sys
-          out_path, err_path, cli_log_path, workflow_path = map(pathlib.Path, sys.argv[1:5])
-          exit_code = sys.argv[5]
+          out_path, err_path, workflow_path = map(pathlib.Path, sys.argv[1:4])
+          exit_code = sys.argv[4]
           stdout = out_path.read_text(errors='replace') if out_path.exists() else ''
           stderr = err_path.read_text(errors='replace') if err_path.exists() else ''
-          cli_log = cli_log_path.read_text(errors='replace') if cli_log_path.exists() else ''
           tokens = []
           try:
               workflow = json.loads(workflow_path.read_text())
@@ -658,14 +731,14 @@ jobs:
                       collect_error_fields(child,child_error)
               elif isinstance(value,list):
                   for child in value: collect_error_fields(child,under_error)
-          for source in (stdout, stderr, cli_log):
+          for source in (stdout, stderr):
               for index, char in enumerate(source):
                   if char != '{': continue
                   try: obj, _ = decoder.raw_decode(source[index:])
                   except Exception: continue
                   walk(obj)
                   collect_error_fields(obj)
-          combined = stdout + '\n' + stderr + '\n' + cli_log
+          combined = stdout + '\n' + stderr
           for line in reversed(combined.splitlines()):
               lowered = line.lower()
               if any(x in lowered for x in ('api.n8n.io', 'telemetry', 'diagnostic', 'an error occurred while importing workflows. see log messages for details')): continue
@@ -683,13 +756,14 @@ jobs:
                   cleaned = clean(line)
                   if cleaned and cleaned != '[request data redacted]': safe_lines.append(cleaned)
               if not safe_lines:
-                  for line in (stdout + '\n' + cli_log).splitlines():
+                  for line in stdout.splitlines():
                       cleaned = clean(line)
                       if cleaned and cleaned != '[request data redacted]': safe_lines.append(cleaned)
               error_line = ' | '.join(safe_lines[-3:])
           node_name = clean(node_name) or 'non mesuré'
-          error_line = clean(error_line) or 'non mesuré — aucune erreur de nœud dans la sortie CLI'
-          print(f'exit={exit_code}; node={node_name}; cli_log_bytes={len(cli_log)}; error={error_line}')
+          if exit_code == '0': error_line = 'aucune erreur — exécution REST manuelle terminée'
+          else: error_line = clean(error_line) or 'non mesuré — aucun message d’erreur exploitable'
+          print(f'exit={exit_code}; node={node_name}; error={error_line}')
           PY
           )"
           n8n_diagnostic_rc=$?
@@ -768,7 +842,7 @@ jobs:
           PY
           )"
           n8n_diagnostic="import_exit=$n8n_import_rc; $n8n_diagnostic; service=$service_diagnostic"
-          record n8n-diagnostic 'Parse private n8n CLI/service output; filter telemetry and redact secrets/request data' 'N/A' 'import/execute exit codes; failed node; one safe CLI and service error summary' "$n8n_diagnostic"
+          record n8n-diagnostic 'Parse private n8n REST/manual execution and service output; redact secrets/request data' 'N/A' 'import/manual-run exit codes; failed node; one safe execution and service error summary' "$n8n_diagnostic"
           fi
 
           EVENT_ID="$(cat "$RUNNER_TEMP/ci-n8n-event-id")"
@@ -788,8 +862,8 @@ jobs:
             : # SE-041 below records exact HTTP codes and structural XML-RPC results from this same WP service.
           done
 
-          docker exec "$N8N_CONTAINER" rm -f /tmp/ci-n8n-workflow.json /tmp/ci-n8n-curl.conf /tmp/ci-n8n-signed-body.json /tmp/ci-n8n-curl-first.json /tmp/ci-n8n-curl-replay.json /tmp/ci-static-curl "/home/node/.n8n/n8n-cli-execution-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.log" || true
-          rm -f "$RUNNER_TEMP/ci-n8n-workflow.json" "$RUNNER_TEMP/ci-n8n-workflow-id" "$RUNNER_TEMP/n8n-owner.json" "$RUNNER_TEMP/n8n-owner-response.json" "$RUNNER_TEMP/n8n-import.log" "$RUNNER_TEMP/n8n-execution.stdout" "$RUNNER_TEMP/n8n-execution.stderr" "$RUNNER_TEMP/n8n-cli-execution.log" "$RUNNER_TEMP/n8n-diagnostic-parser.stderr" "$RUNNER_TEMP/n8n-container.log" "$RUNNER_TEMP/ci-n8n-curl.conf" "$RUNNER_TEMP/ci-n8n-signed-body.json" "$RUNNER_TEMP/curl-first.stderr" "$RUNNER_TEMP/curl-replay.stderr" "$RUNNER_TEMP/curl-first-response.json" "$RUNNER_TEMP/curl-replay-response.json" "$RUNNER_TEMP/curl-install.log" "$RUNNER_TEMP/static-curl.tar.xz" "$RUNNER_TEMP/ci-static-curl"; rm -rf "$RUNNER_TEMP/static-curl-extract"
+          docker exec "$N8N_CONTAINER" rm -f /tmp/ci-n8n-workflow.json /tmp/ci-n8n-curl.conf /tmp/ci-n8n-signed-body.json /tmp/ci-n8n-curl-first.json /tmp/ci-n8n-curl-replay.json /tmp/ci-static-curl || true
+          rm -f "$RUNNER_TEMP/ci-n8n-workflow.json" "$RUNNER_TEMP/ci-n8n-workflow-id" "$RUNNER_TEMP/n8n-owner.json" "$RUNNER_TEMP/n8n-owner-response.json" "$RUNNER_TEMP/n8n-import.log" "$RUNNER_TEMP/n8n-execution.stdout" "$RUNNER_TEMP/n8n-execution.stderr" "$RUNNER_TEMP/n8n-diagnostic-parser.stderr" "$RUNNER_TEMP/n8n-container.log" "$RUNNER_TEMP/ci-n8n-curl.conf" "$RUNNER_TEMP/ci-n8n-signed-body.json" "$RUNNER_TEMP/curl-first.stderr" "$RUNNER_TEMP/curl-replay.stderr" "$RUNNER_TEMP/curl-first-response.json" "$RUNNER_TEMP/curl-replay-response.json" "$RUNNER_TEMP/curl-install.log" "$RUNNER_TEMP/static-curl.tar.xz" "$RUNNER_TEMP/ci-static-curl"; rm -rf "$RUNNER_TEMP/static-curl-extract"
           if [ "$FAIL" -ne 0 ]; then exit 1; fi
 
       - name: Run versioned PHP runtime contracts in disposable WordPress
