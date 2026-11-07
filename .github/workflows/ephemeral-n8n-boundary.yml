@@ -611,11 +611,12 @@ jobs:
                   except Exception: pass
                   return error
               if isinstance(error, dict):
-                  for key in ('message', 'description', 'cause', 'error', 'err'):
+                  for key in ('message', 'description', 'cause', 'error', 'err', 'errors'):
                       if key in error:
                           found = message(error[key])
                           if found: return found
-                  return ''
+                  labels=[str(error[key]) for key in ('name','code','httpCode','statusCode','type') if error.get(key) is not None]
+                  return ' '.join(labels)
               if isinstance(error, list):
                   for item in error:
                       found=message(item)
