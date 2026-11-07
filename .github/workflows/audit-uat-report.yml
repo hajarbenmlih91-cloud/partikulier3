@@ -320,7 +320,8 @@ jobs:
           out = pathlib.Path('audit-uat-analysis.md')
           out.write_text('\n'.join(lines) + '\n')
           pathlib.Path(os.environ['GITHUB_STEP_SUMMARY']).write_text('\n'.join(lines) + '\n')
-          print('\n'.join(annotations[:45]))
+          important = [a for a in annotations if any(key in a for key in ['Lighthouse data', 'Chromium Web Vitals', 'Parcours propriétaire connecté', 'Connected artifact input'])]
+          print('\n'.join(annotations[:25] + important))
           print(f"Analyse produite : {out}; {len(shots)} captures trouvées.")
           PY
 
