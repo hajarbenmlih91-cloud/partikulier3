@@ -939,7 +939,7 @@ jobs:
           record() {
             python3 "$RUNNER_TEMP/evidence.py" "$RUNNER_TEMP/evidence.json" update "$1" "$2" "$3" "$4" "$5"
             case "$1" in
-              contract-automation|contract-automation-diagnostic) printf '::notice title=%s::%s\n' "$1" "$5" ;;
+              contract-automation|contract-automation-runtime|contract-automation-diagnostic) printf '::notice title=%s::%s\n' "$1" "$5" ;;
             esac
           }
           if [ ! -f "$RUNNER_TEMP/wp-ready-for-contracts" ]; then
@@ -1017,6 +1017,27 @@ jobs:
           )"
             http='N/A'
             obtained="exit=$rc; contract=$status"
+            if [ "$suite" = 'automation-runtime-boundary-contract' ]; then
+              runtime_summary="$(python3 - "$output" <<'PY'
+          import json, pathlib, re, sys
+          try:
+              data=json.loads(pathlib.Path(sys.argv[1]).read_text())
+              rows=data.get('results', [])
+              selected=[row for row in rows if row.get('status') != 'PASS'] or rows
+              parts=[]
+              for row in selected:
+                  test=re.sub(r'[^A-Za-z0-9_-]', '?', str(row.get('test_id','?')))[:48]
+                  detail=' '.join(str(row.get('detail','')).split())
+                  detail=re.sub(r'(?i)sha256=[a-f0-9]{64}', 'sha256=[redacted]', detail)
+                  detail=re.sub(r'[A-Za-z0-9+/=_-]{40,}', '[redacted-token]', detail)
+                  parts.append(test + ': ' + detail[:160])
+              print('; '.join(parts)[:700] or 'no test results')
+          except Exception:
+              print('non mesuré — runtime result JSON unavailable')
+          PY
+              )"
+              obtained="$obtained; $runtime_summary"
+            fi
             if [ "$suite" = 'se041-xmlrpc-contract' ]; then
               xmlrpc="$(python3 - "$output" <<'PY'
           import json, pathlib, re, sys
