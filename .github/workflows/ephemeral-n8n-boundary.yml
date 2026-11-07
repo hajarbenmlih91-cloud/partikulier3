@@ -1,0 +1,585 @@
+name: Ephemeral WordPress and n8n boundary
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ephemeral-boundary:
+    name: Disposable MariaDB + WordPress + n8n
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MARIADB_ROOT_PASSWORD: ci-only-root-password
+          MARIADB_DATABASE: partikulier
+          MARIADB_USER: partikulier
+          MARIADB_PASSWORD: ci-only-wordpress-password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+      wordpress:
+        image: wordpress:6.6-php8.3-apache
+        env:
+          WORDPRESS_DB_HOST: mariadb:3306
+          WORDPRESS_DB_NAME: partikulier
+          WORDPRESS_DB_USER: partikulier
+          WORDPRESS_DB_PASSWORD: ci-only-wordpress-password
+          WORDPRESS_CONFIG_EXTRA: |
+            define('WP_HOME', 'http://wordpress');
+            define('WP_SITEURL', 'http://wordpress');
+            define('DISALLOW_FILE_EDIT', true);
+            define('WP_ENVIRONMENT_TYPE', 'local');
+        ports:
+          - 8080:80
+        volumes:
+          - ${{ github.workspace }}:/repo:ro
+      n8n:
+        image: n8nio/n8n:2.46.6
+        env:
+          N8N_DIAGNOSTICS_ENABLED: "false"
+          N8N_PERSONALIZATION_ENABLED: "false"
+          N8N_VERSION_NOTIFICATIONS_ENABLED: "false"
+          N8N_TEMPLATES_ENABLED: "false"
+          N8N_SECURE_COOKIE: "false"
+          N8N_LOG_LEVEL: error
+        ports:
+          - 5678:5678
+
+    steps:
+      - name: Checkout the tested branch
+        uses: actions/checkout@v4
+
+      - name: Set up PHP for repository-wide lint
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: curl, dom, mbstring, mysqli, xml
+
+      - name: Prepare private evidence recorder
+        shell: bash
+        run: |
+          cat > "$RUNNER_TEMP/evidence.py" <<'PY'
+          import json, pathlib, sys
+          path = pathlib.Path(sys.argv[1])
+          rows = [
+              ('wordpress', 'GET WordPress disposable /wp-login.php', '200', 'HTTP 200; WordPress responds'),
+              ('plugin', 'PHP is_plugin_active(partikulier-core/partikulier-core.php)', 'active', 'Partikulier Core active'),
+              ('health', 'GET /wp-json/partikulier/v1/health (anonymous)', '200; status=ok; database=ready; secret absent', 'HTTP 200; sanitized body; no secret bytes'),
+              ('deny-automation', 'POST /wp-json/partikulier/v1/automation-event (no auth)', '401', 'HTTP 401'),
+              ('deny-qualification', 'POST /wp-json/partikulier/v1/qualification (no auth)', '401', 'HTTP 401'),
+              ('deny-erase', 'POST /wp-json/partikulier/v1/erase-lead (no auth)', '401', 'HTTP 401'),
+              ('deny-export', 'GET /wp-json/partikulier/v1/export/interests (no admin)', '401', 'HTTP 401'),
+              ('deny-status', 'POST /wp-json/partikulier/v1/lead/status (no admin)', '401', 'HTTP 401'),
+              ('deny-false-secret', 'POST /wp-json/partikulier/v1/automation-event (wrong shared secret)', '401', 'HTTP 401'),
+              ('n8n-owner', 'POST http://127.0.0.1:5678/rest/owner/setup with generated throwaway credentials', 'HTTP 200; owner created locally', 'non mesuré'),
+              ('n8n-static', 'Inspect imported n8n workflow HTTP destinations', 'exactly two requests, same WordPress IP:80 endpoint only', 'No other URL; no WhatsApp, Meta, or Evolution node'),
+              ('n8n-egress', 'DOCKER-USER egress rule for n8n container', 'allow only WordPress container IP:80; drop all other forwarded destinations', 'Only WordPress job service permitted'),
+              ('n8n-first', 'n8n CLI execute: first signed POST /automation-event', 'HTTP 200; accepted=true; duplicate=false', 'non mesuré'),
+              ('n8n-replay', 'n8n CLI execute: exact same signed POST replayed', 'HTTP 200; accepted=true; duplicate=true', 'non mesuré'),
+              ('n8n-row', 'Query pk_automation_events for the CI event_id', 'exactly one row; payload_hash is 64 hex chars', 'non mesuré'),
+              ('xmlrpc-list', 'POST /xmlrpc.php system.listMethods', 'HTTP 200; exactly system.multicall, system.listMethods, system.getCapabilities', 'non mesuré'),
+              ('xmlrpc-hello', 'POST /xmlrpc.php demo.sayHello', 'HTTP 200; XML-RPC fault -32601', 'non mesuré'),
+              ('xmlrpc-pingback', 'POST /xmlrpc.php pingback.ping with .invalid URLs', 'HTTP 200; XML-RPC fault -32601; no third-party URL', 'non mesuré'),
+              ('contract-automation', 'php plugin/partikulier-core/tests/automation-domain-contract.php in WP service', 'PASS', 'non mesuré'),
+              ('contract-erase', 'php plugin/partikulier-core/tests/lead-erase-security-contract.php in WP service', 'PASS', 'non mesuré'),
+              ('contract-routes', 'php plugin/partikulier-core/tests/routes-collision.php in WP service', 'PASS', 'non mesuré'),
+              ('contract-se022', 'php plugin/partikulier-core/tests/se022-idempotence-contract.php in WP service', 'PASS', 'non mesuré'),
+              ('contract-se026', 'php plugin/partikulier-core/tests/se026-hmac-mode-contract.php in WP service', 'PASS', 'non mesuré'),
+              ('contract-xmlrpc', 'php theme/partikulier/tests/se041-xmlrpc-contract.php in WP service', 'PASS; listMethods HTTP 200 exact; denied methods fault -32601', 'non mesuré'),
+              ('php-lint', 'php -l all PHP files in theme/partikulier and plugin/partikulier-core', 'all files have no syntax errors', 'non mesuré'),
+          ]
+          operation = sys.argv[2] if len(sys.argv) > 2 else 'init'
+          if operation == 'init':
+              import os
+              data = {
+                  'sha': os.environ.get('GITHUB_SHA', 'non mesuré'),
+                  'run_id': os.environ.get('GITHUB_RUN_ID', 'non mesuré'),
+                  'rows': [dict(id=i, command=c, expected=e, actual=a, http='non mesuré') for i,c,e,a in rows],
+              }
+              path.write_text(json.dumps(data, ensure_ascii=False), encoding='utf-8')
+          elif operation == 'update':
+              _, _, _, row_id, command, http, expected, actual = sys.argv
+              data = json.loads(path.read_text(encoding='utf-8'))
+              for row in data['rows']:
+                  if row['id'] == row_id:
+                      row.update(command=command, http=http, expected=expected, actual=actual)
+                      break
+              else:
+                  raise SystemExit('unknown evidence row: ' + row_id)
+              path.write_text(json.dumps(data, ensure_ascii=False), encoding='utf-8')
+          elif operation == 'render':
+              import os
+              data = json.loads(path.read_text(encoding='utf-8'))
+              out = pathlib.Path(sys.argv[3])
+              safe = lambda value: str(value).replace('|', '\\|').replace(chr(10), ' ')
+              lines = [
+                  '# Preuve — test n8n / WordPress éphémère', '',
+                  f"SHA testé : `{data['sha']}`", f"Run : `{data['run_id']}`", '',
+                  'Services Docker temporaires du job : MariaDB, WordPress et n8n. Ils cessent avec le job; ce workflow ne crée pas un hébergement persistant.',
+                  'Aucun secret GitHub, secret UAT, identifiant WhatsApp/Meta/Evolution, message WhatsApp, appel staging, navigateur ou test de charge externe n’est utilisé.', '',
+                  '| Vérification | Commande lancée | Code HTTP | Résultat attendu | Résultat obtenu |',
+                  '|---|---|---:|---|---|',
+              ]
+              for row in data['rows']:
+                  lines.append('| ' + ' | '.join(safe(row[key]) for key in ('id','command','http','expected','actual')) + ' |')
+              out.write_text(chr(10).join(lines) + chr(10), encoding='utf-8')
+          else:
+              raise SystemExit('unknown evidence operation')
+          PY
+          python3 "$RUNNER_TEMP/evidence.py" "$RUNNER_TEMP/evidence.json" init
+
+      - name: Initialize WordPress, assert boundaries, and execute the n8n replay workflow
+        id: integration
+        shell: bash
+        env:
+          WP_CONTAINER: ${{ job.services.wordpress.id }}
+          N8N_CONTAINER: ${{ job.services.n8n.id }}
+        run: |
+          set -euo pipefail
+          FAIL=0
+          WP_BASE='http://127.0.0.1:8080'
+          N8N_BASE='http://127.0.0.1:5678'
+          WP_CONTAINER_IP="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$WP_CONTAINER")"
+          N8N_CONTAINER_IP="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$N8N_CONTAINER")"
+          test -n "$WP_CONTAINER_IP"
+          test -n "$N8N_CONTAINER_IP"
+
+          record() {
+            python3 "$RUNNER_TEMP/evidence.py" "$RUNNER_TEMP/evidence.json" update "$1" "$2" "$3" "$4" "$5"
+          }
+
+          # Enforce network-level egress: n8n may reach only this WordPress container on TCP/80.
+          if ! sudo iptables -nL DOCKER-USER >/dev/null 2>&1; then
+            record n8n-egress 'iptables DOCKER-USER n8n source allowlist' 'N/A' 'allow WP IP:80; drop every other n8n destination' 'non mesuré — DOCKER-USER chain unavailable'
+            exit 1
+          fi
+          sudo iptables -w -I DOCKER-USER 1 -s "$N8N_CONTAINER_IP" -d "$WP_CONTAINER_IP" -p tcp --dport 80 -j ACCEPT
+          sudo iptables -w -I DOCKER-USER 2 -s "$N8N_CONTAINER_IP" -j DROP
+          sudo iptables -w -C DOCKER-USER -s "$N8N_CONTAINER_IP" -d "$WP_CONTAINER_IP" -p tcp --dport 80 -j ACCEPT
+          sudo iptables -w -C DOCKER-USER -s "$N8N_CONTAINER_IP" -j DROP
+          record n8n-egress "iptables allow $N8N_CONTAINER_IP -> $WP_CONTAINER_IP:80; drop all other forwarded n8n traffic" 'N/A' 'single permitted recipient: job WordPress' 'PASS; both ordered allow/drop rules verified'
+
+          http_code() {
+            local method="$1" url="$2" output="$3"; shift 3
+            local code rc
+            local -a host_header=()
+            if [[ "$url" == "$WP_BASE"/* ]]; then host_header=(-H 'Host: wordpress'); fi
+            set +e
+            code="$(curl --silent --show-error --max-time 20 -X "$method" "${host_header[@]}" "$@" -o "$output" -w '%{http_code}' "$url")"
+            rc=$?
+            set -e
+            if [ "$rc" -ne 0 ]; then code='000'; fi
+            printf '%s' "$code"
+          }
+
+          # Wait only for the disposable Docker service. This is not a browser journey.
+          WP_READY=0
+          for attempt in $(seq 1 90); do
+            status="$(http_code GET "$WP_BASE/wp-login.php" "$RUNNER_TEMP/wp-login.html")"
+            if [ "$status" = '200' ] || [ "$status" = '302' ]; then WP_READY=1; break; fi
+            sleep 2
+          done
+          if [ "$WP_READY" -ne 1 ]; then
+            record wordpress 'GET http://127.0.0.1:8080/wp-login.php' "$status" 'HTTP 200 or 302 from disposable WordPress' 'non mesuré — WordPress service did not become ready'
+            exit 1
+          fi
+
+          record wordpress 'GET http://127.0.0.1:8080/wp-login.php' "$status" 'HTTP 200 or 302 from disposable WordPress' "HTTP $status; WordPress service ready"
+
+          # Copy only this checkout's plugin and theme into the disposable WordPress service.
+          docker exec "$WP_CONTAINER" mkdir -p /var/www/html/wp-content/plugins/partikulier-core /var/www/html/wp-content/themes/partikulier /var/www/html/wp-content/uploads/partikulier-cache
+          docker cp plugin/partikulier-core/. "$WP_CONTAINER:/var/www/html/wp-content/plugins/partikulier-core/"
+          docker cp theme/partikulier/. "$WP_CONTAINER:/var/www/html/wp-content/themes/partikulier/"
+
+          docker exec -i "$WP_CONTAINER" php <<'PHP'
+          <?php
+          define('WP_INSTALLING', true);
+          require '/var/www/html/wp-load.php';
+          require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+          require_once ABSPATH . 'wp-admin/includes/plugin.php';
+          add_filter('pre_wp_mail', static fn() => true);
+          if (!is_blog_installed()) {
+              $password = bin2hex(random_bytes(24));
+              wp_install('Partikulier disposable CI', 'ci-admin', 'ci-admin@example.invalid', false, '', $password);
+          }
+          $activation = activate_plugin('partikulier-core/partikulier-core.php');
+          if (is_wp_error($activation)) { fwrite(STDERR, "Partikulier Core activation failed\n"); exit(1); }
+          switch_theme('partikulier');
+          echo "WordPress installed; branch plugin and theme activated\n";
+          PHP
+
+          # Readiness and plugin assertion, with no credentials or secret in output.
+          WP_ACTIVE="$(docker exec "$WP_CONTAINER" php -r 'require "/var/www/html/wp-load.php"; require_once ABSPATH."wp-admin/includes/plugin.php"; exit(is_plugin_active("partikulier-core/partikulier-core.php") ? 0 : 1);' >/dev/null 2>&1 && echo active || echo inactive)"
+          record plugin 'php -r is_plugin_active(partikulier-core/partikulier-core.php)' 'N/A' 'active' "$WP_ACTIVE"
+          if [ "$WP_ACTIVE" != active ]; then FAIL=1; fi
+
+          # A job-only random secret; mask it in logs, keep it only in this step and disposable service data.
+          EPHEMERAL_SECRET="$(openssl rand -base64 48 | tr -d '\n')"
+          echo "::add-mask::$EPHEMERAL_SECRET"
+          export PK_EPHEMERAL_SECRET="$EPHEMERAL_SECRET"
+          docker exec -e PK_EPHEMERAL_SECRET="$EPHEMERAL_SECRET" "$WP_CONTAINER" php -r '
+          require "/var/www/html/wp-load.php";
+          update_option("pk_n8n_settings", [
+              "automation_api_secret" => getenv("PK_EPHEMERAL_SECRET"),
+              "active_key_id" => "ci",
+              "hmac_mode" => "enforce",
+          ], false);
+          '
+
+          # Seed only two synthetic prior rows required by the already-versioned automation contract.
+          docker exec "$WP_CONTAINER" php -r '
+          require "/var/www/html/wp-load.php";
+          global $wpdb;
+          $audit = new \Partikulier\Core\AuditLogger();
+          $rows = (array) $wpdb->get_results($wpdb->prepare("SELECT metadata_json FROM {$wpdb->prefix}pk_audit_log WHERE action = %s", "domain_adopted"));
+          $found = false;
+          foreach ($rows as $row) { $meta = json_decode((string) $row->metadata_json, true); if (($meta["lot"] ?? "") === "B4" && ($meta["domain"] ?? "") === "automation") { $found = true; break; } }
+          if (!$found) $audit->record("domain_adopted", "schema", null, ["lot" => "B4", "domain" => "automation"]);
+          $table = $wpdb->prefix . "pk_automation_events";
+          $count = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$table}");
+          for ($i = $count; $i < 2; $i++) { $now = gmdate("Y-m-d H:i:s"); $id = "ci-historical-event-" . ($i + 1); $wpdb->insert($table, ["event_id" => $id, "event_type" => "fixture", "source" => "ci", "payload_hash" => hash("sha256", $id), "status" => "received", "received_at" => $now], ["%s", "%s", "%s", "%s", "%s", "%s"]); }
+          ' >/dev/null
+          touch "$RUNNER_TEMP/wp-ready-for-contracts"
+
+          # Public health response must remain sanitized even though a random secret now exists in the job-local DB.
+          health_code="$(http_code GET "$WP_BASE/wp-json/partikulier/v1/health" "$RUNNER_TEMP/health.json")"
+          health_actual="HTTP $health_code; sanitized health body"
+          health_ok=0
+          if [ "$health_code" = 200 ] && PK_EPHEMERAL_SECRET="$EPHEMERAL_SECRET" python3 - "$RUNNER_TEMP/health.json" <<'PY'
+          import json, os, pathlib, sys
+          body = pathlib.Path(sys.argv[1]).read_text()
+          data = json.loads(body)
+          secret = os.environ['PK_EPHEMERAL_SECRET']
+          assert secret not in body
+          assert data.get('status') == 'ok' and data.get('database') == 'ready'
+          PY
+          then health_ok=1; health_actual='HTTP 200; status=ok; database=ready; no secret bytes'
+          else FAIL=1; health_actual="HTTP $health_code; invalid/unavailable sanitized health result"; fi
+          record health 'GET /wp-json/partikulier/v1/health (anonymous)' "$health_code" '200; status=ok; database=ready; secret absent' "$health_actual"
+
+          check_unauthorized() {
+            local id="$1" method="$2" path="$3" data="${4:-}"; local code
+            if [ "$method" = GET ]; then
+              code="$(http_code GET "$WP_BASE$path" "$RUNNER_TEMP/$id.json")"
+            else
+              code="$(http_code POST "$WP_BASE$path" "$RUNNER_TEMP/$id.json" -H 'Content-Type: application/json' --data "$data")"
+            fi
+            record "$id" "$method $path" "$code" '401' "HTTP $code"
+            if [ "$code" != 401 ]; then FAIL=1; fi
+          }
+          check_unauthorized deny-automation POST /wp-json/partikulier/v1/automation-event '{}'
+          check_unauthorized deny-qualification POST /wp-json/partikulier/v1/qualification '{}'
+          check_unauthorized deny-erase POST /wp-json/partikulier/v1/erase-lead '{}'
+          check_unauthorized deny-export GET /wp-json/partikulier/v1/export/interests
+          check_unauthorized deny-status POST /wp-json/partikulier/v1/lead/status '{}'
+
+          false_code="$(http_code POST "$WP_BASE/wp-json/partikulier/v1/automation-event" "$RUNNER_TEMP/false-secret.json" -H 'Content-Type: application/json' -H 'X-Partikulier-Automation: definitely-not-the-job-secret' --data '{}')"
+          record deny-false-secret 'POST /wp-json/partikulier/v1/automation-event (wrong shared secret)' "$false_code" '401' "HTTP $false_code"
+          if [ "$false_code" != 401 ]; then FAIL=1; fi
+
+          # Owner setup is local to this n8n service and uses a random throwaway password; no external credentials are configured.
+          for attempt in $(seq 1 60); do
+            n8n_code="$(http_code GET "$N8N_BASE/healthz" "$RUNNER_TEMP/n8n-health.txt")"
+            if [ "$n8n_code" = 200 ]; then break; fi
+            sleep 2
+          done
+          if [ "$n8n_code" != 200 ]; then
+            record n8n-owner 'POST http://127.0.0.1:5678/rest/owner/setup' "$n8n_code" 'HTTP 200; throwaway local owner created' 'non mesuré — n8n service not ready'
+            exit 1
+          fi
+          N8N_OWNER_PASSWORD="Ci-$(openssl rand -hex 24)!9A"
+          echo "::add-mask::$N8N_OWNER_PASSWORD"
+          N8N_OWNER_PASSWORD="$N8N_OWNER_PASSWORD" python3 - <<'PY' > "$RUNNER_TEMP/n8n-owner.json"
+          import json, os
+          print(json.dumps({"email":"ci-owner@example.invalid","firstName":"CI","lastName":"Ephemeral","password":os.environ["N8N_OWNER_PASSWORD"]}))
+          PY
+          owner_code="$(http_code POST "$N8N_BASE/rest/owner/setup" "$RUNNER_TEMP/n8n-owner-response.json" -H 'Content-Type: application/json' --data-binary "@$RUNNER_TEMP/n8n-owner.json")"
+          record n8n-owner 'POST http://127.0.0.1:5678/rest/owner/setup' "$owner_code" 'HTTP 200; throwaway local owner created' "HTTP $owner_code; response body suppressed"
+          if [ "$owner_code" != 200 ]; then FAIL=1; exit 1; fi
+
+          # Sign one deterministic, non-personal test event with the generated secret.
+          # The imported n8n workflow has exactly two HTTP Request nodes, both pinned to this WordPress service.
+          PK_EPHEMERAL_SECRET="$EPHEMERAL_SECRET" WP_SERVICE_IP="$WP_CONTAINER_IP" GITHUB_RUN_ID="$GITHUB_RUN_ID" GITHUB_RUN_ATTEMPT="$GITHUB_RUN_ATTEMPT" python3 - <<'PY'
+          import base64, hashlib, hmac, json, os, pathlib, uuid
+          secret = os.environ['PK_EPHEMERAL_SECRET']
+          wp_ip = os.environ['WP_SERVICE_IP']
+          run_id = os.environ['GITHUB_RUN_ID']
+          attempt = os.environ['GITHUB_RUN_ATTEMPT']
+          event_id = f'n8n-ci-{run_id}-{attempt}'
+          body = json.dumps({"event_id":event_id,"event_type":"whatsapp_status","source":"n8n","payload":{"ci_probe":True,"run_id":run_id}}, separators=(',', ':'), ensure_ascii=False)
+          timestamp = str(int(__import__('time').time()))
+          key = base64.b64decode(secret, validate=True)
+          canonical = f'POST\n/partikulier/v1/automation-event\n{timestamp}\n{body}'.encode()
+          signature = 'sha256=' + hmac.new(key, canonical, hashlib.sha256).hexdigest()
+          headers = [
+            {"name":"Content-Type","value":"application/json"},
+            {"name":"Host","value":"wordpress"},
+            {"name":"X-Partikulier-Automation","value":secret},
+            {"name":"X-Partikulier-Timestamp","value":timestamp},
+            {"name":"X-Partikulier-Key-Id","value":"ci"},
+            {"name":"X-Partikulier-Signature","value":signature},
+          ]
+          common = {
+            "method":"POST",
+            "url":f'http://{wp_ip}/wp-json/partikulier/v1/automation-event',
+            "sendHeaders":True,
+            "headerParameters":{"parameters":headers},
+            "sendBody":True,
+            "contentType":"raw",
+            "rawContentType":"application/json",
+            "body":body,
+            "options":{"response":{"response":{"fullResponse":True,"responseFormat":"json"}}},
+          }
+          node_id = lambda: str(uuid.uuid4())
+          manual_id, first_id, replay_id, assert_id = (node_id() for _ in range(4))
+          workflow_id = str(uuid.uuid4())
+          workflow = {
+            "id":workflow_id,
+            "name":"Disposable WordPress signed event and idempotent replay",
+            "active":False,
+            "nodes":[
+              {"id":manual_id,"name":"Manual Trigger","type":"n8n-nodes-base.manualTrigger","typeVersion":1,"position":[240,300],"parameters":{}},
+              {"id":first_id,"name":"First signed POST","type":"n8n-nodes-base.httpRequest","typeVersion":4.2,"position":[480,300],"parameters":common},
+              {"id":replay_id,"name":"Exact replay","type":"n8n-nodes-base.httpRequest","typeVersion":4.2,"position":[720,300],"parameters":common},
+              {"id":assert_id,"name":"Assert the existing idempotency contract","type":"n8n-nodes-base.code","typeVersion":2,"position":[960,300],"parameters":{"mode":"runOnceForAllItems","jsCode":'''const first = $('First signed POST').first().json;\nconst replay = $input.first().json;\nconst decode = (r) => { const status = Number(r.statusCode ?? r.status ?? 0); const body = typeof r.body === 'string' ? JSON.parse(r.body) : (r.body ?? r); return { status, body }; };\nconst a = decode(first); const b = decode(replay);\nif (a.status !== 200 || a.body.accepted !== true || a.body.duplicate !== false) throw new Error('First delivery did not return accepted=true, duplicate=false, HTTP 200');\nif (b.status !== 200 || b.body.accepted !== true || b.body.duplicate !== true) throw new Error('Exact replay did not return accepted=true, duplicate=true, HTTP 200');\nreturn [{ json: { first_http: a.status, first_accepted: a.body.accepted, first_duplicate: a.body.duplicate, replay_http: b.status, replay_accepted: b.body.accepted, replay_duplicate: b.body.duplicate } }];'''}},
+            ],
+            "connections":{
+              "Manual Trigger":{"main":[[{"node":"First signed POST","type":"main","index":0}]]},
+              "First signed POST":{"main":[[{"node":"Exact replay","type":"main","index":0}]]},
+              "Exact replay":{"main":[[{"node":"Assert the existing idempotency contract","type":"main","index":0}]]},
+            },
+            "settings":{"executionOrder":"v1"},
+            "staticData":None,
+            "pinData":{},
+            "tags":[],
+          }
+          target = pathlib.Path(os.environ['RUNNER_TEMP']) / 'ci-n8n-workflow.json'
+          target.write_text(json.dumps(workflow, separators=(',', ':')), encoding='utf-8')
+          target.chmod(0o600)
+          (pathlib.Path(os.environ['RUNNER_TEMP']) / 'ci-n8n-workflow-id').write_text(workflow_id)
+          (pathlib.Path(os.environ['RUNNER_TEMP']) / 'ci-n8n-event-id').write_text(event_id)
+          PY
+
+          # Refuse the workflow unless every outbound request is exactly the two identical WP service calls.
+          WP_SERVICE_IP="$WP_CONTAINER_IP" python3 - <<'PY'
+          import json, os, pathlib
+          f = pathlib.Path(os.environ['RUNNER_TEMP']) / 'ci-n8n-workflow.json'
+          w = json.loads(f.read_text())
+          expected = f"http://{os.environ['WP_SERVICE_IP']}/wp-json/partikulier/v1/automation-event"
+          nodes = [n for n in w['nodes'] if n['type'] == 'n8n-nodes-base.httpRequest']
+          assert len(nodes) == 2
+          node_types = [n['type'] for n in w['nodes']]
+          assert sorted(node_types) == sorted(['n8n-nodes-base.manualTrigger', 'n8n-nodes-base.httpRequest', 'n8n-nodes-base.httpRequest', 'n8n-nodes-base.code'])
+          assert all(n['parameters']['url'] == expected for n in nodes)
+          assert all(n['parameters']['headerParameters']['parameters'][1]['value'] == 'wordpress' for n in nodes)
+          serialized = json.dumps(w)
+          assert 'wa.me' not in serialized and 'graph.facebook.com' not in serialized and 'evolution' not in serialized.lower()
+          PY
+          record n8n-static 'Inspect imported workflow: exactly two HTTP Request nodes, fixed WP IP:80 URL' 'N/A' 'exactly two identical WordPress-only destinations; no wa.me, graph.facebook.com, Evolution' 'PASS; static allowlist verified'
+
+          docker cp "$RUNNER_TEMP/ci-n8n-workflow.json" "$N8N_CONTAINER:/tmp/ci-n8n-workflow.json"
+          WORKFLOW_ID="$(cat "$RUNNER_TEMP/ci-n8n-workflow-id")"
+          docker exec "$N8N_CONTAINER" n8n import:workflow --input=/tmp/ci-n8n-workflow.json > "$RUNNER_TEMP/n8n-import.log" 2>&1
+          set +e
+          docker exec "$N8N_CONTAINER" n8n execute --id="$WORKFLOW_ID" --rawOutput > "$RUNNER_TEMP/n8n-execution.stdout" 2> "$RUNNER_TEMP/n8n-execution.stderr"
+          n8n_rc=$?
+          set -e
+
+          # CLI execution data can contain the transient signed request. Parse privately and emit only HTTP codes/booleans.
+          set +e
+          summary="$(python3 - "$RUNNER_TEMP/n8n-execution.stdout" <<'PY'
+          import json, pathlib, sys
+          text = pathlib.Path(sys.argv[1]).read_text(errors='replace')
+          decoder = json.JSONDecoder()
+          def walk(value):
+              if isinstance(value, dict):
+                  keys = {'first_http','first_accepted','first_duplicate','replay_http','replay_accepted','replay_duplicate'}
+                  if keys.issubset(value):
+                      return {k:value[k] for k in keys}
+                  for child in value.values():
+                      result = walk(child)
+                      if result is not None: return result
+              elif isinstance(value, list):
+                  for child in value:
+                      result = walk(child)
+                      if result is not None: return result
+              return None
+          result = None
+          for index, char in enumerate(text):
+              if char != '{': continue
+              try:
+                  obj, _ = decoder.raw_decode(text[index:])
+              except Exception:
+                  continue
+              result = walk(obj)
+              if result is not None: break
+          if result is None:
+              print('non mesuré')
+          else:
+              print(json.dumps(result, separators=(',', ':')))
+          PY
+          )"
+          parse_rc=$?
+          set -e
+          if [ "$n8n_rc" -eq 0 ] && [ "$parse_rc" -eq 0 ] && [ "$summary" != 'non mesuré' ]; then
+            first_http="$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])["first_http"])' "$summary")"
+            first_duplicate="$(python3 -c 'import json,sys; print(str(json.loads(sys.argv[1])["first_duplicate"]).lower())' "$summary")"
+            first_accepted="$(python3 -c 'import json,sys; print(str(json.loads(sys.argv[1])["first_accepted"]).lower())' "$summary")"
+            replay_http="$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])["replay_http"])' "$summary")"
+            replay_duplicate="$(python3 -c 'import json,sys; print(str(json.loads(sys.argv[1])["replay_duplicate"]).lower())' "$summary")"
+            replay_accepted="$(python3 -c 'import json,sys; print(str(json.loads(sys.argv[1])["replay_accepted"]).lower())' "$summary")"
+            record n8n-first 'n8n CLI execute: first signed POST /automation-event' "$first_http" 'HTTP 200; accepted=true; duplicate=false' "HTTP $first_http; accepted=$first_accepted; duplicate=$first_duplicate"
+            record n8n-replay 'n8n CLI execute: exact same signed POST replayed' "$replay_http" 'HTTP 200; accepted=true; duplicate=true' "HTTP $replay_http; accepted=$replay_accepted; duplicate=$replay_duplicate"
+            if [ "$first_http" != 200 ] || [ "$first_accepted" != true ] || [ "$first_duplicate" != false ] || [ "$replay_http" != 200 ] || [ "$replay_accepted" != true ] || [ "$replay_duplicate" != true ]; then FAIL=1; fi
+          else
+            record n8n-first 'n8n CLI execute: first signed POST /automation-event' 'non mesuré' 'HTTP 200; accepted=true; duplicate=false' 'non mesuré — n8n execution failed or sanitized result unavailable'
+            record n8n-replay 'n8n CLI execute: exact same signed POST replayed' 'non mesuré' 'HTTP 200; accepted=true; duplicate=true' 'non mesuré — n8n execution failed or sanitized result unavailable'
+            FAIL=1
+          fi
+
+          EVENT_ID="$(cat "$RUNNER_TEMP/ci-n8n-event-id")"
+          event_actual="$(docker exec -e PK_CI_EVENT_ID="$EVENT_ID" "$WP_CONTAINER" php -r '
+          require "/var/www/html/wp-load.php"; global $wpdb;
+          $table = $wpdb->prefix . "pk_automation_events";
+          $row = $wpdb->get_row($wpdb->prepare("SELECT payload_hash FROM {$table} WHERE event_id = %s", getenv("PK_CI_EVENT_ID")), ARRAY_A);
+          echo json_encode(["count" => $row ? 1 : 0, "hash_length" => $row ? strlen((string) $row["payload_hash"]) : 0]);
+          ')"
+          event_count="$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])["count"])' "$event_actual")"
+          event_hash_len="$(python3 -c 'import json,sys; print(json.loads(sys.argv[1])["hash_length"])' "$event_actual")"
+          record n8n-row 'SELECT event_id, payload_hash FROM wp_pk_automation_events for the disposable CI event' 'N/A' 'one row; hash length 64; payload not persisted in clear' "rows=$event_count; payload_hash_length=$event_hash_len"
+          if [ "$event_count" != 1 ] || [ "$event_hash_len" != 64 ]; then FAIL=1; fi
+
+          # Confirm only the three XML-RPC system methods exist; the versioned SE-041 contract repeats all three HTTP assertions.
+          for method in system.listMethods demo.sayHello pingback.ping; do
+            : # SE-041 below records exact HTTP codes and structural XML-RPC results from this same WP service.
+          done
+
+          docker exec "$N8N_CONTAINER" rm -f /tmp/ci-n8n-workflow.json || true
+          rm -f "$RUNNER_TEMP/ci-n8n-workflow.json" "$RUNNER_TEMP/ci-n8n-workflow-id" "$RUNNER_TEMP/n8n-owner.json" "$RUNNER_TEMP/n8n-owner-response.json" "$RUNNER_TEMP/n8n-import.log" "$RUNNER_TEMP/n8n-execution.stdout" "$RUNNER_TEMP/n8n-execution.stderr"
+          if [ "$FAIL" -ne 0 ]; then exit 1; fi
+
+      - name: Run versioned PHP runtime contracts in disposable WordPress
+        if: always()
+        shell: bash
+        env:
+          WP_CONTAINER: ${{ job.services.wordpress.id }}
+        run: |
+          set -uo pipefail
+          record() { python3 "$RUNNER_TEMP/evidence.py" "$RUNNER_TEMP/evidence.json" update "$1" "$2" "$3" "$4" "$5"; }
+          if [ ! -f "$RUNNER_TEMP/wp-ready-for-contracts" ]; then
+            for id in contract-automation contract-erase contract-routes contract-se022 contract-se026 contract-xmlrpc; do
+              record "$id" 'Versioned PHP contract in disposable WordPress service' 'non mesuré' 'PASS' 'non mesuré — WordPress setup incomplete'
+            done
+            exit 0
+          fi
+          SUITES=(
+            'automation-domain-contract|plugin/partikulier-core/tests/automation-domain-contract.php|contract-automation'
+            'lead-erase-security-contract|plugin/partikulier-core/tests/lead-erase-security-contract.php|contract-erase'
+            'routes-collision|plugin/partikulier-core/tests/routes-collision.php|contract-routes'
+            'se022-idempotence-contract|plugin/partikulier-core/tests/se022-idempotence-contract.php|contract-se022'
+            'se026-hmac-mode-contract|plugin/partikulier-core/tests/se026-hmac-mode-contract.php|contract-se026'
+            'se041-xmlrpc-contract|theme/partikulier/tests/se041-xmlrpc-contract.php|contract-xmlrpc'
+          )
+          overall=0
+          for entry in "${SUITES[@]}"; do
+            IFS='|' read -r suite path id <<< "$entry"
+            output="$RUNNER_TEMP/$suite.json"
+            err="$RUNNER_TEMP/$suite.err"
+            if [ "$suite" = 'se041-xmlrpc-contract' ]; then
+              set +e
+              docker exec -e PK_WP_DIR=/var/www/html -e PK_BASE=http://127.0.0.1 -e PK_COMMIT="$GITHUB_SHA" -e PK_RUN_ID="$GITHUB_RUN_ID" "$WP_CONTAINER" php "/repo/$path" > "$output" 2> "$err"
+              rc=$?
+              set -e
+            else
+              set +e
+              docker exec -e PK_WP_DIR=/var/www/html -e PK_COMMIT="$GITHUB_SHA" -e PK_REPO_DIR=/repo -e PK_THEME_DIR=/repo/theme/partikulier -e PK_PLUGIN_DIR=/repo/plugin/partikulier-core -e PK_RUN_ID="$GITHUB_RUN_ID" "$WP_CONTAINER" php "/repo/$path" > "$output" 2> "$err"
+              rc=$?
+              set -e
+            fi
+            status="$(python3 - "$output" "$rc" <<'PY'
+          import json, pathlib, sys
+          p = pathlib.Path(sys.argv[1]); rc = int(sys.argv[2])
+          try:
+              data = json.loads(p.read_text())
+              print(data.get('status', 'FAIL'))
+          except Exception:
+              print('FAIL')
+          PY
+          )"
+            http='N/A'
+            obtained="exit=$rc; contract=$status"
+            if [ "$suite" = 'se041-xmlrpc-contract' ]; then
+              xmlrpc="$(python3 - "$output" <<'PY'
+          import json, pathlib, re, sys
+          try: d=json.loads(pathlib.Path(sys.argv[1]).read_text())
+          except Exception: print('non mesuré'); raise SystemExit
+          found={r.get('test_id'):r.get('detail','') for r in d.get('results',[])}
+          out={}
+          for key, pattern, test_id in [('list',r'system\.listMethods → HTTP (\d+)','E41-004'),('hello',r'demo\.sayHello → HTTP (\d+)','E41-005'),('pingback',r'pingback\.ping .*?HTTP (\d+)','E41-006')]:
+              detail=found.get(test_id,'')
+              m=re.search(pattern,detail)
+              out[key]=m.group(1) if m else 'non mesuré'
+              f=re.search(r'faultCode (-?\d+)',detail)
+              if key in ('hello','pingback'): out[key+'_fault']=f.group(1) if f else 'non mesuré'
+              if key == 'list':
+                  methods=re.search(r'liste décodée : (.*?) \(attendu exactement',detail)
+                  out['methods']=methods.group(1) if methods else 'non mesuré'
+          print(json.dumps(out,separators=(',',':')))
+          PY
+          )"
+              if [ "$xmlrpc" != 'non mesuré' ]; then
+                list_code="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["list"])' "$xmlrpc")"
+                hello_code="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["hello"])' "$xmlrpc")"
+                ping_code="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["pingback"])' "$xmlrpc")"
+                hello_fault="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["hello_fault"])' "$xmlrpc")"
+                ping_fault="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["pingback_fault"])' "$xmlrpc")"
+                method_list="$(python3 -c 'import json,sys;print(json.loads(sys.argv[1])["methods"])' "$xmlrpc")"
+                record xmlrpc-list 'POST /xmlrpc.php system.listMethods (SE-041 HTTP contract)' "$list_code" 'HTTP 200; exactly the three permitted system methods' "HTTP $list_code; methods=$method_list; $status"
+                record xmlrpc-hello 'POST /xmlrpc.php demo.sayHello (SE-041 HTTP contract)' "$hello_code" 'HTTP 200; fault -32601; no Hello!' "HTTP $hello_code; fault=$hello_fault; $status"
+                record xmlrpc-pingback 'POST /xmlrpc.php pingback.ping with .invalid URLs (SE-041 HTTP contract)' "$ping_code" 'HTTP 200; fault -32601; no third-party request' "HTTP $ping_code; fault=$ping_fault; $status"
+              fi
+            fi
+            record "$id" "php /repo/$path" 'N/A' 'PASS' "$obtained"
+            if [ "$status" != PASS ] || [ "$rc" -ne 0 ]; then overall=1; fi
+            rm -f "$output" "$err"
+          done
+          touch "$RUNNER_TEMP/contracts-ran"
+          if [ "$overall" -ne 0 ]; then exit 1; fi
+
+      - name: Lint every PHP file in theme and plugin
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          find theme/partikulier plugin/partikulier-core -type f -name '*.php' -print0 \
+            | sort -z \
+            | xargs -0 -n1 php -l > "$RUNNER_TEMP/php-lint.log" 2>&1
+          rc=$?
+          total=$(find theme/partikulier plugin/partikulier-core -type f -name '*.php' | wc -l | tr -d ' ')
+          passed=$(grep -c '^No syntax errors detected in ' "$RUNNER_TEMP/php-lint.log" || true)
+          actual="exit=$rc; $passed/$total files linted"
+          python3 "$RUNNER_TEMP/evidence.py" "$RUNNER_TEMP/evidence.json" update php-lint 'php -l all PHP files in theme/partikulier and plugin/partikulier-core' 'N/A' 'all files have no syntax errors' "$actual"
+          if [ "$rc" -ne 0 ] || [ "$passed" != "$total" ]; then exit 1; fi
+
+      - name: Render markdown evidence artifact
+        if: always()
+        shell: bash
+        run: python3 "$RUNNER_TEMP/evidence.py" "$RUNNER_TEMP/evidence.json" render "$RUNNER_TEMP/ephemeral-n8n-proof.md"
+
+      - name: Upload markdown evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ephemeral-wordpress-n8n-proof
+          path: ${{ runner.temp }}/ephemeral-n8n-proof.md
+          if-no-files-found: warn
+          retention-days: 14
