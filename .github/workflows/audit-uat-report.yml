@@ -358,20 +358,41 @@ jobs:
                   evidence[label]['lighthouse'].append(text)
               vital_log = next(iter(sorted(root.rglob('interactions-vitals.txt'))), None)
               if vital_log:
-                  for text in vital_log.read_text(errors='replace').splitlines():
+                  vital_lines = vital_log.read_text(errors='replace').splitlines()
+                  for text in vital_lines:
                       text = text.strip()
                       if re.search(r'(?:LCP observed|CLS observed|Lab INP sample captured|Lab INP proxy within)', text, re.I):
                           lines.append(f'- **Chromium {label}** {text}')
                           evidence[label]['chromium'].append(text)
+                  if not any(re.search(r'Lab INP sample captured', text, re.I) for text in vital_lines):
+                      warning = 'Proxy INP non produit: interaction-web-vitals.json absent et aucune ligne "Lab INP sample captured" dans le log.'
+                      lines.append(f'- **À noter** {warning}')
+                      evidence[label]['chromium'].append(warning)
+                      tail = [x.strip() for x in vital_lines[-12:] if x.strip()]
+                      errors = [x for x in tail if re.search(r'\b(?:FAIL|Error|Timeout|Exception|TypeError|ReferenceError)\b|locator\.|waiting for|Target page', x, re.I)]
+                      if errors:
+                          lines += ['Dernières lignes d’erreur du script interactions:', *[f'- `{x}`' for x in errors]]
+                          evidence[label]['chromium'].extend(f'Fin du log interactions: {x}' for x in errors[-3:])
               if label == 'connecté':
                   owner_log = next(iter(sorted(root.rglob('owner-journey.txt'))), None)
+                  owner_json = next(iter(sorted(root.rglob('owner-journey.json'))), None)
                   if owner_log:
                       lines += ['', '### Parcours du compte propriétaire temporaire', '']
-                      for text in owner_log.read_text(errors='replace').splitlines():
+                      owner_lines = owner_log.read_text(errors='replace').splitlines()
+                      for text in owner_lines:
                           text = text.strip()
                           if re.match(r'^(PASS|FAIL|WARN|SKIPPED)\b', text, re.I):
                               lines.append(f'- {text}')
                               evidence[label]['owner'].append(text)
+                      if not owner_json:
+                          warning = 'owner-journey.json absent: le script n’a pas publié son rapport final; le parcours est incomplet.'
+                          lines.append(f'- **À noter** {warning}')
+                          evidence[label]['owner'].append(warning)
+                          tail = [x.strip() for x in owner_lines[-12:] if x.strip()]
+                          errors = [x for x in tail if re.search(r'\b(?:FAIL|Error|Timeout|Exception|TypeError|ReferenceError)\b|locator\.|waiting for|Target page', x, re.I)]
+                          if errors:
+                              lines += ['Dernières lignes d’erreur du parcours propriétaire:', *[f'- `{x}`' for x in errors]]
+                              evidence[label]['owner'].extend(f'Fin du log propriétaire: {x}' for x in errors[-3:])
           for label, groups in evidence.items():
               for kind, items in groups.items():
                   if items:
