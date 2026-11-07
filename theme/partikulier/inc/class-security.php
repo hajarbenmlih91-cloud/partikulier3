@@ -305,6 +305,8 @@ class Partikulier_Security {
 		if ( is_admin() ) {
 			return;
 		}
+		header_remove( 'X-Powered-By' );
+		header_remove( 'X-Generator' );
 		$path    = isset( $_SERVER['REQUEST_URI'] ) ? wp_parse_url( wp_unslash( $_SERVER['REQUEST_URI'] ), PHP_URL_PATH ) : '';
 		$is_root = '/' === trailingslashit( (string) $path );
 		if ( $is_root ) {

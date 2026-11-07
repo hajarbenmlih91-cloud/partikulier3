@@ -60,6 +60,10 @@ async function visit(label, locale, route, width, height, screenshotName) {
     deviceScaleFactor: width < 500 ? 2 : 1,
   });
   const page = await context.newPage();
+  let measurementRequests = 0;
+  page.on('request', request => {
+    if (request.url().includes('/admin-ajax.php') && request.postData()?.includes('action=pk_visit_count')) measurementRequests++;
+  });
   await page.addInitScript(installVitals);
   page.on('pageerror', error => pageErrors.push(`${label}: ${error.message}`));
   page.on('requestfailed', request => {
@@ -69,6 +73,21 @@ async function visit(label, locale, route, width, height, screenshotName) {
   });
   const url = `${BASE}/${locale}${route}`.replace(/\/{2,}/g, '/').replace('https:/', 'https://');
   const response = await page.goto(url, { waitUntil: 'load', timeout: 30000 });
+  const consentBar = page.locator('[data-pk-cookie]');
+  const declineMeasurement = consentBar.locator('[data-no]');
+  if (await declineMeasurement.count() && await declineMeasurement.isVisible()) {
+    const actualLabel = (await declineMeasurement.innerText()).trim();
+    await declineMeasurement.click();
+    await consentBar.waitFor({ state: 'hidden' });
+    const choice = (await context.cookies(BASE)).find(cookie => cookie.name === 'pk_measure')?.value || '';
+    const expectedLabel = { fr: 'Continuer sans mesure', en: 'Continue without measurement', ar: 'المتابعة دون قياس' }[locale];
+    record('privacy', `${label} visit measurement can be declined`, choice === 'no' && measurementRequests === 0,
+      `choice=${choice}; counter requests=${measurementRequests}`);
+    record('i18n', `${locale} consent refusal is localized`, actualLabel === expectedLabel,
+      `expected=${expectedLabel}; actual=${actualLabel}`);
+  } else if (await consentBar.isVisible().catch(() => false)) {
+    record('privacy', `${label} consent has a visible refusal action`, false, 'Consent banner is visible but has no usable [data-no] action');
+  }
   await page.evaluate(() => document.fonts?.ready);
   // Give late image/font candidates time to settle before reading lab LCP/CLS.
   await page.waitForTimeout(1200);

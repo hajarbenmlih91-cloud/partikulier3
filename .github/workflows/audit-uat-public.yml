@@ -124,11 +124,17 @@ jobs:
           chrome_path="$(cd theme/partikulier && node --input-type=module -e 'import { chromium } from "playwright"; console.log(chromium.executablePath())')"
           run_lh() {
             local label="$1" url="$2" form="$3"
+            local emulation=()
+            if [[ "$form" == desktop ]]; then
+              emulation=(--preset=desktop)
+            else
+              emulation=(--form-factor=mobile)
+            fi
             lighthouse "$url" \
               --chrome-path="$chrome_path" \
               --chrome-flags='--headless --no-sandbox --disable-dev-shm-usage' \
               --only-categories=performance,accessibility,best-practices,seo \
-              --form-factor="$form" \
+              "${emulation[@]}" \
               --output=json \
               --output-path="$AUDIT_OUT_DIR/lighthouse-$label.json" \
               --quiet 2>&1 | tee "$AUDIT_OUT_DIR/lighthouse-$label.txt"
@@ -244,9 +250,9 @@ jobs:
                   rows = data.get('results', data.get('checks', []))
                   error_rows = [row for row in rows if row.get('status') == 'FAIL' and row.get('severity', 'error') == 'error']
                   warning_rows = [row for row in rows if row.get('status') == 'FAIL' and row.get('severity') == 'warning']
-                  errors = sorted({str(row.get('check', '?')) for row in error_rows})
-                  details = [f"{row.get('check', '?')}: {row.get('detail', '')}" for row in error_rows[:5]]
-                  annotation(title, f"status={data.get('status')}; errors={len(error_rows)}; warnings={len(warning_rows)}; " + (' | '.join(details) if details else 'no error-severity check failures'))
+                  annotation(title, f"status={data.get('status')}; errors={len(error_rows)}; warnings={len(warning_rows)}")
+                  for index, row in enumerate(error_rows[:10], 1):
+                      annotation(f'UAT detail {index}', f"{row.get('check', '?')}: {row.get('detail', '')}")
               else:
                   log = root / ('interactions-vitals.txt' if filename == 'interaction-web-vitals.json' else 'browser-audit.txt')
                   log_lines = log.read_text(errors='replace').splitlines() if log.exists() else []

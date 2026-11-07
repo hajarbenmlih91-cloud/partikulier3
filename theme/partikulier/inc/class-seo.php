@@ -115,7 +115,22 @@ class Partikulier_SEO {
 			}
 		}
 
-		if ( is_singular( PARTIKULIER_ESTATIK_POST_TYPE ) ) {
+		$existing_title = trim( (string) ( $parts['title'] ?? '' ) );
+		$title_length = function_exists( 'mb_strlen' ) ? mb_strlen( $existing_title, 'UTF-8' ) : preg_match_all( '/./us', $existing_title );
+		if ( false === $title_length ) {
+			$title_length = strlen( $existing_title );
+		}
+		if ( is_page_template( 'templates/page-deposer-annonce.php' ) && $title_length < 10 ) {
+			$lang = function_exists( 'pll_current_language' ) ? (string) pll_current_language( 'slug' ) : substr( (string) get_locale(), 0, 2 );
+			$titles = array(
+				'fr' => 'Déposer une annonce',
+				'en' => 'Post a listing',
+				'ar' => 'إضافة إعلان عقاري',
+			);
+			$parts['title'] = $titles[ $lang ] ?? $titles['fr'];
+			$parts['site']  = $site;
+			$parts['tagline'] = '';
+		} elseif ( is_singular( PARTIKULIER_ESTATIK_POST_TYPE ) ) {
 				$post           = get_queried_object();
 				$location       = self::geo_chain( $post );
 				$parts['title'] = wp_strip_all_tags( get_the_title( $post ) );
