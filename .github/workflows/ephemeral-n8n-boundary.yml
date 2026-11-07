@@ -663,21 +663,59 @@ jobs:
             n8n_diagnostic="exit=$n8n_rc; node=non mesuré; error=non mesuré — CLI diagnostic parser exit=$n8n_diagnostic_rc"
           fi
           docker logs "$N8N_CONTAINER" > "$RUNNER_TEMP/n8n-container.log" 2>&1 || true
-          service_diagnostic="$(python3 - "$RUNNER_TEMP/n8n-container.log" <<'PY'
-          import pathlib, re, sys
-          path=pathlib.Path(sys.argv[1]); text=path.read_text(errors='replace') if path.exists() else ''
+          service_diagnostic="$(python3 - "$RUNNER_TEMP/n8n-container.log" "$RUNNER_TEMP/ci-n8n-workflow.json" <<'PY'
+          import json, pathlib, re, sys
+          log_path, workflow_path = map(pathlib.Path, sys.argv[1:3])
+          lines = log_path.read_text(errors='replace').splitlines() if log_path.exists() else []
+          tokens=[]
+          try:
+              workflow=json.loads(workflow_path.read_text())
+              for node in workflow.get('nodes', []):
+                  params=node.get('parameters', {})
+                  if isinstance(params.get('body'), str): tokens.append(params['body'])
+                  for h in params.get('headerParameters', {}).get('parameters', []):
+                      if h.get('name','').lower() in ('x-partikulier-automation','x-partikulier-signature'): tokens.append(str(h.get('value','')))
+          except Exception: pass
+          def clean(value):
+              text=str(value or '')
+              for token in sorted((t for t in tokens if t), key=len, reverse=True): text=text.replace(token,'[redacted]')
+              text=re.sub(r'(?i)(x-partikulier-(?:automation|signature|timestamp|key-id)\s*[:=]\s*)[^\s,;]+',r'\1[redacted]',text)
+              text=re.sub(r'(?i)\b(password|secret|token|credential|authorization|cookie)\b\s*[:=]\s*[^\s,;]+',r'\1=[redacted]',text)
+              text=re.sub(r'(?i)sha256=[a-f0-9]{64}','sha256=[redacted]',text)
+              text=re.sub(r'\b[A-Za-z0-9+/=_-]{40,}\b','[redacted-token]',text)
+              text=re.sub(r'(?<!\w)\+?\d[\d ()-]{7,}\d(?!\w)','[number redacted]',text)
+              if any(x in text.lower() for x in ('event_id','payload','ci_probe')) or ('{' in text and '}' in text): return '[request data redacted]'
+              return ' '.join(text.split())[:180]
+          def messages(obj, under_error=False):
+              found=[]
+              if isinstance(obj,dict):
+                  for key,value in obj.items():
+                      keylow=str(key).lower()
+                      nested=under_error or keylow in ('error','cause','innererror','lasterror','exception')
+                      if isinstance(value,str) and (nested or keylow in ('errormessage','description')):
+                          found.append(value)
+                      elif isinstance(value,str) and keylow=='message' and re.search(r'error|failed|exception|cannot|could not',value,re.I):
+                          found.append(value)
+                      elif isinstance(value,(dict,list)): found.extend(messages(value,nested))
+              elif isinstance(obj,list):
+                  for value in obj: found.extend(messages(value,under_error))
+              return found
           selected=[]
-          for line in text.splitlines():
+          for i,line in enumerate(lines):
               low=line.lower()
-              if any(x in low for x in ('api.n8n.io', 'telemetry')): continue
-              if not re.search(r'\b(error|failed|exception|ECONN|HTTP [45]\d\d|cannot|could not)\b', line, re.I): continue
-              line=re.sub(r'(?i)(x-partikulier-(?:automation|signature|timestamp|key-id)\s*[:=]\s*)[^\s,;]+', r'\1[redacted]', line)
-              line=re.sub(r'(?i)\b(password|secret|token|credential|authorization|cookie)\b\s*[:=]\s*[^\s,;]+', r'\1=[redacted]', line)
-              line=re.sub(r'(?i)sha256=[a-f0-9]{64}', 'sha256=[redacted]', line)
-              line=re.sub(r'\b[A-Za-z0-9+/=_-]{40,}\b', '[redacted-token]', line)
-              if any(x in line.lower() for x in ('event_id', 'payload', 'ci_probe')) or ('{' in line and '}' in line): line='[request data redacted]'
-              selected.append(' '.join(line.split())[:180])
-          print(' | '.join(selected[-3:])[:360] or 'aucune erreur de service n8n hors télémétrie relevée')
+              if 'api.n8n.io' in low or 'telemetry' in low: continue
+              if 'system task run failed' not in low and not re.search(r'\b(error|failed|exception|ECONN|HTTP [45]\d\d|cannot|could not)\b',line,re.I): continue
+              candidates=[]
+              try:
+                  obj=json.loads(line)
+                  candidates=messages(obj)
+              except Exception: pass
+              if not candidates: candidates=[line]
+              for item in candidates:
+                  if 'api.n8n.io' in item.lower() or 'telemetry' in item.lower(): continue
+                  safe=clean(item)
+                  if safe and safe not in selected: selected.append(safe)
+          print(' | '.join(selected[-3:])[:500] or 'aucune erreur de service n8n hors télémétrie relevée')
           PY
           )"
           n8n_diagnostic="import_exit=$n8n_import_rc; $n8n_diagnostic; service=$service_diagnostic"
