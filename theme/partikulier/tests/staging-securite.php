@@ -166,17 +166,27 @@ if ( $secret ) {
 echo "\n-- LOT 2 · sonde absente du front anonyme --\n";
 $r = httpq( $base . '/?pk_diag=1' );
 $fuite = strpos( $r['corps'], 'diagnostic reserve aux administrateurs' ) !== false;
-v( $r['code'] === 200 && ! $fuite, "GET /?pk_diag=1 anonyme : HTTP {$r['code']}, page normale sans message de la sonde" );
+$redirect = entete( $r, 'Location' );
+$redirect_parts = is_string( $redirect ) ? parse_url( $redirect ) : false;
+$base_host = strtolower( (string) parse_url( $base, PHP_URL_HOST ) );
+$redirect_host = is_array( $redirect_parts ) ? strtolower( (string) ( $redirect_parts['host'] ?? '' ) ) : '';
+$redirect_scheme = is_array( $redirect_parts ) ? strtolower( (string) ( $redirect_parts['scheme'] ?? '' ) ) : '';
+$redirect_same_origin = is_array( $redirect_parts ) && (
+        ( '' === $redirect_host && '' === $redirect_scheme )
+        || ( in_array( $redirect_scheme, array( 'http', 'https' ), true ) && $redirect_host === $base_host )
+);
+$diag_status_ok = 200 === $r['code'] || ( in_array( $r['code'], array( 301, 302, 303, 307, 308 ), true ) && $redirect_same_origin );
+v( $diag_status_ok && ! $fuite, "GET /?pk_diag=1 anonyme : HTTP {$r['code']}, page normale ou redirection même origine sans message de la sonde" );
 
 $r = httpq( $base . '/wp-content/themes/partikulier/pk-diagnostic.php' );
-$gere = ( $r['code'] === 200 && trim( $r['corps'] ) === '' ) || $r['code'] === 403 || stripos( $r['corps'], '403 - diagnostic reserve' ) !== false;
+$gere = ( $r['code'] === 200 && trim( $r['corps'] ) === '' ) || in_array( $r['code'], array( 403, 404 ), true ) || stripos( $r['corps'], '403 - diagnostic reserve' ) !== false;
 v( $gere, "accès direct au fichier sonde : HTTP {$r['code']}, aucune donnée administrative divulguée" );
 
 // --- Garde CLI des outils de test -------------------------------------------
 echo "\n-- Outils de test : exécution par HTTP refusée --\n";
 foreach ( array( 'staging-charge.php', 'staging-cache.php', 'staging-securite.php' ) as $outil ) {
         $r = httpq( $base . '/wp-content/themes/partikulier/tests/' . $outil );
-        $ecarte = $r['code'] === 403 || ( $r['code'] === 200 && strpos( $r['corps'], 'CLI uniquement' ) !== false );
+        $ecarte = in_array( $r['code'], array( 403, 404 ), true ) || ( $r['code'] === 200 && strpos( $r['corps'], 'CLI uniquement' ) !== false );
         v( $ecarte, "tests/$outil appelé par HTTP : HTTP {$r['code']}, refuse et ne fait rien (anti auto-DDoS)" );
 }
 

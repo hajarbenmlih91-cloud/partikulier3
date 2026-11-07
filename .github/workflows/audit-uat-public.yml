@@ -242,12 +242,16 @@ jobs:
               if path.exists():
                   data = json.loads(path.read_text())
                   rows = data.get('results', data.get('checks', []))
-                  errors = [f"{row.get('check', '?')} [{row.get('severity', '?')}]" for row in rows if row.get('status') == 'FAIL' and row.get('severity', 'error') == 'error']
-                  annotation(title, f"status={data.get('status')}; failed={data.get('failed_checks', len(errors))}; " + (' | '.join(errors[:5]) if errors else 'no error-severity check failures'))
+                  errors = sorted({f"{row.get('check', '?')} [{row.get('severity', '?')}]" for row in rows if row.get('status') == 'FAIL' and row.get('severity', 'error') == 'error'})
+                  annotation(title, f"status={data.get('status')}; failed={data.get('failed_checks', len(errors))}; " + (' | '.join(errors[:10]) if errors else 'no error-severity check failures'))
               else:
-                  annotation(title, 'report file missing')
-          lighthouse = sorted(root.glob('lighthouse-*.json'))
-          annotation('UAT Lighthouse files', f'{len(lighthouse)} of 5 report files produced')
+                  log = root / ('interactions-vitals.txt' if filename == 'interaction-web-vitals.json' else 'browser-audit.txt')
+                  failed_lines = [line.strip() for line in log.read_text(errors='replace').splitlines() if line.lstrip().startswith(('FAIL', 'Error', 'error:'))] if log.exists() else []
+                  annotation(title, 'report missing; ' + (' | '.join(failed_lines[:5]) if failed_lines else 'no failure detail captured'))
+          expected_lighthouse = ['fr-home-mobile', 'en-home-mobile', 'ar-home-mobile', 'fr-listings-mobile', 'fr-home-desktop']
+          produced = {path.stem.removeprefix('lighthouse-') for path in root.glob('lighthouse-*.json')}
+          missing_lighthouse = [name for name in expected_lighthouse if name not in produced]
+          annotation('UAT Lighthouse files', f'{len(produced)} of 5 produced; missing={",".join(missing_lighthouse) or "none"}')
           PY
 
           for result in "$SECURITY_RESULT" "$CACHE_RESULT" "$BROWSER_RESULT" "$LIGHTHOUSE_RESULT" "$AUTH_RESULT" "$INTERACTIONS_RESULT"; do
