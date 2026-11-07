@@ -712,13 +712,18 @@ jobs:
           for i,line in enumerate(lines):
               low=line.lower()
               if 'api.n8n.io' in low or 'telemetry' in low: continue
-              relevant = bool(re.search(r'\b(error|warn|failed|exception|ECONN|HTTP [45]\d\d|cannot|could not)\b',line,re.I))
+              level=re.search(r'\|\s*(trace|debug|info|warn|error)\s*\|',line,re.I)
+              relevant=bool(level and level.group(1).lower() in ('warn','error'))
+              if not level and re.search(r'\b(error|failed|exception|ECONN|HTTP [45]\d\d|cannot|could not)\b',line,re.I): relevant=True
               if i in context and re.match(r'\s*at\s',line,re.I): relevant=True
               if not relevant: continue
               candidates=[]
               try:
-                  obj=json.loads(line)
-                  candidates=messages(obj)
+                  start=line.find('{')
+                  if start >= 0:
+                      obj=json.loads(line[start:])
+                      candidates=messages(obj)
+                      if candidates: candidates.insert(0,line[:start])
               except Exception: pass
               if not candidates: candidates=[line]
               for item in candidates:
