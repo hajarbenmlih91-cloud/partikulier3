@@ -671,7 +671,8 @@ jobs:
           # sont les seules autorisees a s'en passer (search-arrays EMET
           # results). Cardinalite et ensemble EXACT des 40 suites
           # attendues ; aucun fichier en trop ou manquant ; total global 456/456.
-          php <<'ORACLE'
+          set +e
+          php <<'ORACLE' 2>&1 | tee "$RUNNER_TEMP/oracle-validation.log"
           <?php
           $attendues = array(
                     "alerts-domain-contract.json" => 15,
@@ -772,6 +773,13 @@ jobs:
           if ($tot !== 456 || $pas !== 456) { fwrite(STDERR, "oracle inattendu (attendu 456/456 — 44 suites : 384 reference + 5 extensions SE-044/DP-9 + 67 dp9)\n"); exit(1); }
           echo "contrats dynamiques : $pas/$tot (" . count($bases) . " suites, schema, coherence, unicitte, totaux epingles, ensemble exact et results exig hors historiques verifies)\n";
           ORACLE
+          oracle_status=${PIPESTATUS[0]}
+          set -e
+          if (( oracle_status != 0 )); then
+            detail=$(tail -n 5 "$RUNNER_TEMP/oracle-validation.log" | tr '\n' ' ' | cut -c 1-500)
+            echo "::error title=Oracle 456/456::$detail"
+            exit "$oracle_status"
+          fi
       - name: Publier les résultats
         if: always()
         uses: actions/upload-artifact@v4
