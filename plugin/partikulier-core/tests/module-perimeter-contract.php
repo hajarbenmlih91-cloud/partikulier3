@@ -189,6 +189,9 @@ $orderPairs = [
     ['PaymentsOrdersTrait.php', 'PaymentService.php'],
     ['PaymentsSubscriptionsTrait.php', 'PaymentService.php'],
     ['LeadsContactTrait.php', 'LeadService.php'],
+    ['LeadsContactAuthorizationTrait.php', 'LeadService.php'],
+    ['LeadsQualificationTrait.php', 'LeadService.php'],
+    ['LeadsIdempotencyTrait.php', 'LeadService.php'],
     ['LeadsRestTrait.php', 'LeadService.php'],
     ['LeadsPrivacyTrait.php', 'LeadService.php'],
     ['LeadsAdminTrait.php', 'LeadService.php'],
@@ -205,7 +208,7 @@ foreach ($orderPairs as [$traitFile, $classFile]) {
     }
 }
 $assert('DA-008', $orderErrors === [],
-    $orderErrors === [] ? 'bootstrap : les 12 require_once de traits précèdent leurs 4 classes shells' : 'ordre incorrect : ' . implode(' ; ', $orderErrors));
+    $orderErrors === [] ? 'bootstrap : les 15 require_once de traits précèdent leurs 4 classes shells' : 'ordre incorrect : ' . implode(' ; ', $orderErrors));
 
 /* DA-009 — baseline gelée, actualisée pour le module démo explicite en 6.20.9 :
 exactement 19 fichiers, après réintégration de quatre fichiers historiques omis ;
