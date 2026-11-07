@@ -500,11 +500,20 @@ jobs:
           else
           docker cp "$RUNNER_TEMP/ci-n8n-workflow.json" "$N8N_CONTAINER:/tmp/ci-n8n-workflow.json"
           WORKFLOW_ID="$(cat "$RUNNER_TEMP/ci-n8n-workflow-id")"
-          docker exec "$N8N_CONTAINER" n8n import:workflow --input=/tmp/ci-n8n-workflow.json > "$RUNNER_TEMP/n8n-import.log" 2>&1
           set +e
-          docker exec -e N8N_DISABLED_MODULES=mcp-registry "$N8N_CONTAINER" n8n execute --id="$WORKFLOW_ID" --rawOutput > "$RUNNER_TEMP/n8n-execution.stdout" 2> "$RUNNER_TEMP/n8n-execution.stderr"
-          n8n_rc=$?
+          docker exec "$N8N_CONTAINER" n8n import:workflow --input=/tmp/ci-n8n-workflow.json > "$RUNNER_TEMP/n8n-import.log" 2>&1
+          n8n_import_rc=$?
           set -e
+          if [ "$n8n_import_rc" -eq 0 ]; then
+            set +e
+            docker exec -e N8N_DISABLED_MODULES=mcp-registry "$N8N_CONTAINER" n8n execute --id="$WORKFLOW_ID" --rawOutput > "$RUNNER_TEMP/n8n-execution.stdout" 2> "$RUNNER_TEMP/n8n-execution.stderr"
+            n8n_rc=$?
+            set -e
+          else
+            : > "$RUNNER_TEMP/n8n-execution.stdout"
+            cp "$RUNNER_TEMP/n8n-import.log" "$RUNNER_TEMP/n8n-execution.stderr"
+            n8n_rc=$n8n_import_rc
+          fi
 
           # CLI execution data can contain the transient signed request. Parse privately and emit only HTTP codes/booleans.
           set +e
@@ -640,7 +649,8 @@ jobs:
           if [ "$n8n_diagnostic_rc" -ne 0 ] || [ -z "$n8n_diagnostic" ]; then
             n8n_diagnostic="exit=$n8n_rc; node=non mesuré; error=non mesuré — CLI diagnostic parser exit=$n8n_diagnostic_rc"
           fi
-          record n8n-diagnostic 'Parse private n8n CLI output; redact secrets, signature and request body' 'N/A' 'exit code; failed n8n node; one safe error line' "$n8n_diagnostic"
+          n8n_diagnostic="import_exit=$n8n_import_rc; $n8n_diagnostic"
+          record n8n-diagnostic 'Parse private n8n CLI output; redact secrets, signature and request body' 'N/A' 'import/execute exit codes; failed n8n node; one safe error line' "$n8n_diagnostic"
           fi
 
           EVENT_ID="$(cat "$RUNNER_TEMP/ci-n8n-event-id")"
