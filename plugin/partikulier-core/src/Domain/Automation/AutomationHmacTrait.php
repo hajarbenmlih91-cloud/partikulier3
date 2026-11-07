@@ -2,7 +2,7 @@
 /**
  * Sécurité HMAC du pont n8n (lot B4) : signature sortante, vérification
  * des requêtes entrantes (mode off/log/enforce, fenêtre 300 s,
- * rotation), limitation des signatures invalides (20/minute/IP) et compteur
+ * rotation), limitation des échecs d’authentification (20/minute/IP par catégorie) et compteur
  * d'audit horaire plafonné dans pk_n8n_hmac_audit.
  *
  * Lot D (découpage, arbitrage commanditaire « Référence + plugin », CDC
@@ -109,6 +109,10 @@ trait AutomationHmacTrait
 		}
 
 		if ( ! $secret || ! $provided || ! $shared_valid ) {
+			$rateLimit = self::limit_hmac_failures($request, 'automation-hmac-auth-invalid');
+			if ( is_wp_error($rateLimit) ) {
+				return $rateLimit;
+			}
 			return new \WP_Error('pk_automation_auth', __('Requête non autorisée.', 'partikulier'), ['status' => 401]);
 		}
 
@@ -160,22 +164,12 @@ trait AutomationHmacTrait
 			 * en enforce comme en log — un forçage de la garde ne doit plus
 			 * être invisible en production. En plus du compteur d'audit horaire,
 			 * le limiteur d'échecs HMAC renvoie HTTP 429 après 20 signatures
-			 * invalides par IP et par minute; cette limite n'est pas un WAF.
+			 * invalides ou de secret partagé par IP et par minute; cette limite n'est pas un WAF.
 			 * SE-022 (E-2201) : une seule écriture d'audit par cycle de
 			 * requête — la ré-exécution Allow-header ne double pas le
 			 * compteur d'échecs HMAC (même classe de défaut que la garde
 			 * /erase-lead, constatée par le balayage des 18 routes). */
-			$rateLimit = RequestCycle::recall($request, 'hmac_invalid_rate_limit');
-			if ( null === $rateLimit ) {
-				$rateLimit = (new \Partikulier\Core\RateLimiter())->guard(
-					$request,
-					'automation-hmac-invalid',
-					true,
-					self::MAX_HMAC_FAILURES_PER_MINUTE,
-					60
-				);
-				RequestCycle::remember($request, 'hmac_invalid_rate_limit', $rateLimit);
-			}
+			$rateLimit = self::limit_hmac_failures($request, 'automation-hmac-signature-invalid');
 			if ( is_wp_error($rateLimit) ) {
 				return $rateLimit;
 			}
@@ -214,6 +208,24 @@ trait AutomationHmacTrait
 	/* ------------------------------------------------------------------ */
 	/* Helpers privés (port fidèle)                                       */
 	/* ------------------------------------------------------------------ */
+
+	private static function limit_hmac_failures( \WP_REST_Request $request, string $bucket ): bool|\WP_Error
+	{
+		$cycleKey = 'hmac_rate_limit_' . $bucket;
+		$verdict = RequestCycle::recall($request, $cycleKey);
+		if ( null === $verdict ) {
+			$verdict = (new \Partikulier\Core\RateLimiter())->guard(
+				$request,
+				$bucket,
+				true,
+				self::MAX_HMAC_FAILURES_PER_MINUTE,
+				60
+			);
+			RequestCycle::remember($request, $cycleKey, $verdict);
+		}
+		return $verdict;
+	}
+
 
 	private static function hmac_key( $secret )
 	{

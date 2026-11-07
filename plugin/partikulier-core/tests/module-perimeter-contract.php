@@ -153,7 +153,7 @@ $movedMap = [
     ],
     AutomationService::class => [
         'AutomationPolicyTrait.php' => ['events_table', 'audit_table', 'max_hmac_body_bytes', 'env_secret', 'env_key_id', 'env_webhook', 'settings', 'get', 'secret_keys', 'maybe_migrate', 'save_admin_settings'],
-        'AutomationHmacTrait.php' => ['outgoing_headers', 'check_automation_secret', 'audit_failure', 'hmac_key', 'is_strong_secret', 'is_https_url', 'get_normalized_header'],
+        'AutomationHmacTrait.php' => ['outgoing_headers', 'check_automation_secret', 'audit_failure', 'limit_hmac_failures', 'hmac_key', 'is_strong_secret', 'is_https_url', 'get_normalized_header'],
     ],
     ListingSynchronizer::class => [
         'SynchronizerHooksTrait.php' => ['register', 'onSavePost', 'onTransitionStatus', 'onDeletePost', 'onMetaChange', 'enqueueUpsert', 'enqueueDelete'],

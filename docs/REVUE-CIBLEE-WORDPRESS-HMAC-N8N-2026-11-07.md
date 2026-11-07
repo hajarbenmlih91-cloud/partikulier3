@@ -103,13 +103,13 @@ Le code protège les effets mutatifs par IDs métier spécifiques plutôt que pa
 
 ## État de sortie historique au 2026-11-07
 
-Les résultats ci-dessous décrivent l'état antérieur à la reprise du 8 novembre; voir l'addendum daté qui suit, lequel les complète et remplace les conclusions devenues obsolètes.
+Les résultats ci-dessous décrivent l'état antérieur à la reprise; voir l'addendum daté qui suit, lequel les complète et remplace les conclusions devenues obsolètes.
 
 - **Réussi à cette date :** CI `42411317147` sur `608d519`; lint PHP du workflow `42410958329`; syntaxe PHP via parser local sur 59 fichiers source/contrat, comptage local des 19 modules DA-002, et hygiène/lints Shell, JavaScript, JSON.
 - **Échoué / incomplet à cette date :** `42410660277` a exposé le dépassement DA-002, corrigé structurellement; les relances `42410958277`, `42411132245` et `42411322140` n'ont pas atteint les tests car l'installation des livrables échouait. Le run `42410958329` avait échoué à l'initialisation WordPress.
 - **Non testé à cette date :** recette complète après le découpage, déploiement/staging, nouvelle charge, vérification d'hébergement et rotation opérationnelle des secrets.
 
-## Addendum — revue et preuves au 2026-11-08
+## Addendum — revue et preuves au 2026-11-07
 
 Cet addendum est la référence pour l'état courant de la branche `arena/0e605e79-partikulier3`; il ne transforme pas cette revue ciblée en audit formel.
 
@@ -123,7 +123,7 @@ Cet addendum est la référence pour l'état courant de la branche `arena/0e605e
 
 - `AuditLogger::record()` expurge désormais récursivement les champs dont les noms désignent secrets, tokens, signatures, authorization, mots de passe, credentials, cookies, clés API/privées ou nonces, également dans les objets/tableaux imbriqués. Le contrat `audit-logger-redaction-contract.php` vérifie conservation des champs non sensibles et suppression des valeurs sentinelles; **PASS dans le run éphémère `42424765237`**.
 - La limite de corps est maintenant **1 MiB par défaut**, réglable via le filtre `partikulier_automation_max_hmac_body_bytes` et bornée à **64 KiB–10 MiB**. Au-delà, HTTP 413 avant validation métier/écriture. Le contrat `automation-input-boundary-contract.php` teste le rejet et les deux bornes; production-environment guard et rate-limit sont également couverts. **PASS dans `42426164054`**. Le premier run `42424538438` avait exposé `strlen(null)` dans un contrat legacy; cast défensif ajouté en `a378edc`.
-- Le compteur historique de 100/h reste un **compteur d'audit**. En plus, les signatures invalides soumises avec le bon secret partagé sont limitées à **20/minute/IP** et obtiennent HTTP 429 ensuite, via le `RateLimiter` existant; les requêtes valides ne consomment pas ce quota. Ce n'est pas une défense WAF/volumétrique; la limite utilise `REMOTE_ADDR`, donc vérifier l'effet du proxy et configurer aussi un contrôle edge si nécessaire.
+- Le compteur historique de 100/h reste un **compteur d'audit**, distinct de la limitation d'abus. Le `RateLimiter` existant rejette en HTTP 429 après **20 secrets partagés invalides/minute/IP** et, dans un bucket séparé, après **20 signatures invalides/minute/IP**; les appels valides ne consomment aucun de ces quotas. Ces limites applicatives utilisent `REMOTE_ADDR` et ne constituent pas un WAF/anti-DoS; vérifier l'IP réelle derrière proxy et configurer aussi un contrôle edge. Les buckets sont distincts, ils ne forment pas un quota global combiné.
 - La limite plus large réduit le risque de casser un appelant, mais le maximum réellement envoyé par les workflows n8n hébergés reste à mesurer avant déploiement. Le filtre permet d'ajuster le plafond sans dépasser 10 MiB; les limites HTTP/proxy doivent être alignées.
 - Les références SSH/`WP_PATH` du workflow `deploy.yml` ont été retirées de l'environnement global du job et sont injectées seulement dans les étapes qui en ont besoin; l'étape de build précède l'accès à SSH. Le job a maintenant une prévalidation HMAC **en lecture seule, avant sauvegarde ou mutation** : pour la cible `prd`, elle exige WP-CLI, le plugin actif, `WP_ENVIRONMENT_TYPE=production`, mode enregistré `enforce` et secret fort. Elle n'imprime aucune valeur de secret. Ce garde-fou de workflow est syntaxiquement/statistiquement testé, mais **n'a pas été exécuté contre un hébergement**.
 - Le runtime promeut le mode `log` en `enforce` lorsque WordPress déclare l'environnement `production`. Le test jetable lance le contrat avec cette valeur d'environnement et vérifie le rejet d'une signature invalide malgré le mode enregistré `log`; **PASS dans `42426164054`**. La vraie valeur `WP_ENVIRONMENT_TYPE` reste à vérifier sur les hébergements.

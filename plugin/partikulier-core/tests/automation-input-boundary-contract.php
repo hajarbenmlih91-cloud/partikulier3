@@ -75,6 +75,8 @@ $_SERVER['REMOTE_ADDR'] = $testIp;
 $rateKeyId = 'rate-test-' . bin2hex(random_bytes(6));
 $firstRequestsDenied = true;
 $lastWasLimited = false;
+$badSecretFirstDenied = true;
+$badSecretLastLimited = false;
 try {
     for ($attempt = 1; $attempt <= AutomationService::MAX_HMAC_FAILURES_PER_MINUTE + 1; $attempt++) {
         $request = new WP_REST_Request('POST', '/partikulier/v1/automation-event');
@@ -93,6 +95,19 @@ try {
                 && $status === 429;
         }
     }
+    for ($attempt = 1; $attempt <= AutomationService::MAX_HMAC_FAILURES_PER_MINUTE + 1; $attempt++) {
+        $request = new WP_REST_Request('POST', '/partikulier/v1/automation-event');
+        $request->set_header('X-Partikulier-Automation', 'synthetic-invalid-shared-secret');
+        $response = AutomationService::check_automation_secret($request);
+        $status = is_wp_error($response) ? (int) ($response->get_error_data()['status'] ?? 0) : 200;
+        if ($attempt <= AutomationService::MAX_HMAC_FAILURES_PER_MINUTE) {
+            $badSecretFirstDenied = $badSecretFirstDenied && $status === 401;
+        } else {
+            $badSecretLastLimited = is_wp_error($response)
+                && $response->get_error_code() === 'pk_rate_limited'
+                && $status === 429;
+        }
+    }
 } finally {
     if ($originalRemoteAddr === null) {
         unset($_SERVER['REMOTE_ADDR']);
@@ -100,11 +115,13 @@ try {
         $_SERVER['REMOTE_ADDR'] = $originalRemoteAddr;
     }
     $route = preg_replace('/[^a-z0-9_-]/i', '_', '/partikulier/v1/automation-event') ?: 'route';
-    $limiterKey = 'pk_rl_' . md5('automation-hmac-invalid|' . $route . '|ip:' . $testIp);
-    delete_transient($limiterKey);
-    if (function_exists('apcu_delete')) {
-        apcu_delete($limiterKey . '_started');
-        apcu_delete($limiterKey . '_count');
+    foreach (['automation-hmac-signature-invalid', 'automation-hmac-auth-invalid'] as $bucket) {
+        $limiterKey = 'pk_rl_' . md5($bucket . '|' . $route . '|ip:' . $testIp);
+        delete_transient($limiterKey);
+        if (function_exists('apcu_delete')) {
+            apcu_delete($limiterKey . '_started');
+            apcu_delete($limiterKey . '_count');
+        }
     }
     $wpdb->delete(AutomationService::audit_table(), [
         'key_id' => $rateKeyId,
@@ -113,8 +130,8 @@ try {
 }
 $results[] = [
     'test_id' => 'AUTO-HMAC-RATE-001',
-    'passed' => $sharedSecret !== '' && $firstRequestsDenied && $lastWasLimited,
-    'detail' => 'Per-IP limiter returns HTTP 429 after the configured invalid-signature budget',
+    'passed' => $sharedSecret !== '' && $firstRequestsDenied && $lastWasLimited && $badSecretFirstDenied && $badSecretLastLimited,
+    'detail' => 'Per-IP limiter returns HTTP 429 after the budget for bad shared secrets and invalid signatures',
 ];
 
 $passed = count(array_filter($results, static fn(array $row): bool => $row['passed']));
