@@ -9,7 +9,8 @@
  * pk_automation_signature, pk_n8n_secret_missing), mêmes en-têtes de
  * webhook sortant, même promotion « secret présent + mode off = enforce »
  * (LOT 2 — Isolation : un secret configuré ne doit jamais suffire seul),
- * même plafond d'échecs HMAC par heure (100) et idempotence des accusés
+ * même compteur d'audit d'échecs HMAC plafonné à 100 par heure (sans blocage
+ * du client) et idempotence des accusés
  * d'événements (UNIQUE KEY event_id : rejeu strictement identique → 200
  * duplicate=true ; réutilisation avec contenu/type/source différent → 409).
  *
@@ -52,6 +53,7 @@ final class AutomationService
 	private const LEGACY_SETTINGS_OPTION = 'pk_theme_options';
 
 	public const MAX_FAILURES_PER_HOUR = 100;
+	public const MAX_HMAC_BODY_BYTES = 65536;
 	public const KEY_ROTATION_GRACE_SECONDS = 86400;
 
 	/** Clés migrées depuis les options historiques du thème. */
@@ -74,6 +76,10 @@ final class AutomationService
 	 */
 	public static function receive_event( \WP_REST_Request $request )
 	{
+		if ( strlen($request->get_body()) > self::MAX_HMAC_BODY_BYTES ) {
+			return new \WP_Error('pk_automation_body_too_large', __('Événement d’automatisation trop volumineux.', 'partikulier'), ['status' => 413]);
+		}
+
 		$raw_event_id   = $request->get_param('event_id');
 		$raw_event_type = $request->get_param('event_type');
 		$raw_source     = $request->get_param('source');

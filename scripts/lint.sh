@@ -23,6 +23,7 @@ fi
 
 find scripts -name '*.sh' -print0 | xargs -0 -n1 bash -n
 echo 'Shell lint: PASS'
+python3 scripts/check-deploy-secret-scope.py
 
 if command -v node >/dev/null 2>&1; then
   find theme/partikulier -name '*.mjs' -print0 | while IFS= read -r -d '' file; do node --check "$file" >/dev/null; done

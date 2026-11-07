@@ -97,12 +97,6 @@ jobs:
     env:
       DEPLOY_ENVIRONMENT: ${{ needs.resolve.outputs.environment }}
       DEPLOY_VERSION: ${{ needs.resolve.outputs.version }}
-      SSH_HOST: ${{ secrets.SSH_HOST }}
-      SSH_PORT: ${{ secrets.SSH_PORT }}
-      SSH_USER: ${{ secrets.SSH_USER }}
-      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-      SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
-      WP_PATH: ${{ secrets.WP_PATH }}
       SITE_URL: ${{ vars.SITE_URL }}
     defaults:
       run:
@@ -144,6 +138,13 @@ jobs:
           test -d build/deploy-artifacts/polylang
 
       - name: Configurer SSH strict
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+          WP_PATH: ${{ secrets.WP_PATH }}
         run: |
           set -euo pipefail
           : "${SSH_HOST:?secret SSH_HOST manquant}"
@@ -178,6 +179,8 @@ jobs:
           chmod 600 "$HOME/.ssh/config"
 
       - name: Sauvegarde pré-déploiement
+        env:
+          WP_PATH: ${{ secrets.WP_PATH }}
         run: |
           set -euo pipefail
           ssh partikulier-hostinger 'bash -s' -- "$WP_PATH" "$GITHUB_SHA" "5" <<'REMOTE'
@@ -220,6 +223,8 @@ jobs:
           REMOTE
 
       - name: Activer le mode maintenance
+        env:
+          WP_PATH: ${{ secrets.WP_PATH }}
         run: |
           set -euo pipefail
           ssh partikulier-hostinger 'bash -s' -- "$WP_PATH" <<'REMOTE'
@@ -232,6 +237,8 @@ jobs:
           REMOTE
 
       - name: Synchroniser plugin et thème
+        env:
+          WP_PATH: ${{ secrets.WP_PATH }}
         run: |
           set -euo pipefail
           ssh partikulier-hostinger 'bash -s' -- "$WP_PATH" <<'REMOTE'
@@ -251,6 +258,8 @@ jobs:
             "partikulier-hostinger:$WP_PATH/wp-content/plugins/polylang/"
 
       - name: Vérifications WordPress post-déploiement
+        env:
+          WP_PATH: ${{ secrets.WP_PATH }}
         run: |
           set -euo pipefail
           ssh partikulier-hostinger 'bash -s' -- "$WP_PATH" "$DEPLOY_ENVIRONMENT" <<'REMOTE'
@@ -281,6 +290,8 @@ jobs:
 
       - name: Désactiver le mode maintenance
         if: always()
+        env:
+          WP_PATH: ${{ secrets.WP_PATH }}
         run: |
           set -euo pipefail
           ssh partikulier-hostinger 'bash -s' -- "$WP_PATH" <<'REMOTE' || true

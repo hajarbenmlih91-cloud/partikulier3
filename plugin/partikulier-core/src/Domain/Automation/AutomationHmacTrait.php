@@ -2,8 +2,8 @@
 /**
  * Sécurité HMAC du pont n8n (lot B4) : signature sortante, vérification
  * des requêtes entrantes (mode off/log/enforce, fenêtre 300 s,
- * rotation), limiteur d'échecs par heure — consignés dans
- * pk_n8n_hmac_audit.
+ * rotation), compteur d'audit des échecs par heure — plafonné, sans
+ * limitation de débit — consigné dans pk_n8n_hmac_audit.
  *
  * Lot D (découpage, arbitrage commanditaire « Référence + plugin », CDC
  * v1.2 annexe C) : le service AutomationService (467 lignes, code porté par la campagne
@@ -85,6 +85,10 @@ trait AutomationHmacTrait
 	 */
 	public static function check_automation_secret( \WP_REST_Request $request )
 	{
+		if ( strlen($request->get_body()) > self::MAX_HMAC_BODY_BYTES ) {
+			return new \WP_Error('pk_automation_body_too_large', __('Requête d’automatisation trop volumineuse.', 'partikulier'), ['status' => 413]);
+		}
+
 		$keys   = self::secret_keys();
 		$secret = self::get('automation_api_secret');
 
@@ -149,8 +153,9 @@ trait AutomationHmacTrait
 		if ( ! $valid ) {
 			/* E-4901 (F-T15-1, lot sécurité 2.10.7) : l'échec est journalisé
 			 * en enforce comme en log — un forçage de la garde ne doit plus
-			 * être invisible en production (le compteur anti-flood
-			 * MAX_FAILURES_PER_HOUR repose sur cette écriture).
+			 * être invisible en production (le compteur d'audit plafonné
+			 * MAX_FAILURES_PER_HOUR repose sur cette écriture; il ne limite pas
+			 * le débit des requêtes).
 			 * SE-022 (E-2201) : une seule écriture d'audit par cycle de
 			 * requête — la ré-exécution Allow-header ne double pas le
 			 * compteur d'échecs HMAC (même classe de défaut que la garde

@@ -101,9 +101,53 @@ Le code protège les effets mutatifs par IDs métier spécifiques plutôt que pa
 - Configuration effective des secrets, de la rotation, du mode HMAC, des journaux, du proxy, de la base et des workflows n8n réellement hébergés non vérifiée; les résultats CI du dépôt ne lèvent pas cette limite.
 - Les constats UAT historiques restent ouverts : `X-Powered-By`, contrastes, titre arabe, en-têtes de sécurité, XML-RPC, liens sans nom; le dépôt corrigé n'est pas le staging actuellement déployé.
 
-## État de sortie
+## État de sortie historique au 2026-11-07
 
-- **Réussi :** CI `42411317147` sur `608d519`; lint PHP du workflow `42410958329`; syntaxe PHP via parser local sur 59 fichiers source/contrat, comptage local des 19 modules DA-002, et hygiène/lints Shell, JavaScript, JSON. Les runs complets antérieurs cités sont antérieurs au dernier découpage.
-- **Échoué / incomplet :** la recette `42410660277` a exposé le dépassement DA-002, corrigé structurellement; les trois relances `42410958277`, `42411132245` et `42411322140` n'ont pas atteint les tests car l'installation des livrables échouait. L'oracle 456/456 n'a pas été rejoué après ce changement. Le job global `42410958329` est également en échec; la réussite de son étape runtime PHP ne suffit pas à prouver que les contrats ont été exécutés.
-- **Non testé :** exécution finale du contrat de périmètre DA-002 et recette complète après découpage, déploiement/staging, charge nouvelle, vérification d'hébergement et rotation opérationnelle des secrets.
-- **Conclusion :** le dépassement modulaire a été réduit sous la nouvelle limite stricte dans le dépôt; l'exécution dynamique DA-002 et la recette complète restent à confirmer en raison d'échecs au setup WordPress. Les améliorations de sécurité sont livrées sur la branche, sans certification de production ni audit formel.
+Les résultats ci-dessous décrivent l'état antérieur à la reprise du 8 novembre; voir l'addendum daté qui suit, lequel les complète et remplace les conclusions devenues obsolètes.
+
+- **Réussi à cette date :** CI `42411317147` sur `608d519`; lint PHP du workflow `42410958329`; syntaxe PHP via parser local sur 59 fichiers source/contrat, comptage local des 19 modules DA-002, et hygiène/lints Shell, JavaScript, JSON.
+- **Échoué / incomplet à cette date :** `42410660277` a exposé le dépassement DA-002, corrigé structurellement; les relances `42410958277`, `42411132245` et `42411322140` n'ont pas atteint les tests car l'installation des livrables échouait. Le run `42410958329` avait échoué à l'initialisation WordPress.
+- **Non testé à cette date :** recette complète après le découpage, déploiement/staging, nouvelle charge, vérification d'hébergement et rotation opérationnelle des secrets.
+
+## Addendum — revue et preuves au 2026-11-08
+
+Cet addendum est la référence pour l'état courant de la branche `arena/0e605e79-partikulier3`; il ne transforme pas cette revue ciblée en audit formel.
+
+### Preuves déjà obtenues
+
+- Recette `42422020565` : **réussie**, oracle **456/456**. CI push `42422018033` : **réussie**.
+- Environnement jetable `42423301329` : **réussi** pour les vérifications alors présentes. Workflow n8n à destinations autorisées seulement; première requête HMAC acceptée; rejeu exact reconnu; 12 événements concurrents → 1 acceptation, 11 doublons et une seule ligne; 12 retries `/preferences` → 1 mutation et 11 replays; lint PHP/runtime indiqué réussi par ce run.
+- Ces preuves confirment le dépôt testé à ces SHA et ne prouvent ni secrets/paramètres hébergés, ni disponibilité/performance d'UAT ou production.
+
+### Corrections supplémentaires préparées dans le checkout courant
+
+- `AuditLogger::record()` expurge désormais récursivement les champs dont les noms désignent secrets, tokens, signatures, authorization, mots de passe, credentials, cookies, clés API/privées ou nonces, également dans les objets/tableaux imbriqués. Le contrat `audit-logger-redaction-contract.php` vérifie conservation des champs non sensibles et suppression des valeurs sentinelles; **nouveau contrat pas encore exécuté sur WordPress**.
+- `AutomationService` et la garde HMAC refusent maintenant les corps entrants supérieurs à **65 536 octets** avec HTTP 413, avant validation/écriture; le contrat `automation-input-boundary-contract.php` couvre la réponse de garde. **Nouveau contrat pas encore exécuté sur WordPress**. Les limites HTTP/proxy en amont ne sont pas vérifiées.
+- Le compteur HMAC limité à 100 événements par heure est un **compteur d'audit plafonné, pas un limiteur de débit**. La formulation du code a été corrigée; des requêtes invalides peuvent toujours atteindre la garde et provoquer du travail. Une protection/rate limit effective doit être confirmée ou ajoutée selon l'exposition hébergée.
+- La limite applicative de 64 KiB est un nouveau contrat et peut rejeter un payload légitime plus volumineux. Vérifier la taille maximale des événements produits par les workflows n8n réellement hébergés avant tout déploiement; la limite du proxy/webserver doit être alignée.
+- Les références SSH/`WP_PATH` du workflow `deploy.yml` ont été retirées de l'environnement global du job et sont injectées seulement dans les étapes qui en ont besoin; l'étape de build précède l'accès à SSH. Un test statique a été ajouté à `scripts/lint.sh`. Cela réduit la portée d'exposition des secrets côté runner mais ne constitue pas un essai de déploiement.
+- Une caractérisation de charge CI jetable est câblée à `ephemeral-n8n-boundary.yml`: 300 événements synthétiques uniques à 10 RPS pendant 30 s, concurrence plafonnée à 10, cible verrouillée sur `127.0.0.1:8080`, p95 ≤1 000 ms, débit ≥9,5 RPS et exactement 300 lignes. Le script refuse les autres hôtes/ports, ne journalise ni corps, ni signature, ni réponse brute. **Aucune charge UAT ou production n'a été lancée; ce nouveau job CI n'a pas encore été exécuté.**
+
+### Vérifications locales de cette modification (pas CI)
+
+- `git diff --check` : **réussi**.
+- `bash scripts/lint.sh` : **réussi** pour shell, JavaScript, JSON, catalogues, hard-coded strings, hygiène d'artefacts et test statique de portée SSH. Le script a explicitement **sauté le lint PHP** car l'exécutable PHP n'est pas installé localement.
+- Parseur YAML PyYAML : **réussi** sur `deploy.yml` et `ephemeral-n8n-boundary.yml`.
+- Parseur PHP installé temporairement hors du dépôt : syntaxe analysée sans erreur pour les trois fichiers PHP runtime modifiés et les deux contrats ajoutés; c'est un contrôle syntaxique secondaire, **pas `php -l` ni exécution runtime**.
+- `py_compile` et test de portée des secrets : **réussis**. La garde du générateur rejette une cible publique/non autorisée. Un stub HTTP loopback, hors WordPress, a vérifié deux requêtes HMAC correctement signées et espacées sans rafale; ce stub **ne valide pas** l'acceptation WordPress ni la charge de 10 RPS.
+- Les nouveaux contrats PHP et l'essai 10 RPS réel dans le WordPress éphémère demeurent **à exécuter** dans CI avant de conclure sur ces changements.
+
+### Risques et limites restant ouverts
+
+- Mode HMAC explicite `log` accepte encore les signatures invalides; la valeur effective en staging/production n'est pas vérifiée. La production doit utiliser `enforce`.
+- Workflows n8n réellement hébergés, valeurs/qualité/rotation des secrets, permissions DB, journaux, reverse proxy, limites de taille et contrôles de débit hébergés restent inconnus sans preuve d'environnement.
+- Actions GitHub toujours référencées par tags majeurs plutôt que SHA complets; aucun audit exhaustif de provenance/transitivité. Aucun scan complet Gitleaks/Trivy ni `actionlint` n'a été exécuté dans ce checkout.
+- La valeur historique de la clé de passerelle demeure dans l'historique Git; rotation requise si elle a jamais été utilisée.
+- Aucun déploiement, test UAT externe, essai destructif, charge de staging/production ni audit formel n'a été effectué.
+
+### État courant
+
+- **Réussi :** les runs `42422020565`, `42422018033` et `42423301329` (sur leur SHA respectif) ainsi que les contrôles locaux listés ci-dessus.
+- **Échoué :** aucun contrôle local final actuellement observé; l'ancienne recette incomplète est historique et a été suivie de la recette réussie `42422020565`.
+- **Non testé / en attente :** exécution CI des changements du présent addendum, `php -l` et runtime des deux nouveaux contrats dans le conteneur WordPress jetable, nouveau load-smoke jetable, workflows réellement hébergés, UAT, production et déploiement.
+- **Conclusion :** les preuves existantes couvrent les contrôles d'accès et d'idempotence précisés ci-dessus. Les nouveaux correctifs sont encore en cours de validation. Rien ici ne certifie une configuration hébergée ou la production.

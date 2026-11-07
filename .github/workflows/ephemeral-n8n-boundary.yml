@@ -99,6 +99,9 @@ jobs:
               ('xmlrpc-pingback', 'POST /xmlrpc.php pingback.ping with .invalid URLs', 'HTTP 200; XML-RPC fault -32601; no third-party URL', 'non mesuré'),
               ('contract-automation', 'php plugin/partikulier-core/tests/automation-domain-contract.php in WP service', 'PASS', 'non mesuré'),
               ('contract-automation-runtime', 'php plugin/partikulier-core/tests/automation-runtime-boundary-contract.php in disposable WP service', 'PASS; concurrent idempotency and outbound SSRF/redirect boundaries', 'non mesuré'),
+              ('contract-audit-redaction', 'php plugin/partikulier-core/tests/audit-logger-redaction-contract.php in disposable WP service', 'PASS; recursive nested secret-key removal', 'non mesuré'),
+              ('contract-input-boundary', 'php plugin/partikulier-core/tests/automation-input-boundary-contract.php in disposable WP service', 'PASS; >64 KiB HMAC body returns 413 before persistence', 'non mesuré'),
+              ('load-smoke', 'Synthetic 10 RPS for 30 s against disposable WordPress loopback only', '300/300 unique; achieved >= 9.5 RPS; p95 <= 1000 ms; exactly 300 stored rows', 'non mesuré'),
               ('contract-automation-diagnostic', 'Sanitized automation-domain-contract.php failure diagnostic', 'process exit code; failing test; one redacted error line', 'non mesuré'),
               ('contract-erase', 'php plugin/partikulier-core/tests/lead-erase-security-contract.php in WP service', 'PASS', 'non mesuré'),
               ('contract-routes', 'php plugin/partikulier-core/tests/routes-collision.php in WP service', 'PASS', 'non mesuré'),
@@ -168,7 +171,7 @@ jobs:
           record() {
             python3 "$RUNNER_TEMP/evidence.py" "$RUNNER_TEMP/evidence.json" update "$1" "$2" "$3" "$4" "$5"
             case "$1" in
-              n8n-owner|n8n-egress|n8n-static|n8n-first|n8n-replay|n8n-row|n8n-diagnostic) printf '::notice title=%s::%s\n' "$1" "$5" ;;
+              n8n-owner|n8n-egress|n8n-static|n8n-first|n8n-replay|n8n-row|n8n-diagnostic|load-smoke) printf '::notice title=%s::%s\n' "$1" "$5" ;;
             esac
           }
 
@@ -241,6 +244,8 @@ jobs:
           EPHEMERAL_SECRET="$(openssl rand -base64 48 | tr -d '\n')"
           echo "::add-mask::$EPHEMERAL_SECRET"
           export PK_EPHEMERAL_SECRET="$EPHEMERAL_SECRET"
+          printf '%s' "$EPHEMERAL_SECRET" > "$RUNNER_TEMP/ephemeral-hmac-secret"
+          chmod 600 "$RUNNER_TEMP/ephemeral-hmac-secret"
           # Keep the ephemeral active key on the ID used by B4A-011 so its prior failures share the same hourly audit counter.
           docker exec -e PK_EPHEMERAL_SECRET="$EPHEMERAL_SECRET" "$WP_CONTAINER" php -r '
           require "/var/www/html/wp-load.php";
@@ -929,6 +934,37 @@ jobs:
           rm -f "$RUNNER_TEMP/ci-n8n-workflow.json" "$RUNNER_TEMP/ci-n8n-workflow-id" "$RUNNER_TEMP/n8n-owner.json" "$RUNNER_TEMP/n8n-owner-response.json" "$RUNNER_TEMP/n8n-import.log" "$RUNNER_TEMP/n8n-execution.stdout" "$RUNNER_TEMP/n8n-execution.stderr" "$RUNNER_TEMP/n8n-diagnostic-parser.stderr" "$RUNNER_TEMP/n8n-container.log" "$RUNNER_TEMP/ci-n8n-curl.conf" "$RUNNER_TEMP/ci-n8n-signed-body.json" "$RUNNER_TEMP/curl-first.stderr" "$RUNNER_TEMP/curl-replay.stderr" "$RUNNER_TEMP/curl-first-response.json" "$RUNNER_TEMP/curl-replay-response.json" "$RUNNER_TEMP/curl-install.log" "$RUNNER_TEMP/static-curl.tar.xz" "$RUNNER_TEMP/ci-static-curl"; rm -rf "$RUNNER_TEMP/static-curl-extract"
           if [ "$FAIL" -ne 0 ]; then exit 1; fi
 
+      - name: Bounded load characterization (10 RPS for 30 seconds; disposable only)
+        if: steps.integration.outcome == 'success'
+        shell: bash
+        env:
+          WP_CONTAINER: ${{ job.services.wordpress.id }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          secret="$(cat "$RUNNER_TEMP/ephemeral-hmac-secret")"
+          echo "::add-mask::$secret"
+          set +e
+          load_result="$(PK_EPHEMERAL_SECRET="$secret" GITHUB_RUN_ID="$GITHUB_RUN_ID" python3 scripts/ephemeral-n8n-load.py --host 127.0.0.1 --port 8080 --rps 10 --duration 30 --p95-budget-ms 1000)"
+          load_rc=$?
+          set -e
+          echo "Bounded load result: $load_result"
+          row_count="$(docker exec -e GITHUB_RUN_ID="$GITHUB_RUN_ID" "$WP_CONTAINER" php -r '
+          require "/var/www/html/wp-load.php";
+          global $wpdb;
+          $pattern = "n8n-load-" . getenv("GITHUB_RUN_ID") . "-%";
+          $count = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$wpdb->prefix}pk_automation_events WHERE event_id LIKE %s", $pattern));
+          echo $count;
+          ')"
+          p95_ms="$(python3 -c "import json,sys; print(json.loads(sys.argv[1]).get('p95_ms', 0))" "$load_result")"
+          achieved_rps="$(python3 -c "import json,sys; print(json.loads(sys.argv[1]).get('achieved_rps', 0))" "$load_result")"
+          scheduled="$(python3 -c "import json,sys; print(json.loads(sys.argv[1]).get('scheduled', 0))" "$load_result")"
+          actual="exit=$load_rc; scheduled=$scheduled; achieved=${achieved_rps} RPS; p95=${p95_ms} ms; database rows=$row_count"
+          if [ "$load_rc" -eq 0 ] && [ "$row_count" = 300 ]; then actual="PASS; 10 RPS target; achieved=${achieved_rps} RPS; 300/300 unique accepted; p95=${p95_ms} ms; database rows=$row_count"; fi
+          python3 "$RUNNER_TEMP/evidence.py" "$RUNNER_TEMP/evidence.json" update load-smoke 'scripts/ephemeral-n8n-load.py --host 127.0.0.1 --port 8080 --rps 10 --duration 30' 'N/A' '300/300 unique; achieved >= 9.5 RPS; p95 <= 1000 ms; exactly 300 stored rows' "$actual"
+          echo "::notice title=load-smoke::10 RPS target x 30 s; achieved=${achieved_rps} RPS; scheduled=${scheduled}; p95=${p95_ms} ms; rows=${row_count}; process_exit=${load_rc}"
+          if [ "$load_rc" -ne 0 ] || [ "$row_count" != 300 ]; then exit 1; fi
+
       - name: Run versioned PHP runtime contracts in disposable WordPress
         if: always() && github.event_name != 'push' && inputs.curl_probe != true
         shell: bash
@@ -944,7 +980,7 @@ jobs:
           }
           if [ ! -f "$RUNNER_TEMP/wp-ready-for-contracts" ]; then
             record contract-automation-diagnostic 'automation-domain-contract.php did not run' 'N/A' 'exit code; failing test; one safe error line' 'non mesuré — WordPress setup incomplete'
-            for id in contract-automation contract-automation-runtime contract-erase contract-routes contract-se022 contract-se026 contract-xmlrpc; do
+            for id in contract-automation contract-automation-runtime contract-audit-redaction contract-input-boundary contract-erase contract-routes contract-se022 contract-se026 contract-xmlrpc; do
               record "$id" 'Versioned PHP contract in disposable WordPress service' 'non mesuré' 'PASS' 'non mesuré — WordPress setup incomplete'
             done
             exit 0
@@ -969,6 +1005,8 @@ jobs:
           SUITES=(
             'automation-domain-contract|plugin/partikulier-core/tests/automation-domain-contract.php|contract-automation'
             'automation-runtime-boundary-contract|plugin/partikulier-core/tests/automation-runtime-boundary-contract.php|contract-automation-runtime'
+            'audit-logger-redaction-contract|plugin/partikulier-core/tests/audit-logger-redaction-contract.php|contract-audit-redaction'
+            'automation-input-boundary-contract|plugin/partikulier-core/tests/automation-input-boundary-contract.php|contract-input-boundary'
             'lead-erase-security-contract|plugin/partikulier-core/tests/lead-erase-security-contract.php|contract-erase'
             'routes-collision|plugin/partikulier-core/tests/routes-collision.php|contract-routes'
             'se022-idempotence-contract|plugin/partikulier-core/tests/se022-idempotence-contract.php|contract-se022'
@@ -1130,6 +1168,13 @@ jobs:
           rm -f "$RUNNER_TEMP/b4a011-observer.php" "$RUNNER_TEMP/b4a011-observed.json" "$RUNNER_TEMP/contract-diagnostic-parser.stderr"
           touch "$RUNNER_TEMP/contracts-ran"
           if [ "$overall" -ne 0 ]; then exit 1; fi
+
+      - name: Remove ephemeral secret material
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -f "$RUNNER_TEMP/ephemeral-hmac-secret" "$RUNNER_TEMP/n8n-owner.json" "$RUNNER_TEMP/n8n-owner-response.json"
 
       - name: Lint every PHP file in theme and plugin
         if: always()
