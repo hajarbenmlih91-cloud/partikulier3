@@ -623,6 +623,7 @@ jobs:
                       if found: return found
               return ''
           structured = []
+          error_details = []
           named_lines = []
           generic_lines = []
           decoder = json.JSONDecoder()
@@ -643,12 +644,27 @@ jobs:
                   for key, child in value.items(): walk(child, str(key))
               elif isinstance(value, list):
                   for child in value: walk(child, parent)
+          def collect_error_fields(value, under_error=False):
+              if isinstance(value, dict):
+                  level=value.get('level')
+                  is_error=under_error or str(level).lower() in ('error','fatal','50','60')
+                  for key, child in value.items():
+                      keylow=str(key).lower()
+                      child_error=is_error or keylow in ('error','lasterror','err','cause','exception')
+                      if child_error and keylow in ('message','msg','description','name','code','httpcode','statuscode') and isinstance(child,(str,int,float)):
+                          safe=clean(child)
+                          if safe and safe not in ('[structured request data redacted]','[request data redacted]'):
+                              error_details.append((str(value.get('nodeName') or value.get('node') or ''),key+'='+safe))
+                      collect_error_fields(child,child_error)
+              elif isinstance(value,list):
+                  for child in value: collect_error_fields(child,under_error)
           for source in (stdout, stderr, cli_log):
               for index, char in enumerate(source):
                   if char != '{': continue
                   try: obj, _ = decoder.raw_decode(source[index:])
                   except Exception: continue
                   walk(obj)
+                  collect_error_fields(obj)
           combined = stdout + '\n' + stderr + '\n' + cli_log
           for line in reversed(combined.splitlines()):
               lowered = line.lower()
@@ -657,7 +673,7 @@ jobs:
               if match: named_lines.append((match.group(1), match.group(2) or line))
               elif re.search(r'\b(error|failed|exception|timed? out|ECONN|HTTP [45]\d\d)\b', line, re.I): generic_lines.append(('', line))
           structured_named = [item for item in structured if item[0]]
-          choices = structured_named or named_lines or structured or generic_lines
+          choices = structured_named or named_lines or structured or error_details or generic_lines
           node_name, error_line = choices[-1] if choices else ('', '')
           if not error_line and exit_code != '0':
               safe_lines = []
