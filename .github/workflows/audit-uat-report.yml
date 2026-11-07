@@ -107,6 +107,38 @@ jobs:
               found = sorted(base.rglob(filename)) if base.is_dir() else []
               return found[0] if found else None
 
+          def summarize_lighthouse(base, label):
+              files = sorted(base.rglob('lighthouse-*.json')) if base.is_dir() else []
+              annotate('notice', f'Lighthouse inventory {label}', f'{len(files)} JSON file(s): ' + ', '.join(f.name for f in files))
+              if not files: return
+              lines.extend([f'### Lighthouse — {label}', '', '| Page | Perf | A11y | Best practices | SEO | LCP lab (ms) | INP (ms) | CLS lab | TBT (ms) |', '|---|---:|---:|---:|---:|---:|---:|---:|---:|'])
+              for f in files:
+                  data = json.loads(f.read_text()); cats = data.get('categories', {}); audits = data.get('audits', {})
+                  def score(key):
+                      value = cats.get(key, {}).get('score')
+                      return round(value * 100) if isinstance(value, (int, float)) else 'n/a'
+                  def value(*keys):
+                      for key in keys:
+                          result = audits.get(key, {}).get('numericValue')
+                          if isinstance(result, (int, float)):
+                              return round(result, 4) if key == 'cumulative-layout-shift' else round(result)
+                      return 'n/a'
+                  row = f"| {f.stem.removeprefix('lighthouse-')} | {score('performance')} | {score('accessibility')} | {score('best-practices')} | {score('seo')} | {value('largest-contentful-paint')} | {value('interaction-to-next-paint', 'experimental-interaction-to-next-paint')} | {value('cumulative-layout-shift')} | {value('total-blocking-time')} |"
+                  lines.append(row)
+                  annotate('notice', f'Lighthouse {label} {f.stem}', row)
+              lines.append('')
+
+          def summarize_interaction_log(base, label):
+              log = find_file(base, 'interactions-vitals.txt')
+              if not log: return
+              evidence = [x.strip() for x in log.read_text(errors='replace').splitlines() if re.search(r'\b(?:LCP|CLS|INP)\b', x, re.I)]
+              if evidence:
+                  lines.extend([f'### Mesures/interactions depuis le log Chromium — {label}', ''])
+                  lines.extend(f'- {x}' for x in evidence)
+                  lines.append('')
+                  for item in evidence:
+                      annotate('notice', f'Interaction/Web Vitals {label}', item)
+
           # Record the artifact layout so missing expected evidence is diagnosable.
           for source, label in [(root, 'public'), (pathlib.Path(os.environ.get('CONNECTED_DIR', '')), 'connecté')]:
               if source.is_dir():
@@ -177,31 +209,12 @@ jobs:
                       lines.append(f'- {text}')
                       if item.get('status') == 'FAIL': annotate('error', item.get('check', 'Interaction'), item.get('detail', ''))
               lines += ['', '**Interprétation :** LCP/CLS sont des mesures de laboratoire. L’INP de ce script est le maximum des durées `PerformanceEventTiming` des interactions simulées; ce n’est pas le p98 terrain CrUX/RUM.', '']
-
-          # Lighthouse JSON, y compris scores et Core Web Vitals disponibles.
-          p = find_file(root, 'lighthouse-summary.md')
-          if p:
-              lighthouse_text = p.read_text(errors='replace')
-              lines += ['## Lighthouse', '', lighthouse_text, '']
-              for row in lighthouse_text.splitlines():
-                  if row.startswith('| ') and any(label in row for label in ['fr-home-', 'en-home-', 'ar-home-', 'fr-listings-']):
-                      annotate('notice', 'Lighthouse metrics', row)
           else:
-              json_files = sorted(root.rglob('lighthouse-*.json'))
-              if json_files:
-                  lines += ['## Lighthouse', '', '| Page | Perf | A11y | Best practices | SEO | LCP ms | INP ms | CLS | TBT ms |', '|---|---:|---:|---:|---:|---:|---:|---:|---:|']
-                  for f in json_files:
-                      data = json.loads(f.read_text()); cats = data.get('categories', {}); audits = data.get('audits', {})
-                      def score(k): return round((cats.get(k, {}).get('score') or 0) * 100)
-                      def metric(*keys):
-                          for k in keys:
-                              v = audits.get(k, {}).get('numericValue')
-                              if v is not None: return round(v)
-                          return 'n/a'
-                      row = f"| {f.stem} | {score('performance')} | {score('accessibility')} | {score('best-practices')} | {score('seo')} | {metric('largest-contentful-paint')} | {metric('interaction-to-next-paint', 'experimental-interaction-to-next-paint')} | {metric('cumulative-layout-shift')} | {metric('total-blocking-time')} |"
-                      lines.append(row)
-                      annotate('notice', f'Lighthouse {f.stem}', row)
-                  lines.append('')
+              summarize_interaction_log(root, 'public')
+
+          # Lighthouse navigation metrics are extracted directly from each JSON;
+          # CLS keeps decimal precision and INP is labelled n/a if Lighthouse has none.
+          summarize_lighthouse(root, 'public')
 
           # Findings from the protected run: HMAC checks and the temporary-owner journey.
           connected_root = pathlib.Path(os.environ.get('CONNECTED_DIR', ''))
@@ -245,6 +258,9 @@ jobs:
               elif find_file(connected_root, 'owner-journey.txt'):
                   owner_text = find_file(connected_root, 'owner-journey.txt').read_text(errors='replace')
                   lines += ['### Parcours du compte propriétaire temporaire', '', owner_text, '']
+                  for item in owner_text.splitlines():
+                      if re.match(r'^\s*(PASS|FAIL|WARN|SKIPPED)\b', item, re.I):
+                          annotate('error' if re.match(r'^\s*FAIL\b', item, re.I) else 'notice', 'Parcours propriétaire connecté', item.strip())
 
               connected_vitals = find_file(connected_root, 'interaction-web-vitals.json')
               if connected_vitals:
@@ -264,12 +280,9 @@ jobs:
                           annotate('error', item.get('check', 'Interaction connectée'), detail)
                   lines.append('')
 
-              connected_lh = find_file(connected_root, 'lighthouse-summary.md')
-              if connected_lh:
-                  lines += ['### Lighthouse du run connecté', '', connected_lh.read_text(errors='replace'), '']
-                  for row in connected_lh.read_text(errors='replace').splitlines():
-                      if row.startswith('| ') and any(label in row for label in ['fr-home-', 'en-home-', 'ar-home-', 'fr-listings-']):
-                          annotate('notice', 'Lighthouse connecté', row)
+              else:
+                  summarize_interaction_log(connected_root, 'connecté')
+              summarize_lighthouse(connected_root, 'connecté')
 
           # Mobile screenshots shipped with the public and (when supplied) protected artifact.
           shots = []
