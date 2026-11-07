@@ -499,6 +499,7 @@ jobs:
             if [ "$first_curl_rc" -ne 0 ] || [ "$first_http" != 200 ] || [ "$first_accepted" != true ] || [ "$first_duplicate" != false ] || [ "$replay_curl_rc" -ne 0 ] || [ "$replay_http" != 200 ] || [ "$replay_accepted" != true ] || [ "$replay_duplicate" != true ]; then FAIL=1; fi
           else
           docker cp "$RUNNER_TEMP/ci-n8n-workflow.json" "$N8N_CONTAINER:/tmp/ci-n8n-workflow.json"
+          docker exec -u 0:0 "$N8N_CONTAINER" chown node:node /tmp/ci-n8n-workflow.json && docker exec -u 0:0 "$N8N_CONTAINER" chmod 600 /tmp/ci-n8n-workflow.json
           WORKFLOW_ID="$(cat "$RUNNER_TEMP/ci-n8n-workflow-id")"
           set +e
           docker exec -e N8N_DISABLED_MODULES=mcp-registry "$N8N_CONTAINER" n8n import:workflow --input=/tmp/ci-n8n-workflow.json > "$RUNNER_TEMP/n8n-import.log" 2>&1
