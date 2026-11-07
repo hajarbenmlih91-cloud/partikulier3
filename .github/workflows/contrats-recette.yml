@@ -15,7 +15,7 @@ permissions:
 jobs:
   contrats:
     name: contrats WordPress / PHP 8.3
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     services:
       mysql:
         image: mysql:8.0

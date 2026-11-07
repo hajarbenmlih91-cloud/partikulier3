@@ -32,7 +32,7 @@ permissions:
 jobs:
   resolve:
     name: Résoudre l'environnement cible
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       environment: ${{ steps.target.outputs.environment }}
       version: ${{ steps.target.outputs.version }}
@@ -84,7 +84,7 @@ jobs:
 
   deploy:
     name: Déployer vers ${{ needs.resolve.outputs.environment }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [resolve, ci]
     concurrency:
       group: deploy-${{ needs.resolve.outputs.environment }}

@@ -41,7 +41,7 @@ permissions:
 jobs:
   validate-dispatch:
     name: Valider le mode de lancement avant tout accès externe
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Vérifier que les options sont exclusives et cohérentes
         env:
@@ -74,7 +74,7 @@ jobs:
     name: Version PHP du serveur
     needs: validate-dispatch
     if: ${{ !inputs.run_uat_audit && !inputs.run_connected_uat_audit && !inputs.run_uat_load_test && inputs.summarize_uat_run_id == '' && inputs.summarize_connected_uat_run_id == '' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     environment: uat
     env:
       SSH_HOST: ${{ secrets.SSH_HOST }}

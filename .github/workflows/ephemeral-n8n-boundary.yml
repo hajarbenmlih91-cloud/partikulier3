@@ -15,7 +15,7 @@ permissions:
 jobs:
   ephemeral-boundary:
     name: Disposable MariaDB + WordPress + n8n
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 35
     services:
       mariadb:

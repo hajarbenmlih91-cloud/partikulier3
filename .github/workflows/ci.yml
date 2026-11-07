@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   lint-and-package:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         php: ['8.1', '8.2', '8.3']
@@ -58,7 +58,7 @@ jobs:
 
   contrats-statiques:
     name: contrats-statiques (PHP ${{ matrix.php }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       matrix:
         php: ['8.1', '8.2', '8.3']
@@ -84,7 +84,7 @@ jobs:
           path: routes-static.json
 
   integrite-catalogues:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Lot C4 - etat final i18n (zero copie de kit cote theme)
@@ -111,7 +111,7 @@ jobs:
 
   manifeste-preuves:
     name: manifeste-preuves
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Vérifier les preuves B1 à B6
