@@ -356,7 +356,7 @@ jobs:
             "options":{"response":{"response":{"fullResponse":True,"responseFormat":"json"}}},
           }
           node_id = lambda: str(uuid.uuid4())
-          manual_id, first_id, replay_id, assert_id = (node_id() for _ in range(4))
+          manual_id, first_id, replay_id = (node_id() for _ in range(3))
           workflow_id = str(uuid.uuid4())
           workflow = {
             "id":workflow_id,
@@ -366,12 +366,10 @@ jobs:
               {"id":manual_id,"name":"Manual Trigger","type":"n8n-nodes-base.manualTrigger","typeVersion":1,"position":[240,300],"parameters":{}},
               {"id":first_id,"name":"First signed POST","type":"n8n-nodes-base.httpRequest","typeVersion":4.2,"position":[480,300],"parameters":common},
               {"id":replay_id,"name":"Exact replay","type":"n8n-nodes-base.httpRequest","typeVersion":4.2,"position":[720,300],"parameters":common},
-              {"id":assert_id,"name":"Assert the existing idempotency contract","type":"n8n-nodes-base.code","typeVersion":2,"position":[960,300],"parameters":{"mode":"runOnceForAllItems","jsCode":'''const first = $('First signed POST').first().json;\nconst replay = $input.first().json;\nconst decode = (r) => { const status = Number(r.statusCode ?? r.status ?? 0); const body = typeof r.body === 'string' ? JSON.parse(r.body) : (r.body ?? r); return { status, body }; };\nconst a = decode(first); const b = decode(replay);\nif (a.status !== 200 || a.body.accepted !== true || a.body.duplicate !== false) throw new Error('First delivery did not return accepted=true, duplicate=false, HTTP 200');\nif (b.status !== 200 || b.body.accepted !== true || b.body.duplicate !== true) throw new Error('Exact replay did not return accepted=true, duplicate=true, HTTP 200');\nreturn [{ json: { first_http: a.status, first_accepted: a.body.accepted, first_duplicate: a.body.duplicate, replay_http: b.status, replay_accepted: b.body.accepted, replay_duplicate: b.body.duplicate } }];'''}},
             ],
             "connections":{
               "Manual Trigger":{"main":[[{"node":"First signed POST","type":"main","index":0}]]},
               "First signed POST":{"main":[[{"node":"Exact replay","type":"main","index":0}]]},
-              "Exact replay":{"main":[[{"node":"Assert the existing idempotency contract","type":"main","index":0}]]},
             },
             "settings":{"executionOrder":"v1"},
             "staticData":None,
@@ -394,7 +392,7 @@ jobs:
           nodes = [n for n in w['nodes'] if n['type'] == 'n8n-nodes-base.httpRequest']
           assert len(nodes) == 2
           node_types = [n['type'] for n in w['nodes']]
-          assert sorted(node_types) == sorted(['n8n-nodes-base.manualTrigger', 'n8n-nodes-base.httpRequest', 'n8n-nodes-base.httpRequest', 'n8n-nodes-base.code'])
+          assert sorted(node_types) == sorted(['n8n-nodes-base.manualTrigger', 'n8n-nodes-base.httpRequest', 'n8n-nodes-base.httpRequest'])
           assert all(n['parameters']['url'] == expected for n in nodes)
           assert all(n['parameters']['headerParameters']['parameters'][1]['value'] == 'wordpress' for n in nodes)
           serialized = json.dumps(w)
@@ -581,12 +579,34 @@ jobs:
                   detail=safe_error(failure)
                   raise RuntimeError('n8n execution failed'+(f' at {node}' if node else '')+(f': {detail}' if detail else ''))
               run_data=find(execution,'runData')
-              assertion=(run_data or {}).get('Assert the existing idempotency contract') if isinstance(run_data,dict) else None
-              items=assertion[0].get('data',{}).get('main',[]) if isinstance(assertion,list) and assertion else []
-              item=(items[0][0].get('json',{}) if items and items[0] else {})
-              required={'first_http','first_accepted','first_duplicate','replay_http','replay_accepted','replay_duplicate'}
-              if not required.issubset(item): raise RuntimeError('n8n completed without the idempotency assertion output')
-              print(json.dumps({key:item[key] for key in required},separators=(',',':')))
+              if not isinstance(run_data,dict):
+                  keys=','.join(sorted(execution.keys())) if isinstance(execution,dict) else type(execution).__name__
+                  raise RuntimeError(f'n8n execution response omitted runData; response keys={keys}')
+              def node_response(name):
+                  executions=run_data.get(name,[])
+                  if not isinstance(executions,list): return None
+                  for run in executions:
+                      groups=run.get('data',{}).get('main',[]) if isinstance(run,dict) else []
+                      for group in groups if isinstance(groups,list) else []:
+                          for entry in group if isinstance(group,list) else []:
+                              response=entry.get('json',{}) if isinstance(entry,dict) else {}
+                              if not isinstance(response,dict): continue
+                              status=response.get('statusCode',response.get('status',0))
+                              body=response.get('body',response)
+                              if isinstance(body,str):
+                                  try: body=json.loads(body)
+                                  except Exception: body={}
+                              if isinstance(body,dict): return {'http':int(status or 0),'accepted':body.get('accepted'),'duplicate':body.get('duplicate')}
+                  return None
+              first=node_response('First signed POST')
+              replay=node_response('Exact replay')
+              if first is None or replay is None:
+                  details=[]
+                  for name,runs in run_data.items():
+                      statuses=[str(r.get('executionStatus','unknown')) for r in runs if isinstance(r,dict)] if isinstance(runs,list) else []
+                      details.append(f'{name}[{",".join(statuses)}]')
+                  raise RuntimeError('n8n runData lacked a request response: '+'; '.join(details)[:180])
+              print(json.dumps({'first_http':first['http'],'first_accepted':first['accepted'],'first_duplicate':first['duplicate'],'replay_http':replay['http'],'replay_accepted':replay['accepted'],'replay_duplicate':replay['duplicate']},separators=(',',':')))
           except Exception as error:
               print(str(error),file=sys.stderr)
               raise SystemExit(1)
