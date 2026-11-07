@@ -109,7 +109,6 @@ jobs:
 
           def summarize_lighthouse(base, label):
               files = sorted(base.rglob('lighthouse-*.json')) if base.is_dir() else []
-              annotate('notice', f'Lighthouse inventory {label}', f'{len(files)} JSON file(s): ' + ', '.join(f.name for f in files))
               if not files: return
               lines.extend([f'### Lighthouse — {label}', '', '| Page | Perf | A11y | Best practices | SEO | LCP lab (ms) | INP (ms) | CLS lab | TBT (ms) |', '|---|---:|---:|---:|---:|---:|---:|---:|---:|'])
               for f in files:
@@ -125,7 +124,6 @@ jobs:
                       return 'n/a'
                   row = f"| {f.stem.removeprefix('lighthouse-')} | {score('performance')} | {score('accessibility')} | {score('best-practices')} | {score('seo')} | {value('largest-contentful-paint')} | {value('interaction-to-next-paint', 'experimental-interaction-to-next-paint')} | {value('cumulative-layout-shift')} | {value('total-blocking-time')} |"
                   lines.append(row)
-                  annotate('notice', f'Lighthouse {label} {f.stem}', row)
               lines.append('')
 
           def summarize_interaction_log(base, label):
@@ -136,8 +134,6 @@ jobs:
                   lines.extend([f'### Mesures/interactions depuis le log Chromium — {label}', ''])
                   lines.extend(f'- {x}' for x in evidence)
                   lines.append('')
-                  for item in evidence:
-                      annotate('notice', f'Interaction/Web Vitals {label}', item)
 
           # Record the artifact layout so missing expected evidence is diagnosable.
           for source, label in [(root, 'public'), (pathlib.Path(os.environ.get('CONNECTED_DIR', '')), 'connecté')]:
@@ -146,6 +142,34 @@ jobs:
                   inventory = ', '.join(files[:100]) or '(aucun fichier)'
                   lines += [f'## Inventaire artefact {label}', '', inventory, '']
                   annotate('notice', f'Inventaire artefact {label}', inventory)
+                  lh_files = sorted(source.rglob('lighthouse-*.json'))
+                  annotate('notice', f'Debug Lighthouse {label}', f'{len(lh_files)} fichier(s): ' + ', '.join(f.name for f in lh_files))
+                  for f in lh_files:
+                      data = json.loads(f.read_text()); cats = data.get('categories', {}); audits = data.get('audits', {})
+                      def lab_value(*keys):
+                          for key in keys:
+                              val = audits.get(key, {}).get('numericValue')
+                              if isinstance(val, (int, float)):
+                                  return round(val, 4) if key == 'cumulative-layout-shift' else round(val)
+                          return 'n/a'
+                      score_values = []
+                      for key in ['performance', 'accessibility', 'best-practices', 'seo']:
+                          val = cats.get(key, {}).get('score')
+                          score_values.append(str(round(val * 100)) if isinstance(val, (int, float)) else 'n/a')
+                      metric_text = f"{f.stem}: Perf/A11y/BP/SEO={','.join(score_values)}; LCP lab={lab_value('largest-contentful-paint')} ms; INP Lighthouse={lab_value('interaction-to-next-paint', 'experimental-interaction-to-next-paint')} ms; CLS lab={lab_value('cumulative-layout-shift')}; TBT={lab_value('total-blocking-time')} ms"
+                      annotate('notice', f'Lighthouse data {label}', metric_text)
+                  if not find_file(source, 'interaction-web-vitals.json'):
+                      interaction_log = find_file(source, 'interactions-vitals.txt')
+                      if interaction_log:
+                          for item in interaction_log.read_text(errors='replace').splitlines():
+                              if re.search(r'\b(?:LCP|CLS|INP)\b', item, re.I):
+                                  annotate('notice', f'Chromium Web Vitals {label}', item.strip())
+                  if label == 'connecté':
+                      owner_log = find_file(source, 'owner-journey.txt')
+                      if owner_log:
+                          for item in owner_log.read_text(errors='replace').splitlines():
+                              if re.match(r'^\s*(PASS|FAIL|WARN|SKIPPED)\b', item, re.I):
+                                  annotate('error' if re.match(r'^\s*FAIL\b', item, re.I) else 'notice', 'Parcours propriétaire connecté', item.strip())
 
           # Résultats des scripts PHP live : KO/ATT/SAUTÉS avec verbatim concis.
           for filename, label in [('security.txt', 'Sécurité live'), ('cache-ttfb.txt', 'Cache/TTFB'), ('auth-boundary.txt', 'Frontière auth')]:
@@ -258,9 +282,6 @@ jobs:
               elif find_file(connected_root, 'owner-journey.txt'):
                   owner_text = find_file(connected_root, 'owner-journey.txt').read_text(errors='replace')
                   lines += ['### Parcours du compte propriétaire temporaire', '', owner_text, '']
-                  for item in owner_text.splitlines():
-                      if re.match(r'^\s*(PASS|FAIL|WARN|SKIPPED)\b', item, re.I):
-                          annotate('error' if re.match(r'^\s*FAIL\b', item, re.I) else 'notice', 'Parcours propriétaire connecté', item.strip())
 
               connected_vitals = find_file(connected_root, 'interaction-web-vitals.json')
               if connected_vitals:
