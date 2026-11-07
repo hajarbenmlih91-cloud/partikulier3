@@ -502,7 +502,7 @@ jobs:
           docker cp "$RUNNER_TEMP/ci-n8n-workflow.json" "$N8N_CONTAINER:/tmp/ci-n8n-workflow.json"
           docker exec -u 0:0 "$N8N_CONTAINER" chown node:node /tmp/ci-n8n-workflow.json && docker exec -u 0:0 "$N8N_CONTAINER" chmod 600 /tmp/ci-n8n-workflow.json
           WORKFLOW_ID="$(cat "$RUNNER_TEMP/ci-n8n-workflow-id")"
-          CLI_N8N_LOG="/tmp/n8n-cli-execution-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.log"
+          CLI_N8N_LOG="n8n-cli-execution-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.log"
           set +e
           docker exec -e N8N_DISABLED_MODULES=mcp-registry -e N8N_LOG_LEVEL=debug "$N8N_CONTAINER" n8n import:workflow --input=/tmp/ci-n8n-workflow.json > "$RUNNER_TEMP/n8n-import.log" 2>&1
           n8n_import_rc=$?
@@ -512,7 +512,7 @@ jobs:
             docker exec -e N8N_DISABLED_MODULES=mcp-registry -e N8N_LOG_LEVEL=debug -e N8N_LOG_OUTPUT=console,file -e N8N_LOG_FORMAT=json -e N8N_LOG_FILE_LOCATION="$CLI_N8N_LOG" "$N8N_CONTAINER" n8n execute --id="$WORKFLOW_ID" --rawOutput > "$RUNNER_TEMP/n8n-execution.stdout" 2> "$RUNNER_TEMP/n8n-execution.stderr"
             n8n_rc=$?
             set -e
-            docker cp "$N8N_CONTAINER:$CLI_N8N_LOG" "$RUNNER_TEMP/n8n-cli-execution.log" >/dev/null 2>&1 || true
+            docker cp "$N8N_CONTAINER:/home/node/.n8n/$CLI_N8N_LOG" "$RUNNER_TEMP/n8n-cli-execution.log" >/dev/null 2>&1 || true
           else
             : > "$RUNNER_TEMP/n8n-execution.stdout"
             cp "$RUNNER_TEMP/n8n-import.log" "$RUNNER_TEMP/n8n-execution.stderr"
@@ -620,9 +620,13 @@ jobs:
                   node = value.get('node') or value.get('failedNode') or value.get('nodeName')
                   if isinstance(node, dict): node = node.get('name')
                   if not node and parent and parent not in ('data','resultData','runData','error','execution'): node = parent
-                  error = value.get('error') or value.get('lastError')
+                  error = value.get('error') or value.get('lastError') or value.get('err')
                   text = message(error) if error else ''
-                  if not text and node and isinstance(value.get('message'), str): text = value['message']
+                  raw_message = value.get('message') or value.get('msg')
+                  level = value.get('level')
+                  is_error_level = str(level).lower() in ('error','fatal','50','60')
+                  if not text and isinstance(raw_message, str) and (is_error_level or re.search(r'\b(error|failed|exception|cannot|could not)\b',raw_message,re.I)):
+                      text = raw_message
                   if text and not any(x in text.lower() for x in ('api.n8n.io', 'telemetry', 'diagnostic')):
                       structured.append((str(node or ''), text))
                   for key, child in value.items(): walk(child, str(key))
@@ -658,7 +662,7 @@ jobs:
               error_line = ' | '.join(safe_lines[-3:])
           node_name = clean(node_name) or 'non mesuré'
           error_line = clean(error_line) or 'non mesuré — aucune erreur de nœud dans la sortie CLI'
-          print(f'exit={exit_code}; node={node_name}; error={error_line}')
+          print(f'exit={exit_code}; node={node_name}; cli_log_bytes={len(cli_log)}; error={error_line}')
           PY
           )"
           n8n_diagnostic_rc=$?
@@ -757,7 +761,7 @@ jobs:
             : # SE-041 below records exact HTTP codes and structural XML-RPC results from this same WP service.
           done
 
-          docker exec "$N8N_CONTAINER" rm -f /tmp/ci-n8n-workflow.json /tmp/ci-n8n-curl.conf /tmp/ci-n8n-signed-body.json /tmp/ci-n8n-curl-first.json /tmp/ci-n8n-curl-replay.json /tmp/ci-static-curl "/tmp/n8n-cli-execution-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.log" || true
+          docker exec "$N8N_CONTAINER" rm -f /tmp/ci-n8n-workflow.json /tmp/ci-n8n-curl.conf /tmp/ci-n8n-signed-body.json /tmp/ci-n8n-curl-first.json /tmp/ci-n8n-curl-replay.json /tmp/ci-static-curl "/home/node/.n8n/n8n-cli-execution-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.log" || true
           rm -f "$RUNNER_TEMP/ci-n8n-workflow.json" "$RUNNER_TEMP/ci-n8n-workflow-id" "$RUNNER_TEMP/n8n-owner.json" "$RUNNER_TEMP/n8n-owner-response.json" "$RUNNER_TEMP/n8n-import.log" "$RUNNER_TEMP/n8n-execution.stdout" "$RUNNER_TEMP/n8n-execution.stderr" "$RUNNER_TEMP/n8n-cli-execution.log" "$RUNNER_TEMP/n8n-diagnostic-parser.stderr" "$RUNNER_TEMP/n8n-container.log" "$RUNNER_TEMP/ci-n8n-curl.conf" "$RUNNER_TEMP/ci-n8n-signed-body.json" "$RUNNER_TEMP/curl-first.stderr" "$RUNNER_TEMP/curl-replay.stderr" "$RUNNER_TEMP/curl-first-response.json" "$RUNNER_TEMP/curl-replay-response.json" "$RUNNER_TEMP/curl-install.log" "$RUNNER_TEMP/static-curl.tar.xz" "$RUNNER_TEMP/ci-static-curl"; rm -rf "$RUNNER_TEMP/static-curl-extract"
           if [ "$FAIL" -ne 0 ]; then exit 1; fi
 
