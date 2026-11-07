@@ -6,7 +6,7 @@
  *   1. Protection anti-énumération utilisateurs (REST /wp/v2/users, archives auteurs et erreurs de login unifiées).
  *   2. Rate Limiter anti-brute-force conforme CGNAT (clé composite IP + compte visé).
  *   3. Authentification transparente par numéro de téléphone portable marocain (+212, 06, 07).
- *   4. Masquage de wp-login.php et wp-admin pour le public avec passerelle secrète d'administration.
+ *   4. Masquage facultatif de l'écran wp-login.php; wp-admin reste protégé par l'authentification WordPress.
  *   5. En-têtes HTTP défensifs (CSP, HSTS, X-Frame-Options, Permissions-Policy).
  *
  * @package Partikulier
@@ -17,8 +17,6 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 class Partikulier_Security {
-
-	public const DEFAULT_ADMIN_KEY = 'direction2026';
 
 	public static function init() {
 		add_filter( 'rest_endpoints', array( __CLASS__, 'restrict_user_enumeration' ) );
@@ -42,7 +40,7 @@ class Partikulier_Security {
 		// 3. Authentification par numéro de téléphone portable (+212, 06, 07)
 		add_filter( 'authenticate', array( __CLASS__, 'resolve_phone_login' ), 15, 3 );
 
-		// 4. Masquage de wp-login.php et wp-admin pour le public (URL secrète d'administration)
+		// 4. Masquage facultatif de wp-login.php (wp-admin conserve les contrôles WordPress)
 		add_action( 'login_init', array( __CLASS__, 'protect_admin_gateway' ) );
 	}
 
@@ -54,13 +52,12 @@ class Partikulier_Security {
 		if ( defined( 'PK_ADMIN_SECRET_KEY' ) && PK_ADMIN_SECRET_KEY ) {
 			return (string) PK_ADMIN_SECRET_KEY;
 		}
-		$stored = (string) get_option( 'pk_admin_secret_key', '' );
-		return $stored !== '' ? $stored : self::DEFAULT_ADMIN_KEY;
+		return (string) get_option( 'pk_admin_secret_key', '' );
 	}
 
 	/**
-	 * Masque wp-login.php et wp-admin pour les visiteurs et robots externes.
-	 * Seuls les utilisateurs munis du jeton secret ou disposant d'une session admin active peuvent y accéder.
+	 * Masque facultativement wp-login.php derrière une clé secrète; WordPress protège wp-admin par ses contrôles habituels.
+	 * Une clé vide désactive cette couche sans altérer l'authentification native.
 	 */
 	public static function protect_admin_gateway() {
 		if ( ( defined( 'WP_CLI' ) && WP_CLI ) || ( defined( 'DOING_CRON' ) && DOING_CRON ) ) {

@@ -66,6 +66,7 @@ global $wpdb;
 $run = bin2hex(random_bytes(8));
 $eventId = 'n8n-runtime-concurrent-' . $run;
 $settingsBackup = get_option(AutomationService::SETTINGS_OPTION, null);
+$adminKeyBackup = get_option('pk_admin_secret_key', null);
 $createdPostId = 0;
 $retryPostId = 0;
 $httpCalls = [];
@@ -183,6 +184,27 @@ try {
         }
     }
 
+    // No fallback login-gateway key may be shipped in code. Verify that an
+    // unconfigured site keeps native login available, and an explicit option
+    // still enables the configured key (unless wp-config defines one).
+    if (class_exists('Partikulier_Security')) {
+        $configuredConstant = defined('PK_ADMIN_SECRET_KEY') ? (string) constant('PK_ADMIN_SECRET_KEY') : '';
+        if ('' === $configuredConstant) {
+            delete_option('pk_admin_secret_key');
+            $unconfiguredKey = Partikulier_Security::get_admin_secret_key();
+            update_option('pk_admin_secret_key', 'runtime-only-private-gateway-key', false);
+            $optionKey = Partikulier_Security::get_admin_secret_key();
+            $assert('AUTO-ADMIN-GATEWAY-DEFAULT', '' === $unconfiguredKey
+                && 'runtime-only-private-gateway-key' === $optionKey,
+                'no configured key means no shipped fallback; an explicit option key is honored');
+        } else {
+            $assert('AUTO-ADMIN-GATEWAY-DEFAULT', $configuredConstant === Partikulier_Security::get_admin_secret_key(),
+                'explicit wp-config key takes precedence over the option');
+        }
+    } else {
+        $assert('AUTO-ADMIN-GATEWAY-DEFAULT', false, 'theme security gateway is not loaded');
+    }
+
     // Exercise the real outgoing sender with an intercepted public HTTPS URL,
     // then prove a loopback URL is rejected before the HTTP transport runs.
     if (class_exists('Partikulier_Listing_Approval') && (string) AutomationService::get('automation_api_secret') !== '') {
@@ -291,6 +313,11 @@ try {
     }
     if ($retryPostId > 0) {
         wp_delete_post($retryPostId, true);
+    }
+    if (null === $adminKeyBackup) {
+        delete_option('pk_admin_secret_key');
+    } else {
+        update_option('pk_admin_secret_key', $adminKeyBackup, false);
     }
     if (null === $settingsBackup) {
         delete_option(AutomationService::SETTINGS_OPTION);
