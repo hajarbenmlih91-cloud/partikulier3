@@ -335,7 +335,7 @@ jobs:
           import json, os, pathlib, re
           roots = [('public', pathlib.Path(os.environ['SOURCE_DIR'])), ('connecté', pathlib.Path(os.environ['CONNECTED_DIR']))]
           lines = ['## Métriques exactes extraites des artefacts', '', 'LCP/CLS = mesures de laboratoire; INP Lighthouse navigation généralement n/a. Le proxy INP Chromium n’est pas l’INP terrain CrUX/RUM.', '']
-          evidence = {label: {'lighthouse': [], 'chromium': [], 'owner': []} for label, _ in roots}
+          evidence = {label: {'lighthouse': [], 'chromium': [], 'owner': [], 'diagnostics': []} for label, _ in roots}
           commands = []
           def command(level, title, message):
               esc = lambda s: str(s).replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
@@ -372,7 +372,7 @@ jobs:
                       errors = [x for x in tail if re.search(r'\b(?:FAIL|Error|Timeout|Exception|TypeError|ReferenceError)\b|locator\.|waiting for|Target page', x, re.I)]
                       if errors:
                           lines += ['Dernières lignes d’erreur du script interactions:', *[f'- `{x}`' for x in errors]]
-                          evidence[label]['chromium'].extend(f'Fin du log interactions: {x}' for x in errors[-3:])
+                          evidence[label]['diagnostics'].extend(f'Fin du log interactions: {x}' for x in errors[-8:])
               if label == 'connecté':
                   owner_log = next(iter(sorted(root.rglob('owner-journey.txt'))), None)
                   owner_json = next(iter(sorted(root.rglob('owner-journey.json'))), None)
@@ -392,7 +392,7 @@ jobs:
                           errors = [x for x in tail if re.search(r'\b(?:FAIL|Error|Timeout|Exception|TypeError|ReferenceError)\b|locator\.|waiting for|Target page', x, re.I)]
                           if errors:
                               lines += ['Dernières lignes d’erreur du parcours propriétaire:', *[f'- `{x}`' for x in errors]]
-                              evidence[label]['owner'].extend(f'Fin du log propriétaire: {x}' for x in errors[-3:])
+                              evidence[label]['diagnostics'].extend(f'Fin du log propriétaire: {x}' for x in errors[-8:])
           for label, groups in evidence.items():
               for kind, items in groups.items():
                   if items:
