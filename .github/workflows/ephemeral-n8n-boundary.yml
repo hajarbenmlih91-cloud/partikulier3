@@ -98,6 +98,7 @@ jobs:
               ('xmlrpc-hello', 'POST /xmlrpc.php demo.sayHello', 'HTTP 200; XML-RPC fault -32601', 'non mesuré'),
               ('xmlrpc-pingback', 'POST /xmlrpc.php pingback.ping with .invalid URLs', 'HTTP 200; XML-RPC fault -32601; no third-party URL', 'non mesuré'),
               ('contract-automation', 'php plugin/partikulier-core/tests/automation-domain-contract.php in WP service', 'PASS', 'non mesuré'),
+              ('contract-automation-runtime', 'php plugin/partikulier-core/tests/automation-runtime-boundary-contract.php in disposable WP service', 'PASS; concurrent idempotency and outbound SSRF/redirect boundaries', 'non mesuré'),
               ('contract-automation-diagnostic', 'Sanitized automation-domain-contract.php failure diagnostic', 'process exit code; failing test; one redacted error line', 'non mesuré'),
               ('contract-erase', 'php plugin/partikulier-core/tests/lead-erase-security-contract.php in WP service', 'PASS', 'non mesuré'),
               ('contract-routes', 'php plugin/partikulier-core/tests/routes-collision.php in WP service', 'PASS', 'non mesuré'),
@@ -943,7 +944,7 @@ jobs:
           }
           if [ ! -f "$RUNNER_TEMP/wp-ready-for-contracts" ]; then
             record contract-automation-diagnostic 'automation-domain-contract.php did not run' 'N/A' 'exit code; failing test; one safe error line' 'non mesuré — WordPress setup incomplete'
-            for id in contract-automation contract-erase contract-routes contract-se022 contract-se026 contract-xmlrpc; do
+            for id in contract-automation contract-automation-runtime contract-erase contract-routes contract-se022 contract-se026 contract-xmlrpc; do
               record "$id" 'Versioned PHP contract in disposable WordPress service' 'non mesuré' 'PASS' 'non mesuré — WordPress setup incomplete'
             done
             exit 0
@@ -967,6 +968,7 @@ jobs:
           PHP
           SUITES=(
             'automation-domain-contract|plugin/partikulier-core/tests/automation-domain-contract.php|contract-automation'
+            'automation-runtime-boundary-contract|plugin/partikulier-core/tests/automation-runtime-boundary-contract.php|contract-automation-runtime'
             'lead-erase-security-contract|plugin/partikulier-core/tests/lead-erase-security-contract.php|contract-erase'
             'routes-collision|plugin/partikulier-core/tests/routes-collision.php|contract-routes'
             'se022-idempotence-contract|plugin/partikulier-core/tests/se022-idempotence-contract.php|contract-se022'
@@ -986,6 +988,11 @@ jobs:
               rc=$?
               docker cp "$WP_CONTAINER:/tmp/pk-b4a011-observed.json" "$RUNNER_TEMP/b4a011-observed.json" >/dev/null 2>&1
               docker exec "$WP_CONTAINER" rm -f /tmp/b4a011-observer.php /tmp/pk-b4a011-observed.json
+              set -e
+            elif [ "$suite" = 'automation-runtime-boundary-contract' ]; then
+              set +e
+              docker exec -e PK_WP_DIR=/var/www/html -e PK_BASE=http://127.0.0.1 -e PK_COMMIT="$GITHUB_SHA" -e PK_RUN_ID="$GITHUB_RUN_ID" "$WP_CONTAINER" php "/repo/$path" > "$output" 2> "$err"
+              rc=$?
               set -e
             elif [ "$suite" = 'se041-xmlrpc-contract' ]; then
               set +e
