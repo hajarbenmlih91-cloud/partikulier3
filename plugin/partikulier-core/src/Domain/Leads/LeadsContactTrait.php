@@ -398,17 +398,48 @@ trait LeadsContactTrait
 	 */
 	public static function rest_set_qualification( \WP_REST_Request $request )
 	{
-		$wa_id = self::normalize_phone((string) $request->get_param('wa_id'));
-		$is_part = rest_sanitize_boolean($request->get_param('is_particulier'));
-		// Accepte aussi "particulier"/"intermediaire" en string
-		$raw = strtolower(trim((string) $request->get_param('is_particulier')));
-		if ( in_array($raw, ['1','true','particulier','oui','yes'], true) ) $is_part = true;
-		if ( in_array($raw, ['0','false','intermediaire','intermédiaire','agent','non'], true) ) $is_part = false;
+		$raw_wa_id = $request->get_param('wa_id');
+		$wa_id = is_string($raw_wa_id) || is_int($raw_wa_id)
+			? self::normalize_phone((string) $raw_wa_id)
+			: '';
 		if ( ! $wa_id ) {
-			return new \WP_Error('pk_missing_wa_id', 'wa_id requis', ['status'=>400]);
+			return new \WP_Error('pk_missing_wa_id', __('wa_id requis', 'partikulier-core'), ['status'=>400]);
 		}
-		$ok = self::set_qualification($wa_id, (bool) $is_part);
+
+		$raw_qualification = $request->get_param('is_particulier');
+		$is_part = self::parse_qualification_value($raw_qualification);
+		if ( null === $is_part ) {
+			return new \WP_Error('pk_invalid_qualification', __('Réponse de qualification invalide.', 'partikulier-core'), ['status'=>400]);
+		}
+
+		$ok = self::set_qualification($wa_id, $is_part);
 		if ( ! $ok ) return new \WP_Error('pk_unknown_lead', 'lead introuvable', ['status'=>404]);
 		return new \WP_REST_Response(['qualified' => $is_part ? 'particulier' : 'intermediaire'], 200);
+	}
+
+	/**
+	 * Parse only explicit boolean answers; unknown or absent input must never
+	 * silently become "intermédiaire" (false).
+	 */
+	private static function parse_qualification_value( $value ): ?bool
+	{
+		if ( is_bool($value) ) {
+			return $value;
+		}
+		if ( is_int($value) ) {
+			return 1 === $value ? true : ( 0 === $value ? false : null );
+		}
+		if ( ! is_string($value) ) {
+			return null;
+		}
+
+		$value = strtolower(trim($value));
+		if ( in_array($value, ['1', 'true', 'on', 'yes', 'oui', 'particulier'], true) ) {
+			return true;
+		}
+		if ( in_array($value, ['0', 'false', 'off', 'no', 'non', 'intermediaire', 'intermédiaire', 'agent'], true) ) {
+			return false;
+		}
+		return null;
 	}
 }

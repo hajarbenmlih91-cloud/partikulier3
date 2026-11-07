@@ -29,6 +29,7 @@ if (!preg_match('/^[0-9a-f]{40}$/', $commit)) {
 require $wpDir . '/wp-load.php';
 
 use Partikulier\Core\Domain\Automation\AutomationService;
+use Partikulier\Core\Domain\Leads\LeadService;
 
 $results = [];
 $assert = static function (string $id, bool $ok, string $detail) use (&$results): void {
@@ -204,6 +205,23 @@ try {
     } else {
         $assert('AUTO-ADMIN-GATEWAY-DEFAULT', false, 'theme security gateway is not loaded');
     }
+
+    // Malformed qualification replies must fail closed instead of being
+    // coerced to false ("intermédiaire") by WordPress boolean sanitization.
+    $qualificationErrors = [];
+    foreach ([null, 'maybe', [], 2] as $invalidQualification) {
+        $qualificationRequest = new WP_REST_Request('POST', '/partikulier/v1/qualification');
+        $qualificationRequest->set_param('wa_id', '212600000001');
+        if (null !== $invalidQualification) {
+            $qualificationRequest->set_param('is_particulier', $invalidQualification);
+        }
+        $qualificationResult = LeadService::rest_set_qualification($qualificationRequest);
+        $qualificationErrors[] = is_wp_error($qualificationResult)
+            && 'pk_invalid_qualification' === $qualificationResult->get_error_code()
+            && 400 === (int) ($qualificationResult->get_error_data()['status'] ?? 0);
+    }
+    $assert('AUTO-QUALIFICATION-INVALID-INPUT', count(array_filter($qualificationErrors)) === 4,
+        'missing, unknown, non-scalar, and out-of-range qualification replies return 400 without changing a lead');
 
     // Exercise the real outgoing sender with an intercepted public HTTPS URL,
     // then prove a loopback URL is rejected before the HTTP transport runs.
