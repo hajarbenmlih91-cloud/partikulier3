@@ -662,8 +662,26 @@ jobs:
           if [ "$n8n_diagnostic_rc" -ne 0 ] || [ -z "$n8n_diagnostic" ]; then
             n8n_diagnostic="exit=$n8n_rc; node=non mesuré; error=non mesuré — CLI diagnostic parser exit=$n8n_diagnostic_rc"
           fi
-          n8n_diagnostic="import_exit=$n8n_import_rc; $n8n_diagnostic"
-          record n8n-diagnostic 'Parse private n8n CLI output; redact secrets, signature and request body' 'N/A' 'import/execute exit codes; failed n8n node; one safe error line' "$n8n_diagnostic"
+          docker logs "$N8N_CONTAINER" > "$RUNNER_TEMP/n8n-container.log" 2>&1 || true
+          service_diagnostic="$(python3 - "$RUNNER_TEMP/n8n-container.log" <<'PY'
+          import pathlib, re, sys
+          path=pathlib.Path(sys.argv[1]); text=path.read_text(errors='replace') if path.exists() else ''
+          selected=[]
+          for line in text.splitlines():
+              low=line.lower()
+              if any(x in low for x in ('api.n8n.io', 'telemetry')): continue
+              if not re.search(r'\b(error|failed|exception|ECONN|HTTP [45]\d\d|cannot|could not)\b', line, re.I): continue
+              line=re.sub(r'(?i)(x-partikulier-(?:automation|signature|timestamp|key-id)\s*[:=]\s*)[^\s,;]+', r'\1[redacted]', line)
+              line=re.sub(r'(?i)\b(password|secret|token|credential|authorization|cookie)\b\s*[:=]\s*[^\s,;]+', r'\1=[redacted]', line)
+              line=re.sub(r'(?i)sha256=[a-f0-9]{64}', 'sha256=[redacted]', line)
+              line=re.sub(r'\b[A-Za-z0-9+/=_-]{40,}\b', '[redacted-token]', line)
+              if any(x in line.lower() for x in ('event_id', 'payload', 'ci_probe')) or ('{' in line and '}' in line): line='[request data redacted]'
+              selected.append(' '.join(line.split())[:180])
+          print(' | '.join(selected[-3:])[:360] or 'aucune erreur de service n8n hors télémétrie relevée')
+          PY
+          )"
+          n8n_diagnostic="import_exit=$n8n_import_rc; $n8n_diagnostic; service=$service_diagnostic"
+          record n8n-diagnostic 'Parse private n8n CLI/service output; filter telemetry and redact secrets/request data' 'N/A' 'import/execute exit codes; failed node; one safe CLI and service error summary' "$n8n_diagnostic"
           fi
 
           EVENT_ID="$(cat "$RUNNER_TEMP/ci-n8n-event-id")"
@@ -684,7 +702,7 @@ jobs:
           done
 
           docker exec "$N8N_CONTAINER" rm -f /tmp/ci-n8n-workflow.json /tmp/ci-n8n-curl.conf /tmp/ci-n8n-signed-body.json /tmp/ci-n8n-curl-first.json /tmp/ci-n8n-curl-replay.json /tmp/ci-static-curl || true
-          rm -f "$RUNNER_TEMP/ci-n8n-workflow.json" "$RUNNER_TEMP/ci-n8n-workflow-id" "$RUNNER_TEMP/n8n-owner.json" "$RUNNER_TEMP/n8n-owner-response.json" "$RUNNER_TEMP/n8n-import.log" "$RUNNER_TEMP/n8n-execution.stdout" "$RUNNER_TEMP/n8n-execution.stderr" "$RUNNER_TEMP/n8n-diagnostic-parser.stderr" "$RUNNER_TEMP/ci-n8n-curl.conf" "$RUNNER_TEMP/ci-n8n-signed-body.json" "$RUNNER_TEMP/curl-first.stderr" "$RUNNER_TEMP/curl-replay.stderr" "$RUNNER_TEMP/curl-first-response.json" "$RUNNER_TEMP/curl-replay-response.json" "$RUNNER_TEMP/curl-install.log" "$RUNNER_TEMP/static-curl.tar.xz" "$RUNNER_TEMP/ci-static-curl"; rm -rf "$RUNNER_TEMP/static-curl-extract"
+          rm -f "$RUNNER_TEMP/ci-n8n-workflow.json" "$RUNNER_TEMP/ci-n8n-workflow-id" "$RUNNER_TEMP/n8n-owner.json" "$RUNNER_TEMP/n8n-owner-response.json" "$RUNNER_TEMP/n8n-import.log" "$RUNNER_TEMP/n8n-execution.stdout" "$RUNNER_TEMP/n8n-execution.stderr" "$RUNNER_TEMP/n8n-diagnostic-parser.stderr" "$RUNNER_TEMP/n8n-container.log" "$RUNNER_TEMP/ci-n8n-curl.conf" "$RUNNER_TEMP/ci-n8n-signed-body.json" "$RUNNER_TEMP/curl-first.stderr" "$RUNNER_TEMP/curl-replay.stderr" "$RUNNER_TEMP/curl-first-response.json" "$RUNNER_TEMP/curl-replay-response.json" "$RUNNER_TEMP/curl-install.log" "$RUNNER_TEMP/static-curl.tar.xz" "$RUNNER_TEMP/ci-static-curl"; rm -rf "$RUNNER_TEMP/static-curl-extract"
           if [ "$FAIL" -ne 0 ]; then exit 1; fi
 
       - name: Run versioned PHP runtime contracts in disposable WordPress
