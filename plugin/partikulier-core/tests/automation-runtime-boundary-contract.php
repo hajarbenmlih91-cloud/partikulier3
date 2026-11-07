@@ -73,7 +73,9 @@ $mockHttp = static function ($preempt, array $args, string $url) use (&$httpCall
     if ('https://8.8.8.8/n8n-test-hook' === $url) {
         return pk_runtime_http_response(204, 'No Content');
     }
-    return $preempt;
+    // Never let this test make a real network request, even if the HTTP API
+    // invokes the pre-request filter before rejecting an unsafe destination.
+    return new WP_Error('pk_runtime_http_intercept', 'Synthetic outbound request intercepted by contract');
 };
 
 try {
@@ -208,14 +210,21 @@ try {
             && get_post_meta($createdPostId, '_pk_n8n_status', true) === 'sent',
             'public HTTPS destination intercepted; unsafe-URL rejection and TLS verification enabled; redirects disabled');
 
-        $settings['n8n_webhook_url'] = 'https://127.0.0.1/private-hook';
+        $privateUrl = 'https://127.0.0.1/private-hook';
+        $settings['n8n_webhook_url'] = $privateUrl;
         update_option(AutomationService::SETTINGS_OPTION, $settings, false);
         $callsBeforePrivate = count($httpCalls);
+        $validatorRejected = false === wp_http_validate_url($privateUrl);
         $blocked = Partikulier_Listing_Approval::notify_n8n($createdPostId, $credentials, 'runtime-private-destination');
-        $assert('AUTO-OUTBOUND-PRIVATE-BLOCK', !$blocked
-            && count($httpCalls) === $callsBeforePrivate
+        $privateCalls = array_slice($httpCalls, $callsBeforePrivate);
+        $privateCallIntercepted = [] === $privateCalls || (
+            count($privateCalls) === 1
+            && ($privateCalls[0]['url'] ?? '') === $privateUrl
+            && ($privateCalls[0]['args']['reject_unsafe_urls'] ?? false) === true
+        );
+        $assert('AUTO-OUTBOUND-PRIVATE-BLOCK', !$blocked && $validatorRejected && $privateCallIntercepted
             && get_post_meta($createdPostId, '_pk_n8n_status', true) === 'error',
-            'loopback HTTPS destination rejected before any HTTP transport call');
+            'WordPress safe-URL validator rejects loopback; any pre-request hook is intercepted and marked unsafe');
     } else {
         $assert('AUTO-OUTBOUND-SAFE', false, 'theme sender or disposable HMAC key unavailable');
         $assert('AUTO-OUTBOUND-PRIVATE-BLOCK', false, 'theme sender or disposable HMAC key unavailable');
