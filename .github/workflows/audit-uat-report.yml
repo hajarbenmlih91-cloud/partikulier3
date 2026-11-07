@@ -101,10 +101,24 @@ jobs:
               title = str(title).replace('%', '%25').replace('\r', '%0D').replace('\n', ' ')
               annotations.append(f'::{level} title={title}::{msg}')
 
+          def find_file(base, filename):
+              direct = base / filename
+              if direct.is_file(): return direct
+              found = sorted(base.rglob(filename)) if base.is_dir() else []
+              return found[0] if found else None
+
+          # Record the artifact layout so missing expected evidence is diagnosable.
+          for source, label in [(root, 'public'), (pathlib.Path(os.environ.get('CONNECTED_DIR', '')), 'connecté')]:
+              if source.is_dir():
+                  files = sorted(str(f.relative_to(source)) for f in source.rglob('*') if f.is_file())
+                  inventory = ', '.join(files[:100]) or '(aucun fichier)'
+                  lines += [f'## Inventaire artefact {label}', '', inventory, '']
+                  annotate('notice', f'Inventaire artefact {label}', inventory)
+
           # Résultats des scripts PHP live : KO/ATT/SAUTÉS avec verbatim concis.
           for filename, label in [('security.txt', 'Sécurité live'), ('cache-ttfb.txt', 'Cache/TTFB'), ('auth-boundary.txt', 'Frontière auth')]:
-              p = root / filename
-              if not p.exists():
+              p = find_file(root, filename)
+              if not p:
                   continue
               lines.extend([f'## {label}', ''])
               matches = [x.strip() for x in p.read_text(errors='replace').splitlines() if re.match(r'^\s*(KO|ATT|SAUTÉ|FAIL|WARN|SKIPPED)\b', x, re.I)]
@@ -127,8 +141,8 @@ jobs:
               lines.append('')
 
           # Browser/SEO/a11y/XSS: conserver les IDs et détails, pas seulement le statut global.
-          p = root / 'browser-audit.json'
-          if p.exists():
+          p = find_file(root, 'browser-audit.json')
+          if p:
               data = json.loads(p.read_text())
               failed = [r for r in data.get('results', []) if r.get('status') == 'FAIL']
               lines += ['## Chromium, responsive, SEO, Axe, JavaScript et XSS', '',
@@ -141,8 +155,8 @@ jobs:
               lines.append('')
 
           # Interactions, captures et Web Vitals de laboratoire.
-          p = root / 'interaction-web-vitals.json'
-          if p.exists():
+          p = find_file(root, 'interaction-web-vitals.json')
+          if p:
               data = json.loads(p.read_text())
               lines += ['## Interactions JavaScript et Web Vitals', '',
                         f"Statut fonctionnel : **{data.get('status')}** · INP lab proxy max : **{data.get('interaction_inp_lab_max_ms') if data.get('interaction_inp_lab_max_ms') is not None else 'n/a'} ms**.", '',
@@ -165,15 +179,15 @@ jobs:
               lines += ['', '**Interprétation :** LCP/CLS sont des mesures de laboratoire. L’INP de ce script est le maximum des durées `PerformanceEventTiming` des interactions simulées; ce n’est pas le p98 terrain CrUX/RUM.', '']
 
           # Lighthouse JSON, y compris scores et Core Web Vitals disponibles.
-          p = root / 'lighthouse-summary.md'
-          if p.exists():
+          p = find_file(root, 'lighthouse-summary.md')
+          if p:
               lighthouse_text = p.read_text(errors='replace')
               lines += ['## Lighthouse', '', lighthouse_text, '']
               for row in lighthouse_text.splitlines():
                   if row.startswith('| ') and any(label in row for label in ['fr-home-', 'en-home-', 'ar-home-', 'fr-listings-']):
                       annotate('notice', 'Lighthouse metrics', row)
           else:
-              json_files = sorted(root.glob('lighthouse-*.json'))
+              json_files = sorted(root.rglob('lighthouse-*.json'))
               if json_files:
                   lines += ['## Lighthouse', '', '| Page | Perf | A11y | Best practices | SEO | LCP ms | INP ms | CLS | TBT ms |', '|---|---:|---:|---:|---:|---:|---:|---:|---:|']
                   for f in json_files:
@@ -195,8 +209,8 @@ jobs:
               lines += ['## Résultats du run connecté protégé', '',
                         'Les lignes ci-dessous viennent de l’artefact connecté déjà existant; aucun parcours ni appel réseau n’a été relancé.', '']
               for filename, label in [('security.txt', 'Sécurité/HMAC connectée'), ('cache-ttfb.txt', 'Cache/TTFB connecté'), ('load-smoke.txt', 'Charge smoke'), ('load-full.txt', 'Charge complète')]:
-                  f = connected_root / filename
-                  if not f.exists():
+                  f = find_file(connected_root, filename)
+                  if not f:
                       continue
                   lines += [f'### {label}', '']
                   selected = [x.strip() for x in f.read_text(errors='replace').splitlines() if re.match(r'^\s*(OK|KO|ATT|SAUTÉ|FAIL|WARN|SKIPPED)\b', x, re.I)]
@@ -218,8 +232,8 @@ jobs:
                           else: annotate('notice', label, item)
                   lines.append('')
 
-              owner_file = connected_root / 'owner-journey.json'
-              if owner_file.exists():
+              owner_file = find_file(connected_root, 'owner-journey.json')
+              if owner_file:
                   owner = json.loads(owner_file.read_text())
                   lines += ['### Parcours du compte propriétaire temporaire', '', f"Statut global : **{owner.get('status', 'inconnu')}** · {owner.get('authentication', 'information absente')}", '']
                   for item in owner.get('checks', []):
@@ -228,12 +242,12 @@ jobs:
                       if item.get('status') == 'FAIL': annotate('error', item.get('name', 'Parcours propriétaire'), detail)
                   if not owner.get('checks'): lines.append('Aucun détail de contrôle dans owner-journey.json.')
                   lines.append('')
-              elif (connected_root / 'owner-journey.txt').exists():
-                  owner_text = (connected_root / 'owner-journey.txt').read_text(errors='replace')
+              elif find_file(connected_root, 'owner-journey.txt'):
+                  owner_text = find_file(connected_root, 'owner-journey.txt').read_text(errors='replace')
                   lines += ['### Parcours du compte propriétaire temporaire', '', owner_text, '']
 
-              connected_vitals = connected_root / 'interaction-web-vitals.json'
-              if connected_vitals.exists():
+              connected_vitals = find_file(connected_root, 'interaction-web-vitals.json')
+              if connected_vitals:
                   vitals = json.loads(connected_vitals.read_text())
                   lines += ['### Web Vitals/interactions du run connecté', '',
                             f"INP laboratoire proxy max : **{vitals.get('interaction_inp_lab_max_ms', 'n/a')} ms**.", '',
@@ -250,8 +264,8 @@ jobs:
                           annotate('error', item.get('check', 'Interaction connectée'), detail)
                   lines.append('')
 
-              connected_lh = connected_root / 'lighthouse-summary.md'
-              if connected_lh.exists():
+              connected_lh = find_file(connected_root, 'lighthouse-summary.md')
+              if connected_lh:
                   lines += ['### Lighthouse du run connecté', '', connected_lh.read_text(errors='replace'), '']
                   for row in connected_lh.read_text(errors='replace').splitlines():
                       if row.startswith('| ') and any(label in row for label in ['fr-home-', 'en-home-', 'ar-home-', 'fr-listings-']):
@@ -260,8 +274,7 @@ jobs:
           # Mobile screenshots shipped with the public and (when supplied) protected artifact.
           shots = []
           for source, prefix in [(root, 'public'), (connected_root, 'connecté')]:
-              folder = source / 'screenshots'
-              if folder.exists(): shots.extend((f, prefix) for f in sorted(folder.glob('*.png')))
+              if source.is_dir(): shots.extend((f, prefix) for f in sorted(source.rglob('*.png')) if 'screenshots' in f.parts)
           lines += ['## Captures', '']
           lines.extend(f'- `{prefix}/{f.name}` ({f.stat().st_size:,} octets)' for f, prefix in shots)
           if not shots: lines.append('Aucune capture trouvée dans les artefacts.')
