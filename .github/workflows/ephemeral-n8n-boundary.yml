@@ -685,7 +685,9 @@ jobs:
               text=re.sub(r'(?i)sha256=[a-f0-9]{64}','sha256=[redacted]',text)
               text=re.sub(r'\b[A-Za-z0-9+/=_-]{40,}\b','[redacted-token]',text)
               text=re.sub(r'(?<!\w)\+?\d[\d ()-]{7,}\d(?!\w)','[number redacted]',text)
-              if any(x in text.lower() for x in ('event_id','payload','ci_probe')) or ('{' in text and '}' in text): return '[request data redacted]'
+              text=re.sub(r'(?i)(event_id|ci_probe|payload)\s*[:=]\s*(?:"[^"]*"|\'[^\']*\'|[^,;\s}]+)',r'\1=[redacted]',text)
+              if any(x in text.lower() for x in ('event_id','payload','ci_probe')):
+                  text=re.sub(r'\s*\{.*',' [structured request data redacted]',text)
               return ' '.join(text.split())[:180]
           def messages(obj, under_error=False):
               found=[]
