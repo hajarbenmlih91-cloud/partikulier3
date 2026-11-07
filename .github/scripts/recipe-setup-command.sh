@@ -38,11 +38,17 @@ patterns = [
 ]
 for pattern, replacement in patterns:
     text = re.sub(pattern, replacement, text)
-lines = text.splitlines()
+if len(text) > 250_000:
+    text = "[truncated: kept final 250000 characters]\n" + text[-250_000:]
+lines = [line[:2000] for line in text.splitlines()]
 if len(lines) > 400:
     lines = [f"[truncated: kept final 400 of {len(lines)} log lines]"] + lines[-400:]
 text = "\n".join(lines) + ("\n" if lines else "")
 pathlib.Path(safe_path).write_text(text, encoding="utf-8")
+if int(status) != 0:
+    excerpt = "\n".join(lines[-25:]) or "(empty command output)"
+    excerpt = excerpt.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+    print(f"::error title=Recipe setup failed ({label})::{excerpt}", file=sys.stderr)
 with pathlib.Path(safe_path).open("a", encoding="utf-8") as stream:
     stream.write(f"\n[recipe-setup] step={label} exit_code={status}\n")
 status_path = pathlib.Path(safe_path).parent / "status.jsonl"

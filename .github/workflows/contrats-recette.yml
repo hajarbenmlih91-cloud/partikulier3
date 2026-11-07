@@ -8,7 +8,6 @@ on:
 
 env:
   PK_VERSION: '2.10.10'
-  WP_CORE_VERSION: '6.6.2'
 
 permissions:
   contents: read
@@ -38,6 +37,33 @@ jobs:
           extensions: mbstring, mysqli, sqlite3, curl, apcu
       - name: Préparer l'évidence de setup non sensible
         run: mkdir -p "$RUNNER_TEMP/recipe-setup-evidence"
+      - name: Charger et valider le verrou des dépendances recette
+        run: |
+          set -euo pipefail
+          python3 - .github/recipe-dependencies.lock.json "$GITHUB_ENV" <<'PY'
+          import json, pathlib, re, sys
+          lock_path, env_path = map(pathlib.Path, sys.argv[1:])
+          lock = json.loads(lock_path.read_text())
+          if lock.get('lock_version') != 1:
+              raise SystemExit('Unsupported recipe dependency lock version')
+          rows = [
+              ('WP_CORE_VERSION', lock['wordpress_core']['version'], r'\d+\.\d+\.\d+'),
+              ('WP_CORE_SHA256', lock['wordpress_core']['archive_sha256'], r'[0-9a-f]{64}'),
+              ('ESTATIK_VERSION', lock['estatik']['version'], r'[0-9A-Za-z.+_-]+'),
+              ('ESTATIK_SHA256', lock['estatik']['archive_sha256'], r'[0-9a-f]{64}'),
+          ]
+          if lock['wordpress_core']['archive_url'] != 'https://downloads.wordpress.org/release/wordpress-' + lock['wordpress_core']['version'] + '.zip':
+              raise SystemExit('WordPress archive URL does not match the pinned version')
+          if lock['estatik']['slug'] != 'estatik' or lock['estatik']['archive_url'] != 'https://downloads.wordpress.org/plugin/estatik.' + lock['estatik']['version'] + '.zip':
+              raise SystemExit('Estatik archive URL does not match the pinned slug/version')
+          with env_path.open('a') as out:
+              for key, value, pattern in rows:
+                  if not re.fullmatch(pattern, str(value)):
+                      raise SystemExit('Invalid lock value: ' + key)
+                  out.write(f'{key}={value}\n')
+              out.write('ESTATIK_ARCHIVE_URL=' + lock['estatik']['archive_url'] + '\n')
+          print('Loaded pinned WordPress and Estatik versions/checksums.')
+          PY
       - name: Installer WP-CLI
         run: |
           set -euo pipefail
@@ -48,9 +74,7 @@ jobs:
               --output /usr/local/bin/wp
           chmod +x /usr/local/bin/wp
           bash .github/scripts/recipe-setup-command.sh wp-cli-version -- wp --info
-      - name: Télécharger WordPress 6.6.2 (archive épinglée)
-        env:
-          WP_CORE_VERSION: '6.6.2'
+      - name: Télécharger WordPress (version et SHA-256 du verrou)
         run: |
           set -euo pipefail
           archive="$RUNNER_TEMP/wordpress-${WP_CORE_VERSION}.zip"
@@ -59,14 +83,19 @@ jobs:
               --retry-delay 2 --retry-max-time 120 --connect-timeout 10 --max-time 240 \
               "https://downloads.wordpress.org/release/wordpress-${WP_CORE_VERSION}.zip" \
               --output "$archive"
-          sha="$(sha256sum "$archive" | cut -d' ' -f1)"
-          printf '{"version":"%s","archive_sha256":"%s"}\n' "$WP_CORE_VERSION" "$sha" \
-            > "$RUNNER_TEMP/recipe-setup-evidence/wordpress-core-candidate.json"
-          echo "::notice title=WordPress core archive::version=$WP_CORE_VERSION sha256=$sha"
-          printf 'WP_CORE_VERSION=%s\n' "$WP_CORE_VERSION" >> "$GITHUB_ENV"
+          printf '%s  %s\n' "$WP_CORE_SHA256" "$archive" > "$RUNNER_TEMP/wordpress-core.sha256"
+          bash .github/scripts/recipe-setup-command.sh wordpress-core-archive-sha256 -- \
+            sha256sum --check "$RUNNER_TEMP/wordpress-core.sha256"
+          python3 - "$RUNNER_TEMP/recipe-setup-evidence/wordpress-core-lock.json" \
+            "$WP_CORE_VERSION" "$WP_CORE_SHA256" <<'PY'
+          import json, pathlib, sys
+          path, version, sha = sys.argv[1:]
+          pathlib.Path(path).write_text(json.dumps({
+              'version': version, 'archive_sha256': sha, 'verified': True,
+              'verification': 'pinned SHA-256 plus wp core verify-checksums',
+          }, indent=2) + '\n')
+          PY
       - name: Extraire et vérifier les checksums officiels WordPress
-        env:
-          WP_CORE_VERSION: '6.6.2'
         run: |
           set -euo pipefail
           archive="$RUNNER_TEMP/wordpress-${WP_CORE_VERSION}.zip"
@@ -95,57 +124,29 @@ jobs:
           bash .github/scripts/recipe-setup-command.sh wordpress-core-install -- \
             wp core install --path=wp --url=http://127.0.0.1:8099 --title=Partikulier \
               --admin_user=admin --admin_password=admin --admin_email=admin@example.com --skip-email
-      - name: Résoudre Estatik, télécharger et publier le candidat de verrouillage
+      - name: Télécharger et vérifier Estatik (version et SHA-256 du verrou)
         run: |
           set -euo pipefail
-          meta="$RUNNER_TEMP/estatik-plugin-info.json"
           archive="$RUNNER_TEMP/recipe-setup-estatik.zip"
-          bash .github/scripts/recipe-setup-command.sh estatik-metadata-download -- \
-            curl --fail --location --silent --show-error --retry 3 --retry-all-errors \
-              --retry-delay 2 --retry-max-time 90 --connect-timeout 10 --max-time 180 \
-              --get 'https://api.wordpress.org/plugins/info/1.2/' \
-              --data-urlencode 'action=plugin_information' \
-              --data-urlencode 'request[slug]=estatik' \
-              --output "$meta"
-          mapfile -t estatik_meta < <(python3 - "$meta" <<'PY'
-          import json, pathlib, re, sys
-          from urllib.parse import urlparse
-          data = json.loads(pathlib.Path(sys.argv[1]).read_text())
-          version = str(data.get('version', ''))
-          url = str(data.get('download_link', ''))
-          parsed = urlparse(url)
-          if data.get('slug') != 'estatik' or not re.fullmatch(r'[0-9A-Za-z.+_-]+', version):
-              raise SystemExit('Estatik metadata has unexpected slug/version')
-          if parsed.scheme != 'https' or parsed.hostname != 'downloads.wordpress.org':
-              raise SystemExit('Estatik download host is not the approved WordPress.org host')
-          print(version)
-          print(url)
-          PY
-          )
-          if [ "${#estatik_meta[@]}" -ne 2 ]; then
-            echo 'Estatik metadata was incomplete' >&2
-            exit 1
-          fi
-          ESTATIK_VERSION="${estatik_meta[0]}"
-          ESTATIK_DOWNLOAD_URL="${estatik_meta[1]}"
-          printf 'ESTATIK_VERSION=%s\n' "$ESTATIK_VERSION" >> "$GITHUB_ENV"
           bash .github/scripts/recipe-setup-command.sh estatik-archive-download -- \
             curl --fail --location --silent --show-error --retry 3 --retry-all-errors \
               --retry-delay 2 --retry-max-time 120 --connect-timeout 10 --max-time 240 \
-              "$ESTATIK_DOWNLOAD_URL" --output "$archive"
+              "$ESTATIK_ARCHIVE_URL" --output "$archive"
+          printf '%s  %s\n' "$ESTATIK_SHA256" "$archive" > "$RUNNER_TEMP/estatik.sha256"
+          bash .github/scripts/recipe-setup-command.sh estatik-archive-sha256 -- \
+            sha256sum --check "$RUNNER_TEMP/estatik.sha256"
           bash .github/scripts/recipe-setup-command.sh estatik-archive-integrity -- unzip -tq "$archive"
-          sha="$(sha256sum "$archive" | cut -d' ' -f1)"
-          python3 - "$RUNNER_TEMP/recipe-setup-evidence/estatik-lock-candidate.json" \
-            "$ESTATIK_VERSION" "$sha" <<'PY'
+          python3 - "$RUNNER_TEMP/recipe-setup-evidence/estatik-lock-verified.json" \
+            "$ESTATIK_VERSION" "$ESTATIK_SHA256" <<'PY'
           import json, pathlib, sys
           path, version, sha = sys.argv[1:]
           pathlib.Path(path).write_text(json.dumps({
               'slug': 'estatik', 'version': version, 'archive_sha256': sha,
-              'source': 'https://downloads.wordpress.org (WordPress.org plugin API)',
+              'verified': True, 'source': 'https://downloads.wordpress.org',
           }, indent=2) + '\n')
           PY
-          echo "::notice title=Estatik lock candidate::version=$ESTATIK_VERSION archive_sha256=$sha"
-      - name: Installer Estatik depuis l'archive locale résolue
+          echo "::notice title=Estatik locked archive verified::version=$ESTATIK_VERSION sha256=$ESTATIK_SHA256"
+      - name: Installer Estatik depuis l'archive locale vérifiée
         run: |
           set -euo pipefail
           bash .github/scripts/recipe-setup-command.sh estatik-local-install -- \
