@@ -604,13 +604,23 @@ jobs:
               text = re.sub(r'(?<!\w)\+?\d[\d ()-]{7,}\d(?!\w)', '[number redacted]', text)
               return ' '.join(text.split())[:240]
           def message(error):
+              if isinstance(error, str):
+                  try:
+                      parsed=json.loads(error)
+                      if isinstance(parsed,(dict,list)): return message(parsed)
+                  except Exception: pass
+                  return error
               if isinstance(error, dict):
-                  for key in ('message', 'description', 'cause'):
+                  for key in ('message', 'description', 'cause', 'error', 'err'):
                       if key in error:
                           found = message(error[key])
                           if found: return found
                   return ''
-              return str(error) if error is not None else ''
+              if isinstance(error, list):
+                  for item in error:
+                      found=message(item)
+                      if found: return found
+              return ''
           structured = []
           named_lines = []
           generic_lines = []
