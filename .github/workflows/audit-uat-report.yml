@@ -162,7 +162,7 @@ jobs:
                       interaction_log = find_file(source, 'interactions-vitals.txt')
                       if interaction_log:
                           for item in interaction_log.read_text(errors='replace').splitlines():
-                              if re.search(r'\b(?:LCP|CLS|INP)\b', item, re.I):
+                              if re.search(r'(?:LCP observed|CLS observed|Lab INP sample captured|Lab INP proxy within)', item, re.I):
                                   annotate('notice', f'Chromium Web Vitals {label}', item.strip())
                   if label == 'connecté':
                       owner_log = find_file(source, 'owner-journey.txt')
