@@ -471,7 +471,17 @@ jobs:
           rm -f wp/wp-content/mu-plugins/dp9-injection-harness.php
       - name: Contrats de fusion et navigateurs FR/EN/AR
         run: |
+          set -euo pipefail
           mkdir -p preuves-run/integration
+          SRV=''
+          report_error() {
+            status=$?
+            echo "Diagnostic merge-browser (exit $status):"
+            if [[ -f /tmp/merge-browser.stderr.log ]]; then tail -n 60 /tmp/merge-browser.stderr.log; fi
+            if [[ -f /tmp/wp-merge-browser.log ]]; then echo 'Serveur PHP:'; tail -n 20 /tmp/wp-merge-browser.log; fi
+            exit "$status"
+          }
+          trap report_error ERR
           PK_WP_DIR=$PWD/wp PK_COMMIT=${{ github.sha }} PK_VERSION=2.10.10 \
             php plugin/partikulier-core/tests/merge-v3-contract.php > preuves-run/integration/merge-v3.json
           cleanup() {
@@ -484,7 +494,7 @@ jobs:
           SRV=$!
           curl --retry 5 --retry-connrefused --retry-delay 1 --fail --silent http://127.0.0.1:8099/fr/ > /dev/null
           PK_BASE=http://127.0.0.1:8099 PK_MERGE_FIXTURE=$PWD/preuves-run/integration/browser-fixture.json \
-            node theme/partikulier/tests/merge-v3.mjs > preuves-run/integration/merge-browser.json
+            node theme/partikulier/tests/merge-v3.mjs > preuves-run/integration/merge-browser.json 2> /tmp/merge-browser.stderr.log
       - name: Vérifier l'oracle 455/455 (durci, 44 suites — schéma, cohérence, unicité, totaux épinglés, results exigé hors suites historiques ; reprise F3 + tests v3 §9.2)
         run: |
           # Validateur durci (reprise du 20/09/2026 F3, durci le 21/09/2026
