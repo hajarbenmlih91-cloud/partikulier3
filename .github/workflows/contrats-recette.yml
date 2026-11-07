@@ -8,6 +8,7 @@ on:
 
 env:
   PK_VERSION: '2.10.10'
+  WP_CORE_VERSION: '6.6.2'
 
 permissions:
   contents: read
@@ -35,30 +36,151 @@ jobs:
         with:
           php-version: '8.3'
           extensions: mbstring, mysqli, sqlite3, curl, apcu
+      - name: Préparer l'évidence de setup non sensible
+        run: mkdir -p "$RUNNER_TEMP/recipe-setup-evidence"
       - name: Installer WP-CLI
         run: |
-          curl -fsSL https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar -o /usr/local/bin/wp
+          set -euo pipefail
+          bash .github/scripts/recipe-setup-command.sh wp-cli-download -- \
+            curl --fail --location --silent --show-error --retry 3 --retry-all-errors \
+              --retry-delay 2 --retry-max-time 90 --connect-timeout 10 --max-time 180 \
+              https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar \
+              --output /usr/local/bin/wp
           chmod +x /usr/local/bin/wp
-          wp --info
-      - name: Installer WordPress et les livrables
+          bash .github/scripts/recipe-setup-command.sh wp-cli-version -- wp --info
+      - name: Télécharger WordPress 6.6.2 (archive épinglée)
+        env:
+          WP_CORE_VERSION: '6.6.2'
         run: |
-          wp core download --version=6.6 --path=wp
-          wp config create --path=wp --dbname=partikulier --dbuser=root --dbpass=root --dbhost=127.0.0.1:3306 --skip-check
-          # Identité du site = origine réellement attaquée par le contrat
-          # front-assets (échec du run 34760865434) : « partikulier.local » est
-          # un hôte fictif SANS port. redirect_canonical (canonical.php :613-616
-          # et :726-738) conservait alors l'hôte de la requête mais supprimait
-          # son port 8099 → 301 vers http://127.0.0.1/ (port 80, rien n'y
-          # écoute) → Node échouait en « fetch failed » (6/7). Même philosophie
-          # que le banc de qualification : home == l'origine servie, port inclus.
-          wp core install --path=wp --url=http://127.0.0.1:8099 --title=Partikulier \
-            --admin_user=admin --admin_password=admin --admin_email=admin@example.com --skip-email
-          wp plugin install estatik --activate --path=wp
-          rsync -a --delete --exclude='.git' --exclude='.github' plugin/partikulier-core/ wp/wp-content/plugins/partikulier-core/
-          rsync -a --delete --exclude='.git' --exclude='.github' --exclude='node_modules' theme/partikulier/ wp/wp-content/themes/partikulier/
-          wp plugin activate partikulier-core --path=wp
-          wp theme activate partikulier --path=wp
-          mkdir -p wp/wp-content/uploads/partikulier-cache
+          set -euo pipefail
+          archive="$RUNNER_TEMP/wordpress-${WP_CORE_VERSION}.zip"
+          bash .github/scripts/recipe-setup-command.sh wordpress-core-download -- \
+            curl --fail --location --silent --show-error --retry 3 --retry-all-errors \
+              --retry-delay 2 --retry-max-time 120 --connect-timeout 10 --max-time 240 \
+              "https://downloads.wordpress.org/release/wordpress-${WP_CORE_VERSION}.zip" \
+              --output "$archive"
+          sha="$(sha256sum "$archive" | cut -d' ' -f1)"
+          printf '{"version":"%s","archive_sha256":"%s"}\n' "$WP_CORE_VERSION" "$sha" \
+            > "$RUNNER_TEMP/recipe-setup-evidence/wordpress-core-candidate.json"
+          echo "::notice title=WordPress core archive::version=$WP_CORE_VERSION sha256=$sha"
+          printf 'WP_CORE_VERSION=%s\n' "$WP_CORE_VERSION" >> "$GITHUB_ENV"
+      - name: Extraire et vérifier les checksums officiels WordPress
+        env:
+          WP_CORE_VERSION: '6.6.2'
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/wordpress-${WP_CORE_VERSION}.zip"
+          unpack="$RUNNER_TEMP/wordpress-core-unpack"
+          mkdir -p "$unpack" wp
+          bash .github/scripts/recipe-setup-command.sh wordpress-core-unpack -- \
+            unzip -q -o "$archive" -d "$unpack"
+          bash .github/scripts/recipe-setup-command.sh wordpress-core-copy -- \
+            rsync -a --delete "$unpack/wordpress/" wp/
+          bash .github/scripts/recipe-setup-command.sh wordpress-core-checksum -- \
+            wp core verify-checksums --version="$WP_CORE_VERSION" --locale=en_US --path=wp
+      - name: Créer wp-config.php pour la base jetable
+        env:
+          WP_DB_NAME: partikulier
+          WP_DB_USER: root
+          WP_DB_PASSWORD: root
+          WP_DB_HOST: 127.0.0.1:3306
+        run: |
+          set -euo pipefail
+          bash .github/scripts/recipe-setup-command.sh wordpress-config -- \
+            wp config create --path=wp --dbname="$WP_DB_NAME" --dbuser="$WP_DB_USER" \
+              --dbpass="$WP_DB_PASSWORD" --dbhost="$WP_DB_HOST" --skip-check
+      - name: Installer WordPress sur la base jetable
+        run: |
+          set -euo pipefail
+          bash .github/scripts/recipe-setup-command.sh wordpress-core-install -- \
+            wp core install --path=wp --url=http://127.0.0.1:8099 --title=Partikulier \
+              --admin_user=admin --admin_password=admin --admin_email=admin@example.com --skip-email
+      - name: Résoudre Estatik, télécharger et publier le candidat de verrouillage
+        run: |
+          set -euo pipefail
+          meta="$RUNNER_TEMP/estatik-plugin-info.json"
+          archive="$RUNNER_TEMP/recipe-setup-estatik.zip"
+          bash .github/scripts/recipe-setup-command.sh estatik-metadata-download -- \
+            curl --fail --location --silent --show-error --retry 3 --retry-all-errors \
+              --retry-delay 2 --retry-max-time 90 --connect-timeout 10 --max-time 180 \
+              --get 'https://api.wordpress.org/plugins/info/1.2/' \
+              --data-urlencode 'action=plugin_information' \
+              --data-urlencode 'request[slug]=estatik' \
+              --output "$meta"
+          mapfile -t estatik_meta < <(python3 - "$meta" <<'PY'
+          import json, pathlib, re, sys
+          from urllib.parse import urlparse
+          data = json.loads(pathlib.Path(sys.argv[1]).read_text())
+          version = str(data.get('version', ''))
+          url = str(data.get('download_link', ''))
+          parsed = urlparse(url)
+          if data.get('slug') != 'estatik' or not re.fullmatch(r'[0-9A-Za-z.+_-]+', version):
+              raise SystemExit('Estatik metadata has unexpected slug/version')
+          if parsed.scheme != 'https' or parsed.hostname != 'downloads.wordpress.org':
+              raise SystemExit('Estatik download host is not the approved WordPress.org host')
+          print(version)
+          print(url)
+          PY
+          )
+          if [ "${#estatik_meta[@]}" -ne 2 ]; then
+            echo 'Estatik metadata was incomplete' >&2
+            exit 1
+          fi
+          ESTATIK_VERSION="${estatik_meta[0]}"
+          ESTATIK_DOWNLOAD_URL="${estatik_meta[1]}"
+          printf 'ESTATIK_VERSION=%s\n' "$ESTATIK_VERSION" >> "$GITHUB_ENV"
+          bash .github/scripts/recipe-setup-command.sh estatik-archive-download -- \
+            curl --fail --location --silent --show-error --retry 3 --retry-all-errors \
+              --retry-delay 2 --retry-max-time 120 --connect-timeout 10 --max-time 240 \
+              "$ESTATIK_DOWNLOAD_URL" --output "$archive"
+          bash .github/scripts/recipe-setup-command.sh estatik-archive-integrity -- unzip -tq "$archive"
+          sha="$(sha256sum "$archive" | cut -d' ' -f1)"
+          python3 - "$RUNNER_TEMP/recipe-setup-evidence/estatik-lock-candidate.json" \
+            "$ESTATIK_VERSION" "$sha" <<'PY'
+          import json, pathlib, sys
+          path, version, sha = sys.argv[1:]
+          pathlib.Path(path).write_text(json.dumps({
+              'slug': 'estatik', 'version': version, 'archive_sha256': sha,
+              'source': 'https://downloads.wordpress.org (WordPress.org plugin API)',
+          }, indent=2) + '\n')
+          PY
+          echo "::notice title=Estatik lock candidate::version=$ESTATIK_VERSION archive_sha256=$sha"
+      - name: Installer Estatik depuis l'archive locale résolue
+        run: |
+          set -euo pipefail
+          bash .github/scripts/recipe-setup-command.sh estatik-local-install -- \
+            wp plugin install "$RUNNER_TEMP/recipe-setup-estatik.zip" --path=wp
+      - name: Vérifier l'identité d'Estatik installé
+        run: |
+          set -euo pipefail
+          bash .github/scripts/recipe-setup-command.sh estatik-installed-version -- \
+            php -r 'require "wp/wp-load.php"; $h = get_file_data("wp/wp-content/plugins/estatik/estatik.php", ["Version" => "Version"]); $v = (string) ($h["Version"] ?? ""); if ($v !== getenv("ESTATIK_VERSION")) { fwrite(STDERR, "Installed Estatik version does not match the resolved archive.\n"); exit(1); } echo "Estatik version matches resolved archive: $v\n";'
+      - name: Activer Estatik
+        run: |
+          set -euo pipefail
+          bash .github/scripts/recipe-setup-command.sh estatik-activate -- \
+            wp plugin activate estatik --path=wp
+      - name: Copier le plugin Partikulier Core
+        run: |
+          set -euo pipefail
+          bash .github/scripts/recipe-setup-command.sh copy-core-plugin -- \
+            rsync -a --delete --exclude='.git' --exclude='.github' \
+              plugin/partikulier-core/ wp/wp-content/plugins/partikulier-core/
+      - name: Activer Partikulier Core
+        run: |
+          set -euo pipefail
+          bash .github/scripts/recipe-setup-command.sh activate-core-plugin -- \
+            wp plugin activate partikulier-core --path=wp
+      - name: Copier et activer le thème Partikulier
+        run: |
+          set -euo pipefail
+          bash .github/scripts/recipe-setup-command.sh copy-theme -- \
+            rsync -a --delete --exclude='.git' --exclude='.github' --exclude='node_modules' \
+              theme/partikulier/ wp/wp-content/themes/partikulier/
+          bash .github/scripts/recipe-setup-command.sh activate-theme -- \
+            wp theme activate partikulier --path=wp
+      - name: Créer le répertoire de cache jetable
+        run: mkdir -p wp/wp-content/uploads/partikulier-cache
       - name: Vérifier la santé du plugin
         run: |
           php -r 'require "wp/wp-load.php"; $response = rest_do_request(new WP_REST_Request("GET", "/partikulier/v1/health")); $d = $response->get_data(); if (($d["status"] ?? "") !== "ok") { fwrite(STDERR, json_encode($d)."\n"); exit(1); } echo "health ok — core ".($d["core_version"] ?? "?")." / schema ".($d["schema_version"] ?? "?")."\n";'
@@ -68,7 +190,26 @@ jobs:
       - name: Amorcer les invariants historiques des contrats B2 à B5
         run: |
           php -r 'require "wp/wp-load.php"; global $wpdb; $now = gmdate("Y-m-d H:i:s"); update_option("pk_n8n_settings", ["automation_api_secret" => "ci-contract-secret", "active_key_id" => "N", "hmac_mode" => "off"], false); $leads = $wpdb->prefix . "pk_buyer_leads"; $existing = (int) $wpdb->get_var("SELECT COUNT(*) FROM $leads"); for ($i = $existing; $i < 10; $i++) { $seed = "ci-historical-lead-$i"; $wpdb->insert($leads, ["phone_hash" => hash_hmac("sha256", $seed, wp_salt("auth")), "phone_encrypted" => base64_encode($seed), "first_seen_at" => $now, "last_seen_at" => $now], ["%s", "%s", "%s", "%s"]); } $audit = new \Partikulier\Core\AuditLogger(); $adoptions = (array) $wpdb->get_results("SELECT metadata_json FROM {$wpdb->prefix}pk_audit_log"); foreach ([["B2", "leads"], ["B3", "alerts"], ["B4", "automation"], ["B5", "owner_stats"], ["B6", "translation_variants"]] as [$lot, $domain]) { $found = false; foreach ($adoptions as $row) { $meta = json_decode((string) $row->metadata_json, true); if (($meta["lot"] ?? "") === $lot && ($meta["domain"] ?? "") === $domain) { $found = true; break; } } if (!$found) { $audit->record("domain_adopted", "schema", null, ["lot" => $lot, "domain" => $domain]); } } $events = $wpdb->prefix . "pk_automation_events"; for ($i = 1; $i <= 2; $i++) { $wpdb->insert($events, ["event_id" => "ci-historical-event-$i", "event_type" => "fixture", "source" => "ci", "payload_hash" => hash("sha256", "fixture-$i"), "status" => "received", "received_at" => $now], ["%s", "%s", "%s", "%s", "%s", "%s"]); } $saves = $wpdb->prefix . "pk_property_saves"; for ($i = 1; $i <= 4; $i++) { $wpdb->insert($saves, ["property_id" => $i, "visitor_hash" => hash("sha256", "ci-visitor-$i"), "created_at" => $now, "updated_at" => $now], ["%d", "%s", "%s", "%s"]); } echo "historical fixtures ready: leads=".(int) $wpdb->get_var("SELECT COUNT(*) FROM $leads")." events=".(int) $wpdb->get_var("SELECT COUNT(*) FROM $events")." saves=".(int) $wpdb->get_var("SELECT COUNT(*) FROM $saves")."\n";'
-      - name: Exécuter les 32 suites dynamiques (20 + SE-016/017/018/020 + SE-022 + SE-026 + Schéma 2.7.0/E-4303 + SE-024 + SE-048-U + SE-035 + SE-036 + SE-037 + SE-054)
+      - name: Exécuter DA-002 / périmètre avant les suites dynamiques
+        env:
+          PK_WP_DIR: ${{ github.workspace }}/wp
+          PK_COMMIT: ${{ github.sha }}
+          PK_REPO_DIR: ${{ github.workspace }}
+          PK_THEME_DIR: ${{ github.workspace }}/theme/partikulier
+        run: |
+          set -euo pipefail
+          mkdir -p preuves-run/contrats
+          cd wp
+          output=../preuves-run/contrats/module-perimeter-contract.json
+          error=../preuves-run/contrats/module-perimeter-contract.err
+          if php wp-content/plugins/partikulier-core/tests/module-perimeter-contract.php > "$output" 2> "$error"; then
+            cat "$output"
+          else
+            cat "$output" 2>/dev/null || true
+            cat "$error" 2>/dev/null || true
+            exit 1
+          fi
+      - name: Exécuter les 31 suites dynamiques après le contrat de périmètre (20 + SE-016/017/018/020 + SE-022 + SE-026 + Schéma 2.7.0/E-4303 + SE-024 + SE-048-U + SE-035 + SE-036 + SE-037 + SE-054)
         env:
           PK_WP_DIR: ${{ github.workspace }}/wp
           PK_COMMIT: ${{ github.sha }}
@@ -86,7 +227,7 @@ jobs:
                        owner-stats-domain-contract \
                        translation-variants-domain-contract i18n-chrome-domain-contract \
                        i18n-content-domain-contract i18n-unified-mechanism-contract \
-                       module-perimeter-contract avif-security-contract \
+                       avif-security-contract \
                        vestige-extinction-contract artifact-hygiene-contract \
                        options-sanitizer-contract se022-idempotence-contract \
                        se026-hmac-mode-contract \
@@ -624,3 +765,11 @@ jobs:
           name: contrats-recette
           path: preuves-run/
           retention-days: 30
+      - name: Publier les journaux expurgés du setup
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: recette-setup-${{ github.run_id }}
+          path: ${{ runner.temp }}/recipe-setup-evidence/
+          if-no-files-found: ignore
+          retention-days: 14
