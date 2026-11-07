@@ -502,15 +502,17 @@ jobs:
           docker cp "$RUNNER_TEMP/ci-n8n-workflow.json" "$N8N_CONTAINER:/tmp/ci-n8n-workflow.json"
           docker exec -u 0:0 "$N8N_CONTAINER" chown node:node /tmp/ci-n8n-workflow.json && docker exec -u 0:0 "$N8N_CONTAINER" chmod 600 /tmp/ci-n8n-workflow.json
           WORKFLOW_ID="$(cat "$RUNNER_TEMP/ci-n8n-workflow-id")"
+          CLI_N8N_LOG="/tmp/n8n-cli-execution-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.log"
           set +e
           docker exec -e N8N_DISABLED_MODULES=mcp-registry -e N8N_LOG_LEVEL=debug "$N8N_CONTAINER" n8n import:workflow --input=/tmp/ci-n8n-workflow.json > "$RUNNER_TEMP/n8n-import.log" 2>&1
           n8n_import_rc=$?
           set -e
           if [ "$n8n_import_rc" -eq 0 ]; then
             set +e
-            docker exec -e N8N_DISABLED_MODULES=mcp-registry -e N8N_LOG_LEVEL=debug "$N8N_CONTAINER" n8n execute --id="$WORKFLOW_ID" --rawOutput > "$RUNNER_TEMP/n8n-execution.stdout" 2> "$RUNNER_TEMP/n8n-execution.stderr"
+            docker exec -e N8N_DISABLED_MODULES=mcp-registry -e N8N_LOG_LEVEL=debug -e N8N_LOG_OUTPUT=console,file -e N8N_LOG_FORMAT=json -e N8N_LOG_FILE_LOCATION="$CLI_N8N_LOG" "$N8N_CONTAINER" n8n execute --id="$WORKFLOW_ID" --rawOutput > "$RUNNER_TEMP/n8n-execution.stdout" 2> "$RUNNER_TEMP/n8n-execution.stderr"
             n8n_rc=$?
             set -e
+            docker cp "$N8N_CONTAINER:$CLI_N8N_LOG" "$RUNNER_TEMP/n8n-cli-execution.log" >/dev/null 2>&1 || true
           else
             : > "$RUNNER_TEMP/n8n-execution.stdout"
             cp "$RUNNER_TEMP/n8n-import.log" "$RUNNER_TEMP/n8n-execution.stderr"
@@ -571,12 +573,13 @@ jobs:
 
           # Preserve the process status even if diagnostic parsing itself fails. Never publish raw CLI output.
           set +e
-          n8n_diagnostic="$(python3 - "$RUNNER_TEMP/n8n-execution.stdout" "$RUNNER_TEMP/n8n-execution.stderr" "$RUNNER_TEMP/ci-n8n-workflow.json" "$n8n_rc" <<'PY' 2>"$RUNNER_TEMP/n8n-diagnostic-parser.stderr"
+          n8n_diagnostic="$(python3 - "$RUNNER_TEMP/n8n-execution.stdout" "$RUNNER_TEMP/n8n-execution.stderr" "$RUNNER_TEMP/n8n-cli-execution.log" "$RUNNER_TEMP/ci-n8n-workflow.json" "$n8n_rc" <<'PY' 2>"$RUNNER_TEMP/n8n-diagnostic-parser.stderr"
           import json, pathlib, re, sys
-          out_path, err_path, workflow_path = map(pathlib.Path, sys.argv[1:4])
-          exit_code = sys.argv[4]
+          out_path, err_path, cli_log_path, workflow_path = map(pathlib.Path, sys.argv[1:5])
+          exit_code = sys.argv[5]
           stdout = out_path.read_text(errors='replace') if out_path.exists() else ''
           stderr = err_path.read_text(errors='replace') if err_path.exists() else ''
+          cli_log = cli_log_path.read_text(errors='replace') if cli_log_path.exists() else ''
           tokens = []
           try:
               workflow = json.loads(workflow_path.read_text())
@@ -625,13 +628,13 @@ jobs:
                   for key, child in value.items(): walk(child, str(key))
               elif isinstance(value, list):
                   for child in value: walk(child, parent)
-          for source in (stdout, stderr):
+          for source in (stdout, stderr, cli_log):
               for index, char in enumerate(source):
                   if char != '{': continue
                   try: obj, _ = decoder.raw_decode(source[index:])
                   except Exception: continue
                   walk(obj)
-          combined = stdout + '\n' + stderr
+          combined = stdout + '\n' + stderr + '\n' + cli_log
           for line in reversed(combined.splitlines()):
               lowered = line.lower()
               if any(x in lowered for x in ('api.n8n.io', 'telemetry', 'diagnostic', 'an error occurred while importing workflows. see log messages for details')): continue
@@ -649,7 +652,7 @@ jobs:
                   cleaned = clean(line)
                   if cleaned and cleaned != '[request data redacted]': safe_lines.append(cleaned)
               if not safe_lines:
-                  for line in stdout.splitlines():
+                  for line in (stdout + '\n' + cli_log).splitlines():
                       cleaned = clean(line)
                       if cleaned and cleaned != '[request data redacted]': safe_lines.append(cleaned)
               error_line = ' | '.join(safe_lines[-3:])
@@ -754,8 +757,8 @@ jobs:
             : # SE-041 below records exact HTTP codes and structural XML-RPC results from this same WP service.
           done
 
-          docker exec "$N8N_CONTAINER" rm -f /tmp/ci-n8n-workflow.json /tmp/ci-n8n-curl.conf /tmp/ci-n8n-signed-body.json /tmp/ci-n8n-curl-first.json /tmp/ci-n8n-curl-replay.json /tmp/ci-static-curl || true
-          rm -f "$RUNNER_TEMP/ci-n8n-workflow.json" "$RUNNER_TEMP/ci-n8n-workflow-id" "$RUNNER_TEMP/n8n-owner.json" "$RUNNER_TEMP/n8n-owner-response.json" "$RUNNER_TEMP/n8n-import.log" "$RUNNER_TEMP/n8n-execution.stdout" "$RUNNER_TEMP/n8n-execution.stderr" "$RUNNER_TEMP/n8n-diagnostic-parser.stderr" "$RUNNER_TEMP/n8n-container.log" "$RUNNER_TEMP/ci-n8n-curl.conf" "$RUNNER_TEMP/ci-n8n-signed-body.json" "$RUNNER_TEMP/curl-first.stderr" "$RUNNER_TEMP/curl-replay.stderr" "$RUNNER_TEMP/curl-first-response.json" "$RUNNER_TEMP/curl-replay-response.json" "$RUNNER_TEMP/curl-install.log" "$RUNNER_TEMP/static-curl.tar.xz" "$RUNNER_TEMP/ci-static-curl"; rm -rf "$RUNNER_TEMP/static-curl-extract"
+          docker exec "$N8N_CONTAINER" rm -f /tmp/ci-n8n-workflow.json /tmp/ci-n8n-curl.conf /tmp/ci-n8n-signed-body.json /tmp/ci-n8n-curl-first.json /tmp/ci-n8n-curl-replay.json /tmp/ci-static-curl "/tmp/n8n-cli-execution-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.log" || true
+          rm -f "$RUNNER_TEMP/ci-n8n-workflow.json" "$RUNNER_TEMP/ci-n8n-workflow-id" "$RUNNER_TEMP/n8n-owner.json" "$RUNNER_TEMP/n8n-owner-response.json" "$RUNNER_TEMP/n8n-import.log" "$RUNNER_TEMP/n8n-execution.stdout" "$RUNNER_TEMP/n8n-execution.stderr" "$RUNNER_TEMP/n8n-cli-execution.log" "$RUNNER_TEMP/n8n-diagnostic-parser.stderr" "$RUNNER_TEMP/n8n-container.log" "$RUNNER_TEMP/ci-n8n-curl.conf" "$RUNNER_TEMP/ci-n8n-signed-body.json" "$RUNNER_TEMP/curl-first.stderr" "$RUNNER_TEMP/curl-replay.stderr" "$RUNNER_TEMP/curl-first-response.json" "$RUNNER_TEMP/curl-replay-response.json" "$RUNNER_TEMP/curl-install.log" "$RUNNER_TEMP/static-curl.tar.xz" "$RUNNER_TEMP/ci-static-curl"; rm -rf "$RUNNER_TEMP/static-curl-extract"
           if [ "$FAIL" -ne 0 ]; then exit 1; fi
 
       - name: Run versioned PHP runtime contracts in disposable WordPress
