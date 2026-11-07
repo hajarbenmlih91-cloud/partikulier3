@@ -712,7 +712,7 @@ jobs:
           for i,line in enumerate(lines):
               low=line.lower()
               if 'api.n8n.io' in low or 'telemetry' in low: continue
-              relevant = bool(re.search(r'\b(error|warn|failed|exception|ECONN|HTTP [45]\d\d|cannot|could not|task runner|system task)\b',line,re.I))
+              relevant = bool(re.search(r'\b(error|warn|failed|exception|ECONN|HTTP [45]\d\d|cannot|could not)\b',line,re.I))
               if i in context and re.match(r'\s*at\s',line,re.I): relevant=True
               if not relevant: continue
               candidates=[]
