@@ -528,19 +528,19 @@ jobs:
                   except Exception: parsed={}
                   return error.code,parsed
           def unflatten(value):
-              if not isinstance(value,list) or not value or not all(isinstance(part,str) for part in value) or value[0][:1] not in ('{','['): return value
+              if not isinstance(value,list) or not value or not isinstance(value[0],(dict,list)): return value
               cache={}
               def dereference(index,active):
                   if index in cache: return cache[index]
                   if index in active or index<0 or index>=len(value): return None
-                  parsed=json.loads(value[index])
-                  result=expand(parsed,active|{index})
+                  result=expand(value[index],active|{index})
                   cache[index]=result
                   return result
               def expand(item,active):
                   if isinstance(item,dict): return {key:expand(child,active) for key,child in item.items()}
                   if isinstance(item,list): return [expand(child,active) for child in item]
-                  if isinstance(item,str) and item.isdigit() and int(item)<len(value): return dereference(int(item),active)
+                  if isinstance(item,str) and item.isdigit() and int(item)<len(value) and isinstance(value[int(item)],(dict,list)):
+                      return dereference(int(item),active)
                   return item
               return dereference(0,set())
           def find(value,key):
