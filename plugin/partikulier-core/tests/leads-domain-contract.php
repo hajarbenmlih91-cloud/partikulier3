@@ -294,7 +294,7 @@ try {
     $updated = LeadService::update_followup($bridgeLeadId, 'qualified', 'Contrat B2 : qualifié.', $adminId);
     $followupRow = $wpdb->get_row($wpdb->prepare("SELECT status, note, updated_by FROM {$prefix}pk_lead_followups WHERE lead_id = %d", $bridgeLeadId), ARRAY_A);
     $auditFollowup = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$prefix}pk_audit_log WHERE action = %s AND object_id = %d", 'lead_followup_updated', $bridgeLeadId));
-    $assert('B2L-012', $updated && is_array($followupRow) && $followupRow['status'] === 'qualified'
+    $assert('B2L-017', $updated && is_array($followupRow) && $followupRow['status'] === 'qualified'
         && $followupRow['note'] === 'Contrat B2 : qualifié.' && (int) $followupRow['updated_by'] === $adminId && $auditFollowup === 1,
         'suivi admin : replace statut+note+acteur, audit lead_followup_updated');
 
