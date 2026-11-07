@@ -245,13 +245,14 @@ jobs:
                   error_rows = [row for row in rows if row.get('status') == 'FAIL' and row.get('severity', 'error') == 'error']
                   warning_rows = [row for row in rows if row.get('status') == 'FAIL' and row.get('severity') == 'warning']
                   errors = sorted({str(row.get('check', '?')) for row in error_rows})
-                  annotation(title, f"status={data.get('status')}; errors={len(error_rows)}; warnings={len(warning_rows)}; " + (' | '.join(errors[:10]) if errors else 'no error-severity check failures'))
+                  details = [f"{row.get('check', '?')}: {row.get('detail', '')}" for row in error_rows[:5]]
+                  annotation(title, f"status={data.get('status')}; errors={len(error_rows)}; warnings={len(warning_rows)}; " + (' | '.join(details) if details else 'no error-severity check failures'))
               else:
                   log = root / ('interactions-vitals.txt' if filename == 'interaction-web-vitals.json' else 'browser-audit.txt')
                   log_lines = log.read_text(errors='replace').splitlines() if log.exists() else []
                   failed_lines = [line.strip() for line in log_lines if line.lstrip().startswith(('FAIL', 'Error', 'error:', 'node:'))]
                   if failed_lines and failed_lines[0].startswith('node:internal/'):
-                      details = [line.strip() for line in log_lines[-6:] if line.strip()]
+                      details = [line.strip() for line in log_lines[-15:] if line.strip()]
                   else:
                       details = failed_lines[:5] or [line.strip() for line in log_lines[-5:] if line.strip()]
                   annotation(title, 'report missing; ' + (' | '.join(details) if details else 'no failure detail captured'))
@@ -261,8 +262,13 @@ jobs:
           lighthouse_errors = []
           for name in missing_lighthouse:
               log = root / f'lighthouse-{name}.txt'
-              if log.exists(): lighthouse_errors.extend(line.strip() for line in log.read_text(errors='replace').splitlines()[-3:] if line.strip())
-          annotation('UAT Lighthouse files', f'{len(produced)} of 5 produced; missing={",".join(missing_lighthouse) or "none"}; ' + (' | '.join(lighthouse_errors[-3:]) if lighthouse_errors else 'no per-page error logs'))
+              if log.exists(): lighthouse_errors.extend(line.strip() for line in log.read_text(errors='replace').splitlines()[-10:] if line.strip())
+          annotation('UAT Lighthouse files', f'{len(produced)} of 5 produced; missing={",".join(missing_lighthouse) or "none"}; ' + (' | '.join(lighthouse_errors[-8:]) if lighthouse_errors else 'no per-page error logs'))
+          for label, filename in [('10 rps', 'load-smoke.txt'), ('100 rps', 'load-full.txt')]:
+              log = root / filename
+              if log.exists():
+                  lines = [line.strip() for line in log.read_text(errors='replace').splitlines()[-8:] if line.strip()]
+                  annotation(f'UAT load {label}', ' | '.join(lines))
           PY
 
           for result in "$SECURITY_RESULT" "$CACHE_RESULT" "$BROWSER_RESULT" "$LIGHTHOUSE_RESULT" "$AUTH_RESULT" "$INTERACTIONS_RESULT"; do

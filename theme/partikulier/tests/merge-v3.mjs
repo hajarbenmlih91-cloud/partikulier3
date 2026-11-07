@@ -131,9 +131,9 @@ for (const [engineName, engine] of Object.entries({ chromium, firefox, webkit })
               await page.locator('#next').click();
               assert.equal(submits, 0, 'Incomplete tunnel cannot submit a listing');
               const tunnelErrors = {
-                fr: ['Propriétaire', 'vendre ou louer'],
-                en: ['Choose Owner to continue.', 'Choose sell or rent.'],
-                ar: ['اختر المالك للمتابعة.', 'اختر البيع أو الكراء.'],
+                fr: ['Propriétaire', 'vendre, louer ou la location saisonnière'],
+                en: ['Choose Owner to continue.', 'Choose sell, rent or seasonal rental.'],
+                ar: ['اختر المالك للمتابعة.', 'اختر البيع أو الكراء أو الكراء اليومي.'],
               };
               await page.waitForFunction(text => {
                 const err = document.querySelector('#err');
