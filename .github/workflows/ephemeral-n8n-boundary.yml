@@ -1,11 +1,6 @@
 name: Ephemeral WordPress and n8n boundary
 
 on:
-  push:
-    branches:
-      - arena/0e605e79-partikulier3
-    paths:
-      - .github/workflows/ephemeral-n8n-boundary.yml
   workflow_dispatch:
 
 permissions:
