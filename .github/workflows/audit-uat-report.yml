@@ -335,14 +335,14 @@ jobs:
           import json, os, pathlib, re
           roots = [('public', pathlib.Path(os.environ['SOURCE_DIR'])), ('connecté', pathlib.Path(os.environ['CONNECTED_DIR']))]
           lines = ['## Métriques exactes extraites des artefacts', '', 'LCP/CLS = mesures de laboratoire; INP Lighthouse navigation généralement n/a. Le proxy INP Chromium n’est pas l’INP terrain CrUX/RUM.', '']
-          evidence = {label: [] for label, _ in roots}
+          evidence = {label: {'lighthouse': [], 'chromium': [], 'owner': []} for label, _ in roots}
           commands = []
           def command(level, title, message):
               esc = lambda s: str(s).replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
               return f'::{level} title={esc(title)}::{esc(message)}'
           for label, root in roots:
               if not root.is_dir():
-                  evidence[label].append(f'Dossier absent: {root}')
+                  evidence[label]['lighthouse'].append(f'Dossier absent: {root}')
                   continue
               for path in sorted(root.rglob('lighthouse-*.json')):
                   data = json.loads(path.read_text()); audits = data.get('audits', {}); cats = data.get('categories', {})
@@ -355,14 +355,14 @@ jobs:
                       return 'n/a'
                   text = f"{path.stem}: Perf/A11y/BP/SEO={score('performance')}/{score('accessibility')}/{score('best-practices')}/{score('seo')}; LCP lab={metric('largest-contentful-paint')} ms; INP Lighthouse={metric('interaction-to-next-paint', 'experimental-interaction-to-next-paint')} ms; CLS lab={metric('cumulative-layout-shift')}; TBT={metric('total-blocking-time')} ms"
                   lines.append(f'- **{label}** {text}')
-                  evidence[label].append(text)
+                  evidence[label]['lighthouse'].append(text)
               vital_log = next(iter(sorted(root.rglob('interactions-vitals.txt'))), None)
               if vital_log:
                   for text in vital_log.read_text(errors='replace').splitlines():
                       text = text.strip()
                       if re.search(r'(?:LCP observed|CLS observed|Lab INP sample captured|Lab INP proxy within)', text, re.I):
                           lines.append(f'- **Chromium {label}** {text}')
-                          evidence[label].append(f'Chromium: {text}')
+                          evidence[label]['chromium'].append(text)
               if label == 'connecté':
                   owner_log = next(iter(sorted(root.rglob('owner-journey.txt'))), None)
                   if owner_log:
@@ -371,10 +371,12 @@ jobs:
                           text = text.strip()
                           if re.match(r'^(PASS|FAIL|WARN|SKIPPED)\b', text, re.I):
                               lines.append(f'- {text}')
-                              evidence[label].append(f'Parcours propriétaire: {text}')
-          for label, items in evidence.items():
-              if items:
-                  commands.append(command('notice', f'Evidence exacte {label}', ' | '.join(items)))
+                              evidence[label]['owner'].append(text)
+          for label, groups in evidence.items():
+              for kind, items in groups.items():
+                  if items:
+                      title = f'Evidence {label} {kind}'
+                      commands.append(command('notice', title, ' | '.join(items)))
           content = '\n'.join(lines) + '\n'
           with open('audit-uat-analysis.md', 'a') as f: f.write('\n' + content)
           with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as f: f.write('\n' + content)
