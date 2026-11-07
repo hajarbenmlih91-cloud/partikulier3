@@ -52,6 +52,7 @@ final class AutomationService
 	private const LEGACY_SETTINGS_OPTION = 'pk_theme_options';
 
 	public const MAX_FAILURES_PER_HOUR = 100;
+	public const KEY_ROTATION_GRACE_SECONDS = 86400;
 
 	/** Clés migrées depuis les options historiques du thème. */
 	private const MIGRATED_KEYS = ['n8n_webhook_url', 'automation_api_secret', 'hmac_mode', 'consent_text', 'channel_url', 'quota_per_day'];

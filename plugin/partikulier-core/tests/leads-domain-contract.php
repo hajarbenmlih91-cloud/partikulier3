@@ -204,10 +204,12 @@ try {
     $consentRequest->set_param('granted', true);
     $consentRequest->set_param('provider_message_id', 'b2l-consent-' . $run);
     $granted = LeadService::rest_consent($consentRequest);
+    $grantedReplay = LeadService::rest_consent($consentRequest);
     $consentRow = $wpdb->get_row($wpdb->prepare("SELECT granted_at, revoked_at FROM {$prefix}pk_whatsapp_consents WHERE lead_id = %d AND scope = %s", $bridgeLeadId, 'similar_listings'), ARRAY_A);
     $crossRead = LeadService::has_active_consent($bridgeLeadId, 'similar_listings');
     $assert('B2L-008', $granted instanceof WP_REST_Response
         && ($granted->get_data()['consent'] ?? '') === 'granted'
+        && $grantedReplay instanceof WP_REST_Response && ($grantedReplay->get_data()['replayed'] ?? null) === true
         && is_array($consentRow) && $consentRow['granted_at'] !== null && $consentRow['revoked_at'] === null
         && $crossRead === true,
         'consentement accordé (voie REST du service) + lecture croisée has_active_consent (domaine alertes)');
@@ -218,29 +220,64 @@ try {
     $stopRequest->set_param('provider_message_id', 'b2l-stop-' . $run);
     $stop1 = LeadService::rest_opt_out($stopRequest);
     $stop2 = LeadService::rest_opt_out($stopRequest);
+    $grantReplayAfterStop = LeadService::rest_consent($consentRequest);
+    $activeAfterReplay = LeadService::has_active_consent($bridgeLeadId, 'similar_listings');
     $s1 = $stop1 instanceof WP_REST_Response ? (array) $stop1->get_data() : [];
     $s2 = $stop2 instanceof WP_REST_Response ? (array) $stop2->get_data() : [];
     $leadAfter = $wpdb->get_row($wpdb->prepare("SELECT opt_out_at FROM {$prefix}pk_buyer_leads WHERE id = %d", $bridgeLeadId), ARRAY_A);
     $consentAfter = $wpdb->get_row($wpdb->prepare("SELECT revoked_at FROM {$prefix}pk_whatsapp_consents WHERE lead_id = %d", $bridgeLeadId), ARRAY_A);
     $assert('B2L-009', ($s1['replayed'] ?? null) === false && ($s2['replayed'] ?? null) === true
         && is_array($leadAfter) && $leadAfter['opt_out_at'] !== null
-        && is_array($consentAfter) && $consentAfter['revoked_at'] !== null,
-        'STOP : opt_out_at posé + consentement révoqué ; message rejoué → replayed, idempotent');
+        && is_array($consentAfter) && $consentAfter['revoked_at'] !== null
+        && $grantReplayAfterStop instanceof WP_REST_Response && ($grantReplayAfterStop->get_data()['replayed'] ?? null) === true
+        && false === $activeAfterReplay,
+        'STOP : opt_out_at posé + consentement révoqué ; STOP rejoué, et ancien accord rejoué après STOP ne réactive pas le consentement');
 
     // 10) Préférences (replace, 3 zones max).
     $prefRequest = new WP_REST_Request('POST', '/partikulier/v1/preferences');
     $prefRequest->set_param('wa_id', $phone2);
+    $prefRequest->set_param('provider_message_id', 'b2l-preferences-' . $run);
     $prefRequest->set_param('budget_max', 1200000);
     $prefRequest->set_param('areas', ['Casablanca', 'Rabat', 'Fès', 'Marrakech']);
     $prefRequest->set_param('layout', '3 pièces');
     $prefRequest->set_param('transaction', 'achat');
     $prefUpdated = LeadService::rest_preferences($prefRequest);
+    $prefReplay = LeadService::rest_preferences($prefRequest);
+    $prefRequest->set_param('budget_max', 1300000);
+    $prefConflict = LeadService::rest_preferences($prefRequest);
     $prefRow = $wpdb->get_row($wpdb->prepare("SELECT budget_max, areas, layout_value, transaction_value, source FROM {$prefix}pk_buyer_preferences WHERE lead_id = %d", $bridgeLeadId), ARRAY_A);
     $areas = is_array($prefRow) ? (array) json_decode((string) $prefRow['areas'], true) : [];
-    $assert('B2L-010', $prefUpdated instanceof WP_REST_Response && is_array($prefRow)
-        && (int) $prefRow['budget_max'] === 1200000 && count($areas) === 3
+    $assert('B2L-010', $prefUpdated instanceof WP_REST_Response && ($prefUpdated->get_data()['replayed'] ?? null) === false
+        && $prefReplay instanceof WP_REST_Response && ($prefReplay->get_data()['replayed'] ?? null) === true
+        && is_wp_error($prefConflict) && $prefConflict->get_error_code() === 'pk_provider_message_conflict'
+        && is_array($prefRow) && (int) $prefRow['budget_max'] === 1200000 && count($areas) === 3
         && $prefRow['layout_value'] === '3 pièces' && $prefRow['source'] === 'explicit_whatsapp',
-        'préférences : replace idempotent, trois zones conservées au maximum');
+        'préférences : ID provider consommé atomiquement, rejeu sans mutation, réutilisation du même ID avec payload différent → 409; trois zones conservées');
+
+    // 10b) Qualification : le même message ne réécrit ni la qualification ni l’audit.
+    $qualificationRequest = new WP_REST_Request('POST', '/partikulier/v1/qualification');
+    $qualificationRequest->set_param('wa_id', $phone2);
+    $qualificationRequest->set_param('is_particulier', true);
+    $qualificationRequest->set_param('provider_message_id', 'b2l-qualification-' . $run);
+    $qualificationFirst = LeadService::rest_set_qualification($qualificationRequest);
+    $qualificationReplay = LeadService::rest_set_qualification($qualificationRequest);
+    $conflictingQualification = new WP_REST_Request('POST', '/partikulier/v1/qualification');
+    $conflictingQualification->set_param('wa_id', $phone2);
+    $conflictingQualification->set_param('is_particulier', false);
+    $conflictingQualification->set_param('provider_message_id', 'b2l-qualification-conflict-' . $run);
+    wp_set_current_user(0);
+    $qualificationConflict = LeadService::rest_set_qualification($conflictingQualification);
+    wp_set_current_user($adminId);
+    $qualificationAudits = (int) $wpdb->get_var($wpdb->prepare(
+        "SELECT COUNT(*) FROM {$prefix}pk_audit_log WHERE action = %s AND object_id = %d",
+        'lead_qualified_particulier', $bridgeLeadId
+    ));
+    $assert('B2L-012', $qualificationFirst instanceof WP_REST_Response
+        && ($qualificationFirst->get_data()['replayed'] ?? null) === false
+        && $qualificationReplay instanceof WP_REST_Response && ($qualificationReplay->get_data()['replayed'] ?? null) === true
+        && is_wp_error($qualificationConflict) && $qualificationConflict->get_error_code() === 'pk_qualification_already_set'
+        && $qualificationAudits === 1,
+        'qualification : provider_message_id transactionnel; replay sans nouvel audit; n8n ne peut pas réécrire la qualification sans action admin');
 
     // 11) Écran d'administration : KPI et lignes (les accès données passent par le service).
     $summary = LeadService::admin_summary();

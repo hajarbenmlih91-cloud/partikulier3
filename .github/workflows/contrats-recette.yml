@@ -499,14 +499,14 @@ jobs:
           curl --retry 5 --retry-connrefused --retry-delay 1 --fail --silent http://127.0.0.1:8099/fr/ > /dev/null
           PK_BASE=http://127.0.0.1:8099 PK_MERGE_FIXTURE=$PWD/preuves-run/integration/browser-fixture.json \
             node theme/partikulier/tests/merge-v3.mjs > preuves-run/integration/merge-browser.json 2> /tmp/merge-browser.stderr.log
-      - name: Vérifier l'oracle 455/455 (durci, 44 suites — schéma, cohérence, unicité, totaux épinglés, results exigé hors suites historiques ; reprise F3 + tests v3 §9.2)
+      - name: Vérifier l'oracle 456/456 (durci, 44 suites — schéma, cohérence, unicité, totaux épinglés, results exigé hors suites historiques ; reprise F3 + tests v3 §9.2)
         run: |
           # Validateur durci (reprise du 20/09/2026 F3, durci le 21/09/2026
           # §9.2) : l'ancien validateur additionnait total/passed DECLARES et
           # acceptait un unique faux rapport auto-contradictoire. Le contrôle,
           # pour CHAQUE suite : JSON valide ; status === "PASS" ; total/passed/
           # failed entiers ; passed + failed === total ; failed === 0 ; total
-          # === LE total épingle de la suite (table ci-dessous, somme = 382) ;
+          # === LE total épingle de la suite (table ci-dessous, somme = 456) ;
           # la cle results est EXIGEE pour toute suite hors liste blanche
           # (v3 §9.2 : sa suppression de SE-041/SE-027 restait acceptee en
           # v2) ; SI results est fourni : total === count(results), passed ===
@@ -515,7 +515,7 @@ jobs:
           # load, rest-lite, routes-collision, sync, payments, premium, leads —
           # sont les seules autorisees a s'en passer (search-arrays EMET
           # results). Cardinalite et ensemble EXACT des 40 suites
-          # attendues ; aucun fichier en trop ou manquant ; total global 382/382.
+          # attendues ; aucun fichier en trop ou manquant ; total global 456/456.
           php <<'ORACLE'
           <?php
           $attendues = array(
@@ -534,7 +534,7 @@ jobs:
           "i18n-unified-mechanism-contract.json" => 15,
           "lead-erase-security-contract.json" => 13,
           "leads-contract.json" => 7,
-          "leads-domain-contract.json" => 16,
+          "leads-domain-contract.json" => 17,
           "load-contract.json" => 7,
           "module-perimeter-contract.json" => 11,
           "options-sanitizer-contract.json" => 8,
@@ -614,7 +614,7 @@ jobs:
           }
           $tot += $d["total"]; $pas += $d["passed"];
           }
-          if ($tot !== 455 || $pas !== 455) { fwrite(STDERR, "oracle inattendu (attendu 455/455 — 44 suites : 383 reference + 5 extensions SE-044/DP-9 + 67 dp9)\n"); exit(1); }
+          if ($tot !== 456 || $pas !== 456) { fwrite(STDERR, "oracle inattendu (attendu 456/456 — 44 suites : 384 reference + 5 extensions SE-044/DP-9 + 67 dp9)\n"); exit(1); }
           echo "contrats dynamiques : $pas/$tot (" . count($bases) . " suites, schema, coherence, unicitte, totaux epingles, ensemble exact et results exig hors historiques verifies)\n";
           ORACLE
       - name: Publier les résultats

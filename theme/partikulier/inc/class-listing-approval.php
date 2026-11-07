@@ -714,7 +714,9 @@ class Partikulier_Listing_Approval {
 			);
 		}
 
-		return new WP_REST_Response( array( 'count' => count( $out ), 'listings' => $out ), 200 );
+		$response = new WP_REST_Response( array( 'count' => count( $out ), 'listings' => $out ), 200 );
+		$response->header( 'Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0' );
+		return $response;
 	}
 }
 

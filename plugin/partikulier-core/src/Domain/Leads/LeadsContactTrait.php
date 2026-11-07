@@ -387,11 +387,57 @@ trait LeadsContactTrait
 		$leads = self::leads_table();
 		$lead_id = (int) $wpdb->get_var($wpdb->prepare("SELECT id FROM {$leads} WHERE phone_hash = %s", $hash));
 		if ( ! $lead_id ) return false;
-		$wpdb->update($leads, ['is_particulier' => $is_particulier ? 1 : 0], ['id' => $lead_id]);
-		// Log audit
+		$updated = $wpdb->update($leads, ['is_particulier' => $is_particulier ? 1 : 0], ['id' => $lead_id]);
+		if ( false === $updated ) return false;
 		self::audit($is_particulier ? 'lead_qualified_particulier' : 'lead_qualified_intermediaire', 'lead', $lead_id, ['wa_id_hash' => substr($hash,0,8)]);
 		return true;
 	}
+
+	/** Read a provider event ID without coercing arrays/objects or truncating it. */
+	private static function provider_message_id( \WP_REST_Request $request ): string
+	{
+		$value = $request->get_param('provider_message_id');
+		if ( ! is_string($value) ) {
+			return '';
+		}
+		$value = trim(sanitize_text_field($value));
+		return '' !== $value && strlen($value) <= 191 ? $value : '';
+	}
+
+	/**
+	 * Atomically claim a provider message inside the caller's transaction.
+	 * false means an identical message was already consumed; a reused ID with
+	 * different lead/action is a 409 conflict.
+	 *
+	 * @return bool|\WP_Error
+	 */
+	private static function claim_provider_message( string $message_id, int $lead_id, string $message_type )
+	{
+		global $wpdb;
+		$table = self::table('pk_whatsapp_messages');
+		if ( false !== $wpdb->insert($table, [
+			'provider_message_id' => $message_id,
+			'lead_id'             => $lead_id,
+			'direction'           => 'inbound',
+			'message_type'        => $message_type,
+			'created_at'          => current_time('mysql', true),
+		], ['%s', '%d', '%s', '%s', '%s']) ) {
+			return true;
+		}
+
+		$existing = $wpdb->get_row($wpdb->prepare(
+			"SELECT lead_id, message_type FROM {$table} WHERE provider_message_id = %s LIMIT 1 FOR UPDATE",
+			$message_id
+		), ARRAY_A);
+		if ( is_array($existing) ) {
+			if ( (int) $existing['lead_id'] === $lead_id && hash_equals((string) $existing['message_type'], $message_type) ) {
+				return false;
+			}
+			return new \WP_Error('pk_provider_message_conflict', __('Identifiant de message déjà utilisé pour une autre opération.', 'partikulier-core'), ['status' => 409]);
+		}
+		return new \WP_Error('pk_provider_message_storage', __('Impossible de journaliser le message.', 'partikulier-core'), ['status' => 500]);
+	}
+
 
 	/**
 	 * R2 : handler REST pour n8n — POST /qualification {wa_id, is_particulier, provider_message_id}
@@ -411,10 +457,43 @@ trait LeadsContactTrait
 		if ( null === $is_part ) {
 			return new \WP_Error('pk_invalid_qualification', __('Réponse de qualification invalide.', 'partikulier-core'), ['status'=>400]);
 		}
+		$message_id = self::provider_message_id($request);
+		if ( '' === $message_id ) {
+			return new \WP_Error('pk_missing_provider_message_id', __('provider_message_id requis.', 'partikulier-core'), ['status'=>400]);
+		}
 
-		$ok = self::set_qualification($wa_id, $is_part);
-		if ( ! $ok ) return new \WP_Error('pk_unknown_lead', 'lead introuvable', ['status'=>404]);
-		return new \WP_REST_Response(['qualified' => $is_part ? 'particulier' : 'intermediaire'], 200);
+		global $wpdb;
+		$lead_id = (int) self::lead_id_for_wa_id($wa_id);
+		if ( ! $lead_id ) {
+			return new \WP_Error('pk_unknown_lead', 'lead introuvable', ['status'=>404]);
+		}
+		if ( false === $wpdb->query('START TRANSACTION') ) {
+			return new \WP_Error('pk_message_transaction', __('Impossible de démarrer la transaction.', 'partikulier-core'), ['status'=>500]);
+		}
+		$lead = $wpdb->get_row($wpdb->prepare('SELECT id, is_particulier FROM ' . self::leads_table() . ' WHERE id = %d FOR UPDATE', $lead_id));
+		if ( ! $lead ) {
+			$wpdb->query('ROLLBACK');
+			return new \WP_Error('pk_unknown_lead', 'lead introuvable', ['status'=>404]);
+		}
+		$current_qualification = null === $lead->is_particulier ? null : (int) $lead->is_particulier;
+		if ( null !== $current_qualification && $current_qualification !== ( $is_part ? 1 : 0 ) && ! current_user_can('manage_options') ) {
+			$wpdb->query('ROLLBACK');
+			return new \WP_Error('pk_qualification_already_set', __('La qualification est déjà définie; une modification nécessite une action administrateur.', 'partikulier-core'), ['status'=>409]);
+		}
+		$claimed = self::claim_provider_message($message_id, $lead_id, $is_part ? 'qualification_particulier' : 'qualification_intermediaire');
+		if ( false === $claimed ) {
+			$wpdb->query('ROLLBACK');
+			return new \WP_REST_Response(['qualified' => $is_part ? 'particulier' : 'intermediaire', 'replayed' => true], 200);
+		}
+		if ( is_wp_error($claimed) ) {
+			$wpdb->query('ROLLBACK');
+			return $claimed;
+		}
+		if ( ! self::set_qualification($wa_id, $is_part) || false === $wpdb->query('COMMIT') ) {
+			$wpdb->query('ROLLBACK');
+			return new \WP_Error('pk_qualification_storage', __('Impossible de sauvegarder la qualification.', 'partikulier-core'), ['status'=>500]);
+		}
+		return new \WP_REST_Response(['qualified' => $is_part ? 'particulier' : 'intermediaire', 'replayed' => false], 200);
 	}
 
 	/**

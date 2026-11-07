@@ -22,25 +22,32 @@
 
 **Impact :** erreur de classification et décision métier erronée si une réponse n8n est malformée. La route exige néanmoins l'authentification HMAC ou un administrateur.
 
-**Correction :** parsing fermé aux booléens et valeurs explicitement permises; `wa_id` non scalaire et réponse `is_particulier` absente/invalide sont refusés avant toute mutation. Voir `plugin/partikulier-core/src/Domain/Leads/LeadsContactTrait.php`.
+**Correction :** parsing fermé aux booléens et valeurs explicitement permises; `wa_id` non scalaire et réponse `is_particulier` absente/invalide sont refusés avant toute mutation. Le handler exige maintenant aussi un `provider_message_id` stable et journalise la consommation du message dans la transaction de mutation. Voir `plugin/partikulier-core/src/Domain/Leads/LeadsContactTrait.php`.
 
-**Test :** `AUTO-QUALIFICATION-INVALID-INPUT` vérifie l'absence, la valeur inconnue, le tableau et l'entier hors domaine; les quatre renvoient HTTP 400 et n'écrivent aucun lead. Passé dans le run éphémère `42404865108`.
+**Tests historiques :** `AUTO-QUALIFICATION-INVALID-INPUT` dans le run éphémère `42404865108` vérifiait l'absence, la valeur inconnue, le tableau et l'entier hors domaine; les quatre renvoyaient HTTP 400 et n'écrivaient aucun lead. Les nouveaux contrats de rejeu après ce rapport sont listés dans le suivi ci-dessous.
 
-### R2 — Rejeu HMAC strictement « une seule fois » non démontré hors de `/automation-event` — risque résiduel, priorité moyenne
+### R2 — HMAC authentifie l'appel, mais ne consomme pas globalement un nonce — traitement ciblé, résiduel documenté
 
-**Preuve de code :** `AutomationHmacTrait::check_automation_secret()` valide un horodatage dans une fenêtre de ±300 secondes et signe méthode, route, timestamp et corps. Il n'y a pas de registre de nonce/id de requête consommé une seule fois dans cette garde.
+`AutomationHmacTrait::check_automation_secret()` vérifie la signature de méthode, route, horodatage et corps dans une fenêtre de ±300 secondes. La garde ne rend pas chaque signature « une seule fois » : l'effet métier doit donc être protégé par endpoint.
 
-**Atténuation observée :** `/automation-event` utilise une contrainte unique sur `event_id`; rejeu identique renvoie un doublon, et réutilisation de l'ID avec un autre type/source/payload renvoie 409. Les handlers d'effacement sont conçus pour être idempotents.
+**Corrections dépôt :**
+- `/preferences` exige maintenant le `provider_message_id` Meta stable; l'ID, le remplacement des préférences et l'acquittement sont atomiques. Rejeu identique → `replayed: true` sans mutation; même ID avec payload différent → HTTP 409.
+- `/consent` consomme l'ID dans la même transaction que l'état de consentement; un ancien accord déjà consommé puis rejoué après `STOP` ne réactive pas le consentement. Valeur `granted` malformée → HTTP 400 au lieu d'une révocation implicite.
+- `/opt-out` consomme son ID et écrit la révocation dans une transaction, sérialisée sur la ligne lead; le doublon et la course ne réexécutent pas l'opération.
+- `/qualification` exige désormais un ID stable et consomme l'ID avec la qualification et l'audit; rejeu exact reconnu sans nouvel audit.
+- `/contact-authorization` conserve son contrat existant avec ID provider et déduplication atomique au moment de l'autorisation; son parcours de qualification préalable n'est pas modifié pour éviter de casser un éventuel flux de continuation. Le contrat exact des workflows hébergés reste inconnu.
 
-**Limite :** cette idempotence n'est pas automatiquement transposable à chaque route HMAC (par exemple `/qualification`). L'absence de nonce est un écart à traiter route par route; je ne qualifie pas un replay de vulnérabilité exploitable sans établir son effet métier précis. Proposition : ajouter une clé de requête unique et une contrainte atomique seulement aux opérations pour lesquelles un replay a un effet distinct, avec contrat de concurrence et compatibilité n8n avant activation.
+**Routes connexes :** `/automation-event` a l'unicité `event_id`; `/credentials-resend-accepted` vérifie le `resend_request_id` courant et répond idempotemment; `/erase-lead` est un effacement idempotent avec secret dédié (ce n'est pas le même contrôle HMAC); `/approved-listings` est un GET sans mutation, mais retourne des coordonnées propriétaire et reste répétable dans la fenêtre HMAC — réponse désormais `Cache-Control: no-store`, sans prétendre empêcher une seconde lecture authentifiée. Les routes d'export/statut exigent `manage_options`, pas la garde HMAC n8n.
 
-### R3 — Rotation « sans coupure » non configurée par l'écran admin — risque opérationnel, priorité moyenne
+**Compatibilité :** l'ajout d'ID obligatoire à `/preferences` et `/qualification` est un changement de contrat pour les anciens callers. Le guide n8n du dépôt a été mis à jour; les workflows réellement hébergés n'ont pas été consultés et doivent être adaptés/vérifiés avant déploiement. Une couverture de concurrence dédiée existe maintenant pour `/preferences`; les autres nouveaux handlers ont des contrats de rejeu séquentiels, pas de charge ni d'essai concurrent live.
 
-**Preuve de code :** `secret_keys()` accepte une clé précédente avec `previous_key_id` et échéance; en revanche, `save_admin_settings()` remplace seulement `automation_api_secret` et l'écran n'expose pas de procédure de rotation à deux clés.
+### R3 — Rotation « sans coupure » — parcours implémenté, exécution hébergée non vérifiée
 
-**Impact :** remplacer le secret depuis l'écran peut rendre les appels n8n signés avec l'ancien secret invalides immédiatement, sauf si la clé précédente a été préparée séparément. La capacité de validation d'une ancienne clé existe, mais le parcours de rotation opérable et vérifiable n'est pas couvert ici.
+**Correction dépôt :** pour un secret WordPress, l'écran admin active une nouvelle clé avec un Key ID aléatoire, conserve l'ancienne comme clé précédente pendant 24 heures et refuse une seconde rotation pendant le chevauchement. Le même secret saisi ne provoque pas de changement de Key ID. Pour un secret d'environnement, l'écran propose une préparation explicite : snapshot de la clé courante sous son Key ID, échéance 24 h et génération d'un prochain Key ID; l'opérateur bascule ensuite `PARTIKULIER_N8N_SECRET` et `PARTIKULIER_N8N_KEY_ID` dans l'hébergement. Les clés ne sont jamais réaffichées.
 
-**Suite proposée :** documenter une procédure sûre pour l'environnement actuel ou ajouter une action explicite de rotation qui conserve l'ancienne clé pour une durée définie; contrat : ancienne et nouvelle acceptées pendant la fenêtre, puis ancienne refusée. Pas de rotation de secret d'hébergement effectuée.
+**Tests ajoutés :** contrat runtime jetable prévu pour vérifier rotation DB (ancienne + nouvelle clé acceptées, durée, second démarrage refusé, même secret sans rotation) et scénario de préparation/basculement d'une clé d'environnement. Résultats CI à consigner après exécution.
+
+**Limite :** aucune valeur de secret, procédure opérateur, permission d'hébergement, rotation effective ou réussite UAT n'a été vérifiée. Voir `theme/partikulier/docs/n8n-key-rotation.md`; ne pas lancer cette procédure en production sans coordination des deux sens n8n/WordPress.
 
 ### R4 — Mode HMAC `log` accepte volontairement une signature invalide — garde de configuration
 
@@ -58,7 +65,11 @@ Les workflows observés utilisent des références du type `actions/checkout@v4`
 
 ### HMAC / contrôle d'accès / idempotence
 
-Les contrats existants comprennent notamment : absence de secret; secret seul refusé lorsque l'enforcement est effectif; signature valide; corps altéré; timestamp périmé; secret faible refusé à l'enregistrement; clé inconnue et clé précédente expirée rejetées; mauvaise signature journalisée en mode `log`; rejeu d'un `event_id` identique; conflit de payload/type avec le même ID; entrées d'événement mal formées. Les routes d'export et de statut exigent la capacité `manage_options`; `/erase-lead` a une garde dédiée. Ce sont des couvertures ciblées par contrat, pas une preuve exhaustive de chaque permission dans toute l'installation WordPress.
+Les contrats couvrent notamment : absence de secret; signature valide; corps altéré; timestamp périmé; clé inconnue/précédente expirée; mode `log`; rejeu/conflit d'`event_id`; rejeu ciblé des routes leads (consentement, STOP, préférences, qualification); rotation des clés DB et environnement; `no-store` sur la récupération de coordonnées. `/export/interests` et `/lead/status` exigent `manage_options`; `/erase-lead` a une garde dédiée. Couverture ciblée seulement, pas preuve exhaustive des permissions ou du comportement des workflows hébergés.
+
+### Couverture endpoint par endpoint et compatibilité
+
+Le code protège les effets mutatifs par IDs métier spécifiques plutôt que par un cache global de signatures. Le cache global n'est pas activé car il casserait les retries et replays idempotents documentés d'`/automation-event`. Les tests déposés comprennent un replay concurrent de 12 appels signés vers `/preferences` dans WordPress jetable; les contrats leads couvrent les replays de consentement, STOP, preferences, qualification et conflit de payload. La présence de `provider_message_id` dans les workflows n8n hébergés n'est pas prouvée. Le handler `/contact-authorization` a un cas de continuation de qualification existant qui réutilise l'ID; il n'a donc pas été modifié pour consommer les demandes `manual_review` avant validation du workflow live.
 
 ### Runtime / défaillance
 
@@ -68,7 +79,7 @@ Les contrats existants comprennent notamment : absence de secret; secret seul re
 - Entrées de qualification malformées refusées après le correctif.
 - Import et replay du workflow n8n de test réussis. Le runner interne n8n a averti que Python 3 était absent; les chemins dépendant d'un runner Python natif ne sont donc pas couverts par ce succès.
 
-### Résultats CI observés sur le commit `219bae3`
+### Résultats CI historiques sur le commit `219bae3`
 
 - `42404861398` — CI réussie : lint/package et contrats de routes statiques sur PHP 8.1, 8.2 et 8.3.
 - `42404865108` — WordPress/MariaDB/n8n jetables réussis; le résumé inclut `AUTO-QUALIFICATION-INVALID-INPUT` ainsi que les contrats de concurrence, retry et sortie HTTP.
@@ -79,7 +90,7 @@ Les contrats existants comprennent notamment : absence de secret; secret seul re
 - Aucun déploiement, aucun audit connecté UAT, aucun appel au staging durant cette reprise.
 - Aucun test de charge nouveau. Le rapport historique `42397561220` indiquait 10 req/s réussi et 100 req/s échoué; métriques détaillées indisponibles. Il faut définir objectif, environnement et diagnostic avant tout nouvel essai.
 - Aucun test destructif ni test de production.
-- Configuration des secrets effectifs, de la rotation, du mode HMAC, des journaux, du proxy, de la base et des workflows n8n réellement hébergés non vérifiée.
+- Configuration effective des secrets, de la rotation, du mode HMAC, des journaux, du proxy, de la base et des workflows n8n réellement hébergés non vérifiée; les résultats CI du dépôt ne lèvent pas cette limite.
 - Les constats UAT historiques restent ouverts : `X-Powered-By`, contrastes, titre arabe, en-têtes de sécurité, XML-RPC, liens sans nom; le dépôt corrigé n'est pas le staging actuellement déployé.
 
 ## État de sortie

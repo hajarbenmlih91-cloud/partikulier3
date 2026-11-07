@@ -70,6 +70,8 @@ $settingsBackup = get_option(AutomationService::SETTINGS_OPTION, null);
 $adminKeyBackup = get_option('pk_admin_secret_key', null);
 $createdPostId = 0;
 $retryPostId = 0;
+$runtimeLeadId = 0;
+$runtimePhone = '';
 $httpCalls = [];
 $retryCallCount = 0;
 $mockHttp = static function ($preempt, array $args, string $url) use (&$httpCalls, &$retryCallCount) {
@@ -182,6 +184,99 @@ try {
                     count(array_filter($codes, static fn(int $code): bool => $code === 200)),
                     count(array_filter($duplicates, static fn(bool $duplicate): bool => $duplicate)),
                     $storedRows));
+
+            // Exercise route-level atomic idempotency with simultaneous retries
+            // against a lead created only in this disposable WordPress database.
+            $runtimePhone = '2126' . str_pad((string) random_int(10000000, 99999999), 8, '0', STR_PAD_LEFT);
+            $runtimeNow = current_time('mysql', true);
+            $wpdb->insert(LeadService::leads_table(), [
+                'phone_hash' => hash_hmac('sha256', $runtimePhone, wp_salt('auth')),
+                'phone_encrypted' => base64_encode($runtimePhone),
+                'first_seen_at' => $runtimeNow,
+                'last_seen_at' => $runtimeNow,
+            ], ['%s', '%s', '%s', '%s']);
+            $runtimeLeadId = (int) $wpdb->insert_id;
+            if ($runtimeLeadId <= 0) {
+                throw new RuntimeException('Could not create disposable route-idempotency lead');
+            }
+            $preferenceMessageId = 'runtime-preferences-' . $run;
+            $preferenceBody = wp_json_encode([
+                'wa_id' => $runtimePhone,
+                'provider_message_id' => $preferenceMessageId,
+                'budget_max' => 640000,
+                'areas' => ['Casablanca', 'Rabat'],
+                'layout' => '2 pièces',
+                'transaction' => 'achat',
+            ], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+            if (!is_string($preferenceBody)) {
+                throw new RuntimeException('Could not encode disposable preferences');
+            }
+            $preferenceTimestamp = (string) time();
+            $preferenceCanonical = "POST\n/partikulier/v1/preferences\n" . $preferenceTimestamp . "\n" . $preferenceBody;
+            $preferenceSignature = 'sha256=' . hash_hmac('sha256', $preferenceCanonical, pk_runtime_hmac_key((string) $keys[$keyId]));
+            $preferenceHeaders = [
+                'Content-Type: application/json',
+                'Host: wordpress',
+                'X-Partikulier-Automation: ' . $secret,
+                'X-Partikulier-Timestamp: ' . $preferenceTimestamp,
+                'X-Partikulier-Key-Id: ' . $keyId,
+                'X-Partikulier-Signature: ' . $preferenceSignature,
+            ];
+            $preferenceMulti = curl_multi_init();
+            $preferenceHandles = [];
+            for ($i = 0; $i < $requests; $i++) {
+                $handle = curl_init($base . '/wp-json/partikulier/v1/preferences');
+                curl_setopt_array($handle, [
+                    CURLOPT_POST => true,
+                    CURLOPT_POSTFIELDS => $preferenceBody,
+                    CURLOPT_HTTPHEADER => $preferenceHeaders,
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_CONNECTTIMEOUT => 5,
+                    CURLOPT_TIMEOUT => 20,
+                    CURLOPT_FOLLOWLOCATION => false,
+                ]);
+                curl_multi_add_handle($preferenceMulti, $handle);
+                $preferenceHandles[] = $handle;
+            }
+            do {
+                $preferenceMultiStatus = curl_multi_exec($preferenceMulti, $preferenceRunning);
+                if ($preferenceMultiStatus > CURLM_OK) {
+                    break;
+                }
+                if ($preferenceRunning > 0 && curl_multi_select($preferenceMulti, 1.0) === -1) {
+                    usleep(10000);
+                }
+            } while ($preferenceRunning > 0);
+            $preferenceCodes = [];
+            $initialPreferenceAccepts = 0;
+            $preferenceReplays = 0;
+            foreach ($preferenceHandles as $handle) {
+                $preferenceCodes[] = (int) curl_getinfo($handle, CURLINFO_RESPONSE_CODE);
+                $raw = curl_multi_getcontent($handle);
+                $decoded = is_string($raw) ? json_decode($raw, true) : null;
+                if (($decoded['replayed'] ?? null) === false) {
+                    $initialPreferenceAccepts++;
+                } elseif (($decoded['replayed'] ?? null) === true) {
+                    $preferenceReplays++;
+                }
+                curl_multi_remove_handle($preferenceMulti, $handle);
+                curl_close($handle);
+            }
+            curl_multi_close($preferenceMulti);
+            $preferenceMessageRows = (int) $wpdb->get_var($wpdb->prepare(
+                'SELECT COUNT(*) FROM ' . LeadService::table('pk_whatsapp_messages') . ' WHERE provider_message_id = %s',
+                $preferenceMessageId
+            ));
+            $preferenceRow = $wpdb->get_row($wpdb->prepare(
+                'SELECT budget_max FROM ' . LeadService::table('pk_buyer_preferences') . ' WHERE lead_id = %d',
+                $runtimeLeadId
+            ), ARRAY_A);
+            $assert('AUTO-PREFERENCES-CONCURRENCY', $preferenceMultiStatus === CURLM_OK
+                && count($preferenceCodes) === $requests
+                && count(array_filter($preferenceCodes, static fn(int $code): bool => 200 === $code)) === $requests
+                && 1 === $initialPreferenceAccepts && $requests - 1 === $preferenceReplays
+                && 1 === $preferenceMessageRows && is_array($preferenceRow) && 640000 === (int) $preferenceRow['budget_max'],
+                sprintf('%d simultaneous signed /preferences retries: one mutation, %d acknowledged replays, one message row', $requests, $preferenceReplays));
         }
     }
 
@@ -204,6 +299,48 @@ try {
         }
     } else {
         $assert('AUTO-ADMIN-GATEWAY-DEFAULT', false, 'theme security gateway is not loaded');
+    }
+
+    // Admin-managed secret replacement must keep the previous key for a
+    // bounded grace period and refuse overlapping rotations.
+    if ('' === AutomationService::env_secret()) {
+        $rotationOld = base64_encode(random_bytes(48));
+        $rotationNew = base64_encode(random_bytes(48));
+        $rotationNext = base64_encode(random_bytes(48));
+        $rotationSettings = AutomationService::settings();
+        $rotationSettings['automation_api_secret'] = $rotationOld;
+        $rotationSettings['active_key_id'] = 'runtime-old';
+        unset($rotationSettings['previous_secret'], $rotationSettings['previous_key_id'], $rotationSettings['previous_expires_at']);
+        update_option(AutomationService::SETTINGS_OPTION, $rotationSettings, false);
+        $rotationResult = AutomationService::save_admin_settings(['automation_api_secret' => $rotationNew]);
+        $rotatedSettings = AutomationService::settings();
+        $rotatedKeys = AutomationService::secret_keys();
+        $expiry = strtotime((string) ($rotatedSettings['previous_expires_at'] ?? ''));
+        $activeIdAfterRotation = (string) ($rotatedSettings['active_key_id'] ?? '');
+        $sameSecretSave = AutomationService::save_admin_settings(['automation_api_secret' => $rotationNew]);
+        $afterSameSecret = AutomationService::settings();
+        $secondRotation = AutomationService::save_admin_settings(['automation_api_secret' => $rotationNext]);
+        $expiredSettings = AutomationService::settings();
+        $expiredSettings['previous_expires_at'] = gmdate('Y-m-d H:i:s', time() - 10);
+        update_option(AutomationService::SETTINGS_OPTION, $expiredSettings, false);
+        $keysAfterExpiry = AutomationService::secret_keys();
+        $settingsAfterExpiry = AutomationService::settings();
+        $assert('AUTO-HMAC-KEY-ROTATION', true === $rotationResult
+            && true === $sameSecretSave && ($afterSameSecret['active_key_id'] ?? '') === $activeIdAfterRotation
+            && ($rotatedSettings['automation_api_secret'] ?? '') === $rotationNew
+            && ($rotatedSettings['previous_secret'] ?? '') === $rotationOld
+            && ($rotatedSettings['previous_key_id'] ?? '') === 'runtime-old'
+            && (string) ($rotatedSettings['active_key_id'] ?? '') !== 'runtime-old'
+            && ($rotatedKeys[$activeIdAfterRotation] ?? '') === $rotationNew
+            && ($rotatedKeys['runtime-old'] ?? '') === $rotationOld
+            && $expiry > time() && $expiry <= time() + AutomationService::KEY_ROTATION_GRACE_SECONDS + 2
+            && is_wp_error($secondRotation) && 'pk_n8n_rotation_in_progress' === $secondRotation->get_error_code()
+            && !isset($keysAfterExpiry['runtime-old'])
+            && !isset($settingsAfterExpiry['previous_secret'], $settingsAfterExpiry['previous_key_id'], $settingsAfterExpiry['previous_expires_at'])
+            && (AutomationService::settings()['automation_api_secret'] ?? '') === $rotationNew,
+            'admin secret replacement retains prior key for 24 hours, changes key ID, and prevents overlapping rotation');
+    } else {
+        $assert('AUTO-HMAC-KEY-ROTATION', false, 'runtime fixture requires DB-managed secret, not an environment-managed secret');
     }
 
     // Malformed qualification replies must fail closed instead of being
@@ -322,6 +459,43 @@ try {
         $assert('AUTO-OUTBOUND-SAFE', false, 'theme sender or disposable HMAC key unavailable');
         $assert('AUTO-OUTBOUND-PRIVATE-BLOCK', false, 'theme sender or disposable HMAC key unavailable');
     }
+    // Environment-managed rotations snapshot the current host key, then accept
+    // the new host key ID while retaining the old ID only until the grace expiry.
+    if (!defined('PARTIKULIER_N8N_SECRET') && !defined('PARTIKULIER_N8N_KEY_ID')) {
+        $oldEnvSecret = getenv('PARTIKULIER_N8N_SECRET');
+        $oldEnvKeyId = getenv('PARTIKULIER_N8N_KEY_ID');
+        $envSettingsBackup = AutomationService::settings();
+        try {
+            $envOldSecret = base64_encode(random_bytes(48));
+            $envOldKeyId = 'runtime-env-old';
+            putenv('PARTIKULIER_N8N_SECRET=' . $envOldSecret);
+            putenv('PARTIKULIER_N8N_KEY_ID=' . $envOldKeyId);
+            $cleanEnvSettings = AutomationService::settings();
+            unset($cleanEnvSettings['previous_secret'], $cleanEnvSettings['previous_key_id'], $cleanEnvSettings['previous_expires_at']);
+            update_option(AutomationService::SETTINGS_OPTION, $cleanEnvSettings, false);
+            $prepareEnvRotation = AutomationService::save_admin_settings(['prepare_environment_rotation' => '1']);
+            $preparedEnvSettings = AutomationService::settings();
+            $pendingEnvKeyId = (string) ($preparedEnvSettings['pending_environment_key_id'] ?? '');
+            $envExpiry = strtotime((string) ($preparedEnvSettings['previous_expires_at'] ?? ''));
+            $envSnapshotOk = ($preparedEnvSettings['previous_secret'] ?? '') === $envOldSecret
+                && ($preparedEnvSettings['previous_key_id'] ?? '') === $envOldKeyId
+                && $pendingEnvKeyId !== '' && $pendingEnvKeyId !== $envOldKeyId
+                && $envExpiry > time() && $envExpiry <= time() + AutomationService::KEY_ROTATION_GRACE_SECONDS + 2;
+            $envNewSecret = base64_encode(random_bytes(48));
+            putenv('PARTIKULIER_N8N_SECRET=' . $envNewSecret);
+            putenv('PARTIKULIER_N8N_KEY_ID=' . $pendingEnvKeyId);
+            $envKeysAfterSwitch = AutomationService::secret_keys();
+            $assert('AUTO-HMAC-ENV-ROTATION', true === $prepareEnvRotation && $envSnapshotOk
+                && ($envKeysAfterSwitch[$pendingEnvKeyId] ?? '') === $envNewSecret
+                && ($envKeysAfterSwitch[$envOldKeyId] ?? '') === $envOldSecret,
+                'environment rotation stages prior secret and ID, then accepts the switched host key and prior key during grace');
+        } finally {
+            false === $oldEnvSecret ? putenv('PARTIKULIER_N8N_SECRET') : putenv('PARTIKULIER_N8N_SECRET=' . $oldEnvSecret);
+            false === $oldEnvKeyId ? putenv('PARTIKULIER_N8N_KEY_ID') : putenv('PARTIKULIER_N8N_KEY_ID=' . $oldEnvKeyId);
+            update_option(AutomationService::SETTINGS_OPTION, $envSettingsBackup, false);
+        }
+    }
+
 } catch (Throwable $error) {
     $assert('AUTO-RUNTIME-EXCEPTION', false, 'runtime boundary contract raised ' . get_class($error));
 } finally {
@@ -331,6 +505,16 @@ try {
     }
     if ($retryPostId > 0) {
         wp_delete_post($retryPostId, true);
+    }
+    if ($runtimeLeadId > 0) {
+        $wpdb->delete(LeadService::table('pk_buyer_preferences'), ['lead_id' => $runtimeLeadId], ['%d']);
+        $wpdb->delete(LeadService::table('pk_whatsapp_consents'), ['lead_id' => $runtimeLeadId], ['%d']);
+        $wpdb->delete(LeadService::table('pk_whatsapp_messages'), ['lead_id' => $runtimeLeadId], ['%d']);
+        $wpdb->delete(LeadService::leads_table(), ['id' => $runtimeLeadId], ['%d']);
+        $wpdb->query($wpdb->prepare(
+            "DELETE FROM {$wpdb->prefix}pk_audit_log WHERE object_type = %s AND object_id = %d AND action IN (%s, %s)",
+            'lead', $runtimeLeadId, 'lead_qualified_particulier', 'lead_qualified_intermediaire'
+        ));
     }
     if (null === $adminKeyBackup) {
         delete_option('pk_admin_secret_key');

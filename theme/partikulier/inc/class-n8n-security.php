@@ -134,19 +134,27 @@ class Partikulier_N8n_Security {
 		if ( ! current_user_can( 'manage_options' ) ) {
 				wp_die( esc_html__( 'Accès non autorisé.', 'partikulier' ), 403 );
 		}
-			$s       = self::settings();
-			$has_env = (bool) ( self::env_secret() || self::env_webhook() );
+			$s                 = self::settings();
+			$has_env           = (bool) ( self::env_secret() || self::env_webhook() );
+			$env_secret_managed = (bool) self::env_secret();
+			$active_keys       = self::secret_keys();
+			$active_key_id     = (string) ( array_key_first($active_keys) ?? '' );
+			$previous_expiry   = strtotime((string) ($s['previous_expires_at'] ?? ''));
+			$previous_key_id   = (string) ($s['previous_key_id'] ?? '');
+			$pending_environment_key_id = (string) ($s['pending_environment_key_id'] ?? '');
 		?>
 						<div class="wrap"><h1><?php esc_html_e( 'Partikulier — Réglages n8n', 'partikulier' ); ?></h1>
 					<?php if ( isset( $_GET['updated'] ) ) : ?><div class="notice notice-success"><p><?php esc_html_e( 'Réglages enregistrés.', 'partikulier' ); ?></p></div><?php endif; ?>
 						<p><?php echo $has_env ? esc_html__( 'Une partie de la configuration est fournie par l’environnement et n’est pas éditable ici.', 'partikulier' ) : esc_html__( 'Les secrets sont masqués et ne sont jamais réaffichés.', 'partikulier' ); ?></p>
 						<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>"><input type="hidden" name="action" value="pk_save_n8n_settings"><?php wp_nonce_field( 'pk_save_n8n_settings' ); ?>
 						<table class="form-table"><tr><th><?php esc_html_e( 'Webhook n8n', 'partikulier' ); ?></th><td><input class="regular-text" type="url" name="pk_n8n[n8n_webhook_url]" value="<?php echo $has_env ? '' : esc_attr( $s['n8n_webhook_url'] ?? '' ); ?>" <?php disabled( $has_env ); ?>></td></tr>
-						<tr><th><?php esc_html_e( 'Secret', 'partikulier' ); ?></th><td><code>••••••••••••••••</code> <input type="password" name="pk_n8n[automation_api_secret]" value="" autocomplete="new-password" placeholder="<?php esc_attr_e( 'Remplacer uniquement', 'partikulier' ); ?>"></td></tr>
+						<tr><th><?php esc_html_e( 'Secret / rotation', 'partikulier' ); ?></th><td><code>••••••••••••••••</code> <input type="password" name="pk_n8n[automation_api_secret]" value="" autocomplete="new-password" <?php disabled( $env_secret_managed ); ?> placeholder="<?php esc_attr_e( 'Saisir un nouveau secret aléatoire', 'partikulier' ); ?>">
+						<?php if ( $env_secret_managed ) : ?><p class="description"><?php esc_html_e( 'Secret géré par l’environnement. Préparez ici la conservation de l’ancienne clé, puis remplacez PARTIKULIER_N8N_SECRET et PARTIKULIER_N8N_KEY_ID dans l’hébergement avant l’expiration affichée.', 'partikulier' ); ?><?php if ( '' !== $pending_environment_key_id && $active_key_id !== $pending_environment_key_id ) : ?><br><?php printf( esc_html__( 'Key ID à configurer dans l’environnement : %s', 'partikulier' ), esc_html( $pending_environment_key_id ) ); ?><?php endif; ?></p><?php else : ?><p class="description"><?php esc_html_e( 'Laisser vide conserve la clé. Saisir une nouvelle clé démarre une transition de 24 heures; la clé précédente reste acceptée pendant cette période. Ne pas relancer une rotation avant son expiration.', 'partikulier' ); ?></p><?php endif; ?>
+						<?php if ( '' !== $active_key_id ) : ?><p class="description"><?php printf( esc_html__( 'Key ID actif : %s', 'partikulier' ), esc_html( $active_key_id ) ); ?><?php if ( $previous_expiry && $previous_expiry > time() ) : ?><br><?php printf( esc_html__( 'Key ID précédent : %1$s — expiration UTC : %2$s', 'partikulier' ), esc_html( $previous_key_id ), esc_html( gmdate( 'Y-m-d H:i:s', $previous_expiry ) ) ); ?><?php endif; ?></p><?php endif; ?></td></tr>
 						<tr><th><?php esc_html_e( 'Mode HMAC', 'partikulier' ); ?></th><td><select name="pk_n8n[hmac_mode]"><?php foreach ( array( 'off', 'log', 'enforce' ) as $mode ) : ?><option value="<?php echo esc_attr( $mode ); ?>" <?php selected( $s['hmac_mode'] ?? 'off', $mode ); ?>><?php echo esc_html( $mode ); ?></option><?php endforeach; ?></select></td></tr>
 						<tr><th><?php esc_html_e( 'Quota / jour', 'partikulier' ); ?></th><td><input type="number" min="1" max="10" name="pk_n8n[quota_per_day]" value="<?php echo absint( $s['quota_per_day'] ?? 2 ); ?>"></td></tr>
 						<tr><th><?php esc_html_e( 'Consentement WhatsApp', 'partikulier' ); ?></th><td><textarea name="pk_n8n[consent_text]" rows="4" class="large-text"><?php echo esc_textarea( $s['consent_text'] ?? '' ); ?></textarea></td></tr>
-						<tr><th><?php esc_html_e( 'Canal WhatsApp', 'partikulier' ); ?></th><td><input class="regular-text" type="url" name="pk_n8n[channel_url]" value="<?php echo esc_attr( $s['channel_url'] ?? '' ); ?>"></td></tr></table><p><button class="button button-primary"><?php esc_html_e( 'Enregistrer', 'partikulier' ); ?></button></p></form></div>
+						<tr><th><?php esc_html_e( 'Canal WhatsApp', 'partikulier' ); ?></th><td><input class="regular-text" type="url" name="pk_n8n[channel_url]" value="<?php echo esc_attr( $s['channel_url'] ?? '' ); ?>"></td></tr></table><p><button class="button button-primary"><?php esc_html_e( 'Enregistrer', 'partikulier' ); ?></button><?php if ( $env_secret_managed && ( ! $previous_expiry || $previous_expiry <= time() ) ) : ?> <button type="submit" class="button" name="pk_n8n[prepare_environment_rotation]" value="1"><?php esc_html_e( 'Préparer la rotation environnement', 'partikulier' ); ?></button><?php endif; ?></p></form></div>
 				<?php
 	}
 }

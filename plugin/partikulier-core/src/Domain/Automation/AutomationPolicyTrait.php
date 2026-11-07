@@ -56,6 +56,15 @@ trait AutomationPolicyTrait
 	}
 
 
+	public static function env_key_id(): string
+	{
+		$value = defined('PARTIKULIER_N8N_KEY_ID') && PARTIKULIER_N8N_KEY_ID
+			? (string) PARTIKULIER_N8N_KEY_ID
+			: (string) (getenv('PARTIKULIER_N8N_KEY_ID') ?: 'env');
+		return preg_match('/^[A-Za-z0-9_-]{1,64}$/', $value) ? $value : 'env';
+	}
+
+
 	public static function env_webhook(): string
 	{
 		if ( defined('PARTIKULIER_N8N_WEBHOOK_URL') && PARTIKULIER_N8N_WEBHOOK_URL ) {
@@ -103,10 +112,15 @@ trait AutomationPolicyTrait
 	{
 		$settings  = self::settings();
 		$active    = self::env_secret() ?: (string) ( $settings['automation_api_secret'] ?? '' );
-		$active_id = self::env_secret() ? 'env' : (string) ( $settings['active_key_id'] ?? 'N' );
+		$active_id = self::env_secret() ? self::env_key_id() : (string) ( $settings['active_key_id'] ?? 'N' );
 		$keys      = [$active_id => $active];
-		if ( ! empty($settings['previous_secret']) && ! empty($settings['previous_key_id']) && strtotime( (string) ( $settings['previous_expires_at'] ?? '' )) > time() ) {
+		$previous_expiry = strtotime((string) ($settings['previous_expires_at'] ?? ''));
+		if ( ! empty($settings['previous_secret']) && ! empty($settings['previous_key_id']) && $previous_expiry > time() ) {
 			$keys[ (string) $settings['previous_key_id'] ] = (string) $settings['previous_secret'];
+		} elseif ( ! empty($settings['previous_secret']) || ! empty($settings['previous_key_id']) || ! empty($settings['previous_expires_at']) ) {
+			// Expiration revokes and removes the old key, not just its acceptance path.
+			unset($settings['previous_secret'], $settings['previous_key_id'], $settings['previous_expires_at'], $settings['pending_environment_key_id']);
+			update_option(self::SETTINGS_OPTION, $settings, false);
 		}
 		return array_filter($keys);
 	}
@@ -190,10 +204,42 @@ trait AutomationPolicyTrait
 		$current['channel_url']     = esc_url_raw( (string) ( $posted['channel_url'] ?? '' ));
 		$replacement                = trim( (string) ( $posted['automation_api_secret'] ?? '' ));
 		if ( $replacement ) {
-			if ( ! self::is_strong_secret($replacement) ) {
-				return new \WP_Error('pk_n8n_secret_weak', __('Le secret doit contenir au moins 32 octets aléatoires encodés.', 'partikulier'));
+			if ( self::env_secret() ) {
+				return new \WP_Error('pk_n8n_secret_env_managed', __('Le secret est géré par l’environnement; effectuez sa rotation dans la configuration d’hébergement.', 'partikulier-core'));
 			}
-			$current['automation_api_secret'] = $replacement;
+			if ( ! self::is_strong_secret($replacement) ) {
+				return new \WP_Error('pk_n8n_secret_weak', __('Le secret doit contenir au moins 32 octets aléatoires encodés.', 'partikulier-core'));
+			}
+
+			$active_secret = (string) self::get('automation_api_secret', '');
+			if ( '' === $active_secret || ! hash_equals($active_secret, $replacement) ) {
+				$previous_expiry = strtotime((string) ($current['previous_expires_at'] ?? ''));
+				if ( $previous_expiry && $previous_expiry > time() ) {
+					return new \WP_Error('pk_n8n_rotation_in_progress', __('Une rotation est déjà en cours; attendez l’expiration de la clé précédente avant d’en démarrer une autre.', 'partikulier-core'));
+				}
+				if ( '' !== $active_secret ) {
+					$current['previous_secret']     = $active_secret;
+					$current['previous_key_id']    = (string) ($current['active_key_id'] ?? 'N');
+					$current['previous_expires_at'] = gmdate('c', time() + self::KEY_ROTATION_GRACE_SECONDS);
+				}
+				$current['active_key_id'] = 'k_' . bin2hex(random_bytes(8));
+				$current['automation_api_secret'] = $replacement;
+			}
+		}
+
+		if ( ! empty($posted['prepare_environment_rotation']) ) {
+			$environment_secret = self::env_secret();
+			if ( '' === $environment_secret ) {
+				return new \WP_Error('pk_n8n_environment_secret_missing', __('Aucun secret d’environnement actif à préparer.', 'partikulier-core'));
+			}
+			$previous_expiry = strtotime((string) ($current['previous_expires_at'] ?? ''));
+			if ( $previous_expiry && $previous_expiry > time() ) {
+				return new \WP_Error('pk_n8n_rotation_in_progress', __('Une rotation est déjà en cours; attendez son expiration avant d’en préparer une autre.', 'partikulier-core'));
+			}
+			$current['previous_secret'] = $environment_secret;
+			$current['previous_key_id'] = self::env_key_id();
+			$current['previous_expires_at'] = gmdate('c', time() + self::KEY_ROTATION_GRACE_SECONDS);
+			$current['pending_environment_key_id'] = 'env_' . bin2hex(random_bytes(8));
 		}
 		update_option(self::SETTINGS_OPTION, $current, false);
 		return true;

@@ -31,51 +31,65 @@ Le secret n’est jamais injecté dans le navigateur. Le lien public contient un
 
 Les appels WordPress doivent utiliser `Content-Type: application/json` et l’en-tête :
 
-\`\`\`http
+```http
 X-Partikulier-Automation: <secret configuré dans WordPress>
-\`\`\`
+```
 
 ## 3. Contrats d’API
 
 ### Autoriser une mise en relation
 
-\`\`\`json
+```json
 POST /wp-json/partikulier/v1/contact-authorization
 {
   "wa_id": "221770000000",
   "reference": "PK-123-ABCD",
   "provider_message_id": "wamid.…"
 }
-\`\`\`
+```
 
 Une réponse `allowed: true` retourne les coordonnées propriétaire. Une réponse `reason: daily_limit` signifie que l’acquéreur a déjà reçu les coordonnées de **deux propriétaires distincts** ce jour-là. Le même propriétaire peut avoir plusieurs annonces sans consommer une place supplémentaire. `duplicate_message` est un rejeu sûr du même webhook.
 
+### Enregistrer la qualification
+
+```json
+POST /wp-json/partikulier/v1/qualification
+{ "wa_id": "221770000000", "is_particulier": true, "provider_message_id": "wamid.…" }
+```
+
+La réponse doit être un booléen explicite ou une valeur reconnue. L’identifiant Meta du message est obligatoire et stable entre les retries; une réponse malformée est refusée sans mutation.
+
 ### Enregistrer les critères déclarés
 
-\`\`\`json
+```json
 POST /wp-json/partikulier/v1/preferences
 {
   "wa_id": "221770000000",
+  "provider_message_id": "wamid.…",
   "budget_max": 280000,
   "areas": ["Plateau", "Almadies"],
   "layout": "2 chambres + salon",
   "transaction": "Achat"
 }
-\`\`\`
+```
+
+`provider_message_id` est obligatoire : transmettez l’identifiant Meta du message entrant, stable entre les retries. WordPress consomme cet identifiant dans la même transaction que l’écriture des préférences; un rejeu identique est acquitté sans mutation et une réutilisation avec un autre contenu renvoie `409`. La route `/qualification` suit la même règle et exige aussi cet identifiant.
 
 ### Consentement et opposition
 
-\`\`\`json
+```json
 POST /wp-json/partikulier/v1/consent
 { "wa_id": "221770000000", "scope": "similar_listings", "granted": true, "provider_message_id": "wamid.…" }
 
 POST /wp-json/partikulier/v1/opt-out
 { "wa_id": "221770000000", "provider_message_id": "wamid.…" }
-\`\`\`
+```
 
 `STOP` doit retirer le consentement aux annonces similaires et empêcher de nouvelles mises en relation jusqu’à une nouvelle demande explicite. Ne pas envoyer d’annonces similaires sans consentement enregistré. En dehors de la fenêtre de conversation applicable à WhatsApp Business, utiliser uniquement un modèle Meta approuvé.
 
 ## 4. Exploitation et sécurité
+
+Pour les changements de clé, suivre la procédure de rotation à chevauchement de 24 heures dans [`n8n-key-rotation.md`](n8n-key-rotation.md); le mode `enforce` est attendu en production, et la configuration réellement déployée doit être vérifiée séparément.
 
 Le numéro WhatsApp est stocké sous forme de hachage pour les limites et, lorsque OpenSSL est disponible, chiffré pour l’audit restreint. Les messages entrants, consentements et transmissions sont journalisés. Ne pas mettre les coordonnées propriétaire dans l’URL, dans des champs front-end ou dans les journaux n8n non chiffrés.
 
