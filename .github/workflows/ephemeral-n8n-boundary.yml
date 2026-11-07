@@ -501,7 +501,7 @@ jobs:
           docker cp "$RUNNER_TEMP/ci-n8n-workflow.json" "$N8N_CONTAINER:/tmp/ci-n8n-workflow.json"
           WORKFLOW_ID="$(cat "$RUNNER_TEMP/ci-n8n-workflow-id")"
           set +e
-          docker exec "$N8N_CONTAINER" n8n import:workflow --input=/tmp/ci-n8n-workflow.json > "$RUNNER_TEMP/n8n-import.log" 2>&1
+          docker exec -e N8N_DISABLED_MODULES=mcp-registry "$N8N_CONTAINER" n8n import:workflow --input=/tmp/ci-n8n-workflow.json > "$RUNNER_TEMP/n8n-import.log" 2>&1
           n8n_import_rc=$?
           set -e
           if [ "$n8n_import_rc" -eq 0 ]; then
@@ -632,7 +632,7 @@ jobs:
           combined = stdout + '\n' + stderr
           for line in reversed(combined.splitlines()):
               lowered = line.lower()
-              if any(x in lowered for x in ('api.n8n.io', 'telemetry', 'diagnostic')): continue
+              if any(x in lowered for x in ('api.n8n.io', 'telemetry', 'diagnostic', 'an error occurred while importing workflows. see log messages for details')): continue
               match = re.search(r'(?:error in node|failed node|node)\s+[\"\']([^\"\']+)[\"\']\s*[:：-]?\s*(.*)', line, re.I)
               if match: named_lines.append((match.group(1), match.group(2) or line))
               elif re.search(r'\b(error|failed|exception|timed? out|ECONN|HTTP [45]\d\d)\b', line, re.I): generic_lines.append(('', line))
