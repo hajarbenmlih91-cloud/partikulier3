@@ -23,4 +23,11 @@ if any(f'{name}: ${{{{ secrets.{name} }}}}' not in ssh_env for name in required)
     raise SystemExit('SSH setup secrets are not explicitly scoped to the SSH setup step')
 if job.index('      - name: Construire et préparer les artefacts') > job.index('      - name: Configurer SSH strict'):
     raise SystemExit('secret-free build must complete before SSH credentials are introduced')
-print('Deploy secret scope: PASS (no job-wide secrets; SSH credentials are step-scoped after build)')
+preflight = re.search(r'(?ms)^      - name: Prévalidation HMAC production en lecture seule\n(?P<step>.*?)(?=^      - name:)', job)
+backup = job.find('      - name: Sauvegarde pré-déploiement')
+if not preflight or backup < 0 or job.index(preflight.group(0)) > backup:
+    raise SystemExit('read-only production HMAC preflight must run before any backup or deployment mutation')
+for required_check in ('getenv("PK_DEPLOY_ENV") === "prd"', '$wpEnvironment !== "production"', '$mode !== "enforce"', 'is_strong_secret($secret)'):
+    if required_check not in preflight.group('step'):
+        raise SystemExit('production HMAC preflight missing guard: ' + required_check)
+print('Deploy secret scope: PASS (no job-wide secrets; step-scoped SSH; read-only production HMAC gate precedes mutation)')

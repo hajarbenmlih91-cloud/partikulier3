@@ -178,6 +178,35 @@ jobs:
           } > "$HOME/.ssh/config"
           chmod 600 "$HOME/.ssh/config"
 
+      - name: Prévalidation HMAC production en lecture seule
+        env:
+          WP_PATH: ${{ secrets.WP_PATH }}
+        run: |
+          set -euo pipefail
+          ssh partikulier-hostinger 'bash -s' -- "$WP_PATH" "$DEPLOY_ENVIRONMENT" <<'REMOTE'
+          set -euo pipefail
+          WP_PATH="$1"
+          DEPLOY_ENV="$2"
+          if [ "$DEPLOY_ENV" != "prd" ]; then
+            echo "HMAC production preflight: skipped for non-production target"
+            exit 0
+          fi
+          command -v wp >/dev/null 2>&1 || { echo "Production HMAC preflight failed: wp-cli unavailable"; exit 1; }
+          cd "$WP_PATH"
+          wp plugin is-active partikulier-core >/dev/null || { echo "Production HMAC preflight failed: Partikulier Core is not active"; exit 1; }
+          PK_DEPLOY_ENV="$DEPLOY_ENV" wp eval '
+          $settings = \Partikulier\Core\Domain\Automation\AutomationService::settings();
+          $secret = (string) \Partikulier\Core\Domain\Automation\AutomationService::get("automation_api_secret", "");
+          $mode = (string) ($settings["hmac_mode"] ?? "off");
+          $wpEnvironment = function_exists("wp_get_environment_type") ? wp_get_environment_type() : "production";
+          if (getenv("PK_DEPLOY_ENV") === "prd" && ($wpEnvironment !== "production" || $mode !== "enforce" || !\Partikulier\Core\Domain\Automation\AutomationService::is_strong_secret($secret))) {
+              fwrite(STDERR, "Production HMAC preflight failed; require WP environment=production, stored mode=enforce, and a strong active key. Secret value suppressed." . PHP_EOL);
+              exit(1);
+          }
+          echo "Production HMAC preflight: PASS; environment=production; mode=enforce; active key=strong. Secret value suppressed." . PHP_EOL;
+          '
+          REMOTE
+
       - name: Sauvegarde pré-déploiement
         env:
           WP_PATH: ${{ secrets.WP_PATH }}
@@ -270,17 +299,6 @@ jobs:
           cd "$WP_PATH"
           wp plugin activate partikulier-core
           wp plugin activate polylang
-          PK_DEPLOY_ENV="$DEPLOY_ENV" wp eval '
-          $settings = \Partikulier\Core\Domain\Automation\AutomationService::settings();
-          $secret = (string) \Partikulier\Core\Domain\Automation\AutomationService::get("automation_api_secret", "");
-          $mode = (string) ($settings["hmac_mode"] ?? "off");
-          $wpEnvironment = function_exists("wp_get_environment_type") ? wp_get_environment_type() : "production";
-          if (getenv("PK_DEPLOY_ENV") === "prd" && ($wpEnvironment !== "production" || $mode !== "enforce" || !\Partikulier\Core\Domain\Automation\AutomationService::is_strong_secret($secret))) {
-              fwrite(STDERR, "Production preflight failed: require WP environment=production, stored HMAC mode=enforce, and a strong active secret. No secret value was printed." . PHP_EOL);
-              exit(1);
-          }
-          echo sprintf("HMAC preflight: PASS; deploy_env=%s; wp_env=%s; mode=%s; secret=%s; body_limit_bytes=%d", getenv("PK_DEPLOY_ENV"), $wpEnvironment, $mode, $secret !== "" ? "present" : "absent", \Partikulier\Core\Domain\Automation\AutomationService::max_hmac_body_bytes()) . PHP_EOL;
-          '
           wp eval-file wp-content/themes/partikulier/cli/pll-langues.php
           wp eval-file wp-content/themes/partikulier/cli/pll-masse.php
           wp eval 'if(class_exists("Partikulier_Required_Pages")){delete_option("pk_front_ensured"); Partikulier_Required_Pages::ensure_front();}'
