@@ -527,6 +527,22 @@ jobs:
                   try: parsed=json.loads(raw)
                   except Exception: parsed={}
                   return error.code,parsed
+          def unflatten(value):
+              if not isinstance(value,list) or not value or not all(isinstance(part,str) for part in value) or value[0][:1] not in ('{','['): return value
+              cache={}
+              def dereference(index,active):
+                  if index in cache: return cache[index]
+                  if index in active or index<0 or index>=len(value): return None
+                  parsed=json.loads(value[index])
+                  result=expand(parsed,active|{index})
+                  cache[index]=result
+                  return result
+              def expand(item,active):
+                  if isinstance(item,dict): return {key:expand(child,active) for key,child in item.items()}
+                  if isinstance(item,list): return [expand(child,active) for child in item]
+                  if isinstance(item,str) and item.isdigit() and int(item)<len(value): return dereference(int(item),active)
+                  return item
+              return dereference(0,set())
           def find(value,key):
               if isinstance(value,dict):
                   if key in value: return value[key]
@@ -538,7 +554,7 @@ jobs:
                       result=find(child,key)
                       if result is not None: return result
               elif isinstance(value,str) and value[:1] in ('{','['):
-                  try: return find(json.loads(value),key)
+                  try: return find(unflatten(json.loads(value)),key)
                   except Exception: pass
               return None
           def safe_error(value):
