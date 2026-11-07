@@ -625,7 +625,7 @@ jobs:
                   for key, child in value.items(): walk(child, str(key))
               elif isinstance(value, list):
                   for child in value: walk(child, parent)
-          for source in (stdout,):
+          for source in (stdout, stderr):
               for index, char in enumerate(source):
                   if char != '{': continue
                   try: obj, _ = decoder.raw_decode(source[index:])
