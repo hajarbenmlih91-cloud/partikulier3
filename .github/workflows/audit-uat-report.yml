@@ -86,6 +86,8 @@ jobs:
           python - <<'PY'
           import json, os, pathlib, re
           root = pathlib.Path(os.environ['SOURCE_DIR'])
+          connected_root = pathlib.Path(os.environ.get('CONNECTED_DIR', ''))
+          connected_files = sorted(str(f.relative_to(connected_root)) for f in connected_root.rglob('*') if f.is_file()) if connected_root.is_dir() else []
           lines = [
               '# Analyse détaillée de l’audit UAT', '',
               f"Run public source : {os.environ['REPORT_RUN_ID']}",
@@ -106,6 +108,8 @@ jobs:
               if direct.is_file(): return direct
               found = sorted(base.rglob(filename)) if base.is_dir() else []
               return found[0] if found else None
+
+          annotate('notice', 'Connected artifact input', f"run_id={os.environ.get('CONNECTED_RUN_ID', '')}; path={connected_root}; exists={connected_root.is_dir()}; files={', '.join(connected_files[:40])}")
 
           def summarize_lighthouse(base, label):
               files = sorted(base.rglob('lighthouse-*.json')) if base.is_dir() else []
@@ -136,7 +140,7 @@ jobs:
                   lines.append('')
 
           # Record the artifact layout so missing expected evidence is diagnosable.
-          for source, label in [(root, 'public'), (pathlib.Path(os.environ.get('CONNECTED_DIR', '')), 'connecté')]:
+          for source, label in [(root, 'public'), (connected_root, 'connecté')]:
               if source.is_dir():
                   files = sorted(str(f.relative_to(source)) for f in source.rglob('*') if f.is_file())
                   inventory = ', '.join(files[:100]) or '(aucun fichier)'
@@ -241,7 +245,6 @@ jobs:
           summarize_lighthouse(root, 'public')
 
           # Findings from the protected run: HMAC checks and the temporary-owner journey.
-          connected_root = pathlib.Path(os.environ.get('CONNECTED_DIR', ''))
           if os.environ.get('CONNECTED_RUN_ID') and connected_root.is_dir():
               lines += ['## Résultats du run connecté protégé', '',
                         'Les lignes ci-dessous viennent de l’artefact connecté déjà existant; aucun parcours ni appel réseau n’a été relancé.', '']
