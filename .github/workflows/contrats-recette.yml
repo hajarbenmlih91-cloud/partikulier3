@@ -103,6 +103,18 @@ jobs:
               echo "PASS  $suite" | tee -a ../preuves-run/journal.txt
             else
               echo "FAIL  $suite" | tee -a ../preuves-run/journal.txt
+              python3 - "$suite" "../preuves-run/contrats/$suite.json" <<'PY'
+          import json, pathlib, re, sys
+          suite, path = sys.argv[1:]
+          try:
+              data = json.loads(pathlib.Path(path).read_text())
+              failures = [str(row.get('test_id', '?')) for row in data.get('results', []) if row.get('status') != 'PASS']
+              failures = [re.sub(r'[^A-Za-z0-9._-]', '?', item)[:80] for item in failures]
+              summary = ','.join(failures) if failures else 'invalid-or-empty-report'
+          except Exception:
+              summary = 'invalid-or-missing-report'
+          print(f'::error title=PHP contract failed::{suite}: {summary}')
+          PY
               exit 1
             fi
           done

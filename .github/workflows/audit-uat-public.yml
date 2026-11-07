@@ -226,6 +226,7 @@ jobs:
             echo "| Charge 10 rps | ${SMOKE_RESULT:-skipped} |"
             echo "| Charge 100 rps | ${FULL_LOAD_RESULT:-skipped} |"
           } | tee -a "$GITHUB_STEP_SUMMARY" "$AUDIT_OUT_DIR/README.md"
+          echo "::notice title=UAT audit outcomes::security=$SECURITY_RESULT; cache=$CACHE_RESULT; browser=$BROWSER_RESULT; auth=$AUTH_RESULT; interactions=$INTERACTIONS_RESULT; lighthouse=$LIGHTHOUSE_RESULT; load10=$SMOKE_RESULT; load100=$FULL_LOAD_RESULT"
 
           for result in "$SECURITY_RESULT" "$CACHE_RESULT" "$BROWSER_RESULT" "$LIGHTHOUSE_RESULT" "$AUTH_RESULT" "$INTERACTIONS_RESULT"; do
             if [ "$result" != success ]; then
