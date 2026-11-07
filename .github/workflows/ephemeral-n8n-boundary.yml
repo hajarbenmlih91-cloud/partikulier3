@@ -1,7 +1,18 @@
 name: Ephemeral WordPress and n8n boundary
 
 on:
+  push:
+    branches:
+      - arena/0e605e79-partikulier3
+    paths:
+      - .github/workflows/ephemeral-n8n-boundary.yml
   workflow_dispatch:
+    inputs:
+      curl_probe:
+        description: Run signed curl/replay from the ephemeral n8n container; skip PHP contracts
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
@@ -145,6 +156,7 @@ jobs:
         env:
           WP_CONTAINER: ${{ job.services.wordpress.id }}
           N8N_CONTAINER: ${{ job.services.n8n.id }}
+          CURL_PROBE_ONLY: ${{ github.event_name == 'push' || inputs.curl_probe }}
         run: |
           set -euo pipefail
           FAIL=0
@@ -388,6 +400,92 @@ jobs:
           PY
           record n8n-static 'Inspect imported workflow: exactly two HTTP Request nodes, fixed WP IP:80 URL' 'N/A' 'exactly two identical WordPress-only destinations; no wa.me, graph.facebook.com, Evolution' 'PASS; static allowlist verified'
 
+          if [ "$CURL_PROBE_ONLY" = true ]; then
+            # Export only the exact signed request into private temp files; curl executes inside the n8n service container.
+            WP_SERVICE_IP="$WP_CONTAINER_IP" RUNNER_TEMP="$RUNNER_TEMP" python3 - <<'PY'
+          import json, os, pathlib
+          temp = pathlib.Path(os.environ['RUNNER_TEMP'])
+          workflow = json.loads((temp / 'ci-n8n-workflow.json').read_text())
+          requests = [node for node in workflow['nodes'] if node['type'] == 'n8n-nodes-base.httpRequest']
+          assert len(requests) == 2
+          first = requests[0]['parameters']
+          assert requests[1]['parameters'] == first
+          expected = f"http://{os.environ['WP_SERVICE_IP']}/wp-json/partikulier/v1/automation-event"
+          assert first['url'] == expected
+          body = first['body']
+          headers = first['headerParameters']['parameters']
+          body_path = '/tmp/ci-n8n-signed-body.json'
+          config_path = temp / 'ci-n8n-curl.conf'
+          def quote(value):
+              return '"' + str(value).replace('\\', '\\\\').replace('"', '\\"').replace('\r', '\\r').replace('\n', '\\n') + '"'
+          lines = [f'url = {quote(first["url"])}', 'request = "POST"']
+          lines.extend(f'header = {quote(h["name"] + ": " + h["value"])}' for h in headers)
+          lines.append(f'data-binary = {quote("@" + body_path)}')
+          (temp / 'ci-n8n-signed-body.json').write_text(body, encoding='utf-8')
+          (temp / 'ci-n8n-signed-body.json').chmod(0o600)
+          config_path.write_text('\n'.join(lines) + '\n', encoding='utf-8')
+          config_path.chmod(0o600)
+          PY
+            docker cp "$RUNNER_TEMP/ci-n8n-curl.conf" "$N8N_CONTAINER:/tmp/ci-n8n-curl.conf"
+            docker cp "$RUNNER_TEMP/ci-n8n-signed-body.json" "$N8N_CONTAINER:/tmp/ci-n8n-signed-body.json"
+            docker exec -u 0:0 "$N8N_CONTAINER" sh -c 'chown node:node /tmp/ci-n8n-curl.conf /tmp/ci-n8n-signed-body.json && chmod 600 /tmp/ci-n8n-curl.conf /tmp/ci-n8n-signed-body.json'
+            docker exec "$N8N_CONTAINER" rm -f /tmp/ci-n8n-curl-first.json /tmp/ci-n8n-curl-replay.json
+            curl_install_rc=0
+            if ! docker exec "$N8N_CONTAINER" sh -c 'command -v curl >/dev/null 2>&1'; then
+              set +e
+              docker exec -u 0:0 "$N8N_CONTAINER" sh -c 'if command -v apk >/dev/null 2>&1; then apk add --no-cache curl; elif command -v apt-get >/dev/null 2>&1; then apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends curl; else exit 127; fi' > "$RUNNER_TEMP/curl-install.log" 2>&1
+              curl_install_rc=$?
+              set -e
+            fi
+            first_http='non mesuré'; replay_http='non mesuré'; first_curl_rc=127; replay_curl_rc=127
+            if docker exec "$N8N_CONTAINER" sh -c 'command -v curl >/dev/null 2>&1'; then
+              set +e
+              first_http="$(docker exec "$N8N_CONTAINER" curl --silent --show-error --config /tmp/ci-n8n-curl.conf --output /tmp/ci-n8n-curl-first.json --write-out '%{http_code}' 2>"$RUNNER_TEMP/curl-first.stderr")"
+              first_curl_rc=$?
+              replay_http="$(docker exec "$N8N_CONTAINER" curl --silent --show-error --config /tmp/ci-n8n-curl.conf --output /tmp/ci-n8n-curl-replay.json --write-out '%{http_code}' 2>"$RUNNER_TEMP/curl-replay.stderr")"
+              replay_curl_rc=$?
+              set -e
+            else
+              printf '%s\n' 'curl binary unavailable in ephemeral n8n container' > "$RUNNER_TEMP/curl-first.stderr"
+              cp "$RUNNER_TEMP/curl-first.stderr" "$RUNNER_TEMP/curl-replay.stderr"
+            fi
+            set +e
+            docker cp "$N8N_CONTAINER:/tmp/ci-n8n-curl-first.json" "$RUNNER_TEMP/curl-first-response.json" >/dev/null 2>&1
+            docker cp "$N8N_CONTAINER:/tmp/ci-n8n-curl-replay.json" "$RUNNER_TEMP/curl-replay-response.json" >/dev/null 2>&1
+            set -e
+            curl_summary="$(python3 - "$RUNNER_TEMP/curl-first-response.json" "$RUNNER_TEMP/curl-replay-response.json" <<'PY'
+          import json, pathlib, sys
+          def response(path):
+              try:
+                  data=json.loads(pathlib.Path(path).read_text())
+                  return {k:data.get(k) for k in ('accepted','duplicate')}
+              except Exception:
+                  return {'accepted':'non mesuré','duplicate':'non mesuré'}
+          print(json.dumps({'first':response(sys.argv[1]),'replay':response(sys.argv[2])},separators=(',',':')))
+          PY
+            )"
+            first_accepted="$(python3 -c 'import json,sys;print(str(json.loads(sys.argv[1])["first"]["accepted"]).lower())' "$curl_summary")"
+            first_duplicate="$(python3 -c 'import json,sys;print(str(json.loads(sys.argv[1])["first"]["duplicate"]).lower())' "$curl_summary")"
+            replay_accepted="$(python3 -c 'import json,sys;print(str(json.loads(sys.argv[1])["replay"]["accepted"]).lower())' "$curl_summary")"
+            replay_duplicate="$(python3 -c 'import json,sys;print(str(json.loads(sys.argv[1])["replay"]["duplicate"]).lower())' "$curl_summary")"
+            record n8n-first 'curl from n8n container: first signed POST /automation-event' "$first_http" 'HTTP 200; accepted=true; duplicate=false' "curl_exit=$first_curl_rc; HTTP $first_http; accepted=$first_accepted; duplicate=$first_duplicate"
+            record n8n-replay 'curl from n8n container: exact same signed POST replay' "$replay_http" 'HTTP 200; accepted=true; duplicate=true' "curl_exit=$replay_curl_rc; HTTP $replay_http; accepted=$replay_accepted; duplicate=$replay_duplicate"
+            curl_error="$(python3 - "$RUNNER_TEMP/curl-first.stderr" "$RUNNER_TEMP/curl-replay.stderr" <<'PY'
+          import pathlib, re, sys
+          lines=[]
+          for name in sys.argv[1:]:
+              p=pathlib.Path(name)
+              if p.exists(): lines.extend(x.strip() for x in p.read_text(errors='replace').splitlines() if x.strip())
+          error=next((x for x in lines if 'api.n8n.io' not in x.lower() and 'telemetry' not in x.lower()), '')
+          error=re.sub(r'(?i)sha256=[a-f0-9]{64}', 'sha256=[redacted]', error)
+          error=re.sub(r'\b[A-Za-z0-9+/=_-]{40,}\b', '[redacted-token]', error)
+          error=' '.join(error.split())[:200]
+          print(error or 'aucune erreur transport curl rapportée')
+          PY
+            )"
+            record n8n-diagnostic 'Capture curl install/probe exit codes and safe transport error; no n8n execute' 'N/A' 'curl install status; both curl exit codes; one safe transport error line' "curl_install_exit=$curl_install_rc; first_exit=$first_curl_rc; replay_exit=$replay_curl_rc; error=$curl_error"
+            if [ "$first_curl_rc" -ne 0 ] || [ "$first_http" != 200 ] || [ "$first_accepted" != true ] || [ "$first_duplicate" != false ] || [ "$replay_curl_rc" -ne 0 ] || [ "$replay_http" != 200 ] || [ "$replay_accepted" != true ] || [ "$replay_duplicate" != true ]; then FAIL=1; fi
+          else
           docker cp "$RUNNER_TEMP/ci-n8n-workflow.json" "$N8N_CONTAINER:/tmp/ci-n8n-workflow.json"
           WORKFLOW_ID="$(cat "$RUNNER_TEMP/ci-n8n-workflow-id")"
           docker exec "$N8N_CONTAINER" n8n import:workflow --input=/tmp/ci-n8n-workflow.json > "$RUNNER_TEMP/n8n-import.log" 2>&1
@@ -531,6 +629,7 @@ jobs:
             n8n_diagnostic="exit=$n8n_rc; node=non mesuré; error=non mesuré — CLI diagnostic parser exit=$n8n_diagnostic_rc"
           fi
           record n8n-diagnostic 'Parse private n8n CLI output; redact secrets, signature and request body' 'N/A' 'exit code; failed n8n node; one safe error line' "$n8n_diagnostic"
+          fi
 
           EVENT_ID="$(cat "$RUNNER_TEMP/ci-n8n-event-id")"
           event_actual="$(docker exec -e PK_CI_EVENT_ID="$EVENT_ID" "$WP_CONTAINER" php -r '
@@ -549,12 +648,12 @@ jobs:
             : # SE-041 below records exact HTTP codes and structural XML-RPC results from this same WP service.
           done
 
-          docker exec "$N8N_CONTAINER" rm -f /tmp/ci-n8n-workflow.json || true
-          rm -f "$RUNNER_TEMP/ci-n8n-workflow.json" "$RUNNER_TEMP/ci-n8n-workflow-id" "$RUNNER_TEMP/n8n-owner.json" "$RUNNER_TEMP/n8n-owner-response.json" "$RUNNER_TEMP/n8n-import.log" "$RUNNER_TEMP/n8n-execution.stdout" "$RUNNER_TEMP/n8n-execution.stderr" "$RUNNER_TEMP/n8n-diagnostic-parser.stderr"
+          docker exec "$N8N_CONTAINER" rm -f /tmp/ci-n8n-workflow.json /tmp/ci-n8n-curl.conf /tmp/ci-n8n-signed-body.json /tmp/ci-n8n-curl-first.json /tmp/ci-n8n-curl-replay.json || true
+          rm -f "$RUNNER_TEMP/ci-n8n-workflow.json" "$RUNNER_TEMP/ci-n8n-workflow-id" "$RUNNER_TEMP/n8n-owner.json" "$RUNNER_TEMP/n8n-owner-response.json" "$RUNNER_TEMP/n8n-import.log" "$RUNNER_TEMP/n8n-execution.stdout" "$RUNNER_TEMP/n8n-execution.stderr" "$RUNNER_TEMP/n8n-diagnostic-parser.stderr" "$RUNNER_TEMP/ci-n8n-curl.conf" "$RUNNER_TEMP/ci-n8n-signed-body.json" "$RUNNER_TEMP/curl-first.stderr" "$RUNNER_TEMP/curl-replay.stderr" "$RUNNER_TEMP/curl-first-response.json" "$RUNNER_TEMP/curl-replay-response.json" "$RUNNER_TEMP/curl-install.log"
           if [ "$FAIL" -ne 0 ]; then exit 1; fi
 
       - name: Run versioned PHP runtime contracts in disposable WordPress
-        if: always()
+        if: always() && github.event_name != 'push' && inputs.curl_probe != true
         shell: bash
         env:
           WP_CONTAINER: ${{ job.services.wordpress.id }}
