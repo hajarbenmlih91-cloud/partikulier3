@@ -2,8 +2,8 @@
 /**
  * Sécurité HMAC du pont n8n (lot B4) : signature sortante, vérification
  * des requêtes entrantes (mode off/log/enforce, fenêtre 300 s,
- * rotation), compteur d'audit des échecs par heure — plafonné, sans
- * limitation de débit — consigné dans pk_n8n_hmac_audit.
+ * rotation), limitation des signatures invalides (20/minute/IP) et compteur
+ * d'audit horaire plafonné dans pk_n8n_hmac_audit.
  *
  * Lot D (découpage, arbitrage commanditaire « Référence + plugin », CDC
  * v1.2 annexe C) : le service AutomationService (467 lignes, code porté par la campagne
@@ -79,13 +79,13 @@ trait AutomationHmacTrait
 
 	/**
 	 * Vérifie le secret partagé n8n/WordPress puis, selon le mode HMAC, la
-	 * signature horodatée (port fidèle : secret présent + mode off =
-	 * enforce — LOT 2, Isolation ; mode log = échecs journalisés et requête
-	 * acceptée ; fenêtre de 300 secondes ; rotation par previous_key_id).
+	 * signature horodatée : secret présent + mode off = enforce; mode log
+	 * accepte l'appel invalide hors production seulement; production force
+	 * enforce; fenêtre de 300 secondes; rotation par previous_key_id.
 	 */
 	public static function check_automation_secret( \WP_REST_Request $request )
 	{
-		if ( strlen((string) $request->get_body()) > self::MAX_HMAC_BODY_BYTES ) {
+		if ( strlen((string) $request->get_body()) > self::max_hmac_body_bytes() ) {
 			return new \WP_Error('pk_automation_body_too_large', __('Requête d’automatisation trop volumineuse.', 'partikulier'), ['status' => 413]);
 		}
 
@@ -118,9 +118,14 @@ trait AutomationHmacTrait
 			 * LOT 2 — Isolation : un secret configuré ne doit jamais suffire
 			 * seul. Avant : mode « off » + secret => l'en-tête ouvrait la route
 			 * SANS signature. Désormais : secret présent + mode « off » =
-			 * enforce. Le mode « log » reste disponible pour un staging où n8n
-			 * ne signe pas encore ; la prod doit être en « enforce ».
+			 * enforce. Le mode « log » reste disponible hors production pour
+			 * une migration, mais une installation identifiée « production »
+			 * le promeut en « enforce » même si le réglage admin est permissif.
 			 */
+			$mode = 'enforce';
+		}
+		$environment = function_exists('wp_get_environment_type') ? wp_get_environment_type() : 'production';
+		if ( 'log' === $mode && 'production' === $environment ) {
 			$mode = 'enforce';
 		}
 		if ( 'off' === $mode ) {
@@ -153,13 +158,27 @@ trait AutomationHmacTrait
 		if ( ! $valid ) {
 			/* E-4901 (F-T15-1, lot sécurité 2.10.7) : l'échec est journalisé
 			 * en enforce comme en log — un forçage de la garde ne doit plus
-			 * être invisible en production (le compteur d'audit plafonné
-			 * MAX_FAILURES_PER_HOUR repose sur cette écriture; il ne limite pas
-			 * le débit des requêtes).
+			 * être invisible en production. En plus du compteur d'audit horaire,
+			 * le limiteur d'échecs HMAC renvoie HTTP 429 après 20 signatures
+			 * invalides par IP et par minute; cette limite n'est pas un WAF.
 			 * SE-022 (E-2201) : une seule écriture d'audit par cycle de
 			 * requête — la ré-exécution Allow-header ne double pas le
 			 * compteur d'échecs HMAC (même classe de défaut que la garde
 			 * /erase-lead, constatée par le balayage des 18 routes). */
+			$rateLimit = RequestCycle::recall($request, 'hmac_invalid_rate_limit');
+			if ( null === $rateLimit ) {
+				$rateLimit = (new \Partikulier\Core\RateLimiter())->guard(
+					$request,
+					'automation-hmac-invalid',
+					true,
+					self::MAX_HMAC_FAILURES_PER_MINUTE,
+					60
+				);
+				RequestCycle::remember($request, 'hmac_invalid_rate_limit', $rateLimit);
+			}
+			if ( is_wp_error($rateLimit) ) {
+				return $rateLimit;
+			}
 			if ( RequestCycle::first_run($request, 'hmac_audit_failure') ) {
 				self::audit_failure($key_id ?: 'missing', 'invalid_signature');
 			}

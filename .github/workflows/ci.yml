@@ -15,9 +15,9 @@ jobs:
       matrix:
         php: ['8.1', '8.2', '8.3']
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
           php-version: ${{ matrix.php }}
           extensions: mbstring
@@ -48,7 +48,7 @@ jobs:
           echo "screenshot.png présent dans le zip thème"
       - name: Upload packages
         if: matrix.php == '8.3'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: partikulier-release
           path: |
@@ -63,8 +63,8 @@ jobs:
       matrix:
         php: ['8.1', '8.2', '8.3']
     steps:
-      - uses: actions/checkout@v4
-      - uses: shivammathur/setup-php@v2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
           php-version: ${{ matrix.php }}
           extensions: mbstring
@@ -78,7 +78,7 @@ jobs:
           php -r '$d=json_decode(file_get_contents("routes-static.json"),true); if (($d["status"] ?? "") !== "PASS") { fwrite(STDERR, "routes-static: FAIL\n"); exit(1); } echo "routes-static: PASS ".$d["passed"]."/".$d["total"]."\n";'
       - name: Publier la preuve statique
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: contrat-statique-php-${{ matrix.php }}
           path: routes-static.json
@@ -86,7 +86,7 @@ jobs:
   integrite-catalogues:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Lot C4 - etat final i18n (zero copie de kit cote theme)
         run: |
           set -e
@@ -113,6 +113,6 @@ jobs:
     name: manifeste-preuves
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Vérifier les preuves B1 à B6
         run: bash scripts/check-evidence.sh

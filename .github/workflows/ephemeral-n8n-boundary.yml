@@ -43,7 +43,7 @@ jobs:
             define('WP_HOME', 'http://wordpress');
             define('WP_SITEURL', 'http://wordpress');
             define('DISALLOW_FILE_EDIT', true);
-            define('WP_ENVIRONMENT_TYPE', 'local');
+            define('WP_ENVIRONMENT_TYPE', getenv('PK_WP_ENVIRONMENT_TYPE') ?: 'local');
         ports:
           - 8080:80
         volumes:
@@ -63,10 +63,10 @@ jobs:
 
     steps:
       - name: Checkout the tested branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up PHP for repository-wide lint
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
           php-version: '8.3'
           extensions: curl, dom, mbstring, mysqli, xml
@@ -100,7 +100,7 @@ jobs:
               ('contract-automation', 'php plugin/partikulier-core/tests/automation-domain-contract.php in WP service', 'PASS', 'non mesuré'),
               ('contract-automation-runtime', 'php plugin/partikulier-core/tests/automation-runtime-boundary-contract.php in disposable WP service', 'PASS; concurrent idempotency and outbound SSRF/redirect boundaries', 'non mesuré'),
               ('contract-audit-redaction', 'php plugin/partikulier-core/tests/audit-logger-redaction-contract.php in disposable WP service', 'PASS; recursive nested secret-key removal', 'non mesuré'),
-              ('contract-input-boundary', 'php plugin/partikulier-core/tests/automation-input-boundary-contract.php in disposable WP service', 'PASS; >64 KiB HMAC body returns 413 before persistence', 'non mesuré'),
+              ('contract-input-boundary', 'php plugin/partikulier-core/tests/automation-input-boundary-contract.php in disposable WP service', 'PASS; body above configured HMAC limit returns 413 before persistence', 'non mesuré'),
               ('load-smoke', 'Synthetic 10 RPS for 30 s against disposable WordPress loopback only', '300/300 unique; achieved >= 9.5 RPS; p95 <= 1000 ms; exactly 300 stored rows', 'non mesuré'),
               ('contract-automation-diagnostic', 'Sanitized automation-domain-contract.php failure diagnostic', 'process exit code; failing test; one redacted error line', 'non mesuré'),
               ('contract-erase', 'php plugin/partikulier-core/tests/lead-erase-security-contract.php in WP service', 'PASS', 'non mesuré'),
@@ -1032,6 +1032,11 @@ jobs:
               docker exec -e PK_WP_DIR=/var/www/html -e PK_BASE=http://127.0.0.1 -e PK_COMMIT="$GITHUB_SHA" -e PK_RUN_ID="$GITHUB_RUN_ID" "$WP_CONTAINER" php "/repo/$path" > "$output" 2> "$err"
               rc=$?
               set -e
+            elif [ "$suite" = 'automation-input-boundary-contract' ]; then
+              set +e
+              docker exec -e PK_WP_ENVIRONMENT_TYPE=production -e PK_WP_DIR=/var/www/html -e PK_COMMIT="$GITHUB_SHA" -e PK_REPO_DIR=/repo -e PK_THEME_DIR=/repo/theme/partikulier -e PK_PLUGIN_DIR=/repo/plugin/partikulier-core -e PK_RUN_ID="$GITHUB_RUN_ID" "$WP_CONTAINER" php "/repo/$path" > "$output" 2> "$err"
+              rc=$?
+              set -e
             elif [ "$suite" = 'se041-xmlrpc-contract' ]; then
               set +e
               docker exec -e PK_WP_DIR=/var/www/html -e PK_BASE=http://127.0.0.1 -e PK_COMMIT="$GITHUB_SHA" -e PK_RUN_ID="$GITHUB_RUN_ID" "$WP_CONTAINER" php "/repo/$path" > "$output" 2> "$err"
@@ -1196,9 +1201,20 @@ jobs:
         shell: bash
         run: python3 "$RUNNER_TEMP/evidence.py" "$RUNNER_TEMP/evidence.json" render "$RUNNER_TEMP/ephemeral-n8n-proof.md"
 
+      - name: Publish evidence in the GitHub run summary
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f "$RUNNER_TEMP/ephemeral-n8n-proof.md" ]; then
+            cat "$RUNNER_TEMP/ephemeral-n8n-proof.md" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo '## Preuve WordPress/n8n éphémère indisponible — le fichier de preuve n’a pas été généré.' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
       - name: Upload markdown evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ephemeral-wordpress-n8n-proof
           path: ${{ runner.temp }}/ephemeral-n8n-proof.md

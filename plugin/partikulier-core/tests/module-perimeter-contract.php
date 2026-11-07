@@ -121,7 +121,7 @@ $apiMatrix = [
     ['DA-004', PaymentService::class, ['PaymentsOrdersTrait', 'PaymentsSubscriptionsTrait'],
         ['orders_table', 'subscriptions_table', 'is_gateway_enabled', 'create_order', 'record_order', 'get_order', 'update_order', 'mark_order_failed', 'mark_order_paid', 'delete_order', 'create_subscription', 'get_subscription', 'update_subscription', 'activate_subscription', 'revoke_subscription', 'delete_subscription']],
     ['DA-005', AutomationService::class, ['AutomationPolicyTrait', 'AutomationHmacTrait'],
-        ['events_table', 'audit_table', 'env_secret', 'env_key_id', 'env_webhook', 'settings', 'get', 'secret_keys', 'maybe_migrate', 'save_admin_settings', 'outgoing_headers', 'check_automation_secret', 'audit_failure', 'receive_event', 'rest_receive_event', 'is_strong_secret', 'is_https_url']],
+        ['events_table', 'audit_table', 'env_secret', 'env_key_id', 'env_webhook', 'settings', 'get', 'secret_keys', 'maybe_migrate', 'save_admin_settings', 'outgoing_headers', 'check_automation_secret', 'audit_failure', 'receive_event', 'rest_receive_event', 'is_strong_secret', 'is_https_url', 'max_hmac_body_bytes']],
     ['DA-006', ListingSynchronizer::class, ['SynchronizerHooksTrait', 'SynchronizerProjectionTrait', 'SynchronizerMaintenanceTrait'],
         ['register', 'onSavePost', 'onTransitionStatus', 'onDeletePost', 'onMetaChange', 'flush', 'project', 'upsertProjected', 'rebuild', 'reconcile', 'stats', 'unscheduleLegacyCron']],
 ];
@@ -152,7 +152,7 @@ $movedMap = [
         'PaymentsSubscriptionsTrait.php' => ['create_subscription', 'get_subscription', 'update_subscription', 'activate_subscription', 'revoke_subscription', 'delete_subscription'],
     ],
     AutomationService::class => [
-        'AutomationPolicyTrait.php' => ['events_table', 'audit_table', 'env_secret', 'env_key_id', 'env_webhook', 'settings', 'get', 'secret_keys', 'maybe_migrate', 'save_admin_settings'],
+        'AutomationPolicyTrait.php' => ['events_table', 'audit_table', 'max_hmac_body_bytes', 'env_secret', 'env_key_id', 'env_webhook', 'settings', 'get', 'secret_keys', 'maybe_migrate', 'save_admin_settings'],
         'AutomationHmacTrait.php' => ['outgoing_headers', 'check_automation_secret', 'audit_failure', 'hmac_key', 'is_strong_secret', 'is_https_url', 'get_normalized_header'],
     ],
     ListingSynchronizer::class => [

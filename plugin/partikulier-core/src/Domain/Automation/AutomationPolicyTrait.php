@@ -42,6 +42,19 @@ trait AutomationPolicyTrait
 	}
 
 
+	/**
+	 * Maximum accepted automation request body. The 1 MiB default leaves
+	 * room for ordinary provider metadata; deployments can tune the filter
+	 * after inspecting their real payloads, within a hard 64 KiB–10 MiB range.
+	 */
+	public static function max_hmac_body_bytes(): int
+	{
+		$configured = apply_filters('partikulier_automation_max_hmac_body_bytes', self::MAX_HMAC_BODY_BYTES);
+		$limit = is_numeric($configured) ? (int) $configured : self::MAX_HMAC_BODY_BYTES;
+		return max(65536, min(10485760, $limit));
+	}
+
+
 	/* ------------------------------------------------------------------ */
 	/* Réglages (port fidèle de Partikulier_N8n_Security)                 */
 	/* ------------------------------------------------------------------ */
