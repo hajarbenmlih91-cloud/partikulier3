@@ -325,6 +325,59 @@ jobs:
           print(f"Analyse produite : {out}; {len(shots)} captures trouvées.")
           PY
 
+      - name: Publier les métriques exactes et le parcours connecté
+        env:
+          SOURCE_DIR: uat-audit-source
+          CONNECTED_DIR: uat-audit-source-connected
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os, pathlib, re
+          roots = [('public', pathlib.Path(os.environ['SOURCE_DIR'])), ('connecté', pathlib.Path(os.environ['CONNECTED_DIR']))]
+          lines = ['## Métriques exactes extraites des artefacts', '', 'LCP/CLS = mesures de laboratoire; INP Lighthouse navigation généralement n/a. Le proxy INP Chromium n’est pas l’INP terrain CrUX/RUM.', '']
+          commands = []
+          def command(level, title, message):
+              esc = lambda s: str(s).replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+              commands.append(f'::{level} title={esc(title)}::{esc(message)}')
+          for label, root in roots:
+              if not root.is_dir():
+                  command('warning', f'Artefact {label}', f'Dossier absent: {root}')
+                  continue
+              for path in sorted(root.rglob('lighthouse-*.json')):
+                  data = json.loads(path.read_text()); audits = data.get('audits', {}); cats = data.get('categories', {})
+                  score = lambda key: round(cats[key]['score'] * 100) if isinstance(cats.get(key, {}).get('score'), (int, float)) else 'n/a'
+                  def metric(*keys):
+                      for key in keys:
+                          value = audits.get(key, {}).get('numericValue')
+                          if isinstance(value, (int, float)):
+                              return round(value, 4) if key == 'cumulative-layout-shift' else round(value)
+                      return 'n/a'
+                  text = f"{path.stem}: Perf/A11y/BP/SEO={score('performance')}/{score('accessibility')}/{score('best-practices')}/{score('seo')}; LCP lab={metric('largest-contentful-paint')} ms; INP Lighthouse={metric('interaction-to-next-paint', 'experimental-interaction-to-next-paint')} ms; CLS lab={metric('cumulative-layout-shift')}; TBT={metric('total-blocking-time')} ms"
+                  lines.append(f'- **{label}** {text}')
+                  command('notice', f'Lighthouse {label}', text)
+              vital_log = next(iter(sorted(root.rglob('interactions-vitals.txt'))), None)
+              if vital_log:
+                  for text in vital_log.read_text(errors='replace').splitlines():
+                      text = text.strip()
+                      if re.search(r'(?:LCP observed|CLS observed|Lab INP sample captured|Lab INP proxy within)', text, re.I):
+                          lines.append(f'- **Chromium {label}** {text}')
+                          command('notice', f'Chromium Web Vitals {label}', text)
+              if label == 'connecté':
+                  owner_log = next(iter(sorted(root.rglob('owner-journey.txt'))), None)
+                  if owner_log:
+                      lines += ['', '### Parcours du compte propriétaire temporaire', '']
+                      for text in owner_log.read_text(errors='replace').splitlines():
+                          text = text.strip()
+                          if re.match(r'^(PASS|FAIL|WARN|SKIPPED)\b', text, re.I):
+                              lines.append(f'- {text}')
+                              command('error' if text.startswith('FAIL') else 'notice', 'Parcours propriétaire connecté', text)
+          content = '\n'.join(lines) + '\n'
+          with open('audit-uat-analysis.md', 'a') as f: f.write('\n' + content)
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as f: f.write('\n' + content)
+          print('\n'.join(commands))
+          print(f"Evidence: {len(commands)} métrique(s)/résultat(s) extraite(s).")
+          PY
+
       - name: Publier l'analyse détaillée
         uses: actions/upload-artifact@v4
         with:
