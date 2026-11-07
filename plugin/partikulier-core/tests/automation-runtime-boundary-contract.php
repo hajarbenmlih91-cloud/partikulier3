@@ -67,10 +67,19 @@ $run = bin2hex(random_bytes(8));
 $eventId = 'n8n-runtime-concurrent-' . $run;
 $settingsBackup = get_option(AutomationService::SETTINGS_OPTION, null);
 $createdPostId = 0;
+$retryPostId = 0;
 $httpCalls = [];
-$mockHttp = static function ($preempt, array $args, string $url) use (&$httpCalls) {
+$retryCallCount = 0;
+$mockHttp = static function ($preempt, array $args, string $url) use (&$httpCalls, &$retryCallCount) {
     $httpCalls[] = ['args' => $args, 'url' => $url];
     if ('https://8.8.8.8/n8n-test-hook' === $url) {
+        return pk_runtime_http_response(204, 'No Content');
+    }
+    if ('https://8.8.8.8/n8n-retry-hook' === $url) {
+        $retryCallCount++;
+        if (1 === $retryCallCount) {
+            return new WP_Error('http_request_failed', 'Synthetic n8n timeout');
+        }
         return pk_runtime_http_response(204, 'No Content');
     }
     // Never let this test make a real network request, even if the HTTP API
@@ -210,6 +219,50 @@ try {
             && get_post_meta($createdPostId, '_pk_n8n_status', true) === 'sent',
             'public HTTPS destination intercepted; unsafe-URL rejection and TLS verification enabled; redirects disabled');
 
+        // Simulate an n8n timeout, then an operator retry with the same request
+        // id. The request body must remain semantically identical and errors
+        // must not persist credentials or the HMAC secret.
+        $settings['n8n_webhook_url'] = 'https://8.8.8.8/n8n-retry-hook';
+        update_option(AutomationService::SETTINGS_OPTION, $settings, false);
+        $retryPostId = wp_insert_post([
+            'post_type' => 'post',
+            'post_status' => 'private',
+            'post_title' => 'Disposable n8n retry boundary test',
+        ], true);
+        if (is_wp_error($retryPostId) || !$retryPostId) {
+            throw new RuntimeException('Could not create disposable retry post');
+        }
+        $retryPostId = (int) $retryPostId;
+        $retryRequestId = 'stable-runtime-retry-' . $run;
+        $callsBeforeRetry = count($httpCalls);
+        $firstAttempt = Partikulier_Listing_Approval::notify_n8n($retryPostId, $credentials, $retryRequestId);
+        $firstFailure = get_post_meta($retryPostId, '_pk_n8n_error', true);
+        $firstAttemptSafe = !$firstAttempt
+            && get_post_meta($retryPostId, '_pk_n8n_status', true) === 'error'
+            && !metadata_exists('post', $retryPostId, '_pk_n8n_sent')
+            && is_string($firstFailure)
+            && false === strpos($firstFailure, (string) $credentials['password'])
+            && false === strpos($firstFailure, $secret);
+        $secondAttempt = Partikulier_Listing_Approval::notify_n8n($retryPostId, $credentials, $retryRequestId);
+        $retryCalls = array_slice($httpCalls, $callsBeforeRetry);
+        $firstPayload = isset($retryCalls[0]['args']['body']) ? json_decode((string) $retryCalls[0]['args']['body'], true) : null;
+        $secondPayload = isset($retryCalls[1]['args']['body']) ? json_decode((string) $retryCalls[1]['args']['body'], true) : null;
+        if (is_array($firstPayload)) {
+            unset($firstPayload['sent_at']);
+        }
+        if (is_array($secondPayload)) {
+            unset($secondPayload['sent_at']);
+        }
+        $retryPayloadStable = is_array($firstPayload) && is_array($secondPayload)
+            && $firstPayload === $secondPayload
+            && ($secondPayload['resend_request_id'] ?? '') === $retryRequestId;
+        $assert('AUTO-OUTBOUND-RETRY', $firstAttemptSafe && $secondAttempt && $retryCallCount === 2
+            && count($retryCalls) === 2 && $retryPayloadStable
+            && get_post_meta($retryPostId, '_pk_n8n_status', true) === 'sent'
+            && metadata_exists('post', $retryPostId, '_pk_n8n_sent')
+            && !metadata_exists('post', $retryPostId, '_pk_n8n_error'),
+            'synthetic timeout records failure without secrets; explicit retry succeeds with same request id and semantic payload');
+
         $privateUrl = 'https://127.0.0.1/private-hook';
         $settings['n8n_webhook_url'] = $privateUrl;
         update_option(AutomationService::SETTINGS_OPTION, $settings, false);
@@ -235,6 +288,9 @@ try {
     remove_filter('pre_http_request', $mockHttp, 10);
     if ($createdPostId > 0) {
         wp_delete_post($createdPostId, true);
+    }
+    if ($retryPostId > 0) {
+        wp_delete_post($retryPostId, true);
     }
     if (null === $settingsBackup) {
         delete_option(AutomationService::SETTINGS_OPTION);
