@@ -56,7 +56,7 @@ jobs:
           N8N_VERSION_NOTIFICATIONS_ENABLED: "false"
           N8N_TEMPLATES_ENABLED: "false"
           N8N_SECURE_COOKIE: "false"
-          N8N_LOG_LEVEL: error
+          N8N_LOG_LEVEL: debug
         ports:
           - 5678:5678
 
@@ -701,10 +701,16 @@ jobs:
                   for value in obj: found.extend(messages(value,under_error))
               return found
           selected=[]
+          context=set()
+          for i,line in enumerate(lines):
+              low=line.lower()
+              if 'system task run failed' in low:
+                  context.update(range(max(0,i-3),min(len(lines),i+5)))
           for i,line in enumerate(lines):
               low=line.lower()
               if 'api.n8n.io' in low or 'telemetry' in low: continue
-              if 'system task run failed' not in low and not re.search(r'\b(error|failed|exception|ECONN|HTTP [45]\d\d|cannot|could not)\b',line,re.I): continue
+              relevant = i in context or re.search(r'\b(error|failed|exception|ECONN|HTTP [45]\d\d|cannot|could not)\b',line,re.I)
+              if not relevant: continue
               candidates=[]
               try:
                   obj=json.loads(line)
@@ -715,7 +721,7 @@ jobs:
                   if 'api.n8n.io' in item.lower() or 'telemetry' in item.lower(): continue
                   safe=clean(item)
                   if safe and safe not in selected: selected.append(safe)
-          print(' | '.join(selected[-3:])[:500] or 'aucune erreur de service n8n hors télémétrie relevée')
+          print(' | '.join(selected[-8:])[:700] or 'aucune erreur de service n8n hors télémétrie relevée')
           PY
           )"
           n8n_diagnostic="import_exit=$n8n_import_rc; $n8n_diagnostic; service=$service_diagnostic"
