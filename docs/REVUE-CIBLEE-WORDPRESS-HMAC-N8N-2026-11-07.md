@@ -141,6 +141,7 @@ Cet addendum est la référence pour l'état courant de la branche `arena/0e605e
 
 ### Risques et limites restant ouverts
 
+- Le gate opérateur détaillé (preuves demandées, séquence, critères GO/NO-GO et demande DP-4 prête à transmettre) est consigné dans [`GO-NO-GO-WORDPRESS-N8N.md`](GO-NO-GO-WORDPRESS-N8N.md). Son état initial reste **NO-GO / BLOCKED** : la création du runbook ne constitue pas une vérification hébergée.
 - La vraie valeur `WP_ENVIRONMENT_TYPE`, le mode/secrets et les rotations des sites hébergés restent inconnus; la garde runtime et le gate de déploiement préviennent désormais le cas production mal configuré quand ils s'exécutent. Le gate n'a pas été joué contre l'hébergement.
 - Workflows n8n hébergés, tailles réelles de payload, permissions DB, journaux, reverse proxy, limites HTTP/proxy et IP `REMOTE_ADDR` restent à vérifier. Les limiteurs applicatifs sur secrets partagés/signatures invalides ne sont pas un WAF et ne remplacent pas un quota/rate-limit au proxy.
 - Les 20 références externes d'actions sont pinées par SHA et les runners fixés à Ubuntu 24.04; aucun audit exhaustif de provenance/transitivité ni scan Gitleaks/Trivy/`actionlint` n'a été exécuté dans ce checkout.

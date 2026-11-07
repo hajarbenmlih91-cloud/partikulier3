@@ -88,6 +88,8 @@ Ne jamais committer de secrets. Les secrets d’automatisation doivent être inj
 
 **Critère de décision.** IP réelle restaurée et non usurpable → conserver `REMOTE_ADDR` et le documenter. IP de proxy commune → correction côté hébergeur en priorité, sinon résolveur commun avec chaîne de confiance documentée. Identité usurpable ou chaîne inconnue → ne pas valider la protection « quota par visiteur ».
 
+Le protocole opérateur, la demande prête à transmettre à Hostinger et le gate de mise en production sont documentés dans [`GO-NO-GO-WORDPRESS-N8N.md`](GO-NO-GO-WORDPRESS-N8N.md). Tant que DP-4 n'est pas prouvé, ne pas modifier le parseur d'IP et ne pas déclarer le quota par visiteur validé.
+
 **Périmètre applicatif concerné à l’identique :** `RateLimiter.php`, `LeadsEraseGuardTrait.php`, `class-security.php`.
 
 ### Playbook production (E-4102)
