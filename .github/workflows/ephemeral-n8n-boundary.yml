@@ -156,6 +156,7 @@ jobs:
         run: |
           set -euo pipefail
           FAIL=0
+          n8n_diagnostic_recorded=0
           WP_BASE='http://127.0.0.1:8080'
           N8N_BASE='http://127.0.0.1:5678'
           WP_CONTAINER_IP="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$WP_CONTAINER")"
@@ -592,6 +593,24 @@ jobs:
             cp "$RUNNER_TEMP/n8n-import.log" "$RUNNER_TEMP/n8n-execution.stderr"
             n8n_rc=$n8n_import_rc
           fi
+          if [ "$n8n_rc" -ne 0 ]; then
+            rest_detail="$(python3 - "$RUNNER_TEMP/n8n-execution.stderr" "$n8n_import_rc" <<'PY'
+          import pathlib, re, sys
+          path=pathlib.Path(sys.argv[1])
+          if sys.argv[2] != '0': detail=f'n8n workflow import failed (exit {sys.argv[2]}); raw output suppressed'
+          else:
+              lines=path.read_text(errors='replace').splitlines() if path.exists() else []
+              detail=lines[-1] if lines else 'n8n REST manual execution returned non-zero without a diagnostic'
+              detail=re.sub(r'(?s)\s*\{.*\}', ' [structured data redacted]', detail)
+              detail=re.sub(r'(?i)(password|secret|token|authorization)\s*[:=]\s*[^\s,;]+',r'\1=[redacted]',detail)
+              detail=re.sub(r'(?i)(event_id|ci_probe|whatsapp_status)\s*[:=]\s*[^,;\s}]+',r'\1=[redacted]',detail)
+              detail=' '.join(detail.split())[:200]
+          print(detail)
+          PY
+            )"
+            record n8n-diagnostic 'n8n REST manual execution start and poll' 'N/A' 'exit code and one safe failure detail' "import_exit=$n8n_import_rc; execution_exit=$n8n_rc; $rest_detail"
+            n8n_diagnostic_recorded=1
+          fi
 
           # Manual n8n execution data can contain the transient signed request. Parse privately and emit only HTTP codes/booleans.
           set +e
@@ -842,7 +861,9 @@ jobs:
           PY
           )"
           n8n_diagnostic="import_exit=$n8n_import_rc; $n8n_diagnostic; service=$service_diagnostic"
-          record n8n-diagnostic 'Parse private n8n REST/manual execution and service output; redact secrets/request data' 'N/A' 'import/manual-run exit codes; failed node; one safe execution and service error summary' "$n8n_diagnostic"
+          if [ "$n8n_diagnostic_recorded" -eq 0 ]; then
+            record n8n-diagnostic 'Parse private n8n REST/manual execution and service output; redact secrets/request data' 'N/A' 'import/manual-run exit codes; failed node; one safe execution and service error summary' "$n8n_diagnostic"
+          fi
           fi
 
           EVENT_ID="$(cat "$RUNNER_TEMP/ci-n8n-event-id")"
