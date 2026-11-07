@@ -76,7 +76,7 @@ final class AutomationService
 	 */
 	public static function receive_event( \WP_REST_Request $request )
 	{
-		if ( strlen($request->get_body()) > self::MAX_HMAC_BODY_BYTES ) {
+		if ( strlen((string) $request->get_body()) > self::MAX_HMAC_BODY_BYTES ) {
 			return new \WP_Error('pk_automation_body_too_large', __('Événement d’automatisation trop volumineux.', 'partikulier'), ['status' => 413]);
 		}
 
