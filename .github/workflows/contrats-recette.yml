@@ -477,7 +477,11 @@ jobs:
           report_error() {
             status=$?
             echo "Diagnostic merge-browser (exit $status):"
-            if [[ -f /tmp/merge-browser.stderr.log ]]; then tail -n 60 /tmp/merge-browser.stderr.log; fi
+            if [[ -f /tmp/merge-browser.stderr.log ]]; then
+              tail -n 60 /tmp/merge-browser.stderr.log
+              detail=$(tail -n 30 /tmp/merge-browser.stderr.log | tr '\n' ' ' | cut -c 1-500)
+              echo "::error title=Browser merge diagnostic::$detail"
+            fi
             if [[ -f /tmp/wp-merge-browser.log ]]; then echo 'Serveur PHP:'; tail -n 20 /tmp/wp-merge-browser.log; fi
             exit "$status"
           }
