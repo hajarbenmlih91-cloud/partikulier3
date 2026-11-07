@@ -502,12 +502,12 @@ jobs:
           docker exec -u 0:0 "$N8N_CONTAINER" chown node:node /tmp/ci-n8n-workflow.json && docker exec -u 0:0 "$N8N_CONTAINER" chmod 600 /tmp/ci-n8n-workflow.json
           WORKFLOW_ID="$(cat "$RUNNER_TEMP/ci-n8n-workflow-id")"
           set +e
-          docker exec -e N8N_DISABLED_MODULES=mcp-registry "$N8N_CONTAINER" n8n import:workflow --input=/tmp/ci-n8n-workflow.json > "$RUNNER_TEMP/n8n-import.log" 2>&1
+          docker exec -e N8N_DISABLED_MODULES=mcp-registry -e N8N_LOG_LEVEL=debug "$N8N_CONTAINER" n8n import:workflow --input=/tmp/ci-n8n-workflow.json > "$RUNNER_TEMP/n8n-import.log" 2>&1
           n8n_import_rc=$?
           set -e
           if [ "$n8n_import_rc" -eq 0 ]; then
             set +e
-            docker exec -e N8N_DISABLED_MODULES=mcp-registry "$N8N_CONTAINER" n8n execute --id="$WORKFLOW_ID" --rawOutput > "$RUNNER_TEMP/n8n-execution.stdout" 2> "$RUNNER_TEMP/n8n-execution.stderr"
+            docker exec -e N8N_DISABLED_MODULES=mcp-registry -e N8N_LOG_LEVEL=debug "$N8N_CONTAINER" n8n execute --id="$WORKFLOW_ID" --rawOutput > "$RUNNER_TEMP/n8n-execution.stdout" 2> "$RUNNER_TEMP/n8n-execution.stderr"
             n8n_rc=$?
             set -e
           else
