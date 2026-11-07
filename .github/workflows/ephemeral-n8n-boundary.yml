@@ -640,6 +640,18 @@ jobs:
           structured_named = [item for item in structured if item[0]]
           choices = structured_named or named_lines or structured or generic_lines
           node_name, error_line = choices[-1] if choices else ('', '')
+          if not error_line and exit_code != '0':
+              safe_lines = []
+              for line in stderr.splitlines():
+                  lowered = line.lower()
+                  if any(x in lowered for x in ('api.n8n.io', 'telemetry', 'diagnostic', 'an error occurred while importing workflows')): continue
+                  cleaned = clean(line)
+                  if cleaned and cleaned != '[request data redacted]': safe_lines.append(cleaned)
+              if not safe_lines:
+                  for line in stdout.splitlines():
+                      cleaned = clean(line)
+                      if cleaned and cleaned != '[request data redacted]': safe_lines.append(cleaned)
+              error_line = ' | '.join(safe_lines[-3:])
           node_name = clean(node_name) or 'non mesuré'
           error_line = clean(error_line) or 'non mesuré — aucune erreur de nœud dans la sortie CLI'
           print(f'exit={exit_code}; node={node_name}; error={error_line}')
