@@ -214,7 +214,7 @@ try {
     const wildcardGroup = body.split(/(?=^User-agent:)/im).find(group => /^User-agent:\s*\*/im.test(group)) || '';
     const wildcardBlocks = /^Disallow:\s*\/\s*$/im.test(wildcardGroup);
     record('seo', 'UAT robots.txt blocks all crawlers', response.status() === 200 && wildcardBlocks,
-      `HTTP ${response.status()}; ${body.trim().replaceAll('\n', ' | ')}`);
+      `HTTP ${response.status()}; ${body.trim().replaceAll('\n', ' | ')}`, 'warning');
     const sitemap = await robotsResponse.request.get(`${BASE}/sitemap.xml`, { timeout: 30000 });
     const xml = await sitemap.text();
     record('seo', 'Custom sitemap.xml is valid XML response', sitemap.status() === 200 && /<\?xml|<urlset|<sitemapindex/i.test(xml),
