@@ -163,8 +163,8 @@ trait AutomationHmacTrait
 			/* E-4901 (F-T15-1, lot sécurité 2.10.7) : l'échec est journalisé
 			 * en enforce comme en log — un forçage de la garde ne doit plus
 			 * être invisible en production. En plus du compteur d'audit horaire,
-			 * le limiteur d'échecs HMAC renvoie HTTP 429 après 20 signatures
-			 * invalides ou de secret partagé par IP et par minute; cette limite n'est pas un WAF.
+			 * le limiteur renvoie HTTP 429 après 20 échecs par catégorie, IP
+			 * et minute; cette limite n'est pas un WAF.
 			 * SE-022 (E-2201) : une seule écriture d'audit par cycle de
 			 * requête — la ré-exécution Allow-header ne double pas le
 			 * compteur d'échecs HMAC (même classe de défaut que la garde
