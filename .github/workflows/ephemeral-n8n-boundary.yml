@@ -594,12 +594,12 @@ jobs:
           def clean(value):
               text = str(value or '')
               for token in sorted((t for t in tokens if t), key=len, reverse=True): text = text.replace(token, '[redacted]')
-              if any(marker in text.lower() for marker in ('event_id', 'payload', 'whatsapp_status', 'ci_probe')) or ('{' in text and '}' in text): text = '[request data redacted]'
               text = re.sub(r'(?i)(x-partikulier-(?:automation|signature|timestamp|key-id)\s*[:=]\s*)[^\s,;]+', r'\1[redacted]', text)
               text = re.sub(r'(?i)(authorization\s*[:=]\s*bearer\s+)[^\s,;]+', r'\1[redacted]', text)
               text = re.sub(r'(?i)sha256=[a-f0-9]{64}', 'sha256=[redacted]', text)
+              text = re.sub(r"""(?i)(event_id|ci_probe|whatsapp_status)\s*[:=]\s*(?:"[^"]*"|'[^']*'|[^,;\s}]+)""", r'\1=[redacted]', text)
               text = re.sub(r'(?is)\b(?:request body|body|payload|corps de requête|corps)\b\s*[:=].*', '[request data redacted]', text)
-              text = re.sub(r'(?is)\{[^{}]*(?:event_id|payload|x-partikulier)[^{}]*\}', '[request data redacted]', text)
+              text = re.sub(r'(?s)\s*\{.*\}', ' [structured request data redacted]', text)
               text = re.sub(r'\b[A-Za-z0-9+/=_-]{40,}\b', '[redacted-token]', text)
               text = re.sub(r'(?<!\w)\+?\d[\d ()-]{7,}\d(?!\w)', '[number redacted]', text)
               return ' '.join(text.split())[:240]
