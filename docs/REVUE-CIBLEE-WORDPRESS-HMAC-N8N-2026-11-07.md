@@ -8,7 +8,7 @@
 |---|---|---|
 | WordPress REST | `plugin/partikulier-core/src/RestController.php`, `src/Rest/RouteRegistry.php` | Registre des routes `partikulier/v1`, permissions par route, contrôles d'accès et limites de débit. Contrats de collisions/routes et suites WordPress exécutés. |
 | Automatisation entrante | `src/Domain/Automation/AutomationService.php`, `AutomationHmacTrait.php`, `AutomationPolicyTrait.php` | Secret partagé, signature HMAC, horodatage de 300 s, rotation active/précédente, audit et réception idempotente. |
-| Leads / qualification / effacement | `src/Domain/Leads/LeadsContactTrait.php`, `LeadsEraseGuardTrait.php`, `LeadsRestTrait.php` | Qualification, garde dédiée d'effacement, limites et chemins d'effacement. Un défaut de validation de la réponse de qualification a été corrigé dans ce cycle. |
+| Leads / qualification / effacement | `src/Domain/Leads/LeadsContactAuthorizationTrait.php`, `LeadsContactTrait.php`, `LeadsQualificationTrait.php`, `LeadsIdempotencyTrait.php`, `LeadsEraseGuardTrait.php`, `LeadsRestTrait.php` | Qualification, garde dédiée d'effacement, limites et chemins d'effacement. Un défaut de validation de la réponse de qualification a été corrigé dans ce cycle. |
 | Stockage et audit | `src/Database/SchemaStatementsTrait.php`, `src/AuditLogger.php` | `pk_automation_events` possède une contrainte unique sur `event_id`; l'empreinte du payload est persistée, pas le payload brut. Les échecs HMAC sont agrégés dans `pk_n8n_hmac_audit`. |
 | Thème et sorties HTTP | `theme/partikulier/inc/class-automation-bridge.php`, `class-n8n-security.php`, `class-listing-approval.php`, `class-security.php` | Le thème délègue les règles n8n au plugin; le webhook sortant est testé avec transport simulé, TLS et redirections contrôlées. La clé par défaut de la passerelle d'administration a été supprimée. |
 | n8n et validation jetable | `.github/workflows/ephemeral-n8n-boundary.yml` | WordPress, MariaDB et n8n éphémères; rejouabilité/idempotence, erreurs simulées et limites de sortie testées sans appel à un webhook réel. |
@@ -22,7 +22,7 @@
 
 **Impact :** erreur de classification et décision métier erronée si une réponse n8n est malformée. La route exige néanmoins l'authentification HMAC ou un administrateur.
 
-**Correction :** parsing fermé aux booléens et valeurs explicitement permises; `wa_id` non scalaire et réponse `is_particulier` absente/invalide sont refusés avant toute mutation. Le handler exige maintenant aussi un `provider_message_id` stable et journalise la consommation du message dans la transaction de mutation. Voir `plugin/partikulier-core/src/Domain/Leads/LeadsContactTrait.php`.
+**Correction :** parsing fermé aux booléens et valeurs explicitement permises; `wa_id` non scalaire et réponse `is_particulier` absente/invalide sont refusés avant toute mutation. Le handler exige maintenant aussi un `provider_message_id` stable et journalise la consommation du message dans la transaction de mutation. Voir `plugin/partikulier-core/src/Domain/Leads/LeadsQualificationTrait.php`; la garde de consommation atomique se trouve dans `LeadsIdempotencyTrait.php`.
 
 **Tests historiques :** `AUTO-QUALIFICATION-INVALID-INPUT` dans le run éphémère `42404865108` vérifiait l'absence, la valeur inconnue, le tableau et l'entier hors domaine; les quatre renvoyaient HTTP 400 et n'écrivaient aucun lead. Les nouveaux contrats de rejeu après ce rapport sont listés dans le suivi ci-dessous.
 
@@ -45,7 +45,7 @@
 
 **Correction dépôt :** pour un secret WordPress, l'écran admin active une nouvelle clé avec un Key ID aléatoire, conserve l'ancienne comme clé précédente pendant 24 heures et refuse une seconde rotation pendant le chevauchement. Le même secret saisi ne provoque pas de changement de Key ID. Pour un secret d'environnement, l'écran propose une préparation explicite : snapshot de la clé courante sous son Key ID, échéance 24 h et génération d'un prochain Key ID; l'opérateur bascule ensuite `PARTIKULIER_N8N_SECRET` et `PARTIKULIER_N8N_KEY_ID` dans l'hébergement. Les clés ne sont jamais réaffichées.
 
-**Tests ajoutés :** contrat runtime jetable prévu pour vérifier rotation DB (ancienne + nouvelle clé acceptées, durée, second démarrage refusé, même secret sans rotation) et scénario de préparation/basculement d'une clé d'environnement. Résultats CI à consigner après exécution.
+**Tests ajoutés :** contrats runtime jetables vérifient la rotation DB (ancienne + nouvelle clé acceptées, durée, second démarrage refusé, même secret sans rotation) et la préparation/basculement d'une clé d'environnement. Le run `42410958329` a passé l'étape `Run versioned PHP runtime contracts in disposable WordPress`; son job complet a toutefois échoué à l'étape initiale d'installation WordPress/n8n, donc le run n'est pas globalement vert.
 
 **Limite :** aucune valeur de secret, procédure opérateur, permission d'hébergement, rotation effective ou réussite UAT n'a été vérifiée. Voir `theme/partikulier/docs/n8n-key-rotation.md`; ne pas lancer cette procédure en production sans coordination des deux sens n8n/WordPress.
 
@@ -77,7 +77,15 @@ Le code protège les effets mutatifs par IDs métier spécifiques plutôt que pa
 - Timeout n8n simulé puis retry : erreur enregistrée sans secret, reprise avec le même identifiant et payload sémantique stable.
 - Destination loopback rejetée; aucun webhook externe réellement appelé.
 - Entrées de qualification malformées refusées après le correctif.
-- Import et replay du workflow n8n de test réussis. Le runner interne n8n a averti que Python 3 était absent; les chemins dépendant d'un runner Python natif ne sont donc pas couverts par ce succès.
+- Le run historique `42410660188` (avant le découpage modulaire) a passé l'import/replay n8n de test. Son runner interne a averti que Python 3 était absent; les chemins dépendant d'un runner Python natif ne sont donc pas couverts. Sur `42410958329`, le contrat runtime PHP WordPress a passé, mais la séquence n8n n'a pas achevé son initialisation.
+
+### Résultats récents et correction DA-002
+
+- Le premier essai `42410660277` avait échoué sur DA-002 : `LeadsContactTrait.php` comptait 524 lignes, au-delà du plafond d'exception 450 alors configuré.
+- Le découpage conserve les méthodes et leur composition dans `LeadService`, mais sépare désormais l'autorisation (`LeadsContactAuthorizationTrait`), le transport lead (`LeadsContactTrait`), la qualification (`LeadsQualificationTrait`) et les helpers de rejeu (`LeadsIdempotencyTrait`). Le contrat DA-002 a été resserré : **chaque module listé doit maintenant être ≤300 lignes**, sans exception. Comptages locaux : 161, 231, 118 et 61 lignes respectivement; `LeadsRestTrait.php` en fait 264.
+- CI `42410946794` : **réussie**, lint/package et contrats statiques sur PHP 8.1, 8.2, 8.3.
+- Recette `42410958277` puis `42411132245` : **échec pendant « Installer WordPress et les livrables »**, avant les suites dynamiques; le contrat DA-002 n'a donc pas été réexécuté dans ces runs. Les logs détaillés n'ont pas pu être récupérés (`gh run view --log-failed` reçoit EOF). Le correctif structurel est prêt, mais la recette complète et l'oracle 456/456 restent **non validés** après ce découpage.
+- Run jetable `42410958329` : l'étape de contrats runtime PHP WordPress a réussi et le lint PHP a réussi; le job global a échoué à l'initialisation WordPress/n8n, donc ce run n'est pas compté comme PASS global.
 
 ### Résultats CI historiques sur le commit `219bae3`
 
@@ -95,7 +103,7 @@ Le code protège les effets mutatifs par IDs métier spécifiques plutôt que pa
 
 ## État de sortie
 
-- **Réussi :** les contrats cités ci-dessus, y compris la vérification ciblée du nouveau correctif.
-- **Échoué historiquement :** charge à 100 req/s et constats UAT consignés ci-dessus; aucun nouvel échec produit par cette reprise.
-- **Non testé :** déploiement/staging, charge nouvelle, vérification d'hébergement et rotation opérationnelle des secrets.
-- **Conclusion :** revue de code ciblée et améliorations de sécurité livrées; pas de certification de production ni d'audit formel.
+- **Réussi :** CI `42410946794`; étape runtime PHP de `42410958329`; syntaxe PHP via parser local et hygiène/lints Shell, JavaScript, JSON. Les runs complets antérieurs cités sont antérieurs au dernier découpage.
+- **Échoué / incomplet :** la recette `42410660277` a exposé le dépassement DA-002, corrigé structurellement; les deux relances `42410958277` et `42411132245` n'ont pas atteint les tests car l'installation des livrables échouait. L'oracle 456/456 n'a pas été rejoué après ce changement. Le job global `42410958329` est également en échec, malgré son étape de contrats runtime PHP réussie.
+- **Non testé :** exécution finale du contrat de périmètre DA-002 et recette complète après découpage, déploiement/staging, charge nouvelle, vérification d'hébergement et rotation opérationnelle des secrets.
+- **Conclusion :** le dépassement modulaire a été réduit sous la nouvelle limite stricte dans le dépôt; l'exécution dynamique DA-002 et la recette complète restent à confirmer en raison d'échecs au setup WordPress. Les améliorations de sécurité sont livrées sur la branche, sans certification de production ni audit formel.

@@ -50,6 +50,7 @@ final class LeadService
 	 * méthodes déplacées VERBATIM dans des traits composés par la
 	 * présente classe shell — API publique, hooks et constants inchangés. */
 	use LeadsContactTrait;
+	use LeadsContactAuthorizationTrait;
 	use LeadsQualificationTrait;
 	use LeadsIdempotencyTrait;
 	use LeadsRestTrait;
