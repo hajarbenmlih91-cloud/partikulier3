@@ -712,7 +712,8 @@ jobs:
           for i,line in enumerate(lines):
               low=line.lower()
               if 'api.n8n.io' in low or 'telemetry' in low: continue
-              relevant = i in context or re.search(r'\b(error|failed|exception|ECONN|HTTP [45]\d\d|cannot|could not)\b',line,re.I)
+              relevant = bool(re.search(r'\b(error|warn|failed|exception|ECONN|HTTP [45]\d\d|cannot|could not|task runner|system task)\b',line,re.I))
+              if i in context and re.match(r'\s*at\s',line,re.I): relevant=True
               if not relevant: continue
               candidates=[]
               try:
@@ -724,7 +725,7 @@ jobs:
                   if 'api.n8n.io' in item.lower() or 'telemetry' in item.lower(): continue
                   safe=clean(item)
                   if safe and safe not in selected: selected.append(safe)
-          print(' | '.join(selected[-8:])[:700] or 'aucune erreur de service n8n hors télémétrie relevée')
+          print(' | '.join(selected[-10:])[:1200] or 'aucune erreur de service n8n hors télémétrie relevée')
           PY
           )"
           n8n_diagnostic="import_exit=$n8n_import_rc; $n8n_diagnostic; service=$service_diagnostic"
