@@ -101,7 +101,7 @@ try {
 
   // P3 — only the one run-marked fixture owned by this account.
   await visit(LISTING_URL);
-  const contactLinks = page.locator('#pk-contact-card a[href^="https://wa.me/"], #pk-contact-card a[href^="tel:"]');
+  const contactLinks = page.locator('#pk-contact-card > .pk-buyer-contact-flow a[href^="https://wa.me/"], #pk-contact-card > .pk-buyer-contact-flow a[href^="tel:"]');
   const beforeContact = await contactLinks.count();
   await visit(`${BASE}/fr/mes-annonces/`);
   const deactivate = page.locator(`.pk-manage-btn[data-post-id="${LISTING_ID}"][data-action="deactivate"]`);
@@ -117,7 +117,7 @@ try {
     }, LISTING_ID, { timeout: 15000 }).catch(() => {});
     const deactivated = await ownRow.locator('.pk-manage-btn[data-action="reactivate"]').count() > 0;
     const publicResponse = await visit(LISTING_URL);
-    const publicContact = await page.locator('#pk-contact-card a[href^="https://wa.me/"], #pk-contact-card a[href^="tel:"]').count();
+    const publicContact = await page.locator('#pk-contact-card > .pk-buyer-contact-flow a[href^="https://wa.me/"], #pk-contact-card > .pk-buyer-contact-flow a[href^="tel:"]').count();
     record(3, 'Désactiver uniquement l’annonce du compte de test', deactivated, `id=${LISTING_ID}; status bouton réactiver=${deactivated}`);
     const contactProvenCut = beforeContact > 0 && publicContact === 0;
     record(3, 'Contact public absent après désactivation', publicResponse.response?.status() === 200 && publicContact === 0,
@@ -230,9 +230,10 @@ try {
     }
   }
   const waLabelsOk = waReport.every(x => x.links.some(l => l.text.includes(x.expectedLabel)));
+  const waTextSummary = waReport.map(x => `${x.locale}: ${x.links.map(l => l.text).join(' | ')}`).join('; ');
   record(9, 'Parcours visiteur, favoris réversibles et boutons WhatsApp FR/EN/AR',
     archive.response?.status() === 200 && favoriteRoundTrip && waLabelsOk,
-    `archive HTTP=${archive.response?.status()}; favori aller-retour=${favoriteRoundTrip}; libellés WhatsApp localisés=${waLabelsOk}; liens=${waReport.map(x => `${x.locale}:${x.links.length}`).join(', ')}; numéro 212640424412 présent=${numberPresent}`);
+    `archive HTTP=${archive.response?.status()}; favori aller-retour=${favoriteRoundTrip}; libellés localisés=${waLabelsOk}; ${waTextSummary}; numéro 212640424412 présent=${numberPresent}`);
   record(9, 'Changement de langue sans rechargement complet', noFullReload,
     `URL initiale=${originalUrl}; même URL après sélection=${noFullReload}`, noFullReload ? 'PASS' : 'NOTE');
   if (!numberPresent) record(9, 'Numéro WhatsApp non déployé sur le tag UAT', true, '212640424412 absent; la PR dédiée n’est pas sur le tag déployé.', 'NOTE');
