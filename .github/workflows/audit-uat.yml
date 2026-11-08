@@ -547,7 +547,9 @@ jobs:
           result="$(ssh -F "$HOME/.ssh/config" partikulier-uat 'bash -s' -- "$WP_PATH" "${{ steps.fixture_vars.outputs.fixture_remote }}" "${{ steps.fixture_vars.outputs.env_remote }}" <<'REMOTE'
           set -euo pipefail
           wp_path="$1"; fixture="$2"; env_file="$3"
+          set -a
           source "$env_file"
+          set +a
           cd "$wp_path"
           PK_PROMPT_MODE=seed wp eval-file "$fixture"
           REMOTE
@@ -579,7 +581,9 @@ jobs:
           ssh -F "$HOME/.ssh/config" partikulier-uat 'bash -s' -- "$WP_PATH" "${{ steps.fixture_vars.outputs.fixture_remote }}" "${{ steps.fixture_vars.outputs.env_remote }}" "${{ steps.seed.outputs.listing_id }}" <<'REMOTE'
           set -euo pipefail
           wp_path="$1"; fixture="$2"; env_file="$3"; listing_id="${4:-}"
+          set -a
           source "$env_file"
+          set +a
           trap 'rm -f "$fixture" "$env_file"' EXIT
           cd "$wp_path"
           PK_PROMPT_LISTING_ID="$listing_id" PK_PROMPT_MODE=cleanup wp eval-file "$fixture" cleanup
