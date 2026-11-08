@@ -43,7 +43,11 @@ try {
       });
 
       for (const route of ROUTES) {
-        const url = `${BASE}/${locale}${route}`.replace(/\/{2,}/g, '/').replace('https:/', 'https://');
+        const url = (() => {
+          const fresh = new URL(`${BASE}/${locale}${route}`.replace(/\/{2,}/g, '/').replace('https:/', 'https://'));
+          fresh.searchParams.set('pk_audit', '211');
+          return fresh.href;
+        })();
         let response;
         try {
           response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });

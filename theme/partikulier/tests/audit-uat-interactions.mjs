@@ -71,7 +71,11 @@ async function visit(label, locale, route, width, height, screenshotName) {
       failedRequests.push(`${label}: ${request.method()} ${request.url()} — ${request.failure()?.errorText || 'failed'}`);
     }
   });
-  const url = `${BASE}/${locale}${route}`.replace(/\/{2,}/g, '/').replace('https:/', 'https://');
+  const url = (() => {
+    const fresh = new URL(`${BASE}/${locale}${route}`.replace(/\/{2,}/g, '/').replace('https:/', 'https://'));
+    fresh.searchParams.set('pk_audit', '211');
+    return fresh.href;
+  })();
   const response = await page.goto(url, { waitUntil: 'load', timeout: 30000 });
   const consentBar = page.locator('[data-pk-cookie]');
   const declineMeasurement = consentBar.locator('[data-no]');
