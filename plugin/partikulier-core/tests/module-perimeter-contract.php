@@ -24,8 +24,9 @@
  *    double et que le trait la fournit) ;
  *  - DA-008 : ordre de chargement — les require_once des traits précèdent
  *    ceux des classes shells dans le bootstrap ;
- *  - DA-009 : baseline thème GELÉE, actualisée au lot F — exactement les 13
- *    fichiers préexistants énumérés (aucun nouveau) : l'extinction des 8
+ *  - DA-009 : baseline thème GELÉE, actualisée au lot F — exactement les 19
+ *    fichiers préexistants énumérés (aucun nouveau; 4 oublis de baseline
+ *    historique ajoutés lors de la revue 2026-11) : l'extinction des 8
  *    vestiges (17 CREATE TABLE) fait repasser class-buyer-qualification.php
  *    (619 → 167 l.) et class-n8n-security.php (421 → 154 l.) sous le seuil
  *    de 400 lignes ; exclusions documentées : pk-diagnostic.php (outil de
@@ -203,15 +204,20 @@ $assert('DA-008', $orderErrors === [],
     $orderErrors === [] ? 'bootstrap : les 12 require_once de traits précèdent leurs 4 classes shells' : 'ordre incorrect : ' . implode(' ; ', $orderErrors));
 
 /* DA-009 — baseline gelée, actualisée pour le module démo explicite en 6.20.9 :
-exactement 15 fichiers ; les huit domaines métier restent propriété du plugin. */
+exactement 19 fichiers, après réintégration de quatre fichiers historiques omis ;
+les huit domaines métier restent propriété du plugin. */
 $themeRoot = (string) get_template_directory();
 $frozenBaseline = [
+    'inc/class-amenities.php',
+    'inc/class-customization.php',
     'inc/class-demo-installer.php',
     'inc/class-listing-transitions.php',
     'inc/class-listing-approval.php',
     'inc/class-form.php',
     'inc/class-page-doctor.php',
+    'inc/class-price-index.php',
     'inc/class-search-filters.php',
+    'inc/class-sitemap.php',
     'inc/class-jsonld.php',
     'inc/class-listing-urls.php',
     'inc/class-upgrade-wizard.php',
