@@ -112,7 +112,7 @@ jobs:
             *) echo 'État initial inattendu ou clé déjà présente; arrêt sans rotation.' >&2; exit 3 ;;
           esac
           set +e
-          php - "$wp_path/wp-config.php" "$key_id" "$secret_file" "$backup" <<'PHP'
+          cat > "$HOME/.pk-uat-init.php" << 'PHP'
           <?php
           $configPath = $argv[1];
           $keyId = $argv[2];
@@ -175,7 +175,9 @@ jobs:
           }
           echo "INIT_PATH=constant\n";
           PHP
+          php "$HOME/.pk-uat-init.php" "$wp_path/wp-config.php" "$key_id" "$secret_file" "$backup"
           php_status=$?
+          rm -f "$HOME/.pk-uat-init.php"
           set -e
           if [ "$php_status" -eq 0 ]; then
             :
