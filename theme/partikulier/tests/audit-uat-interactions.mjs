@@ -155,6 +155,15 @@ try {
   if (!navCount) {
     record('interaction', 'Mobile navigation toggle exists', false, 'No .pk-nav-toggle on the mobile home page');
   } else {
+    const cookieNo = homeFr.page.locator('[data-pk-cookie] [data-no]');
+    if (await cookieNo.isVisible().catch(() => false)) {
+      await cookieNo.click({ timeout: 8000 }).catch(() => {});
+    }
+    const languageGate = homeFr.page.locator('[data-pk-lang-gate]');
+    if (await languageGate.isVisible().catch(() => false)) {
+      await languageGate.locator('[data-pk-lang-dismiss]').click({ timeout: 8000 });
+      await languageGate.waitFor({ state: 'hidden', timeout: 8000 });
+    }
     await navToggle.click();
     const menuOpen = await homeFr.page.evaluate(() => ({
       expanded: document.querySelector('.pk-nav-toggle')?.getAttribute('aria-expanded'),
