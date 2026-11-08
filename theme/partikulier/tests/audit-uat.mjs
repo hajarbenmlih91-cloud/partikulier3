@@ -45,7 +45,7 @@ try {
       for (const route of ROUTES) {
         const url = (() => {
           const fresh = new URL(`${BASE}/${locale}${route}`.replace(/\/{2,}/g, '/').replace('https:/', 'https://'));
-          fresh.searchParams.set('pk_audit', '211');
+          fresh.searchParams.set('pk_audit', '212');
           return fresh.href;
         })();
         let response;
@@ -63,16 +63,25 @@ try {
           const canonical = document.querySelector('link[rel="canonical"]')?.href || '';
           const h1 = [...document.querySelectorAll('h1')].map(node => node.innerText.trim()).filter(Boolean);
           const inputs = [...document.querySelectorAll('input:not([type="hidden"]), select, textarea')];
+          const outOfReach = node => {
+            for (let current = node; current && current.nodeType === 1; current = current.parentElement) {
+              if (current.hasAttribute('hidden') || current.getAttribute('aria-hidden') === 'true') return true;
+              const style = getComputedStyle(current);
+              if (style.display === 'none' || style.visibility === 'hidden') return true;
+            }
+            return false;
+          };
           const unlabeled = inputs.filter(input => {
+            if (outOfReach(input)) return false;
             if (input.getAttribute('aria-label') || input.getAttribute('aria-labelledby')) return false;
             if (input.id && document.querySelector(`label[for="${CSS.escape(input.id)}"]`)) return false;
             return !input.closest('label');
           }).length;
           const unnamedLinks = [...document.querySelectorAll('a[href]')].filter(node =>
-            !node.getAttribute('aria-label') && !node.innerText.trim() && !node.querySelector('img[alt], svg[aria-label], svg[title]')
+            !outOfReach(node) && !node.getAttribute('aria-label') && !node.innerText.trim() && !node.querySelector('img[alt], svg[aria-label], svg[title]')
           ).length;
           const unnamedButtons = [...document.querySelectorAll('button')].filter(node =>
-            !node.getAttribute('aria-label') && !node.innerText.trim() && !node.querySelector('svg[aria-label], svg[title]')
+            !outOfReach(node) && !node.getAttribute('aria-label') && !node.innerText.trim() && !node.querySelector('svg[aria-label], svg[title]')
           ).length;
           const missingAlt = [...document.querySelectorAll('img')].filter(node => !node.hasAttribute('alt')).length;
           const cards = [...document.querySelectorAll('.pk-card')].map(card => ({
@@ -115,8 +124,9 @@ try {
         record('responsive', `${locale} ${route} ${width}px no horizontal overflow`, state.scrollWidth <= state.clientWidth + 1, `scrollWidth=${state.scrollWidth}, clientWidth=${state.clientWidth}`);
         record('i18n', `${locale} ${route} document language`, state.htmlLang.toLowerCase().startsWith(locale), `lang=${state.htmlLang}, dir=${state.dir}`);
         record('seo', `${locale} ${route} title`, state.title.length >= 10, state.title || '(empty)');
-        record('seo', `${locale} ${route} canonical present`, !!state.canonical, state.canonical || '(missing)', 'warning');
-        record('seo', `${locale} ${route} hreflang alternates`, state.hreflangCount >= 3, `${state.hreflangCount} alternate links`, 'warning');
+        const noindex = /noindex/i.test(state.robots);
+        record('seo', `${locale} ${route} canonical present`, noindex || !!state.canonical, noindex ? 'noindex, canonical not required' : (state.canonical || '(missing)'), 'warning');
+        record('seo', `${locale} ${route} hreflang alternates`, noindex || state.hreflangCount >= 3, noindex ? 'noindex, hreflang not required' : `${state.hreflangCount} alternate links`, 'warning');
         record('accessibility', `${locale} ${route} images have alt attributes`, state.missingAlt === 0, `${state.missingAlt} images missing alt`, 'warning');
         record('accessibility', `${locale} ${route} form controls have labels`, state.unlabeledFields === 0, `${state.unlabeledFields} controls without a programmatic label`, 'warning');
         record('accessibility', `${locale} ${route} links have names`, state.unnamedLinks === 0, `${state.unnamedLinks} unnamed links`, 'warning');

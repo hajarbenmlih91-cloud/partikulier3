@@ -73,7 +73,7 @@ async function visit(label, locale, route, width, height, screenshotName) {
   });
   const url = (() => {
     const fresh = new URL(`${BASE}/${locale}${route}`.replace(/\/{2,}/g, '/').replace('https:/', 'https://'));
-    fresh.searchParams.set('pk_audit', '211');
+    fresh.searchParams.set('pk_audit', '212');
     return fresh.href;
   })();
   const response = await page.goto(url, { waitUntil: 'load', timeout: 30000 });
