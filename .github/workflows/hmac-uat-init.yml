@@ -112,72 +112,8 @@ jobs:
             *) echo 'État initial inattendu ou clé déjà présente; arrêt sans rotation.' >&2; exit 3 ;;
           esac
           set +e
-          cat > "$HOME/.pk-uat-init.php" << 'PHP'
-          <?php
-          $configPath = $argv[1];
-          $keyId = $argv[2];
-          $secretPath = $argv[3];
-          $backup = $argv[4];
-          $secret = trim((string) file_get_contents($secretPath));
-          if (!preg_match('/^[A-Za-z0-9_-]{1,64}$/', $keyId)) {
-              fwrite(STDERR, "Key ID refusé\n");
-              exit(2);
-          }
-          if (!preg_match('/^[A-Za-z0-9+\/=]{44,}$/', $secret)) {
-              fwrite(STDERR, "Format de secret refusé\n");
-              exit(2);
-          }
-          $config = file_get_contents($configPath);
-          if ($config === false) {
-              fwrite(STDERR, "wp-config illisible\n");
-              exit(1);
-          }
-          if (strpos($config, 'PARTIKULIER_N8N_SECRET') !== false || strpos($config, 'PARTIKULIER_N8N_KEY_ID') !== false) {
-              fwrite(STDERR, "Constante déjà présente; arrêt sans modification\n");
-              exit(3);
-          }
-          $block = "define('PARTIKULIER_N8N_KEY_ID', '" . $keyId . "');\n"
-              . "define('PARTIKULIER_N8N_SECRET', '" . $secret . "');\n\n";
-          $marker = "/* That's all, stop editing!";
-          $pos = strpos($config, $marker);
-          if ($pos === false) {
-              $marker = "require_once ABSPATH . 'wp-settings.php';";
-              $pos = strpos($config, $marker);
-          }
-          if ($pos === false) {
-              fwrite(STDERR, "Point d'insertion introuvable\n");
-              exit(1);
-          }
-          $updated = substr($config, 0, $pos) . $block . substr($config, $pos);
-          $tmp = sys_get_temp_dir() . '/pk-wp-config-init-' . getmypid();
-          if (file_put_contents($tmp, $updated) === false) {
-              fwrite(STDERR, "Écriture temporaire impossible\n");
-              exit(4);
-          }
-          exec('php -l ' . escapeshellarg($tmp) . ' >/dev/null 2>&1', $unused, $lint);
-          if ($lint !== 0) {
-              @unlink($tmp);
-              fwrite(STDERR, "Syntaxe refusée; wp-config inchangé\n");
-              exit(1);
-          }
-          if (!@copy($configPath, $backup)) {
-              @unlink($tmp);
-              fwrite(STDERR, "Sauvegarde locale impossible; wp-config inchangé\n");
-              exit(4);
-          }
-          if (!@rename($tmp, $configPath)) {
-              if (!@copy($tmp, $configPath)) {
-                  @unlink($tmp);
-                  fwrite(STDERR, "wp-config non inscriptible\n");
-                  exit(4);
-              }
-              @unlink($tmp);
-          }
-          echo "INIT_PATH=constant\n";
-          PHP
-          php "$HOME/.pk-uat-init.php" "$wp_path/wp-config.php" "$key_id" "$secret_file" "$backup"
+          PK_SECRET_FILE="$secret_file" PK_KEY_ID="$key_id" PK_CONFIG="$wp_path/wp-config.php" PK_BACKUP="$backup" wp eval 'fwrite(STDERR, "init-start\n"); $secret = trim((string) file_get_contents((string) getenv("PK_SECRET_FILE"))); $keyId = (string) getenv("PK_KEY_ID"); $configPath = (string) getenv("PK_CONFIG"); $backup = (string) getenv("PK_BACKUP"); if (!preg_match("/^[A-Za-z0-9_-]{1,64}$/", $keyId)) { fwrite(STDERR, "Key ID refuse\n"); exit(2); } if (!preg_match("/^[A-Za-z0-9+\\/=]{44,}$/", $secret)) { fwrite(STDERR, "Format refuse\n"); exit(2); } $config = file_get_contents($configPath); if ($config === false) { fwrite(STDERR, "wp-config illisible\n"); exit(1); } if (strpos($config, "PARTIKULIER_N8N_SECRET") !== false || strpos($config, "PARTIKULIER_N8N_KEY_ID") !== false) { fwrite(STDERR, "Constante deja presente\n"); exit(3); } $block = "define(\"PARTIKULIER_N8N_KEY_ID\", \"" . $keyId . "\");\ndefine(\"PARTIKULIER_N8N_SECRET\", \"" . $secret . "\");\n\n"; $pos = strpos($config, "stop editing"); if ($pos === false) { $pos = strpos($config, "wp-settings.php"); } if ($pos === false) { fwrite(STDERR, "Point d insertion introuvable\n"); exit(4); } $pos = strrpos(substr($config, 0, $pos), "\n"); $pos = ($pos === false) ? 0 : $pos + 1; $updated = substr($config, 0, $pos) . $block . substr($config, $pos); $tmp = sys_get_temp_dir() . "/pk-wp-config-init-" . getmypid(); if (file_put_contents($tmp, $updated) === false) { fwrite(STDERR, "Ecriture temporaire impossible\n"); exit(4); } if (!@copy($configPath, $backup)) { @unlink($tmp); fwrite(STDERR, "Sauvegarde locale impossible\n"); exit(4); } if (!@copy($tmp, $configPath)) { @unlink($tmp); fwrite(STDERR, "wp-config non inscriptible\n"); exit(4); } @unlink($tmp); echo "INIT_PATH=constant\n";' --quiet
           php_status=$?
-          rm -f "$HOME/.pk-uat-init.php"
           set -e
           if [ "$php_status" -eq 0 ]; then
             :
