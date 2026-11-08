@@ -207,34 +207,35 @@ try {
     record('interaction', 'Language selector exists', false, 'No .pk-lang-toggle on the mobile home page');
   }
 
-  const filterToggle = archiveFr.page.locator('.pk-filter-toggle').first();
-  if (await filterToggle.count()) {
-    await filterToggle.click();
-    const open = await archiveFr.page.evaluate(() => ({
-      expanded: document.querySelector('.pk-filter-toggle')?.getAttribute('aria-expanded'),
-      hidden: document.getElementById('pk-filters-panel')?.getAttribute('aria-hidden'),
-      backdropHidden: document.querySelector('.pk-filters-backdrop')?.hidden,
-      bodyOpen: document.body.classList.contains('pk-filters-open'),
-    }));
-    record('interaction', 'Mobile archive filters open', open.expanded === 'true' && open.hidden === 'false' && open.backdropHidden === false && open.bodyOpen,
-      `aria-expanded=${open.expanded}; aria-hidden=${open.hidden}; backdrop hidden=${open.backdropHidden}; body class=${open.bodyOpen}`);
+  // The old sheet toggle is hidden on purpose. The shipped mobile control is the
+  // chip bar, which only appears after scroll, and it opens the centered find popup.
+  await archiveFr.page.evaluate(() => window.scrollTo(0, 700));
+  const filterChip = archiveFr.page.locator('.pk-scroll-actions.is-on .pk-filter-chip').first();
+  try {
+    await filterChip.waitFor({ state: 'visible', timeout: 8000 });
+    await filterChip.click({ timeout: 8000 });
+    const open = await archiveFr.page.evaluate(() => {
+      const opener = document.querySelector('.pk-find-open');
+      const card = document.querySelector('.pk-find-card');
+      const box = card ? card.getBoundingClientRect() : null;
+      return {
+        checked: !!opener?.checked,
+        visible: !!box && box.width > 0 && box.height > 0,
+      };
+    });
+    record('interaction', 'Mobile archive filters open', open.checked && open.visible,
+      `find popup checked=${open.checked}; card visible=${open.visible}`);
     await archiveFr.page.screenshot({ path: path.join(OUT, 'screenshots', 'fr-mobile-filters-open-390.png'), fullPage: true });
     await archiveFr.page.keyboard.press('Escape');
-    const closed = await archiveFr.page.evaluate(() => ({
-      expanded: document.querySelector('.pk-filter-toggle')?.getAttribute('aria-expanded'),
-      hidden: document.getElementById('pk-filters-panel')?.getAttribute('aria-hidden'),
-      backdropHidden: document.querySelector('.pk-filters-backdrop')?.hidden,
-      bodyOpen: document.body.classList.contains('pk-filters-open'),
-    }));
-    record('interaction', 'Escape closes mobile archive filters', closed.expanded === 'false' && closed.hidden === 'true' && closed.backdropHidden === true && !closed.bodyOpen,
-      `aria-expanded=${closed.expanded}; aria-hidden=${closed.hidden}; backdrop hidden=${closed.backdropHidden}; body class=${closed.bodyOpen}`);
-  } else {
-    record('interaction', 'Mobile archive filter toggle exists', false, 'No .pk-filter-toggle on the live archive');
+    const closed = await archiveFr.page.evaluate(() => !document.querySelector('.pk-find-open')?.checked);
+    record('interaction', 'Escape closes mobile archive filters', closed, `find popup closed=${closed}`);
+  } catch (error) {
+    record('interaction', 'Mobile archive filters open', false, error.message);
   }
 
   const typeToggle = homeFr.page.locator('.pk-find-type-btn:visible').first();
   if (await typeToggle.count()) {
-    await typeToggle.click();
+    await typeToggle.click({ timeout: 8000 });
     const typeOpen = await homeFr.page.evaluate(() => ({
       expanded: document.querySelector('.pk-find-type-btn')?.getAttribute('aria-expanded'),
       hidden: document.getElementById('pk-find-type-menu')?.hidden,
@@ -272,6 +273,8 @@ try {
 
   for (const message of pageErrors) record('javascript', 'Browser JavaScript errors', false, message);
   for (const message of failedRequests) record('network', 'Failed first-party browser requests', false, message, 'warning');
+} catch (error) {
+  record('interaction', 'Interaction script completed', false, error.message);
 } finally {
   for (const item of openPages) await item.context.close();
   await browser.close();
