@@ -118,6 +118,23 @@ jobs:
           echo "url=$site" >> "$GITHUB_OUTPUT"
           echo "Déploiement $DEPLOY_ENVIRONMENT${DEPLOY_VERSION:+ v$DEPLOY_VERSION} vers $site (ref $GITHUB_REF_NAME, commit ${GITHUB_SHA:0:12})"
 
+      - name: Attestation GO production liée au SHA
+        if: ${{ env.DEPLOY_ENVIRONMENT == 'prd' }}
+        env:
+          ATTESTED_SHA: ${{ vars.PRD_READINESS_ATTESTATION_SHA }}
+          EVIDENCE_URL: ${{ vars.PRD_READINESS_EVIDENCE_URL }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$ATTESTED_SHA" =~ ^[0-9a-f]{40}$ ]] || [ "$ATTESTED_SHA" != "$GITHUB_SHA" ]; then
+            echo "Production readiness gate failed: PRD_READINESS_ATTESTATION_SHA must equal this release commit."
+            exit 1
+          fi
+          if [[ ! "$EVIDENCE_URL" =~ ^https://[^[:space:]?#@]+$ ]]; then
+            echo "Production readiness gate failed: provide an HTTPS evidence reference without credentials, query, or fragment."
+            exit 1
+          fi
+          echo "Production readiness attestation: PASS (release SHA matches; evidence reference present; evidence content not fetched)."
+
       - name: Construire et préparer les artefacts
         run: |
           set -euo pipefail

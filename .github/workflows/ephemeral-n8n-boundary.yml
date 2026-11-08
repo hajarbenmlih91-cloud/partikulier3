@@ -87,6 +87,7 @@ jobs:
               ('deny-export', 'GET /wp-json/partikulier/v1/export/interests (no admin)', '401', 'HTTP 401'),
               ('deny-status', 'POST /wp-json/partikulier/v1/lead/status (no admin)', '401', 'HTTP 401'),
               ('deny-false-secret', 'POST /wp-json/partikulier/v1/automation-event (wrong shared secret)', '401', 'HTTP 401'),
+              ('hmac-rate-limit', '25 synthetic invalid-auth requests to disposable WordPress', 'HTTP 429 with Retry-After in range 1..60', 'non mesuré'),
               ('n8n-owner', 'POST http://127.0.0.1:5678/rest/owner/setup with generated throwaway credentials', 'HTTP 200; owner created locally', 'non mesuré'),
               ('n8n-static', 'Inspect imported n8n workflow HTTP destinations', 'exactly two requests, same WordPress IP:80 endpoint only', 'No other URL; no WhatsApp, Meta, or Evolution node'),
               ('n8n-egress', 'DOCKER-USER egress rule for n8n container', 'allow only WordPress container IP:80; drop all other forwarded destinations', 'Only WordPress job service permitted'),
@@ -306,6 +307,22 @@ jobs:
           false_code="$(http_code POST "$WP_BASE/wp-json/partikulier/v1/automation-event" "$RUNNER_TEMP/false-secret.json" -H 'Content-Type: application/json' -H 'X-Partikulier-Automation: definitely-not-the-job-secret' --data '{}')"
           record deny-false-secret 'POST /wp-json/partikulier/v1/automation-event (wrong shared secret)' "$false_code" '401' "HTTP $false_code"
           if [ "$false_code" != 401 ]; then FAIL=1; fi
+
+          # Verify the real WordPress REST response, including Retry-After; all credentials here are synthetic and invalid.
+          rate_headers="$RUNNER_TEMP/hmac-rate-limit.headers"
+          rate_body="$RUNNER_TEMP/hmac-rate-limit.json"
+          rate_code='000'
+          for attempt in $(seq 1 25); do
+            rate_code="$(curl --silent --show-error --max-time 10 -D "$rate_headers" -o "$rate_body" -w '%{http_code}' \
+              -X POST "$WP_BASE/wp-json/partikulier/v1/automation-event" \
+              -H 'Host: wordpress' -H 'Content-Type: application/json' \
+              -H 'X-Partikulier-Automation: synthetic-invalid-shared-secret' --data '{}')"
+          done
+          retry_after="$(awk 'tolower($1) == "retry-after:" { gsub(/\r/, "", $2); value=$2 } END { print value }' "$rate_headers")"
+          rate_ok=0
+          if [ "$rate_code" = '429' ] && [[ "$retry_after" =~ ^[0-9]+$ ]] && [ "$retry_after" -ge 1 ] && [ "$retry_after" -le 60 ]; then rate_ok=1; fi
+          record hmac-rate-limit '25 synthetic invalid-auth requests to disposable WordPress' "$rate_code" 'HTTP 429 with Retry-After in range 1..60' "HTTP $rate_code; Retry-After=${retry_after:-missing}; response body suppressed"
+          if [ "$rate_ok" -ne 1 ]; then FAIL=1; fi
 
           # Owner setup is local to this n8n service and uses a random throwaway password; no external credentials are configured.
           for attempt in $(seq 1 60); do
@@ -931,7 +948,7 @@ jobs:
           done
 
           docker exec "$N8N_CONTAINER" rm -f /tmp/ci-n8n-workflow.json /tmp/ci-n8n-curl.conf /tmp/ci-n8n-signed-body.json /tmp/ci-n8n-curl-first.json /tmp/ci-n8n-curl-replay.json /tmp/ci-static-curl || true
-          rm -f "$RUNNER_TEMP/ci-n8n-workflow.json" "$RUNNER_TEMP/ci-n8n-workflow-id" "$RUNNER_TEMP/n8n-owner.json" "$RUNNER_TEMP/n8n-owner-response.json" "$RUNNER_TEMP/n8n-import.log" "$RUNNER_TEMP/n8n-execution.stdout" "$RUNNER_TEMP/n8n-execution.stderr" "$RUNNER_TEMP/n8n-diagnostic-parser.stderr" "$RUNNER_TEMP/n8n-container.log" "$RUNNER_TEMP/ci-n8n-curl.conf" "$RUNNER_TEMP/ci-n8n-signed-body.json" "$RUNNER_TEMP/curl-first.stderr" "$RUNNER_TEMP/curl-replay.stderr" "$RUNNER_TEMP/curl-first-response.json" "$RUNNER_TEMP/curl-replay-response.json" "$RUNNER_TEMP/curl-install.log" "$RUNNER_TEMP/static-curl.tar.xz" "$RUNNER_TEMP/ci-static-curl"; rm -rf "$RUNNER_TEMP/static-curl-extract"
+          rm -f "$RUNNER_TEMP/ci-n8n-workflow.json" "$RUNNER_TEMP/ci-n8n-workflow-id" "$RUNNER_TEMP/n8n-owner.json" "$RUNNER_TEMP/n8n-owner-response.json" "$RUNNER_TEMP/n8n-import.log" "$RUNNER_TEMP/n8n-execution.stdout" "$RUNNER_TEMP/n8n-execution.stderr" "$RUNNER_TEMP/n8n-diagnostic-parser.stderr" "$RUNNER_TEMP/n8n-container.log" "$RUNNER_TEMP/ci-n8n-curl.conf" "$RUNNER_TEMP/ci-n8n-signed-body.json" "$RUNNER_TEMP/curl-first.stderr" "$RUNNER_TEMP/curl-replay.stderr" "$RUNNER_TEMP/curl-first-response.json" "$RUNNER_TEMP/curl-replay-response.json" "$RUNNER_TEMP/curl-install.log" "$RUNNER_TEMP/static-curl.tar.xz" "$RUNNER_TEMP/ci-static-curl" "$RUNNER_TEMP/hmac-rate-limit.headers" "$RUNNER_TEMP/hmac-rate-limit.json"; rm -rf "$RUNNER_TEMP/static-curl-extract"
           if [ "$FAIL" -ne 0 ]; then exit 1; fi
 
       - name: Bounded load characterization (10 RPS for 30 seconds; disposable only)

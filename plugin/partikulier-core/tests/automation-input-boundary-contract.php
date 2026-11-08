@@ -18,6 +18,49 @@ global $wpdb;
 use Partikulier\Core\Domain\Automation\AutomationService;
 
 $results = [];
+$rateLimiterSource = (string) file_get_contents((new ReflectionClass(\Partikulier\Core\RateLimiter::class))->getFileName());
+$results[] = [
+    'test_id' => 'AUTO-RATE-ATOMIC-001',
+    'passed' => str_contains($rateLimiterSource, "apply_filters('partikulier_rate_limiter_backend', 'database')")
+        && str_contains($rateLimiterSource, 'ON DUPLICATE KEY UPDATE')
+        && str_contains($rateLimiterSource, 'wp_cache_incr')
+        && str_contains($rateLimiterSource, 'apcu_inc')
+        && str_contains($rateLimiterSource, 'pk_rate_limiter_unavailable')
+        && str_contains($rateLimiterSource, 'RequestCycle::recall($request')
+        && str_contains($rateLimiterSource, 'RequestCycle::remember($request')
+        && !str_contains($rateLimiterSource, 'spl_object_id($request)')
+        && !str_contains($rateLimiterSource, 'get_transient(')
+        && !str_contains($rateLimiterSource, 'set_transient('),
+    'detail' => 'Rate-limit storage uses atomic cache/APCu/SQL increments and fails closed instead of transient read-modify-write',
+];
+$retryProbe = new WP_REST_Response([
+    'code' => 'pk_rate_limited',
+    'data' => ['status' => 429, 'retry_after' => 17],
+], 429);
+$retryProbe = \Partikulier\Core\RateLimiter::attach_retry_after_header($retryProbe);
+$retryHeaders = array_change_key_case($retryProbe->get_headers(), CASE_LOWER);
+$results[] = [
+    'test_id' => 'AUTO-RATE-RETRY-001',
+    'passed' => ($retryHeaders['retry-after'] ?? '') === '17',
+    'detail' => '429 responses carry a valid Retry-After header',
+];
+$invalidBackendFilter = static fn($backend): string => 'unsupported-test-backend';
+add_filter('partikulier_rate_limiter_backend', $invalidBackendFilter, 10, 1);
+$backendProbe = (new \Partikulier\Core\RateLimiter())->guard(
+    new WP_REST_Request('GET', '/partikulier/v1/rate-limit-backend-contract'),
+    'backend-fail-closed-' . bin2hex(random_bytes(4)),
+    true,
+    5,
+    60
+);
+remove_filter('partikulier_rate_limiter_backend', $invalidBackendFilter, 10);
+$results[] = [
+    'test_id' => 'AUTO-RATE-FAIL-CLOSED-001',
+    'passed' => is_wp_error($backendProbe)
+        && $backendProbe->get_error_code() === 'pk_rate_limiter_invalid_backend'
+        && (int) ($backendProbe->get_error_data()['status'] ?? 0) === 500,
+    'detail' => 'Unrecognized rate-limit backend fails closed without dropping the quota',
+];
 $large = new WP_REST_Request('POST', '/partikulier/v1/automation-event');
 $large->set_body(str_repeat('x', AutomationService::max_hmac_body_bytes() + 1));
 $verdict = AutomationService::check_automation_secret($large);
@@ -115,12 +158,17 @@ try {
         $_SERVER['REMOTE_ADDR'] = $originalRemoteAddr;
     }
     $route = preg_replace('/[^a-z0-9_-]/i', '_', '/partikulier/v1/automation-event') ?: 'route';
+    $windowStart = intdiv(time(), 60) * 60;
     foreach (['automation-hmac-signature-invalid', 'automation-hmac-auth-invalid'] as $bucket) {
-        $limiterKey = 'pk_rl_' . md5($bucket . '|' . $route . '|ip:' . $testIp);
-        delete_transient($limiterKey);
+        $counterId = md5($bucket . '|' . $route . '|ip:' . $testIp);
+        $transient = 'pkrl-v2-60-' . $counterId . '-' . $windowStart;
+        delete_transient($transient);
+        $cacheKey = 'partikulier_rate_limits:60:' . $counterId . ':' . $windowStart;
+        if (function_exists('wp_using_ext_object_cache') && wp_using_ext_object_cache()) {
+            wp_cache_delete($cacheKey, 'partikulier_rate_limits');
+        }
         if (function_exists('apcu_delete')) {
-            apcu_delete($limiterKey . '_started');
-            apcu_delete($limiterKey . '_count');
+            apcu_delete($cacheKey);
         }
     }
     $wpdb->delete(AutomationService::audit_table(), [

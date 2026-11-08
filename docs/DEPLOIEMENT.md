@@ -63,6 +63,10 @@ Ajouter aussi une variable d’environnement GitHub, non secrète :
 | Nom | Type | Exemple | Rôle |
 |---|---|---|---|
 | `SITE_URL` | Variable | `https://uat.example.com` | Smoke check HTTP + URL affichée dans les logs |
+| `PRD_READINESS_ATTESTATION_SHA` | Variable, `prd` uniquement | SHA Git complet du tag de release approuvé | Empêche la réutilisation d'une attestation pour un autre commit |
+| `PRD_READINESS_EVIDENCE_URL` | Variable, `prd` uniquement | Référence HTTPS vers le dossier expurgé de preuves | Le workflow vérifie la présence/forme, pas le contenu; le reviewer `prd` doit le lire |
+
+Avant tout build ou accès SSH en cible `prd`, `deploy.yml` exige que le SHA attesté égale exactement `GITHUB_SHA` et que la référence soit HTTPS sans credentials/query/fragment. Ces valeurs ne sont pas des secrets et ne doivent contenir aucune donnée confidentielle. Utiliser le gate [`GO-NO-GO-WORDPRESS-N8N.md`](GO-NO-GO-WORDPRESS-N8N.md); le reviewer humain doit vérifier que les preuves P0 sont réellement PASS. La vérification automatique n'inspecte ni Hostinger, ni n8n, ni le contenu du lien.
 
 ### Protection des environnements (Settings → Environments)
 

@@ -350,8 +350,10 @@ try {
 
         /* (9d) Marqueurs structurels de la classification. */
         $rateLimiter = (string) file_get_contents($pluginSrc . '/RateLimiter.php');
-        if (strpos($rateLimiter, 'spl_object_id($request)') === false || strpos($rateLimiter, '$this->seen') === false) {
-            $findings[] = 'RateLimiter : marqueur par cycle absent';
+        if (strpos($rateLimiter, 'RequestCycle::recall($request') === false
+            || strpos($rateLimiter, 'RequestCycle::remember($request') === false
+            || strpos($rateLimiter, 'spl_object_id($request)') !== false) {
+            $findings[] = 'RateLimiter : verdict WeakMap par requête absent ou identifiant objet recyclable réintroduit';
             $ok = false;
         }
         $eraseGuard = (string) file_get_contents($pluginSrc . '/Domain/Leads/LeadsEraseGuardTrait.php');
