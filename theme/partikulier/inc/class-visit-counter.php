@@ -112,7 +112,7 @@ class Partikulier_Visit_Counter {
 		<style>
 			.pk-cookie-bar[hidden] { display: none !important; }
 			.pk-cookie-bar {
-				position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+				position: fixed; left: 0; right: 0; bottom: 0; z-index: 6000;
 			}
 			.pk-cookie-card {
 				display: flex; gap: 16px; align-items: center; justify-content: space-between;
@@ -135,7 +135,7 @@ class Partikulier_Visit_Counter {
 			body.pk-cookie-open { padding-bottom: 84px; }
 			@media (max-width: 767px) {
 				.pk-cookie-bar {
-					inset: 0; z-index: 5000;
+					inset: 0; z-index: 6000;
 					display: grid; place-items: center;
 					background: rgba(16, 18, 16, .48);
 					padding: 1rem;
@@ -158,6 +158,30 @@ class Partikulier_Visit_Counter {
 					overflow: auto;
 					padding-bottom: 68px;
 				}
+			}
+			/* Le refus reste cliquable au-dessus du choix de langue.
+			   Les rouges signalés par l'audit passent AA : texte blanc sur #C8242B,
+			   lien annonce #C8242B sur blanc. */
+			html body.home .pk-editorial-places a.pk-btn.pk-btn-dark,
+			html body.home a.pk-btn.pk-btn-dark {
+				background: #C8242B !important;
+				background-color: #C8242B !important;
+				border-color: #C8242B !important;
+				color: #fff !important;
+			}
+			html body.home .pk-card-foot a.pk-card-cta,
+			html body.home .pk-card-foot a.pk-card-cta:link,
+			html body.home .pk-card-foot a.pk-card-cta:visited,
+			html body.home .pk-card-foot a.pk-card-cta span {
+				color: #C8242B !important;
+				background-color: #fff !important;
+			}
+			html body.home .pk-cookie-actions button[data-yes],
+			html body .pk-cookie-actions button[data-yes] {
+				background: #C8242B !important;
+				background-color: #C8242B !important;
+				border-color: #C8242B !important;
+				color: #fff !important;
 			}
 		</style>
 		<script>
@@ -196,7 +220,7 @@ class Partikulier_Visit_Counter {
 				} catch (err) { /* ignore */ }
 			}
 			function show() {
-				if (read() || gateOpen()) return;
+				if (read()) return;
 				markInfo();
 				bar.hidden = false;
 				document.body.classList.add("pk-cookie-open");
@@ -268,7 +292,7 @@ class Partikulier_Visit_Counter {
 			if (read() === "yes") count();
 			show();
 			window.addEventListener("resize", function () {
-				if (read() || gateOpen()) return;
+				if (read()) return;
 				show();
 			});
 			var gate = document.querySelector("[data-pk-lang-gate]");

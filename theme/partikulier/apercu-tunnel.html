@@ -39,7 +39,7 @@
     border-radius: 28px;
     box-shadow: 0 24px 60px -36px rgba(22, 23, 21, .28);
   }
-  .pk-submit-back { color: var(--pk-muted); text-decoration: none; font-size: .82rem; }
+  .pk-submit-back { color: #323232; text-decoration: none; font-size: .82rem; }
   .pk-editorial-kicker {
     margin: 1.6rem 0 .55rem;
     font-size: .68rem;
@@ -56,7 +56,7 @@
     line-height: 1.02;
   }
   .pk-hero-accent { display: block; color: #161715; font-weight: 500; }
-  .pk-submit-subtitle { margin: .9rem 0 0; color: var(--pk-muted); max-width: 34rem; font-size: 1.02rem; }
+  .pk-submit-subtitle { margin: .9rem 0 0; color: #323232; max-width: 34rem; font-size: 1.02rem; }
   .pk-stepper { margin: 2.1rem 0 1.8rem; }
   .pk-stepper-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin: 0; padding: 0; list-style: none; }
   .pk-stepper-item {
@@ -92,7 +92,7 @@
     border: 1px solid var(--pk-line);
     border-radius: 50%;
     background: #fff;
-    color: var(--pk-muted);
+    color: #323232;
     font-size: .75rem;
   }
   .pk-stepper-item.is-current { color: var(--pk-ink); }
@@ -415,8 +415,8 @@
   .pk-stepper-item.is-current::after,
   .pk-stepper-item.is-complete::after { background: #FF5757; }
   .pk-stepper-item.is-current .pk-stepper-number {
-    background: #FF5757;
-    border-color: #FF5757;
+    background: #C8242B;
+    border-color: #C8242B;
     color: #fff;
   }
   .pk-stepper-item.is-complete .pk-stepper-number {
@@ -485,7 +485,7 @@
   html[dir="rtl"] .pk-stepper-item { text-align: right; }
 
   /* 6.20.179 — barre du haut et barre du quartier : rouge du logo, plus le noir. */
-  .pk-lang-bar { background: #FF5757; }
+  .pk-lang-bar { background: #C8242B; }
   #lieu-proposition { border-color: #FF5757; }
   #lieu-proposition summary,
   #lieu-proposition[open] summary {
@@ -8454,7 +8454,7 @@ function pkFr(el) {
     PK_LANG = code;
     document.documentElement.lang = code;
     document.documentElement.dir = code === "ar" ? "rtl" : "ltr";
-    var titles = { fr: "Déposer une annonce", en: "Post a listing", ar: "نشر إعلان" };
+    var titles = { fr: "Déposer une annonce", en: "Post a listing", ar: "إضافة إعلان عقاري" };
     document.title = titles[code];
     var box = document.querySelector("[data-pk-lang]");
     if (box) {

@@ -75,17 +75,37 @@ async function visit(label, locale, route, width, height, screenshotName) {
   const response = await page.goto(url, { waitUntil: 'load', timeout: 30000 });
   const consentBar = page.locator('[data-pk-cookie]');
   const declineMeasurement = consentBar.locator('[data-no]');
-  if (await declineMeasurement.count() && await declineMeasurement.isVisible()) {
-    const actualLabel = (await declineMeasurement.innerText()).trim();
-    await declineMeasurement.click();
-    await consentBar.waitFor({ state: 'hidden' });
-    const choice = (await context.cookies(BASE)).find(cookie => cookie.name === 'pk_measure')?.value || '';
-    const expectedLabel = { fr: 'Continuer sans mesure', en: 'Continue without measurement', ar: 'المتابعة دون قياس' }[locale];
-    record('privacy', `${label} visit measurement can be declined`, choice === 'no' && measurementRequests === 0,
-      `choice=${choice}; counter requests=${measurementRequests}`);
-    record('i18n', `${locale} consent refusal is localized`, actualLabel === expectedLabel,
-      `expected=${expectedLabel}; actual=${actualLabel}`);
-  } else if (await consentBar.isVisible().catch(() => false)) {
+  const languageGate = page.locator('[data-pk-lang-gate]');
+  const expectedLabel = { fr: 'Continuer sans mesure', en: 'Continue without measurement', ar: 'المتابعة دون قياس' }[locale];
+
+  async function declineIfReachable() {
+    try {
+      if (!(await declineMeasurement.count()) || !(await declineMeasurement.isVisible().catch(() => false))) return false;
+      const actualLabel = (await declineMeasurement.innerText()).trim();
+      await declineMeasurement.click({ timeout: 8000 });
+      await consentBar.waitFor({ state: 'hidden', timeout: 8000 });
+      const choice = (await context.cookies(BASE)).find(cookie => cookie.name === 'pk_measure')?.value || '';
+      record('privacy', `${label} visit measurement can be declined`, choice === 'no' && measurementRequests === 0,
+        `choice=${choice}; counter requests=${measurementRequests}`);
+      record('i18n', `${locale} consent refusal is localized`, actualLabel === expectedLabel,
+        `expected=${expectedLabel}; actual=${actualLabel}`);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  let declined = await declineIfReachable();
+  if (!declined && await languageGate.count() && await languageGate.isVisible().catch(() => false)) {
+    const closeGate = languageGate.locator('[data-pk-lang-dismiss]');
+    if (await closeGate.count()) {
+      await closeGate.click({ timeout: 8000 }).catch(() => {});
+    }
+    await languageGate.waitFor({ state: 'hidden', timeout: 8000 }).catch(() => {});
+    await declineMeasurement.waitFor({ state: 'visible', timeout: 8000 }).catch(() => {});
+    declined = await declineIfReachable();
+  }
+  if (!declined && await consentBar.isVisible().catch(() => false)) {
     record('privacy', `${label} consent has a visible refusal action`, false, 'Consent banner is visible but has no usable [data-no] action');
   }
   await page.evaluate(() => document.fonts?.ready);

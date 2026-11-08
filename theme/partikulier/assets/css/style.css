@@ -9335,3 +9335,28 @@ html body .pk-submit .choice[aria-pressed="true"]::after {
 	color: #C8242B !important;
 }
 
+
+/* pk-audit-contrast-209 — les règles #C8242B déjà présentes ne gagnaient pas
+   sur les nœuds signalés. Spécificité plus haute, sans toucher au rouge
+   du signe, de Publier ni de Recherche. */
+html body.home .pk-editorial-places a.pk-btn.pk-btn-dark,
+html body.home a.pk-btn.pk-btn-dark {
+	background: #C8242B !important;
+	background-color: #C8242B !important;
+	border-color: #C8242B !important;
+	color: #fff !important;
+}
+html body.home .pk-card-foot a.pk-card-cta,
+html body.home .pk-card-foot a.pk-card-cta:link,
+html body.home .pk-card-foot a.pk-card-cta:visited,
+html body.home .pk-card-foot a.pk-card-cta span {
+	color: #C8242B !important;
+	background-color: #fff !important;
+}
+html body.home .pk-cookie-actions button[data-yes],
+html body .pk-cookie-actions button[data-yes] {
+	background: #C8242B !important;
+	background-color: #C8242B !important;
+	border-color: #C8242B !important;
+	color: #fff !important;
+}

@@ -239,6 +239,9 @@ v( $powered === null, 'X-Powered-By absent (pas de version PHP annoncée aux rob
 // --- Santé du plugin Core ----------------------------------------------------
 echo "\n-- Plugin Core (lecture seule) --\n";
 $r = httpq( $base . '/wp-json/partikulier/v1/health' );
+	if ( 0 === (int) $r['code'] ) {
+		$r = httpq( $base . '/wp-json/partikulier/v1/health' );
+	}
 $d = json_decode( $r['corps'], true );
 v( $r['code'] === 200 && is_array( $d ) && ( $d['status'] ?? '' ) === 'ok', 'health : HTTP ' . $r['code'] . ' · core ' . ( $d['core_version'] ?? '?' ) . ' · schéma ' . ( $d['schema_version'] ?? '?' ) . ' · BDD ' . ( $d['database'] ?? '?' ) );
 

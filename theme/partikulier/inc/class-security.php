@@ -22,7 +22,9 @@ class Partikulier_Security {
 		add_filter( 'rest_endpoints', array( __CLASS__, 'restrict_user_enumeration' ) );
 		add_filter( 'rest_pre_dispatch', array( __CLASS__, 'close_public_media_list' ), 10, 3 );
 		add_action( 'template_redirect', array( __CLASS__, 'block_public_author_enumeration' ), 0 );
+		add_action( 'init', array( __CLASS__, 'send_public_headers' ), 0 );
 		add_action( 'send_headers', array( __CLASS__, 'send_public_headers' ) );
+		add_filter( 'wp_redirect', array( __CLASS__, 'keep_public_headers_on_redirect' ), 0, 2 );
 		add_filter( 'xmlrpc_enabled', '__return_false' );
 		add_filter( 'xmlrpc_methods', '__return_empty_array' );
 
@@ -298,6 +300,25 @@ class Partikulier_Security {
 	/**
 	 * En-têtes défensifs compatibles avec les ressources actuelles du thème.
 	 */
+
+	/**
+	 * La redirection de langue part avant send_headers. On repose les en-têtes
+	 * juste avant Location, sinon / annonce la version PHP.
+	 *
+	 * @param string $location Cible.
+	 * @param int    $status   Code.
+	 * @return string
+	 */
+	public static function keep_public_headers_on_redirect( $location, $status = 302 ) {
+		unset( $status );
+		self::send_public_headers();
+		if ( ! headers_sent() ) {
+			header_remove( 'X-Powered-By' );
+			header_remove( 'X-Generator' );
+		}
+		return $location;
+	}
+
 	public static function send_public_headers() {
 		if ( is_admin() ) {
 			return;
