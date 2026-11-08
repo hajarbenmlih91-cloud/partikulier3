@@ -169,8 +169,36 @@ jobs:
             echo "Le compte jetable existe déjà; arrêt sans toucher au compte." >&2
             exit 1
           fi
-          meta_input="{\"_pk_uat_audit_marker\":\"$marker\"}"
-          wp user create "$login" "$email" --role=contributor --user_pass="$password" --meta_input="$meta_input" --porcelain
+          delete_created() {
+            local id="$1"
+            local now_email now_role admin_id
+            now_email="$(wp user get "$id" --field=user_email)"
+            now_role="$(wp user get "$id" --field=roles)"
+            [[ "$now_email" == "$email" && "$now_role" == contributor ]] || {
+              echo 'Compte créé mais identité hors contrat; aucune suppression effectuée.' >&2
+              exit 1
+            }
+            admin_id="$(wp user list --role=administrator --field=ID --format=ids | awk '{print $1}')"
+            [[ "$admin_id" =~ ^[0-9]+$ ]] || {
+              echo 'Aucun administrateur de réaffectation sûr; compte conservé.' >&2
+              exit 1
+            }
+            wp user delete "$id" --yes --reassign="$admin_id"
+            echo 'Compte temporaire supprimé après échec du marqueur.' >&2
+          }
+          user_id="$(wp user create "$login" "$email" --role=contributor --user_pass="$password" --porcelain)"
+          [[ "$user_id" =~ ^[0-9]+$ ]] || { echo 'WP-CLI n a pas renvoyé un ID utilisateur' >&2; exit 1; }
+          if ! wp user meta add "$user_id" _pk_uat_audit_marker "$marker" >/dev/null; then
+            delete_created "$user_id"
+            exit 1
+          fi
+          stored="$(wp user meta get "$user_id" _pk_uat_audit_marker 2>/dev/null || true)"
+          if [[ "$stored" != "$marker" ]]; then
+            delete_created "$user_id"
+            echo 'Marqueur absent après écriture.' >&2
+            exit 1
+          fi
+          printf '%s\n' "$user_id"
           REMOTE
           )"
           [[ "$user_id" =~ ^[0-9]+$ ]] || { echo "WP-CLI n'a pas renvoyé un ID utilisateur" >&2; exit 1; }
@@ -272,27 +300,45 @@ jobs:
           admin_id="$(wp user list --role=administrator --field=ID --format=ids | awk '{print $1}')"
           [[ "$admin_id" =~ ^[0-9]+$ ]] || { echo 'Aucun administrateur de réaffectation sûr; compte conservé.' >&2; exit 1; }
           wp user delete "$user_id" --yes --reassign="$admin_id"
-          REMOTE
           echo "Compte temporaire supprimé et contenu réaffecté à un administrateur si nécessaire."
+          REMOTE
 
       - name: Lighthouse mobile et desktop (Performance, Accessibilité, SEO, Best Practices)
         id: lighthouse
-        continue-on-error: true
         run: |
           set -euo pipefail
           npm install --global lighthouse@12.8.2
           chrome_path="$(cd theme/partikulier && node --input-type=module -e 'import { chromium } from "playwright"; console.log(chromium.executablePath())')"
+          lh_failed=0
           run_lh() {
             local label="$1" url="$2" form="$3"
+            local -a screen=()
             echo "Lighthouse $label — $url ($form)"
-            lighthouse "$url" \
+            if [[ "$form" == desktop ]]; then
+              screen=(
+                --screenEmulation.mobile=false
+                --screenEmulation.width=1350
+                --screenEmulation.height=940
+                --screenEmulation.deviceScaleFactor=1
+                --throttling.rttMs=40
+                --throttling.throughputKbps=10240
+                --throttling.cpuSlowdownMultiplier=1
+              )
+            else
+              screen=(--screenEmulation.mobile=true)
+            fi
+            if ! lighthouse "$url" \
               --chrome-path="$chrome_path" \
               --chrome-flags='--headless --no-sandbox --disable-dev-shm-usage' \
               --only-categories=performance,accessibility,best-practices,seo \
               --form-factor="$form" \
+              "${screen[@]}" \
               --output=json \
               --output-path="$AUDIT_OUT_DIR/lighthouse-$label.json" \
-              --quiet
+              --quiet; then
+              echo "Lighthouse $label en échec; les autres mesures continuent." >&2
+              lh_failed=1
+            fi
           }
           run_lh fr-home-mobile "$SITE_URL/fr/" mobile
           run_lh en-home-mobile "$SITE_URL/en/" mobile
@@ -319,6 +365,10 @@ jobs:
           (root / 'lighthouse-summary.md').write_text('\n'.join(lines) + '\n')
           print('\n'.join(lines))
           PY
+          if [[ "${lh_failed}" -ne 0 ]]; then
+            echo 'Au moins un profil Lighthouse a échoué.' >&2
+            exit 1
+          fi
 
       - name: Résumé des contrôles et nettoyage des clés SSH
         if: always()
