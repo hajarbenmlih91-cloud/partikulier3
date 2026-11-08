@@ -236,19 +236,17 @@ try {
   const typeToggle = homeFr.page.locator('.pk-find-type-btn:visible').first();
   if (await typeToggle.count()) {
     await typeToggle.click({ timeout: 8000 });
-    const typeOpen = await homeFr.page.evaluate(() => ({
-      expanded: document.querySelector('.pk-find-type-btn')?.getAttribute('aria-expanded'),
-      hidden: document.getElementById('pk-find-type-menu')?.hidden,
-    }));
-    record('interaction', 'Search type selector opens', typeOpen.expanded === 'true' && typeOpen.hidden === false,
-      `aria-expanded=${typeOpen.expanded}; hidden=${typeOpen.hidden}`);
+    const typeOpen = await homeFr.page.evaluate(() => {
+      const opener = document.querySelector('.pk-find-open');
+      const card = document.querySelector('.pk-find-card');
+      const box = card ? card.getBoundingClientRect() : null;
+      return { checked: !!opener?.checked, visible: !!box && box.width > 0 && box.height > 0 };
+    });
+    record('interaction', 'Search type selector opens', typeOpen.checked && typeOpen.visible,
+      `find popup checked=${typeOpen.checked}; card visible=${typeOpen.visible}`);
     await homeFr.page.keyboard.press('Escape');
-    const typeClosed = await homeFr.page.evaluate(() => ({
-      expanded: document.querySelector('.pk-find-type-btn')?.getAttribute('aria-expanded'),
-      hidden: document.getElementById('pk-find-type-menu')?.hidden,
-    }));
-    record('interaction', 'Escape closes search type selector', typeClosed.expanded === 'false' && typeClosed.hidden === true,
-      `aria-expanded=${typeClosed.expanded}; hidden=${typeClosed.hidden}`);
+    const typeClosed = await homeFr.page.evaluate(() => !document.querySelector('.pk-find-open')?.checked);
+    record('interaction', 'Escape closes search type selector', typeClosed, `find popup closed=${typeClosed}`);
   } else {
     record('interaction', 'Search type selector visible', false, 'No visible .pk-find-type-btn on mobile home');
   }
