@@ -1,6 +1,9 @@
 import { chromium, firefox, webkit } from 'playwright';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { assertTunnelContract, tunnelErrors } from './merge-v3-tunnel-message.mjs';
+
+assertTunnelContract();
 
 const base = process.env.PK_BASE || 'http://localhost:8099';
 const fixture = JSON.parse(fs.readFileSync(process.env.PK_MERGE_FIXTURE, 'utf8').replace(/^\uFEFF/, ''));
@@ -11,6 +14,19 @@ const required = {
   en: 'Please check the required fields.',
   ar: 'يرجى التحقق من الحقول المطلوبة.',
 };
+
+async function expectTunnelMessage(page, expected) {
+  try {
+    await page.waitForFunction(text => {
+      const err = document.querySelector('#err');
+      return Boolean(err && !err.hidden && (err.textContent || '').trim() === text);
+    }, expected);
+  } catch (error) {
+    const actual = await page.locator('#err').evaluate(node => node ? { hidden: node.hidden, text: node.textContent } : null).catch(() => null);
+    throw new Error(`Message de tunnel attendu: ${expected}; obtenu: ${JSON.stringify(actual)}`);
+  }
+}
+
 
 function ratio(color, background) {
   const values = value => value.match(/[\d.]+/g).map(Number);
@@ -130,22 +146,11 @@ for (const [engineName, engine] of Object.entries({ chromium, firefox, webkit })
               assert.equal(await page.locator('#next').count(), 1, 'Deposit page shows the owner tunnel');
               await page.locator('#next').click();
               assert.equal(submits, 0, 'Incomplete tunnel cannot submit a listing');
-              const tunnelErrors = {
-                fr: ['Propriétaire', 'vendre ou louer'],
-                en: ['Choose Owner to continue.', 'Choose sell or rent.'],
-                ar: ['اختر المالك للمتابعة.', 'اختر البيع أو الكراء.'],
-              };
-              await page.waitForFunction(text => {
-                const err = document.querySelector('#err');
-                return Boolean(err && !err.hidden && err.textContent.includes(text));
-              }, tunnelErrors[language][0]);
+              await expectTunnelMessage(page, tunnelErrors[language][0]);
               const original = await page.locator('#next').textContent();
               await page.locator('#role [data-val="proprietaire"]').click();
               await page.locator('#next').click();
-              await page.waitForFunction(text => {
-                const err = document.querySelector('#err');
-                return Boolean(err && err.textContent.includes(text));
-              }, tunnelErrors[language][1]);
+              await expectTunnelMessage(page, tunnelErrors[language][1]);
               assert.equal(submits, 0, 'Partial tunnel still does not submit');
               assert.equal(await page.locator('#next').isEnabled(), true, 'Validation error keeps the CTA usable');
               assert.equal(await page.locator('#next').textContent(), original, 'Validation error keeps the original CTA');
