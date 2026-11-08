@@ -555,8 +555,34 @@ jobs:
           REMOTE
           )"
           printf '%s\n' "$result" > "$AUDIT_OUT_DIR/fixture-seed.json"
-          listing_id="$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["listing_id"])' "$AUDIT_OUT_DIR/fixture-seed.json")"
-          listing_url="$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["listing_url"])' "$AUDIT_OUT_DIR/fixture-seed.json")"
+          seed_values="$(python - "$AUDIT_OUT_DIR/fixture-seed.json" <<'PY'
+          import json, sys
+          from urllib.parse import urlsplit, urlunsplit
+          expected = 'darkcyan-yak-151002.hostingersite.com'
+          value = None
+          with open(sys.argv[1], encoding='utf-8') as stream:
+              for line in stream:
+                  try:
+                      candidate = json.loads(line)
+                  except json.JSONDecodeError:
+                      continue
+                  if isinstance(candidate, dict) and 'listing_id' in candidate and 'listing_url' in candidate:
+                      value = candidate
+                      break
+          if value is None:
+              raise SystemExit('WP-CLI did not return a fixture JSON object')
+          listing_id = int(value['listing_id'])
+          parsed = urlsplit(value['listing_url'])
+          if parsed.hostname != expected or parsed.scheme not in ('http', 'https') or parsed.username or parsed.password:
+              raise SystemExit('Fixture permalink failed the strict UAT-host guard')
+          listing_url = urlunsplit(('https', expected, parsed.path or '/', parsed.query, parsed.fragment))
+          print(listing_id)
+          print(listing_url)
+          PY
+          )"
+          mapfile -t seed_values_array <<< "$seed_values"
+          listing_id="${seed_values_array[0]}"
+          listing_url="${seed_values_array[1]}"
           [[ "$listing_id" =~ ^[0-9]+$ && "$listing_url" == https://darkcyan-yak-151002.hostingersite.com/* ]]
           { echo "listing_id=$listing_id"; echo "listing_url=$listing_url"; } >> "$GITHUB_OUTPUT"
           { echo "PROMPT_LISTING_ID=$listing_id"; echo "PROMPT_LISTING_URL=$listing_url"; echo "PROMPT_EMAIL=${{ steps.fixture_vars.outputs.email }}"; echo "PROMPT_DISPLAY_NAME=${{ steps.fixture_vars.outputs.display }}"; } >> "$GITHUB_ENV"
