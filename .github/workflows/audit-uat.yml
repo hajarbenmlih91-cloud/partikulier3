@@ -51,6 +51,11 @@ jobs:
       - name: Récupérer le dépôt
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      - name: Contrat de nettoyage du compte temporaire
+        run: |
+          set -euo pipefail
+          bash theme/partikulier/tests/uat-audit-account-cleanup-contract.sh
+
       - name: Vérifier la cible UAT (interdit de viser la production)
         run: |
           set -euo pipefail
@@ -283,25 +288,11 @@ jobs:
           AUDIT_MARKER: ${{ steps.seed.outputs.marker }}
         run: |
           set -euo pipefail
-          ssh -F "$HOME/.ssh/config" partikulier-uat 'bash -s' -- "$WP_PATH" "$AUDIT_LOGIN" "$AUDIT_EMAIL" "$AUDIT_MARKER" <<'REMOTE'
-          set -euo pipefail
-          wp_path="$1"; login="$2"; expected_email="$3"; expected_marker="$4"
-          cd "$wp_path"
-          user_id="$(wp user get "$login" --field=ID 2>/dev/null || true)"
-          if [[ -z "$user_id" ]]; then echo 'Compte temporaire absent; aucun nettoyage requis.'; exit 0; fi
-          [[ "$user_id" =~ ^[0-9]+$ ]] || { echo 'ID utilisateur non numérique; arrêt sûr.' >&2; exit 1; }
-          email="$(wp user get "$user_id" --field=user_email)"
-          role="$(wp user get "$user_id" --field=roles)"
-          marker="$(wp user meta get "$user_id" _pk_uat_audit_marker 2>/dev/null || true)"
-          [[ "$email" == "$expected_email" && "$role" == 'contributor' && "$marker" == "$expected_marker" ]] || {
-            echo 'Compte trouvé mais identité/marker hors contrat; aucune suppression effectuée.' >&2
-            exit 1
-          }
-          admin_id="$(wp user list --role=administrator --field=ID --format=ids | awk '{print $1}')"
-          [[ "$admin_id" =~ ^[0-9]+$ ]] || { echo 'Aucun administrateur de réaffectation sûr; compte conservé.' >&2; exit 1; }
-          wp user delete "$user_id" --yes --reassign="$admin_id"
-          echo "Compte temporaire supprimé et contenu réaffecté à un administrateur si nécessaire."
-          REMOTE
+          expected_login="pk_audit_${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}"
+          [[ "$AUDIT_LOGIN" == "$expected_login" ]] || { echo 'Identifiant de run hors contrat; arrêt.' >&2; exit 1; }
+          [[ "$AUDIT_EMAIL" == "${expected_login}@example.invalid" ]] || { echo 'Adresse hors contrat; arrêt.' >&2; exit 1; }
+          [[ "$AUDIT_MARKER" =~ ^[0-9a-f]{48}$ ]] || { echo 'Marqueur attendu hors contrat; arrêt.' >&2; exit 1; }
+          ssh -F "$HOME/.ssh/config" partikulier-uat 'bash -s' -- "$WP_PATH" "$AUDIT_LOGIN" "$AUDIT_EMAIL" "$AUDIT_MARKER" < theme/partikulier/tests/uat-audit-account-cleanup.sh
 
       - name: Lighthouse mobile et desktop (Performance, Accessibilité, SEO, Best Practices)
         id: lighthouse

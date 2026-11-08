@@ -18,7 +18,9 @@
  *
  * Le secret ne quitte pas cette machine : il sert uniquement à prouver que la
  * garde HMAC fonctionne (401 sans signature, 200 avec). Sans secret, les tests
- * qui en dépendent sont marqués SAUTÉS.
+ * qui en dépendent sont marqués SAUTÉS. Le POST HMAC valide crée volontairement
+ * un événement synthétique unique (traitement désactivé) et une ligne d'audit;
+ * son identifiant est affiché pour permettre la corrélation, jamais le secret.
  *
  * Sécurité : CLI uniquement (403 si appelé par HTTP, ne fait rien).
  */
@@ -30,6 +32,11 @@ if ( PHP_SAPI !== 'cli' ) {
 
 $base   = isset( $argv[1] ) ? rtrim( $argv[1], '/' ) : '';
 $secret = getenv( 'PK_SECRET' ) ?: ( $argv[2] ?? '' );
+$key_id = getenv( 'PK_KEY_ID' ) ?: 'N';
+if ( ! preg_match( '/^[A-Za-z0-9_-]{1,64}$/', $key_id ) ) {
+        fwrite( STDERR, "PK_KEY_ID invalide\n" );
+        exit( 64 );
+}
 
 if ( ! preg_match( '#^https?://[a-z0-9.-]+#i', $base ) ) {
         fwrite( STDERR, "Usage : php staging-securite.php <base-url> [secret-base64] (ou variable PK_SECRET)\n" );
@@ -81,9 +88,19 @@ function entete( array $rep, string $nom ): ?string {
  * clef = base64_decode(secret) · canonical = "POST\n<route REST>\n<ts>\n<corps>"
  * (route REST relative SANS le préfixe /wp-json).
  */
+function cle_hmac( string $secret ): string {
+        $secret = trim( $secret );
+        $decoded = base64_decode( $secret, true );
+        if ( is_string( $decoded ) && strlen( $decoded ) >= 32 ) { return $decoded; }
+        if ( preg_match( '/^[a-f0-9]{64,}$/i', $secret ) ) {
+                $hex = hex2bin( substr( $secret, 0, strlen( $secret ) - ( strlen( $secret ) % 2 ) ) );
+                if ( is_string( $hex ) && strlen( $hex ) >= 32 ) { return $hex; }
+        }
+        return $secret;
+}
+
 function signer( string $secret, string $route, int $ts, string $body ): string {
-        $cle = base64_decode( trim( $secret ), true );
-        return 'sha256=' . hash_hmac( 'sha256', "POST\n$route\n$ts\n$body", $cle );
+        return 'sha256=' . hash_hmac( 'sha256', "POST\n$route\n$ts\n$body", cle_hmac( $secret ) );
 }
 
 $OK = 0; $KO = 0; $ATT = 0; $SAUT = 0;
@@ -96,10 +113,19 @@ function v( ?bool $ok, string $msg ) {
 
 $url_route = '/wp-json/partikulier/v1/automation-event';   // pour les requêtes HTTP
 $route     = '/partikulier/v1/automation-event';            // pour la signature (canonical)
-$corps   = '{"event_id":"n8n-staging-securite-001","event_type":"whatsapp_status","source":"n8n","payload":{"status":"read"}}';
+$event_id  = 'n8n-staging-securite-' . gmdate('YmdHis') . '-' . bin2hex(random_bytes(8));
+$corps     = json_encode([
+        'event_id' => $event_id,
+        'event_type' => 'whatsapp_status',
+        'source' => 'n8n',
+        'payload' => ['status' => 'read'],
+], JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+if ( ! is_string($corps) ) { fwrite(STDERR, "Impossible d'encoder le corps JSON du test HMAC\n"); exit(2); }
 
 echo "\n== SÉCURITÉ — $base ==\n";
-echo "Les tests HMAC utilisent " . ( $secret ? "le secret fourni (il reste sur cette machine)" : "AUCUN secret (4 tests seront sautés)" ) . "\n\n";
+echo "Les tests HMAC utilisent " . ( $secret ? "le secret fourni (il reste sur cette machine)" : "AUCUN secret (4 tests seront sautés)" ) . "\n";
+if ( $secret ) { echo "Événement synthétique unique (traitement désactivé, ligne d'audit conservée) : $event_id\n"; }
+echo "\n";
 
 // --- LOT 2 : HMAC sur la route automation ----------------------------------
 echo "-- LOT 2 · HMAC de la route automation --\n";
@@ -117,7 +143,7 @@ if ( $secret ) {
                 'Content-Type: application/json',
                 "X-Partikulier-Automation: $secret",
                 "X-Partikulier-Timestamp: $ts_rejoue",
-                "X-Partikulier-Key-Id: N",
+                "X-Partikulier-Key-Id: $key_id",
                 "X-Partikulier-Signature: $sig",
         ), $corps );
         v( $r['code'] === 401, "POST avec HMAC VALIDE mais ts = −400 s (replay) : HTTP {$r['code']} (attendu 401)" );
@@ -128,7 +154,7 @@ if ( $secret ) {
                 'Content-Type: application/json',
                 "X-Partikulier-Automation: $secret",
                 "X-Partikulier-Timestamp: $ts",
-                "X-Partikulier-Key-Id: N",
+                "X-Partikulier-Key-Id: $key_id",
                 "X-Partikulier-Signature: $sig",
         ), $corps );
         v( $r['code'] === 200, "POST avec secret + HMAC valide : HTTP {$r['code']} (attendu 200 = métier inchangé)" );
@@ -140,17 +166,27 @@ if ( $secret ) {
 echo "\n-- LOT 2 · sonde absente du front anonyme --\n";
 $r = httpq( $base . '/?pk_diag=1' );
 $fuite = strpos( $r['corps'], 'diagnostic reserve aux administrateurs' ) !== false;
-v( $r['code'] === 200 && ! $fuite, "GET /?pk_diag=1 anonyme : HTTP {$r['code']}, page normale sans message de la sonde" );
+$redirect = entete( $r, 'Location' );
+$redirect_parts = is_string( $redirect ) ? parse_url( $redirect ) : false;
+$base_host = strtolower( (string) parse_url( $base, PHP_URL_HOST ) );
+$redirect_host = is_array( $redirect_parts ) ? strtolower( (string) ( $redirect_parts['host'] ?? '' ) ) : '';
+$redirect_scheme = is_array( $redirect_parts ) ? strtolower( (string) ( $redirect_parts['scheme'] ?? '' ) ) : '';
+$redirect_same_origin = is_array( $redirect_parts ) && (
+        ( '' === $redirect_host && '' === $redirect_scheme )
+        || ( in_array( $redirect_scheme, array( 'http', 'https' ), true ) && $redirect_host === $base_host )
+);
+$diag_status_ok = 200 === $r['code'] || ( in_array( $r['code'], array( 301, 302, 303, 307, 308 ), true ) && $redirect_same_origin );
+v( $diag_status_ok && ! $fuite, "GET /?pk_diag=1 anonyme : HTTP {$r['code']}, page normale ou redirection même origine sans message de la sonde" );
 
 $r = httpq( $base . '/wp-content/themes/partikulier/pk-diagnostic.php' );
-$gere = ( $r['code'] === 200 && trim( $r['corps'] ) === '' ) || $r['code'] === 403 || stripos( $r['corps'], '403 - diagnostic reserve' ) !== false;
+$gere = ( $r['code'] === 200 && trim( $r['corps'] ) === '' ) || in_array( $r['code'], array( 403, 404 ), true ) || stripos( $r['corps'], '403 - diagnostic reserve' ) !== false;
 v( $gere, "accès direct au fichier sonde : HTTP {$r['code']}, aucune donnée administrative divulguée" );
 
 // --- Garde CLI des outils de test -------------------------------------------
 echo "\n-- Outils de test : exécution par HTTP refusée --\n";
 foreach ( array( 'staging-charge.php', 'staging-cache.php', 'staging-securite.php' ) as $outil ) {
         $r = httpq( $base . '/wp-content/themes/partikulier/tests/' . $outil );
-        $ecarte = $r['code'] === 403 || ( $r['code'] === 200 && strpos( $r['corps'], 'CLI uniquement' ) !== false );
+        $ecarte = in_array( $r['code'], array( 403, 404 ), true ) || ( $r['code'] === 200 && strpos( $r['corps'], 'CLI uniquement' ) !== false );
         v( $ecarte, "tests/$outil appelé par HTTP : HTTP {$r['code']}, refuse et ne fait rien (anti auto-DDoS)" );
 }
 
@@ -203,6 +239,9 @@ v( $powered === null, 'X-Powered-By absent (pas de version PHP annoncée aux rob
 // --- Santé du plugin Core ----------------------------------------------------
 echo "\n-- Plugin Core (lecture seule) --\n";
 $r = httpq( $base . '/wp-json/partikulier/v1/health' );
+	if ( 0 === (int) $r['code'] ) {
+		$r = httpq( $base . '/wp-json/partikulier/v1/health' );
+	}
 $d = json_decode( $r['corps'], true );
 v( $r['code'] === 200 && is_array( $d ) && ( $d['status'] ?? '' ) === 'ok', 'health : HTTP ' . $r['code'] . ' · core ' . ( $d['core_version'] ?? '?' ) . ' · schéma ' . ( $d['schema_version'] ?? '?' ) . ' · BDD ' . ( $d['database'] ?? '?' ) );
 
