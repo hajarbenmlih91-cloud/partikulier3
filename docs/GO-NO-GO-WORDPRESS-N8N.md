@@ -51,7 +51,7 @@ Renseigner le tableau avec un responsable, une date UTC et une référence vers 
 >
 > Nous ne demandons ni secret, ni contenu de base de données, ni données personnelles. Merci de répondre avec les paramètres et limites applicables à l'origine concernée, ou de préciser ce que le plan d'hébergement ne permet pas.
 
-**État des preuves connu dans ce dépôt :** CI `42427054667` et WordPress/n8n éphémère `42426794115` réussis sur le code testé; charge CI confinée à `127.0.0.1`, 300/300 à 10 RPS. Cela ne fait passer aucun des contrôles d'hébergement/UAT ci-dessus à PASS.
+**État des preuves connu dans ce dépôt :** sur le SHA `bf811aa`, CI `42428961001` et WordPress/MariaDB/n8n éphémère `42428964964` ont réussi; le dernier inclut le test HTTP 429/`Retry-After` et une charge confinée à `127.0.0.1` (300/300 à 10 RPS, p95 33,45 ms). Cela ne fait passer aucun contrôle d'hébergement/UAT ci-dessus à PASS. L'attestation de production et les références vers les preuves réelles restent à fournir et à relire par l'approbateur.
 
 ## Journal de décision — à renseigner par l'équipe
 
