@@ -637,8 +637,29 @@ jobs:
           SEED_RESULT: ${{ steps.seed.outcome }}
           PROMPTS_RESULT: ${{ steps.prompt_tests.outcome }}
           CLEANUP_RESULT: ${{ steps.cleanup_fixtures.outcome }}
+          AUDIT_OUT_DIR: ${{ github.workspace }}/uat-prompt-artifacts
         run: |
           set -euo pipefail
+          if [[ -f "$AUDIT_OUT_DIR/prompts-validation.json" ]]; then
+            python - "$AUDIT_OUT_DIR/prompts-validation.json" "$GITHUB_STEP_SUMMARY" <<'PY'
+          import json, os, sys
+          data = json.load(open(sys.argv[1], encoding='utf-8'))
+          summary = ['## Résultats des prompts UAT', '']
+          def escape(value):
+              return str(value).replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+          for result in data.get('results', []):
+              status = result.get('result', 'INFO')
+              prompt = result.get('prompt', '?')
+              name = result.get('name', '')
+              detail = result.get('detail', '')
+              summary.append(f"- **P{prompt} {status} — {name}**: {detail}")
+              level = 'error' if status == 'FAIL' else ('warning' if status == 'WARN' else 'notice')
+              message = escape(f"P{prompt} {status}: {name}; {detail[:700]}")
+              print(f"::{level} title=UAT prompt P{prompt} {status}::{message}")
+          with open(sys.argv[2], 'a', encoding='utf-8') as output:
+              output.write('\n'.join(summary) + '\n')
+          PY
+          fi
           if [[ "$SEED_RESULT" != success || "$PROMPTS_RESULT" != success || "$CLEANUP_RESULT" != success ]]; then
             echo "Scénarios UAT incomplets ou nettoyage non vérifié; consulter l’artefact uat-prompts-${GITHUB_RUN_NUMBER}."
             exit 1
