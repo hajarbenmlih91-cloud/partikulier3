@@ -78,15 +78,26 @@ try {
   const arResponse = await visit(`${BASE}/ar/mes-annonces/`);
   const arBody = await page.locator('body').innerText();
   record(2, 'Espace propriétaire arabe', arResponse.response?.status() === 200 && arBody.includes('حسابي'), `HTTP=${arResponse.response?.status()}; libellé=${arBody.includes('حسابي')}`);
+  // The WordPress toolbar may render its logout anchor in the DOM but hidden on mobile.
+  // Follow its same-origin nonce URL as a navigation instead of force-clicking a hidden control.
   const logout = page.locator('a[href*="action=logout"]').first();
+  const logoutHref = await logout.getAttribute('href').catch(() => null);
   let loggedOut = false;
-  if (await logout.count()) {
-    await logout.click();
-    await page.waitForTimeout(500);
-    loggedOut = !await page.locator('.pk-auth-card input[type="password"]').count() || /connexion|login/i.test(page.url());
+  let logoutStatus = 'lien absent';
+  if (logoutHref) {
+    const logoutUrl = new URL(logoutHref, BASE);
+    if (logoutUrl.origin === new URL(BASE).origin) {
+      const logoutResponse = await visit(logoutUrl.href);
+      const dashboardCheck = await visit(`${BASE}/fr/mes-annonces/`);
+      const loginFormVisible = await page.locator('.pk-auth-card input[type="password"]').count() > 0;
+      loggedOut = dashboardCheck.response?.status() === 200 && (loginFormVisible || /connexion|login/i.test(page.url()));
+      logoutStatus = `HTTP=${logoutResponse.response?.status()}; dashboard login gate=${loginFormVisible}`;
+    } else {
+      logoutStatus = 'lien de déconnexion hors origine refusé';
+    }
   }
   const reconnected = loggedOut && await login();
-  record(2, 'Déconnexion puis nouvelle connexion réelle', reconnected, `déconnecté=${loggedOut}; seconde connexion=${reconnected}`);
+  record(2, 'Déconnexion puis nouvelle connexion réelle', reconnected, `${logoutStatus}; déconnecté=${loggedOut}; seconde connexion=${reconnected}`);
 
   // P3 — only the one run-marked fixture owned by this account.
   const beforePage = await visit(LISTING_URL);
