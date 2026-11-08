@@ -138,7 +138,7 @@ class Partikulier_Settings {
 					),
 					'buyer_whatsapp_number'      => array(
 						'label'   => 'Numéro WhatsApp Business des demandes acquéreurs (format international, sans espaces)',
-						'default' => '',
+						'default' => '212640424412',
 					),
 					'n8n_webhook_url'            => array(
 						'label'   => 'URL du webhook n8n (recoit les annonces validees)',

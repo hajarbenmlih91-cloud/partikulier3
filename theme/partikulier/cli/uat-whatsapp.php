@@ -10,11 +10,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 $number = '212640424412';
 $opts   = get_option( 'pk_theme_options', array() );
 $opts   = is_array( $opts ) ? $opts : array();
-if ( $number === (string) ( $opts['whatsapp_validation_number'] ?? '' ) ) {
+if ( $number === (string) ( $opts['whatsapp_validation_number'] ?? '' ) && $number === (string) ( $opts['buyer_whatsapp_number'] ?? '' ) ) {
 	WP_CLI::success( 'numéro WhatsApp UAT déjà configuré, skip' );
 	return;
 }
 $opts['whatsapp_validation_number'] = $number;
+$opts['buyer_whatsapp_number'] = $number;
 update_option( 'pk_theme_options', $opts );
 if ( class_exists( 'Partikulier_Cache' ) ) {
 	Partikulier_Cache::purge_all();

@@ -84,7 +84,7 @@ $pk_views   = (int) get_post_meta( $post->ID, '_pk_views', true );
 	$buyer_reference = class_exists( 'Partikulier_Buyer_Qualification' ) ? Partikulier_Buyer_Qualification::reference_for( $post->ID ) : '';
 	$pk_wa_href = $buyer_contact_url;
 	if ( ! $pk_wa_href && ! $is_closed ) {
-		$pk_wa_href = 'https://wa.me/?text=' . rawurlencode( sprintf( __( 'Bonjour, je suis intéressé par « %1$s » — %2$s', 'partikulier' ), get_the_title( $post ), $pk_property_url ) );
+		$pk_wa_href = 'https://wa.me/212640424412?text=' . rawurlencode( sprintf( __( 'Bonjour, je suis intéressé par « %1$s » — %2$s', 'partikulier' ), get_the_title( $post ), $pk_property_url ) );
 	}
 
 // Galerie : images Estatik + fallback featured.
@@ -434,9 +434,7 @@ $gallery_ids = array();
 							</div>
 						<?php elseif ( ! $is_closed ) : ?>
 							<?php
-							// Repli quand aucun numero WhatsApp n'est encore configure :
-							// on garde un bouton actif (wa.me sans destinataire) pour ne pas
-							// laisser la carte de contact sans action, comme le preview.
+							// Repli : le bouton reste actif et pointe vers le numéro du site.
 						?>
 						<div class="pk-buyer-contact-flow">
 							<a class="pk-btn pk-btn-primary pk-btn-block pk-btn-whatsapp" href="<?php echo esc_url( $pk_wa_href ); ?>" target="_blank" rel="noopener nofollow">
