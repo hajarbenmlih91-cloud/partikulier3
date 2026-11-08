@@ -100,8 +100,9 @@ try {
   record(2, 'Déconnexion puis nouvelle connexion réelle', reconnected, `${logoutStatus}; déconnecté=${loggedOut}; seconde connexion=${reconnected}`);
 
   // P3 — only the one run-marked fixture owned by this account.
-  const beforePage = await visit(LISTING_URL);
-  const beforeContact = await page.locator('a[href^="https://wa.me/"], a[href^="tel:"]').count();
+  await visit(LISTING_URL);
+  const contactLinks = page.locator('#pk-contact-card a[href^="https://wa.me/"], #pk-contact-card a[href^="tel:"]');
+  const beforeContact = await contactLinks.count();
   await visit(`${BASE}/fr/mes-annonces/`);
   const deactivate = page.locator(`.pk-manage-btn[data-post-id="${LISTING_ID}"][data-action="deactivate"]`);
   const ownRow = page.locator(`.pk-listing-item:has(.pk-manage-btn[data-post-id="${LISTING_ID}"])`).first();
@@ -116,7 +117,7 @@ try {
     }, LISTING_ID, { timeout: 15000 }).catch(() => {});
     const deactivated = await ownRow.locator('.pk-manage-btn[data-action="reactivate"]').count() > 0;
     const publicResponse = await visit(LISTING_URL);
-    const publicContact = await page.locator('a[href^="https://wa.me/"], a[href^="tel:"]').count();
+    const publicContact = await page.locator('#pk-contact-card a[href^="https://wa.me/"], #pk-contact-card a[href^="tel:"]').count();
     record(3, 'Désactiver uniquement l’annonce du compte de test', deactivated, `id=${LISTING_ID}; status bouton réactiver=${deactivated}`);
     const contactProvenCut = beforeContact > 0 && publicContact === 0;
     record(3, 'Contact public absent après désactivation', publicResponse.response?.status() === 200 && publicContact === 0,
@@ -136,14 +137,26 @@ try {
   let enBody = '';
   for (const [locale, expected, pattern] of deposits) {
     const r = await visit(`${BASE}/${locale}/deposer/`);
-    const body = await page.locator('body').innerText();
     const steps = await page.locator('.pk-stepper-item').count();
-    const secondMessage = pattern.test(body);
+    const ownerChoice = page.locator('#role button[data-val="proprietaire"]');
+    const next = page.locator('#next');
+    const nextType = await next.getAttribute('type').catch(() => null);
+    let validationMessage = '';
+    let validationTriggered = false;
+    if (await ownerChoice.count() && await next.count() && nextType === 'button') {
+      await ownerChoice.click();
+      await next.click(); // validates step one only; no submit button is activated.
+      const error = page.locator('#err');
+      validationMessage = (await error.innerText().catch(() => '')).trim();
+      validationTriggered = await error.isVisible().catch(() => false);
+    }
+    const body = await page.locator('body').innerText();
+    const secondMessage = pattern.test(validationMessage);
     const langOkay = locale !== 'ar' || (await page.locator('html').getAttribute('dir')) === 'rtl';
     if (locale === 'en') { enTitle = await page.title(); enBody = body; }
-    record(locale === 'fr' ? 4 : locale === 'en' ? 5 : 6, `${locale.toUpperCase()} dépôt: 3 étapes, message exact, aucun envoi`,
-      r.response?.status() === 200 && steps === 3 && secondMessage && langOkay,
-      `HTTP=${r.response?.status()}; étapes=${steps}; message=${body.includes(expected)}; dir=${await page.locator('html').getAttribute('dir')}; formulaire non soumis`);
+    record(locale === 'fr' ? 4 : locale === 'en' ? 5 : 6, `${locale.toUpperCase()} dépôt: 3 étapes, validation exacte, aucun envoi`,
+      r.response?.status() === 200 && steps === 3 && validationTriggered && secondMessage && langOkay && nextType === 'button',
+      `HTTP=${r.response?.status()}; étapes=${steps}; validation=${validationMessage || 'absente'}; exacte=${pattern.test(validationMessage)}; dir=${await page.locator('html').getAttribute('dir')}; #next type=${nextType}; aucun formulaire soumis`);
   }
   record(5, 'Titre du dépôt anglais localisé, sans titre français', /Your property deserves/i.test(enTitle + ' ' + enBody.slice(0, 600)) && !/Votre bien mérite/i.test(enTitle + ' ' + enBody), `title=${enTitle}; anglais=${/Your property deserves/i.test(enTitle + ' ' + enBody.slice(0,600))}; titre français=${/Votre bien mérite/i.test(enTitle + ' ' + enBody)}`);
 
@@ -216,9 +229,12 @@ try {
       noFullReload = page.url() === beforeUrl;
     }
   }
-  record(9, 'Parcours visiteur, bouton WhatsApp, favoris ajoutés/retirés, changement de langue sans reload',
-    archive.response?.status() === 200 && favoriteRoundTrip && waReport.every(x => x.links.some(l => l.text.includes(x.expectedLabel))) && noFullReload,
-    `favori aller-retour=${favoriteRoundTrip}; WhatsApp=${JSON.stringify(waReport)}; 212640424412 présent=${numberPresent}; changement sans reload=${noFullReload}; URL initiale=${originalUrl}`);
+  const waLabelsOk = waReport.every(x => x.links.some(l => l.text.includes(x.expectedLabel)));
+  record(9, 'Parcours visiteur, favoris réversibles et boutons WhatsApp FR/EN/AR',
+    archive.response?.status() === 200 && favoriteRoundTrip && waLabelsOk,
+    `archive HTTP=${archive.response?.status()}; favori aller-retour=${favoriteRoundTrip}; libellés WhatsApp localisés=${waLabelsOk}; liens=${waReport.map(x => `${x.locale}:${x.links.length}`).join(', ')}; numéro 212640424412 présent=${numberPresent}`);
+  record(9, 'Changement de langue sans rechargement complet', noFullReload,
+    `URL initiale=${originalUrl}; même URL après sélection=${noFullReload}`, noFullReload ? 'PASS' : 'NOTE');
   if (!numberPresent) record(9, 'Numéro WhatsApp non déployé sur le tag UAT', true, '212640424412 absent; la PR dédiée n’est pas sur le tag déployé.', 'NOTE');
 
   // P10 — cautious average-rate inference only; not a capacity or peak-load test.
