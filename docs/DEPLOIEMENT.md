@@ -70,13 +70,13 @@ Avant tout build ou accès SSH en cible `prd`, `deploy.yml` exige que le SHA att
 
 ### État observé des environnements GitHub (lecture seule, 2026-11-08)
 
-La configuration ci-dessous n'est **pas** encore conforme à la table cible :
+La configuration ci-dessous est partiellement conforme, d'après une relecture API en lecture seule le 2026-11-08 :
 
-- `prd` a actuellement une politique de tag dont le nom exact commence par `U+00A0` (espace insécable) et vaut `U+00A0release-`, sans joker. Elle ne correspond pas aux tags `release-<version>` acceptés par le workflow. La tentative de correction via l'API GitHub a reçu HTTP 403; aucun réglage n'a été modifié.
-- `uat` a la politique `pre-release-*`, mais l'API ne retourne aucune règle `required_reviewers`. La ligne « oui » ci-dessous décrit la configuration requise, pas l'état observé.
-- `prd` retourne une règle `required_reviewers`; l'identité de l'approbateur n'est pas lisible avec l'accès disponible. La lecture des variables et métadonnées de secrets de `prd` a aussi reçu HTTP 403; leur présence n'est donc pas confirmée.
+- `prd` retourne maintenant le motif de tag ASCII `release-*`, compatible avec les tags `release-<version>`. Lors de l'inspection précédente, il valait `U+00A0release-`; la relecture confirme que ce défaut a été corrigé depuis.
+- `uat` a `pre-release-*`, mais aucune règle `required_reviewers` n'est retournée. La ligne « oui » ci-dessous est la configuration requise, pas l'état observé.
+- `prd` retourne une règle `required_reviewers`; l'identité de l'approbateur n'est pas lisible avec l'accès disponible. La lecture des variables et métadonnées de secrets de `prd` reçoit HTTP 403; leur présence n'est donc pas confirmée.
 
-Un administrateur GitHub doit remplacer la politique `prd` par le motif ASCII `release-*`, désigner/vérifier l'approbateur `uat`, confirmer l'approbateur `prd`, puis configurer les deux variables de readiness uniquement après constitution et revue des preuves. Après modification, relire les paramètres dans Settings → Environments et vérifier que les tags `release-<version>` sont autorisés. Ne pas élargir les branches de déploiement ni contourner les approbations pour débloquer le workflow.
+Un administrateur GitHub doit désigner l'approbateur `uat`, confirmer l'approbateur `prd`, puis vérifier/configurer les deux variables de readiness uniquement après constitution et revue des preuves. Après modification, relire les paramètres dans Settings → Environments. Ne pas élargir les branches de déploiement ni contourner les approbations pour débloquer le workflow.
 
 ### Protection des environnements (Settings → Environments)
 
