@@ -18,6 +18,48 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class Partikulier_Security {
 
+	/**
+	 * Ferme XML-RPC hors production. pep.ma conserve le filtre actuel.
+	 * L'UAT et la recette reçoivent un refus HTTP avant le serveur IXR.
+	 */
+	public static function refuse_xmlrpc_outside_production() {
+		if ( ! defined( 'XMLRPC_REQUEST' ) || ! XMLRPC_REQUEST ) {
+			return;
+		}
+		if ( self::is_production_xmlrpc_host() ) {
+			return;
+		}
+		if ( ! headers_sent() ) {
+			status_header( 403 );
+			header( 'Content-Type: text/plain; charset=UTF-8' );
+			header( 'X-Robots-Tag: noindex, nofollow' );
+		}
+		exit;
+	}
+
+	/**
+	 * Vrai seulement pour le domaine public de production.
+	 *
+	 * @return bool
+	 */
+	private static function is_production_xmlrpc_host() {
+		$hosts = array();
+		if ( isset( $_SERVER['HTTP_HOST'] ) ) {
+			$hosts[] = strtolower( (string) wp_unslash( $_SERVER['HTTP_HOST'] ) );
+		}
+		$home = wp_parse_url( home_url( '/' ), PHP_URL_HOST );
+		if ( is_string( $home ) && '' !== $home ) {
+			$hosts[] = strtolower( $home );
+		}
+		foreach ( $hosts as $host ) {
+			$host = (string) preg_replace( '/:\d+$/', '', $host );
+			if ( in_array( $host, array( 'pep.ma', 'www.pep.ma' ), true ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public static function init() {
 		add_filter( 'rest_endpoints', array( __CLASS__, 'restrict_user_enumeration' ) );
 		add_filter( 'rest_pre_dispatch', array( __CLASS__, 'close_public_media_list' ), 10, 3 );
@@ -27,6 +69,7 @@ class Partikulier_Security {
 		add_filter( 'wp_redirect', array( __CLASS__, 'keep_public_headers_on_redirect' ), 0, 2 );
 		add_filter( 'xmlrpc_enabled', '__return_false' );
 		add_filter( 'xmlrpc_methods', '__return_empty_array' );
+		add_action( 'init', array( __CLASS__, 'refuse_xmlrpc_outside_production' ), 0 );
 
 		// --- Sécurité de l'authentification (OWASP ASVS / WSTG) ---
 		// 1. Unification des erreurs de connexion (Anti-Énumération WSTG-INFO-04)
