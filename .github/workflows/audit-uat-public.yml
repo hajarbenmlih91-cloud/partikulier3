@@ -62,6 +62,13 @@ jobs:
           set -euo pipefail
           php theme/partikulier/tests/staging-securite.php "$SITE_URL" 2>&1 | tee "$AUDIT_OUT_DIR/security.txt"
 
+      - name: Rate-limit HMAC et limite du payload (requêtes bornées sans secret)
+        id: bounds
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          php theme/partikulier/tests/staging-bornes.php "$SITE_URL" 2>&1 | tee "$AUDIT_OUT_DIR/bounds.txt"
+
       - name: Cache, en-têtes et TTFB extérieur
         id: cache
         continue-on-error: true
@@ -169,6 +176,7 @@ jobs:
         if: always()
         env:
           SECURITY_RESULT: ${{ steps.security.outcome }}
+          BOUNDS_RESULT: ${{ steps.bounds.outcome }}
           CACHE_RESULT: ${{ steps.cache.outcome }}
           SMOKE_RESULT: ${{ steps.load_smoke.outcome }}
           FULL_LOAD_RESULT: ${{ steps.load_full.outcome }}
@@ -184,6 +192,7 @@ jobs:
             echo '| Suite | Résultat |'
             echo '|---|---|'
             echo "| Sécurité publique | ${SECURITY_RESULT:-skipped} |"
+            echo "| Rate-limit/payload | ${BOUNDS_RESULT:-skipped} |"
             echo "| Cache/TTFB | ${CACHE_RESULT:-skipped} |"
             echo "| Charge 10 rps | ${SMOKE_RESULT:-skipped} |"
             echo "| Charge 100 rps | ${FULL_LOAD_RESULT:-skipped} |"
@@ -209,6 +218,7 @@ jobs:
         if: always()
         env:
           SECURITY_RESULT: ${{ steps.security.outcome }}
+          BOUNDS_RESULT: ${{ steps.bounds.outcome }}
           CACHE_RESULT: ${{ steps.cache.outcome }}
           SMOKE_RESULT: ${{ steps.load_smoke.outcome }}
           FULL_LOAD_RESULT: ${{ steps.load_full.outcome }}
@@ -224,6 +234,7 @@ jobs:
             echo '| Suite | Résultat |'
             echo '|---|---|'
             echo "| Sécurité publique | ${SECURITY_RESULT:-skipped} |"
+            echo "| Rate-limit/payload | ${BOUNDS_RESULT:-skipped} |"
             echo "| Cache/TTFB | ${CACHE_RESULT:-skipped} |"
             echo "| Responsive/SEO/Axe/XSS | ${BROWSER_RESULT:-skipped} |"
             echo "| Auth anonyme/formulaire | ${AUTH_RESULT:-skipped} |"
@@ -232,13 +243,16 @@ jobs:
             echo "| Charge 10 rps | ${SMOKE_RESULT:-skipped} |"
             echo "| Charge 100 rps | ${FULL_LOAD_RESULT:-skipped} |"
           } | tee -a "$GITHUB_STEP_SUMMARY" "$AUDIT_OUT_DIR/README.md"
-          echo "::notice title=UAT audit outcomes::security=$SECURITY_RESULT; cache=$CACHE_RESULT; browser=$BROWSER_RESULT; auth=$AUTH_RESULT; interactions=$INTERACTIONS_RESULT; lighthouse=$LIGHTHOUSE_RESULT; load10=$SMOKE_RESULT; load100=$FULL_LOAD_RESULT"
+          echo "::notice title=UAT audit outcomes::security=$SECURITY_RESULT; bounds=$BOUNDS_RESULT; cache=$CACHE_RESULT; browser=$BROWSER_RESULT; auth=$AUTH_RESULT; interactions=$INTERACTIONS_RESULT; lighthouse=$LIGHTHOUSE_RESULT; load10=$SMOKE_RESULT; load100=$FULL_LOAD_RESULT"
           python - <<'PY'
           import json, os, pathlib
           root = pathlib.Path(os.environ['AUDIT_OUT_DIR'])
           def annotation(title, text):
               text = ' '.join(str(text).splitlines())[:500]
               print(f'::notice title={title}::{text or "no findings recorded"}')
+          bounds = root / 'bounds.txt'
+          if bounds.exists():
+              annotation('UAT rate-limit/payload', ' | '.join(x.strip() for x in bounds.read_text(errors='replace').splitlines() if x.strip()) or 'no result lines')
           security = root / 'security.txt'
           if security.exists():
               failures = [line.strip() for line in security.read_text(errors='replace').splitlines() if line.lstrip().startswith('KO')]
@@ -277,7 +291,7 @@ jobs:
                   annotation(f'UAT load {label}', ' | '.join(lines))
           PY
 
-          for result in "$SECURITY_RESULT" "$CACHE_RESULT" "$BROWSER_RESULT" "$LIGHTHOUSE_RESULT" "$AUTH_RESULT" "$INTERACTIONS_RESULT"; do
+          for result in "$SECURITY_RESULT" "$BOUNDS_RESULT" "$CACHE_RESULT" "$BROWSER_RESULT" "$LIGHTHOUSE_RESULT" "$AUTH_RESULT" "$INTERACTIONS_RESULT"; do
             if [ "$result" != success ]; then
               echo "Audit public incomplet ou en échec; consulter l'artefact audit-uat-public-${GITHUB_RUN_NUMBER}."
               exit 1
