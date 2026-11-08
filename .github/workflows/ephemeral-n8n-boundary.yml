@@ -8,12 +8,23 @@ on:
         type: boolean
         required: false
         default: false
+      uat_public_audit:
+        description: Run the read-only public UAT audit (no secrets, no load test)
+        type: boolean
+        required: false
+        default: false
+      uat_public_only:
+        description: Skip the disposable WordPress/n8n suite and run only the public UAT audit
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
 
 jobs:
   ephemeral-boundary:
+    if: ${{ !inputs.uat_public_only }}
     name: Disposable MariaDB + WordPress + n8n
     runs-on: ubuntu-24.04
     timeout-minutes: 35
@@ -1237,3 +1248,10 @@ jobs:
           path: ${{ runner.temp }}/ephemeral-n8n-proof.md
           if-no-files-found: warn
           retention-days: 14
+
+  uat-public-audit:
+    name: Public UAT audit without secrets or load
+    if: ${{ inputs.uat_public_audit }}
+    uses: ./.github/workflows/audit-uat-public.yml
+    with:
+      load_test: false
