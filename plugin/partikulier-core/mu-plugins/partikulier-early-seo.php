@@ -18,6 +18,30 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+
+/**
+ * La redirection d'accueil part avant le thème. Sans cet appel, / annonce PHP.
+ */
+function partikulier_early_public_headers() {
+	if ( headers_sent() ) {
+		return;
+	}
+	if ( PHP_SAPI === 'cli' || ( defined( 'WP_CLI' ) && WP_CLI ) ) {
+		return;
+	}
+	if ( function_exists( 'is_admin' ) && is_admin() ) {
+		return;
+	}
+	header_remove( 'X-Powered-By' );
+	header_remove( 'X-Generator' );
+	header( 'X-Content-Type-Options: nosniff' );
+	header( 'X-Frame-Options: SAMEORIGIN' );
+	header( 'Referrer-Policy: strict-origin-when-cross-origin' );
+	header( 'Permissions-Policy: geolocation=(), microphone=(), camera=()' );
+}
+
+partikulier_early_public_headers();
+
 function partikulier_early_seo_is_robot() {
 	// SE-020 : lecture de navigation à usage exclusivement comparatif (regex)
 	// — jamais persistée ni émise ; le filtre s'exécute après wp_magic_quotes.
@@ -69,6 +93,7 @@ add_filter(
 	static function ( $redirect ) {
 		$request_path = partikulier_early_request_path();
 		if ( '/' === trailingslashit( (string) $request_path ) ) {
+			partikulier_early_public_headers();
 			if ( partikulier_early_is_ci_host() ) {
 				return false;
 			}
@@ -97,6 +122,7 @@ add_filter(
 		}
 		$request_path = partikulier_early_request_path();
 		if ( 302 === (int) $status && '/' === trailingslashit( (string) $request_path ) ) {
+			partikulier_early_public_headers();
 		header( 'Cache-Control: private, no-store, max-age=0' );
 		header( 'Vary: Cookie', false );
 		}
