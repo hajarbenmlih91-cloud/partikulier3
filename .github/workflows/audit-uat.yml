@@ -11,10 +11,20 @@ on:
         required: true
         default: false
         type: boolean
+      run_prompts:
+        description: Exécuter uniquement les 10 scénarios UAT ciblés (sans HMAC ni charge)
+        required: true
+        default: false
+        type: boolean
   workflow_call:
     inputs:
       load_test:
         description: Exécuter le test de charge complet (sonde 10 rps puis 100 rps si la sonde tient)
+        required: false
+        default: false
+        type: boolean
+      run_prompts:
+        description: Exécuter uniquement les 10 scénarios UAT ciblés (sans HMAC ni charge)
         required: false
         default: false
         type: boolean
@@ -28,6 +38,7 @@ concurrency:
 
 jobs:
   audit:
+    if: ${{ inputs.run_prompts != true }}
     name: SEO, sécurité, navigateur, authentification et performance
     runs-on: ubuntu-24.04
     timeout-minutes: 60
@@ -399,3 +410,207 @@ jobs:
             done
           fi
           echo "Toutes les suites sélectionnées ont terminé sans échec de commande. Lire l'artefact pour les scores et constats non bloquants."
+  prompts:
+    if: ${{ inputs.run_prompts == true }}
+    name: Scénarios UAT ciblés (sans HMAC ni charge)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    environment:
+      name: uat
+      url: https://darkcyan-yak-151002.hostingersite.com
+    env:
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+      SSH_PORT: ${{ secrets.SSH_PORT }}
+      SSH_USER: ${{ secrets.SSH_USER }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+      WP_PATH: ${{ secrets.WP_PATH }}
+      AUDIT_OUT_DIR: ${{ github.workspace }}/uat-prompt-artifacts
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Valider exclusivement la cible UAT
+        run: |
+          set -euo pipefail
+          SITE_URL='https://darkcyan-yak-151002.hostingersite.com'
+          [[ "$SITE_URL" == 'https://darkcyan-yak-151002.hostingersite.com' ]]
+          printf 'SITE_URL=%s\n' "$SITE_URL" >> "$GITHUB_ENV"
+          mkdir -p "$AUDIT_OUT_DIR"
+          printf '# 10 scénarios UAT\n\nCible : %s\nCommit : `%s`\nAucun HMAC, dépôt public ou test de charge.\n' "$SITE_URL" "$GITHUB_SHA" > "$AUDIT_OUT_DIR/README.md"
+
+      - name: Installer PHP CLI et cURL
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: '8.3'
+          extensions: curl, mbstring
+          coverage: none
+      - name: Vérifier la syntaxe du helper avant toute connexion UAT
+        run: php -l .github/scripts/uat-prompts-fixture.php
+
+      - name: Installer Node et Playwright Chromium
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+      - run: |
+          set -euo pipefail
+          cd theme/partikulier
+          npm ci
+          npx playwright install --with-deps chromium
+          ln -s "$GITHUB_WORKSPACE/theme/partikulier/node_modules" "$GITHUB_WORKSPACE/node_modules"
+
+      - name: Configurer SSH strict vers l’UAT
+        id: ssh
+        run: |
+          set -euo pipefail
+          : "${SSH_HOST:?Secret SSH_HOST absent}"
+          : "${SSH_PORT:?Secret SSH_PORT absent}"
+          : "${SSH_USER:?Secret SSH_USER absent}"
+          : "${SSH_PRIVATE_KEY:?Secret SSH_PRIVATE_KEY absent}"
+          : "${SSH_KNOWN_HOSTS:?Secret SSH_KNOWN_HOSTS absent}"
+          : "${WP_PATH:?Secret WP_PATH absent}"
+          [[ "$SSH_HOST" =~ ^[A-Za-z0-9][A-Za-z0-9.-]*$ ]]
+          [[ "$SSH_USER" =~ ^[A-Za-z0-9._-]+$ ]]
+          [[ "$SSH_PORT" =~ ^[1-9][0-9]{0,4}$ ]] && (( SSH_PORT <= 65535 ))
+          [[ "$WP_PATH" =~ ^/[A-Za-z0-9._/-]+$ ]]
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
+          chmod 600 "$HOME/.ssh/id_ed25519"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 644 "$HOME/.ssh/known_hosts"
+          {
+            echo 'Host partikulier-uat'
+            echo "  HostName $SSH_HOST"
+            echo "  Port $SSH_PORT"
+            echo "  User $SSH_USER"
+            echo "  IdentityFile $HOME/.ssh/id_ed25519"
+            echo "  UserKnownHostsFile $HOME/.ssh/known_hosts"
+            echo '  StrictHostKeyChecking yes'
+            echo '  IdentitiesOnly yes'
+            echo '  BatchMode yes'
+            echo '  ConnectTimeout 15'
+          } > "$HOME/.ssh/config"
+          chmod 600 "$HOME/.ssh/config"
+          echo "SSH strict configuré pour le contrôle UAT."
+
+      - name: Préparer les identifiants uniques du run
+        id: fixture_vars
+        run: |
+          set -euo pipefail
+          run="${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          login="pk_prompt_${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}"
+          email="${login}@example.invalid"
+          display="UAT Prompt ${GITHUB_RUN_ID}"
+          marker="$(openssl rand -hex 24)"
+          password="$(openssl rand -hex 24)"
+          echo "::add-mask::$password"
+          env_local="$RUNNER_TEMP/pk-uat-prompts-${run}.env"
+          env_remote="/tmp/pk-uat-prompts-${run}.env"
+          fixture_remote="/tmp/pk-uat-prompts-${run}.php"
+          {
+            printf 'PK_PROMPT_RUN=%q\n' "$run"
+            printf 'PK_PROMPT_LOGIN=%q\n' "$login"
+            printf 'PK_PROMPT_EMAIL=%q\n' "$email"
+            printf 'PK_PROMPT_NAME=%q\n' "$display"
+            printf 'PK_PROMPT_MARKER=%q\n' "$marker"
+            printf 'PK_PROMPT_PASSWORD=%q\n' "$password"
+          } > "$env_local"
+          chmod 600 "$env_local"
+          printf 'PROMPT_PASSWORD=%s\n' "$password" >> "$GITHUB_ENV"
+          {
+            echo "run=$run"
+            echo "login=$login"
+            echo "email=$email"
+            echo "display=$display"
+            echo "marker=$marker"
+            echo "env_local=$env_local"
+            echo "env_remote=$env_remote"
+            echo "fixture_remote=$fixture_remote"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Copier le helper CLI temporaire vers /tmp sur l’UAT
+        id: upload_fixture
+        run: |
+          set -euo pipefail
+          scp -F "$HOME/.ssh/config" .github/scripts/uat-prompts-fixture.php "partikulier-uat:${{ steps.fixture_vars.outputs.fixture_remote }}"
+          scp -F "$HOME/.ssh/config" "${{ steps.fixture_vars.outputs.env_local }}" "partikulier-uat:${{ steps.fixture_vars.outputs.env_remote }}"
+          echo 'Helper et variables de fixture transmis via SSH strict; aucun contenu secret affiché.'
+
+      - name: Créer le compte et l’annonce temporaire marqués
+        id: seed
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          result="$(ssh -F "$HOME/.ssh/config" partikulier-uat 'bash -s' -- "$WP_PATH" "${{ steps.fixture_vars.outputs.fixture_remote }}" "${{ steps.fixture_vars.outputs.env_remote }}" <<'REMOTE'
+          set -euo pipefail
+          wp_path="$1"; fixture="$2"; env_file="$3"
+          source "$env_file"
+          cd "$wp_path"
+          PK_PROMPT_MODE=seed wp eval-file "$fixture"
+          REMOTE
+          )"
+          printf '%s\n' "$result" > "$AUDIT_OUT_DIR/fixture-seed.json"
+          listing_id="$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["listing_id"])' "$AUDIT_OUT_DIR/fixture-seed.json")"
+          listing_url="$(python -c 'import json,sys; print(json.load(open(sys.argv[1]))["listing_url"])' "$AUDIT_OUT_DIR/fixture-seed.json")"
+          [[ "$listing_id" =~ ^[0-9]+$ && "$listing_url" == https://darkcyan-yak-151002.hostingersite.com/* ]]
+          { echo "listing_id=$listing_id"; echo "listing_url=$listing_url"; } >> "$GITHUB_OUTPUT"
+          { echo "PROMPT_LISTING_ID=$listing_id"; echo "PROMPT_LISTING_URL=$listing_url"; echo "PROMPT_EMAIL=${{ steps.fixture_vars.outputs.email }}"; echo "PROMPT_DISPLAY_NAME=${{ steps.fixture_vars.outputs.display }}"; } >> "$GITHUB_ENV"
+          echo "Compte et fixture créés via WP-CLI; titre à marqueur de run, aucune annonce de démo touchée."
+
+      - name: Exécuter les dix scénarios dans le navigateur
+        id: prompt_tests
+        if: steps.seed.outcome == 'success'
+        continue-on-error: true
+        env:
+          PK_BASE: https://darkcyan-yak-151002.hostingersite.com
+        run: |
+          set -euo pipefail
+          node .github/scripts/uat-prompts.mjs 2>&1 | tee "$AUDIT_OUT_DIR/prompts-console.txt"
+
+      - name: Nettoyer uniquement les fixtures du run et vérifier leur absence
+        id: cleanup_fixtures
+        if: always() && steps.ssh.outcome == 'success' && steps.fixture_vars.outputs.login != '' && steps.upload_fixture.outcome == 'success'
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          ssh -F "$HOME/.ssh/config" partikulier-uat 'bash -s' -- "$WP_PATH" "${{ steps.fixture_vars.outputs.fixture_remote }}" "${{ steps.fixture_vars.outputs.env_remote }}" "${{ steps.seed.outputs.listing_id }}" <<'REMOTE'
+          set -euo pipefail
+          wp_path="$1"; fixture="$2"; env_file="$3"; listing_id="${4:-}"
+          source "$env_file"
+          trap 'rm -f "$fixture" "$env_file"' EXIT
+          cd "$wp_path"
+          PK_PROMPT_LISTING_ID="$listing_id" PK_PROMPT_MODE=cleanup wp eval-file "$fixture" cleanup
+          REMOTE
+          echo 'Nettoyage distant vérifié.'
+
+      - name: Nettoyer les clés SSH locales
+        if: always()
+        run: |
+          rm -f "$HOME/.ssh/id_ed25519" "$HOME/.ssh/known_hosts" "$HOME/.ssh/config"
+          rm -f "${{ steps.fixture_vars.outputs.env_local }}"
+
+      - name: Publier les résultats (sans secrets)
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: uat-prompts-${{ github.run_number }}
+          path: ${{ github.workspace }}/uat-prompt-artifacts/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Verdict final (scénarios et nettoyage)
+        if: always()
+        env:
+          SEED_RESULT: ${{ steps.seed.outcome }}
+          PROMPTS_RESULT: ${{ steps.prompt_tests.outcome }}
+          CLEANUP_RESULT: ${{ steps.cleanup_fixtures.outcome }}
+        run: |
+          set -euo pipefail
+          if [[ "$SEED_RESULT" != success || "$PROMPTS_RESULT" != success || "$CLEANUP_RESULT" != success ]]; then
+            echo "Scénarios UAT incomplets ou nettoyage non vérifié; consulter l’artefact uat-prompts-${GITHUB_RUN_NUMBER}."
+            exit 1
+          fi
+          echo 'Scénarios ciblés exécutés et fixtures nettoyées.'
