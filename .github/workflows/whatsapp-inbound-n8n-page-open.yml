@@ -2,6 +2,7 @@ name: Essai n8n — raccord entrant WhatsApp et page ouverte
 
 on:
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read

@@ -18,6 +18,11 @@ on:
         type: boolean
         required: false
         default: false
+      whatsapp_page_open:
+        description: Run only the signed WhatsApp inbound/open-browser proof on disposable services
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
@@ -1248,6 +1253,13 @@ jobs:
           path: ${{ runner.temp }}/ephemeral-n8n-proof.md
           if-no-files-found: warn
           retention-days: 14
+
+  whatsapp-inbound-page-open:
+    name: Signed WhatsApp inbound and browser page-open proof
+    if: ${{ inputs.whatsapp_page_open }}
+    uses: ./.github/workflows/whatsapp-inbound-n8n-page-open.yml
+    permissions:
+      contents: read
 
   uat-public-audit:
     name: Public UAT audit without secrets or load
