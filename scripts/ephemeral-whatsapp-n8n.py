@@ -228,13 +228,12 @@ def execute():
             except Exception:
                 parsed_payload = None
             safe_shape = {
-                'record_keys': sorted(decoded_data.keys())[:10] if isinstance(decoded_data, dict) else [],
                 'payload_type': type(record_payload).__name__,
-                'payload_keys': sorted(parsed_payload.keys())[:10] if isinstance(parsed_payload, dict) else [],
+                'payload_keys': sorted(parsed_payload.keys())[:3] if isinstance(parsed_payload, dict) else [],
                 'payload_list_length': len(parsed_payload) if isinstance(parsed_payload, list) else 0,
                 'payload_string_lead': record_payload[:1] if isinstance(record_payload, str) else '',
             }
-            raise RuntimeError('n8n execution data missing; shape=' + json.dumps(safe_shape, separators=(',', ':')))
+            raise RuntimeError('n8n data missing; payload=' + json.dumps(safe_shape, separators=(',', ':')))
         names = ['WhatsApp status only', 'Payment status only', 'Unknown inbound code', 'First signed inbound', 'Exact inbound replay']
         outcomes = {name: response_for(run_data, name) for name in names}
         if any(value is None for value in outcomes.values()): raise RuntimeError('one or more WordPress request results are missing')
