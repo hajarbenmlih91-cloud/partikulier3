@@ -391,14 +391,6 @@ class Partikulier_WhatsApp_Verification {
 		wp_send_json_success( $status );
 	}
 
-	public static function ajax_start_auth() {
-		check_ajax_referer( 'pk_whatsapp_auth', 'nonce' );
-		$raw_phone = isset( $_POST['phone'] ) ? sanitize_text_field( wp_unslash( $_POST['phone'] ) ) : '';
-		$result = self::begin_auth( $raw_phone );
-		if ( is_wp_error( $result ) ) wp_send_json_error( array( 'message' => $result->get_error_message() ), 400 );
-		wp_send_json_success( $result );
-	}
-
 	public static function pending_payload( $post_id ) {
 		$code = get_post_meta( absint( $post_id ), '_pk_whatsapp_verification_code', true );
 		return array(
