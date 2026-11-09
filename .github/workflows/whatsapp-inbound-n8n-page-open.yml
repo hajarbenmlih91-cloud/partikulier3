@@ -1,0 +1,312 @@
+name: Essai n8n — raccord entrant WhatsApp et page ouverte
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ephemeral-page-open:
+    name: MariaDB + WordPress + n8n + navigateur jetables
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MARIADB_ROOT_PASSWORD: ci-only-root-password
+          MARIADB_DATABASE: partikulier
+          MARIADB_USER: partikulier
+          MARIADB_PASSWORD: ci-only-wordpress-password
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s --health-timeout=5s --health-retries=30
+      wordpress:
+        image: wordpress:6.6-php8.3-apache
+        env:
+          WORDPRESS_DB_HOST: mariadb:3306
+          WORDPRESS_DB_NAME: partikulier
+          WORDPRESS_DB_USER: partikulier
+          WORDPRESS_DB_PASSWORD: ci-only-wordpress-password
+          WORDPRESS_CONFIG_EXTRA: |
+            define('WP_HOME', 'http://wordpress:8080');
+            define('WP_SITEURL', 'http://wordpress:8080');
+            define('DISALLOW_FILE_EDIT', true);
+            define('WP_HTTP_BLOCK_EXTERNAL', true);
+            define('DISABLE_WP_CRON', true);
+            define('AUTOMATIC_UPDATER_DISABLED', true);
+            define('WP_AUTO_UPDATE_CORE', false);
+        ports: ['8080:80']
+        volumes:
+          - ${{ github.workspace }}:/repo:ro
+      n8n:
+        image: n8nio/n8n:2.46.6
+        env:
+          N8N_DIAGNOSTICS_ENABLED: 'false'
+          N8N_PERSONALIZATION_ENABLED: 'false'
+          N8N_VERSION_NOTIFICATIONS_ENABLED: 'false'
+          N8N_TEMPLATES_ENABLED: 'false'
+          N8N_SECURE_COOKIE: 'false'
+          N8N_LOG_LEVEL: error
+        ports: ['5678:5678']
+
+    steps:
+      - name: Récupérer la révision testée
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Installer PHP et Node
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: '8.3'
+          extensions: curl, dom, mbstring, mysqli, xml
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v4
+        with:
+          node-version: '22'
+
+      - name: Vérifier la syntaxe des sources touchées
+        run: |
+          php -l plugin/partikulier-core/src/Domain/Automation/AutomationService.php
+          php -l theme/partikulier/inc/class-whatsapp-verification.php
+          php -l theme/partikulier/inc/class-form.php
+          python3 -m py_compile scripts/ephemeral-whatsapp-n8n.py
+          node --check theme/partikulier/assets/js/main.js
+          node --check theme/partikulier/tests/whatsapp-inbound-n8n-page-open.mjs
+
+      - name: Préparer WordPress jetable et verrouiller ses sorties
+        id: wordpress
+        shell: bash
+        env:
+          WP_CONTAINER: ${{ job.services.wordpress.id }}
+        run: |
+          set -euo pipefail
+          WP_BASE='http://127.0.0.1:8080'
+          for attempt in $(seq 1 90); do
+            code="$(curl -sS --max-time 10 -o /dev/null -w '%{http_code}' -H 'Host: wordpress:8080' "$WP_BASE/wp-login.php" || true)"
+            [[ "$code" == 200 || "$code" == 302 ]] && break
+            sleep 2
+          done
+          [[ "$code" == 200 || "$code" == 302 ]]
+          docker cp plugin/partikulier-core/. "$WP_CONTAINER:/var/www/html/wp-content/plugins/partikulier-core/"
+          docker cp theme/partikulier/. "$WP_CONTAINER:/var/www/html/wp-content/themes/partikulier/"
+          docker exec "$WP_CONTAINER" mkdir -p /var/www/html/wp-content/mu-plugins
+          docker exec -i "$WP_CONTAINER" sh -c 'cat > /var/www/html/wp-content/mu-plugins/ci-boundary.php' <<'PHP'
+          <?php
+          add_action('init', static function () {
+              if (!post_type_exists('properties')) {
+                  register_post_type('properties', ['public' => true, 'publicly_queryable' => true, 'rewrite' => ['slug' => 'properties'], 'supports' => ['title', 'editor']]);
+              }
+          }, 0);
+          add_filter('pre_wp_mail', static function ($return) {
+              update_option('_pk_ci_mail_attempts', (int) get_option('_pk_ci_mail_attempts', 0) + 1, false);
+              return true;
+          });
+          add_filter('pre_http_request', static function ($pre, $args, $url) {
+              $host = strtolower((string) wp_parse_url($url, PHP_URL_HOST));
+              if (in_array($host, ['wordpress', '127.0.0.1', 'localhost', 'mariadb'], true)) return $pre;
+              update_option('_pk_ci_external_http_attempts', (int) get_option('_pk_ci_external_http_attempts', 0) + 1, false);
+              return new WP_Error('pk_ci_external_http_blocked', 'External HTTP disabled in disposable CI.');
+          }, 10, 3);
+          PHP
+          docker exec -i "$WP_CONTAINER" php <<'PHP'
+          <?php
+          define('WP_INSTALLING', true);
+          require '/var/www/html/wp-load.php';
+          require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+          require_once ABSPATH . 'wp-admin/includes/plugin.php';
+          add_filter('pre_wp_mail', static fn() => true);
+          if (!is_blog_installed()) wp_install('Disposable Partikulier CI', 'ci-admin', 'ci-admin@example.invalid', false, '', bin2hex(random_bytes(24)));
+          $result = activate_plugin('partikulier-core/partikulier-core.php');
+          if (is_wp_error($result)) { fwrite(STDERR, "Core activation failed" . PHP_EOL); exit(1); }
+          switch_theme('partikulier');
+          require_once '/var/www/html/wp-content/themes/partikulier/inc/class-whatsapp-verification.php';
+          update_option('_pk_ci_mail_attempts', 0, false);
+          update_option('_pk_ci_external_http_attempts', 0, false);
+          $secret = base64_encode(random_bytes(48));
+          update_option('pk_n8n_settings', ['automation_api_secret' => $secret, 'active_key_id' => 'N', 'hmac_mode' => 'enforce'], false);
+          file_put_contents('/tmp/ci-secret', $secret, LOCK_EX);
+          chmod('/tmp/ci-secret', 0600);
+          $code = 'CI-' . bin2hex(random_bytes(6));
+          $post_id = wp_insert_post(['post_type' => 'properties', 'post_status' => 'pending', 'post_title' => 'Essai entrant ' . $code, 'post_content' => 'Annonce de test éphémère', 'post_author' => 1], true);
+          if (is_wp_error($post_id) || !$post_id) { fwrite(STDERR, "Could not seed pending listing" . PHP_EOL); exit(1); }
+          update_post_meta($post_id, '_pk_whatsapp_verification_code', $code);
+          $listing = ['code' => $code, 'post_id' => (int) $post_id, 'url' => get_permalink($post_id), 'status_url' => Partikulier_WhatsApp_Verification::status_url($code)];
+          file_put_contents('/tmp/ci-listing.json', wp_json_encode($listing), LOCK_EX);
+          echo "Disposable WordPress initialized; pending listing seeded" . PHP_EOL;
+          PHP
+          mkdir -p "$RUNNER_TEMP"
+          docker cp "$WP_CONTAINER:/tmp/ci-secret" "$RUNNER_TEMP/ephemeral-secret"
+          docker cp "$WP_CONTAINER:/tmp/ci-listing.json" "$RUNNER_TEMP/listing.json"
+          chmod 600 "$RUNNER_TEMP/ephemeral-secret" "$RUNNER_TEMP/listing.json"
+          secret="$(cat "$RUNNER_TEMP/ephemeral-secret")"
+          echo "::add-mask::$secret"
+          echo "PK_EPHEMERAL_SECRET=$secret" >> "$GITHUB_ENV"
+          echo "WP_HOME=http://wordpress:8080" >> "$GITHUB_ENV"
+          echo "WP_CONTAINER_IP=$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$WP_CONTAINER")" >> "$GITHUB_ENV"
+          echo "WP_CONTAINER=$WP_CONTAINER" >> "$GITHUB_ENV"
+          echo "::notice title=WordPress::HTTP $code; disposable instance ready; listing remains pending"
+
+      - name: Préparer n8n local et filtrer le réseau
+        id: n8n
+        env:
+          N8N_CONTAINER: ${{ job.services.n8n.id }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 90); do
+            code="$(curl -sS --max-time 10 -o /dev/null -w '%{http_code}' http://127.0.0.1:5678/healthz || true)"
+            [[ "$code" == 200 ]] && break
+            sleep 2
+          done
+          [[ "$code" == 200 ]]
+          N8N_IP="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$N8N_CONTAINER")"
+          WP_IP="$WP_CONTAINER_IP"
+          DB_ID='${{ job.services.mariadb.id }}'
+          DB_IP="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$DB_ID")"
+          test -n "$N8N_IP" && test -n "$WP_IP" && test -n "$DB_IP"
+          sudo iptables -nL DOCKER-USER >/dev/null
+          sudo iptables -w -I DOCKER-USER 1 -m conntrack --ctstate ESTABLISHED,RELATED -j RETURN
+          sudo iptables -w -I DOCKER-USER 2 -s "$N8N_IP" -d "$WP_IP" -p tcp --dport 80 -j ACCEPT
+          sudo iptables -w -I DOCKER-USER 3 -s "$N8N_IP" -j DROP
+          sudo iptables -w -I DOCKER-USER 4 -s "$WP_IP" -d "$DB_IP" -p tcp --dport 3306 -j ACCEPT
+          sudo iptables -w -I DOCKER-USER 5 -s "$WP_IP" -j DROP
+          sudo iptables -w -C DOCKER-USER -s "$N8N_IP" -d "$WP_IP" -p tcp --dport 80 -j ACCEPT
+          sudo iptables -w -C DOCKER-USER -s "$N8N_IP" -j DROP
+          sudo iptables -w -C DOCKER-USER -s "$WP_IP" -d "$DB_IP" -p tcp --dport 3306 -j ACCEPT
+          sudo iptables -w -C DOCKER-USER -s "$WP_IP" -j DROP
+          echo "N8N_BASE=http://127.0.0.1:5678" >> "$GITHUB_ENV"
+          echo "N8N_IP=$N8N_IP" >> "$GITHUB_ENV"
+          echo "::notice title=n8n egress::n8n can reach only disposable WordPress TCP/80; WordPress HTTP egress is blocked"
+
+      - name: Créer le workflow signé dans le n8n du job
+        id: workflow
+        env:
+          N8N_CONTAINER: ${{ job.services.n8n.id }}
+        run: |
+          set -euo pipefail
+          # Generate owner credentials at runtime; no repository or UAT credential is used.
+          owner="Ci-$(openssl rand -hex 24)!9A"
+          echo "::add-mask::$owner"
+          echo "N8N_OWNER_PASSWORD=$owner" >> "$GITHUB_ENV"
+          python3 scripts/ephemeral-whatsapp-n8n.py build
+          docker cp "$RUNNER_TEMP/whatsapp-n8n-workflow.json" "$N8N_CONTAINER:/tmp/whatsapp-n8n-workflow.json"
+          docker exec -u 0:0 "$N8N_CONTAINER" chown node:node /tmp/whatsapp-n8n-workflow.json
+          docker exec -u 0:0 "$N8N_CONTAINER" chmod 600 /tmp/whatsapp-n8n-workflow.json
+          docker exec -u node "$N8N_CONTAINER" n8n import:workflow --input=/tmp/whatsapp-n8n-workflow.json >/dev/null
+
+      - name: Installer Chromium pour le navigateur de preuve
+        run: |
+          npm install --no-save playwright@1.50.0
+          npx playwright install --with-deps chromium
+
+      - name: Laisser la page ouverte, exécuter n8n et vérifier le changement d’écran
+        id: proof
+        env:
+          WP_CONTAINER: ${{ job.services.wordpress.id }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          LISTING="$RUNNER_TEMP/listing.json"
+          CODE="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["code"])' "$LISTING")"
+          LISTING_URL="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["url"])' "$LISTING")"
+          STATUS_URL="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["status_url"])' "$LISTING")"
+          RESULT="$RUNNER_TEMP/browser-polls.json"
+          SIGNAL="$RUNNER_TEMP/n8n-finished"
+          rm -f "$SIGNAL" "$RESULT"
+          node theme/partikulier/tests/whatsapp-inbound-n8n-page-open.mjs 'http://wordpress:8080' "$LISTING_URL" "$STATUS_URL" "$CODE" "$GITHUB_WORKSPACE/theme/partikulier/assets/js/main.js" "$RESULT" "$SIGNAL" > "$RUNNER_TEMP/browser.log" 2>&1 &
+          BROWSER_PID=$!
+          finish_browser() { touch "$SIGNAL"; wait "$BROWSER_PID"; }
+          trap 'touch "$SIGNAL"; kill "$BROWSER_PID" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 60); do
+            [[ -f "$RESULT" ]] && break
+            if ! kill -0 "$BROWSER_PID" 2>/dev/null; then cat "$RUNNER_TEMP/browser.log"; exit 1; fi
+            sleep 1
+          done
+          [[ -f "$RESULT" ]] || { cat "$RUNNER_TEMP/browser.log"; echo 'Browser did not record pre-event poll'; exit 1; }
+          python3 - "$RESULT" <<'PY'
+          import json,sys
+          data=json.load(open(sys.argv[1])); assert data['submitted'] and data['before']['http']==200 and data['before']['matched'] is False
+          PY
+
+          # Execute only the imported n8n workflow. The page is still open and its production poller is running.
+          python3 scripts/ephemeral-whatsapp-n8n.py execute > "$RUNNER_TEMP/n8n-result.log"
+          touch "$SIGNAL"
+          wait "$BROWSER_PID"
+          trap - EXIT
+          docker exec -e GITHUB_RUN_ID="$GITHUB_RUN_ID" -e GITHUB_RUN_ATTEMPT="$GITHUB_RUN_ATTEMPT" "$WP_CONTAINER" php -r '
+          require "/var/www/html/wp-load.php";
+          $data = json_decode(file_get_contents("/tmp/ci-listing.json"), true);
+          $id = (int) $data["post_id"];
+          $status = Partikulier_WhatsApp_Verification::status_for_code($data["code"]);
+          global $wpdb;
+          $table = $wpdb->prefix . "pk_automation_events";
+          $attempt = getenv("GITHUB_RUN_ATTEMPT");
+          $ids = ["n8n-page-status-" . getenv("GITHUB_RUN_ID") . "-" . $attempt, "n8n-page-payment-" . getenv("GITHUB_RUN_ID") . "-" . $attempt, "n8n-page-other-code-" . getenv("GITHUB_RUN_ID") . "-" . $attempt, "n8n-page-inbound-" . getenv("GITHUB_RUN_ID") . "-" . $attempt];
+          $rows = [];
+          foreach ($ids as $event) $rows[] = $wpdb->get_row($wpdb->prepare("SELECT event_id,event_type,source,payload_hash FROM {$table} WHERE event_id=%s", $event), ARRAY_A);
+          $valid = count(array_filter($rows, static fn($r) => is_array($r))) === 4;
+          foreach ($rows as $row) $valid = $valid && is_array($row) && preg_match("/^[a-f0-9]{64}$/", $row["payload_hash"]);
+          $raw_payload_columns = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=%s AND COLUMN_NAME IN ('payload','payload_json','raw_payload')", $table));
+          $valid = $valid && $raw_payload_columns === 0;
+          $mail = (int) get_option("_pk_ci_mail_attempts", 0);
+          $http = (int) get_option("_pk_ci_external_http_attempts", 0);
+          $ok = $valid && $status["matched"] === true && $status["url"] === get_permalink($id) && get_post_status($id) === "pending" && $mail === 0 && $http === 0;
+          echo wp_json_encode(["status"=>$status, "post_status"=>get_post_status($id), "hashed_rows"=>$valid, "mail_attempts"=>$mail, "external_http_attempts"=>$http, "ok"=>$ok]);
+          if (!$ok) exit(1);
+          ' > "$RUNNER_TEMP/wp-final.json"
+          python3 - "$RESULT" "$RUNNER_TEMP/n8n-results.json" "$RUNNER_TEMP/wp-final.json" "$RUNNER_TEMP/listing.json" <<'PY'
+          import json,sys
+          browser=json.load(open(sys.argv[1])); n8n=json.load(open(sys.argv[2])); wp=json.load(open(sys.argv[3])); listing=json.load(open(sys.argv[4]))
+          assert browser['before']['matched'] is False and browser['before']['http']==200
+          assert browser['after']['matched'] is True and browser['after']['http']==200
+          assert browser['after']['url']==listing['url'] and browser['screenChanged'] and browser['navigatedUrl']==listing['url']
+          assert browser['pollCount'] >= 3, browser
+          assert wp['ok'] and wp['post_status']=='pending' and wp['hashed_rows']
+          assert browser['falseBeforeTrue'] >= 2
+          print(json.dumps({'before':browser['before'],'after':browser['after'],'poll_count':browser['pollCount'],'false_before_true':browser['falseBeforeTrue'],'screen_changed':browser['screenChanged'],'post_status':wp['post_status'],'hashed_rows':wp['hashed_rows'],'mail_attempts':wp['mail_attempts'],'external_http_attempts':wp['external_http_attempts'],'n8n':n8n['responses']},ensure_ascii=False,separators=(',',':')))
+          PY
+          echo "::notice title=preuve navigateur::polls navigateur matched=false puis true; navigation vérifiée; aucune réponse WhatsApp"
+
+      - name: Publier le rapport de preuve en français
+        if: always()
+        env:
+          WP_CONTAINER: ${{ job.services.wordpress.id }}
+        run: |
+          python3 - "$RUNNER_TEMP" "$GITHUB_STEP_SUMMARY" "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" <<'PY'
+          import json,pathlib,sys
+          temp=pathlib.Path(sys.argv[1]); out=pathlib.Path(sys.argv[2]); run=sys.argv[3]
+          def read(name,default=None):
+              try: return json.loads((temp/name).read_text())
+              except Exception: return default
+          browser=read('browser-polls.json',{}) or {}; n8n=read('n8n-results.json',{}) or {}; wp=read('wp-final.json',{}) or {}; listing=read('listing.json',{}) or {}
+          responses=n8n.get('responses',{})
+          order=['WhatsApp status only','Payment status only','Unknown inbound code','First signed inbound','Exact inbound replay']
+          lines=['# Preuve d’intégration éphémère — événement entrant WhatsApp','',f'Run GitHub Actions : [{sys.argv[3]}]({run})','',f"URL WordPress appelée uniquement par n8n : `{(temp/'whatsapp-n8n-endpoint').read_text().strip() if (temp/'whatsapp-n8n-endpoint').exists() else 'non mesurée'}`",'','| Appel n8n | HTTP | accepted | duplicate | processing |','|---|---:|---:|---:|---|']
+          for name in order:
+              value=responses.get(name,{})
+              lines.append(f"| {name} | {value.get('http','non mesuré')} | {value.get('accepted','non mesuré')} | {value.get('duplicate','non mesuré')} | {value.get('processing','non mesuré')} |")
+          before=browser.get('before',{}); after=browser.get('after',{})
+          lines += ['', '## Page ouverte et sondages navigateur', '',f"- Avant n8n : HTTP {before.get('http','non mesuré')}, `matched={before.get('matched','non mesuré')}`.",f"- Après l’événement signé : HTTP {after.get('http','non mesuré')}, `matched={after.get('matched','non mesuré')}`, URL de l’annonce `{after.get('url','non mesurée')}`.",f"- Sondages navigateur observés : {browser.get('pollCount','non mesuré')} ; `matched=false` avant le premier `true` : {browser.get('falseBeforeTrue','non mesuré')} ; changement d’écran/navigation : {browser.get('screenChanged','non mesuré')}.",
+          f"- `whatsapp_status`, `payment_status` et l’autre code ne changent pas l’écran : ils précèdent les sondages `matched=false` puis le seul inbound correspondant.",f"- Annonce : statut `{wp.get('post_status','non mesuré')}` (reste non publiée). Payloads persistés uniquement sous forme hachée : `{wp.get('hashed_rows','non mesuré')}`.",f"- E-mails déclenchés : {wp.get('mail_attempts','non mesuré')} ; appels HTTP externes WordPress : {wp.get('external_http_attempts','non mesuré')}.",'','Aucun nœud WhatsApp, Meta ou Evolution ; réponses WhatsApp : zéro ; aucun secret UAT n’est utilisé. Le n8n jetable est filtré au niveau réseau pour ne joindre que WordPress ; les trois conteneurs sont détruits à la fin du job.','']
+          report=chr(10).join(lines)
+          (temp/'preuve.md').write_text(report,encoding='utf-8')
+          with open(sys.argv[2],'a',encoding='utf-8') as summary: summary.write(report+chr(10))
+          PY
+
+      - name: Conserver le rapport non sensible
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v4
+        with:
+          name: preuve-whatsapp-inbound-page-open
+          path: ${{ runner.temp }}/preuve.md
+          if-no-files-found: ignore
+
+      - name: Effacer les fichiers temporaires sensibles
+        if: always()
+        env:
+          WP_CONTAINER: ${{ job.services.wordpress.id }}
+          N8N_CONTAINER: ${{ job.services.n8n.id }}
+        run: |
+          rm -f "$RUNNER_TEMP/ephemeral-secret" "$RUNNER_TEMP/whatsapp-n8n-workflow.json" "$RUNNER_TEMP/whatsapp-n8n-workflow-id" "$RUNNER_TEMP/whatsapp-n8n-endpoint" "$RUNNER_TEMP/listing.json" "$RUNNER_TEMP/browser.log" "$RUNNER_TEMP/n8n-result.log"
+          docker exec "$WP_CONTAINER" rm -f /tmp/ci-secret /tmp/ci-listing.json 2>/dev/null || true
+          docker exec "$N8N_CONTAINER" rm -f /tmp/whatsapp-n8n-workflow.json 2>/dev/null || true

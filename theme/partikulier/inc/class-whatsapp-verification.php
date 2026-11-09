@@ -21,6 +21,8 @@ class Partikulier_WhatsApp_Verification {
 	public static function init() {
 		add_action( 'add_meta_boxes', array( __CLASS__, 'add_meta_box' ) );
 		add_action( 'admin_post_pk_verify_whatsapp', array( __CLASS__, 'handle_admin_verify' ) );
+		add_action( 'wp_ajax_pk_whatsapp_match_status', array( __CLASS__, 'ajax_match_status' ) );
+		add_action( 'wp_ajax_nopriv_pk_whatsapp_match_status', array( __CLASS__, 'ajax_match_status' ) );
 	}
 
 	/**
@@ -128,6 +130,94 @@ class Partikulier_WhatsApp_Verification {
 	 * @param int $post_id Identifiant de l’annonce.
 	 * @return array{code:string,url:string}
 	 */
+
+	/**
+	 * URL interrogée par la page laissée ouverte. Ne contient pas le numéro.
+	 *
+	 * @param string $code Code de rapprochement déjà affiché sur cette page.
+	 * @return string
+	 */
+	public static function status_url( $code ) {
+		return add_query_arg(
+			array(
+				'action' => 'pk_whatsapp_match_status',
+				'code'   => (string) $code,
+			),
+			admin_url( 'admin-ajax.php' )
+		);
+	}
+
+	/**
+	 * Note qu'un message prérempli est arrivé. N'envoie aucune réponse WhatsApp.
+	 *
+	 * @param string $code                Code présent dans le message.
+	 * @param string $provider_message_id Identifiant du message reçu.
+	 * @return bool
+	 */
+	public static function mark_inbound_matched( $code, $provider_message_id ) {
+		$post_id = self::post_id_for_code( $code );
+		if ( ! $post_id ) {
+			return false;
+		}
+		if ( ! get_post_meta( $post_id, '_pk_whatsapp_inbound_matched_at', true ) ) {
+			update_post_meta( $post_id, '_pk_whatsapp_inbound_matched_at', current_time( 'mysql', true ) );
+		}
+		$stamp = substr( hash( 'sha256', (string) $provider_message_id ), 0, 32 );
+		update_post_meta( $post_id, '_pk_whatsapp_inbound_message_stamp', $stamp );
+		return true;
+	}
+
+	/**
+	 * @param string $code Code de rapprochement.
+	 * @return int
+	 */
+	private static function post_id_for_code( $code ) {
+		$code = sanitize_text_field( (string) $code );
+		if ( '' === $code || ! defined( 'PARTIKULIER_ESTATIK_POST_TYPE' ) ) {
+			return 0;
+		}
+		$posts = get_posts(
+			array(
+				'post_type'      => PARTIKULIER_ESTATIK_POST_TYPE,
+				'post_status'    => 'any',
+				'posts_per_page' => 1,
+				'fields'         => 'ids',
+				'meta_key'       => '_pk_whatsapp_verification_code',
+				'meta_value'     => $code,
+			)
+		);
+		return $posts ? (int) $posts[0] : 0;
+	}
+
+	/**
+	 * État lu par la page ouverte. Aucun numéro, aucun texte de réponse.
+	 *
+	 * @param string $code Code de rapprochement.
+	 * @return array{matched:bool,url:string}
+	 */
+	public static function status_for_code( $code ) {
+		$post_id = self::post_id_for_code( $code );
+		if ( ! $post_id ) {
+			return array(
+				'matched' => false,
+				'url'     => '',
+			);
+		}
+		$matched = (bool) get_post_meta( $post_id, '_pk_whatsapp_inbound_matched_at', true );
+		return array(
+			'matched' => $matched,
+			'url'     => $matched ? (string) get_permalink( $post_id ) : '',
+		);
+	}
+
+	/**
+	 * Réponse de sondage pour la page qui est restée ouverte.
+	 */
+	public static function ajax_match_status() {
+		$code = isset( $_GET['code'] ) ? sanitize_text_field( wp_unslash( $_GET['code'] ) ) : '';
+		wp_send_json_success( self::status_for_code( $code ) );
+	}
+
 	public static function pending_payload( $post_id ) {
 		$code = get_post_meta( absint( $post_id ), '_pk_whatsapp_verification_code', true );
 		return array(

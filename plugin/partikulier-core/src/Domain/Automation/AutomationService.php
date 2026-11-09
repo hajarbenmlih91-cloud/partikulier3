@@ -144,6 +144,18 @@ final class AutomationService
 			}
 			return new \WP_Error('pk_automation_storage', __('Impossible de journaliser l’événement.', 'partikulier'), ['status' => 500]);
 		}
+		// Seul un événement entrant WhatsApp normalisé et signé peut rapprocher
+		// un code. Les états WhatsApp et paiement restent journalisés seulement.
+		if ( 'whatsapp_inbound' === $event_type && is_array($payload)
+			&& isset($payload['code'], $payload['provider_message_id'])
+			&& is_string($payload['code']) && is_string($payload['provider_message_id'])
+			&& class_exists('Partikulier_WhatsApp_Verification') ) {
+			Partikulier_WhatsApp_Verification::mark_inbound_matched(
+				sanitize_text_field($payload['code']),
+				sanitize_text_field($payload['provider_message_id'])
+			);
+		}
+
 		self::audit()->record('automation_event_received', 'automation', null, ['event_id' => $event_id, 'event_type' => $event_type, 'source' => $source]);
 		return new \WP_REST_Response(['accepted' => true, 'duplicate' => false, 'processing' => 'disabled'], 200);
 	}

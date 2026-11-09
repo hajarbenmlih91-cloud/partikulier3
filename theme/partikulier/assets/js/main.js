@@ -475,8 +475,31 @@ function pkLimitTitle(value) {
 			panel.appendChild(code);
 			panel.appendChild(link);
 			panel.appendChild(note);
+			var wait = document.createElement("p");
+			wait.className = "pk-form-note";
+			wait.textContent = (pkConfig.i18n && pkConfig.i18n.whatsappWait) || "Cette page reste ouverte. Dès que votre message est reçu, elle ouvrira votre annonce. Aucune réponse WhatsApp n’est envoyée.";
+			panel.appendChild(wait);
 			form.parentNode.insertBefore(panel, form);
 			panel.focus();
+			watchInboundMatch(payload, wait);
+	}
+
+	function watchInboundMatch(payload, wait) {
+		if ( ! payload || ! payload.status_url || ! payload.url) return;
+		var stopped = false;
+		var timer = window.setInterval(function () {
+			if (stopped) return;
+			fetch(payload.status_url, { credentials: "same-origin" })
+				.then(function (res) { return res.json(); })
+				.then(function (data) {
+					var body = data && data.data ? data.data : {};
+					if ( ! body.matched || stopped) return;
+					stopped = true;
+					window.clearInterval(timer);
+					window.location.href = body.url || payload.url;
+				})
+				.catch(function () {});
+		}, 4000);
 	}
 
 	function setStatus(msg) {
