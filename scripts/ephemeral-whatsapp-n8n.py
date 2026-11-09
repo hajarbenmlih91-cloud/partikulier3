@@ -112,19 +112,25 @@ def execute():
             return exc.code, body
 
     def unflatten(value):
-        if not isinstance(value, list) or not value or not isinstance(value[0], (dict, list)):
+        # n8n uses the Flatted JSON representation for execution payloads: a
+        # string table whose first entries contain JSON objects and whose
+        # numeric strings reference other table entries.
+        if not isinstance(value, list) or not value or not isinstance(value[0], str) or value[0][:1] not in ('{', '['):
             return value
         cache = {}
         def dereference(index, active):
             if index in cache: return cache[index]
             if index in active or index < 0 or index >= len(value): return None
-            result = expand(value[index], active | {index})
+            raw = value[index]
+            try: decoded = json.loads(raw) if isinstance(raw, str) and raw[:1] in ('{', '[') else raw
+            except Exception: decoded = raw
+            result = expand(decoded, active | {index})
             cache[index] = result
             return result
         def expand(item, active):
             if isinstance(item, dict): return {key: expand(child, active) for key, child in item.items()}
             if isinstance(item, list): return [expand(child, active) for child in item]
-            if isinstance(item, str) and item.isdigit() and int(item) < len(value) and isinstance(value[int(item)], (dict, list)):
+            if isinstance(item, str) and item.isdigit() and int(item) < len(value):
                 return dereference(int(item), active)
             return item
         return dereference(0, set())
