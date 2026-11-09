@@ -179,8 +179,16 @@ def execute():
                 if finished is True or state in ('success', 'error', 'crashed', 'canceled') or err is not None: break
             time.sleep(1)
         else: raise RuntimeError('execution timeout')
-        if find(find(execution, 'resultData') or {}, 'error') is not None:
-            raise RuntimeError('n8n execution failed; raw diagnostic withheld')
+        execution_error = find(find(execution, 'resultData') or {}, 'error')
+        if execution_error is not None:
+            error_text = str(execution_error.get('message', '')) if isinstance(execution_error, dict) else ''
+            safe_class = 'other'
+            for token, label in [('ECONNREFUSED', 'connection_refused'), ('ENOTFOUND', 'dns_failure'), ('ETIMEDOUT', 'connection_timeout'), ('401', 'http_401'), ('403', 'http_403'), ('404', 'http_404'), ('429', 'http_429'), ('500', 'http_500')]:
+                if token.lower() in error_text.lower(): safe_class = label; break
+            node_name = execution_error.get('node', {}).get('name') if isinstance(execution_error, dict) and isinstance(execution_error.get('node'), dict) else None
+            if node_name not in ('WhatsApp status only', 'Payment status only', 'Unknown inbound code', 'First signed inbound', 'Exact inbound replay', 'Allow browser polls after non-matching events'):
+                node_name = 'unknown'
+            raise RuntimeError(f'n8n execution failed at {node_name}; safe error class={safe_class}')
         run_data = find(execution, 'runData')
         if not isinstance(run_data, dict):
             data_value = execution.get('data') if isinstance(execution, dict) else None
