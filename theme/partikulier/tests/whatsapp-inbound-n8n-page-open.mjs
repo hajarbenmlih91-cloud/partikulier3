@@ -10,14 +10,10 @@ if (![base, listingUrl, statusUrl, code, themeJs, resultFile, signalFile].every(
 const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--host-resolver-rules=MAP wordpress 127.0.0.1'] });
 const page = await browser.newPage();
 const origin = new URL(base).origin;
+const isPollUrl = (value) => {
+  try { return new URL(value).searchParams.get('action') === 'pk_whatsapp_match_status'; } catch { return false; }
+};
 let blockedExternalRequests = 0;
-await page.route('**/*', (route) => {
-  if (new URL(route.request().url()).origin !== origin) {
-    blockedExternalRequests++;
-    return route.abort();
-  }
-  return route.continue();
-});
 const polls = [];
 const pollRequests = [];
 const pollFailures = [];
@@ -25,9 +21,28 @@ const pageErrors = [];
 page.on('pageerror', (error) => pageErrors.push(error.message));
 let submitIntercepted = false;
 let navigationUrl = '';
-const isPollUrl = (value) => {
-  try { return new URL(value).searchParams.get('action') === 'pk_whatsapp_match_status'; } catch { return false; }
-};
+await page.route('**/*', async (route) => {
+  const requestUrl = route.request().url();
+  if (isPollUrl(requestUrl)) {
+    try {
+      const target = new URL(requestUrl);
+      const host = target.host;
+      target.hostname = '127.0.0.1';
+      const response = await fetch(target, { headers: { Host: host }, redirect: 'manual' });
+      const body = await response.text();
+      await route.fulfill({ status: response.status, contentType: response.headers.get('content-type') || 'text/plain', body });
+    } catch (error) {
+      pollFailures.push(`loopback WordPress proxy: ${error.name}`);
+      await route.abort();
+    }
+    return;
+  }
+  if (new URL(requestUrl).origin !== origin) {
+    blockedExternalRequests++;
+    return route.abort();
+  }
+  return route.continue();
+});
 page.on('request', (request) => { if (isPollUrl(request.url())) pollRequests.push(request.url()); });
 page.on('requestfailed', (request) => { if (isPollUrl(request.url())) pollFailures.push(request.failure()?.errorText || 'request failed'); });
 page.on('response', async (response) => {
@@ -53,7 +68,7 @@ try {
     window.fetch = (...args) => { window.__pkFetchCalls.push(String(args[0])); return nativeFetch(...args); };
   });
   await page.route('**/wp-admin/admin-ajax.php', async (route) => {
-    if (route.request().method() !== 'POST') return route.continue();
+    if (route.request().method() !== 'POST') return route.fallback();
     submitIntercepted = true;
     await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
       success: true,
