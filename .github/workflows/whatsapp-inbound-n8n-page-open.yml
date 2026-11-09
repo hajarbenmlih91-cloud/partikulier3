@@ -1,6 +1,9 @@
 name: Essai n8n — raccord entrant WhatsApp et page ouverte
 
 on:
+  push:
+    branches:
+      - arena/0e605e79-partikulier3
   workflow_dispatch:
   workflow_call:
 
