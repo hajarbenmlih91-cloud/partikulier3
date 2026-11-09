@@ -30,6 +30,12 @@ await page.route('**/*', async (route) => {
       target.hostname = '127.0.0.1';
       const response = await fetch(target, { headers: { Host: host }, redirect: 'manual', signal: AbortSignal.timeout(8000) });
       const body = await response.text();
+      try {
+        const json = JSON.parse(body);
+        polls.push({ http: response.status, matched: json?.data?.matched === true, url: json?.data?.url || '' });
+      } catch {
+        pollFailures.push(`HTTP ${response.status} returned non-JSON poll data`);
+      }
       await route.fulfill({ status: response.status, contentType: response.headers.get('content-type') || 'text/plain', body });
     } catch (error) {
       pollFailures.push(`loopback WordPress proxy: ${error.name}`);
@@ -45,13 +51,6 @@ await page.route('**/*', async (route) => {
 });
 page.on('request', (request) => { if (isPollUrl(request.url())) pollRequests.push(request.url()); });
 page.on('requestfailed', (request) => { if (isPollUrl(request.url())) pollFailures.push(request.failure()?.errorText || 'request failed'); });
-page.on('response', async (response) => {
-  if (!isPollUrl(response.url())) return;
-  try {
-    const json = await response.json();
-    polls.push({ http: response.status(), matched: json?.data?.matched === true, url: json?.data?.url || '' });
-  } catch { pollFailures.push(`HTTP ${response.status()} returned non-JSON poll data`); }
-});
 page.on('framenavigated', (frame) => {
   if (frame === page.mainFrame()) navigationUrl = frame.url();
 });
