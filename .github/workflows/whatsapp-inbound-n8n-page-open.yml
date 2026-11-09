@@ -220,12 +220,13 @@ jobs:
           text=re.sub(r'https?://[^\s]+/wp-admin/admin-ajax\.php[^\s]*','/wp-admin/admin-ajax.php?[query redacted]',text)
           text=re.sub(r'\bCI-[A-Za-z0-9_-]+\b','CI-[redacted]',text)
           text=re.sub(r'(?i)(secret|password|token|authorization)\s*[:=]\s*[^\s,;]+',r'\1=[redacted]',text)
-          candidates=[line.strip() for line in text.splitlines() if re.search(r'Error:|failed|No HTTP|n8n integration|timeout|missing|without observing|did not|unexpected',line,re.I)]
-          print((candidates[0] if candidates else 'step failed; sanitized detail unavailable')[:220])
+          lines=[line.strip() for line in text.splitlines() if line.strip()]
+          candidates=[line for line in lines if re.search(r'Error:|failed|No HTTP|n8n integration|timeout|missing|without observing|did not|unexpected|refused|not found|page\.goto|page\.add|playwright|ERR_',line,re.I)]
+          print((candidates[0] if candidates else (lines[0] if lines else 'step failed; sanitized detail unavailable'))[:220])
           PY
           }
           rm -f "$SIGNAL" "$RESULT"
-          node theme/partikulier/tests/whatsapp-inbound-n8n-page-open.mjs 'http://wordpress:8080' "$LISTING_URL" "$STATUS_URL" "$CODE" "$GITHUB_WORKSPACE/theme/partikulier/assets/js/main.js" "$RESULT" "$SIGNAL" > "$RUNNER_TEMP/browser.log" 2>&1 &
+          node theme/partikulier/tests/whatsapp-inbound-n8n-page-open.mjs 'http://wordpress:8080' "$LISTING_URL" "$STATUS_URL" "$CODE" 'http://wordpress:8080/wp-content/themes/partikulier/assets/js/main.js' "$RESULT" "$SIGNAL" > "$RUNNER_TEMP/browser.log" 2>&1 &
           BROWSER_PID=$!
           finish_browser() { touch "$SIGNAL"; wait "$BROWSER_PID"; }
           trap 'touch "$SIGNAL"; kill "$BROWSER_PID" 2>/dev/null || true' EXIT

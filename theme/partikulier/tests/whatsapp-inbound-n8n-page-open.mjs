@@ -49,7 +49,7 @@ try {
       },
     }) });
   });
-  await page.addScriptTag({ path: themeJs });
+  await page.addScriptTag({ url: themeJs });
   await page.locator('#pk-submit-form').evaluate((form) => form.requestSubmit());
   await page.getByText(/Cette page reste ouverte|This page stays open|تبقى هذه الصفحة مفتوحة/i).waitFor({ timeout: 5000 }).catch(() => {});
   await page.waitForFunction(() => document.querySelector('.pk-whatsapp-verification'), null, { timeout: 5000 });
