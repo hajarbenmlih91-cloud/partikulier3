@@ -137,7 +137,9 @@ try {
       await page.waitForURL((url) => url.href === fixture.url, { waitUntil: 'commit', timeout: 30000 });
     } catch (e) {
       const now = page.url();
-      throw new Error(`${key}: waitForURL(${fixture.url}) timed out; currentUrl=${now}`);
+      const cookies = await page.evaluate(() => document.cookie);
+      const last = polls[key][polls[key].length - 1] || {};
+      throw new Error(`${key}: waitForURL(${fixture.url}) timed out; currentUrl=${now}; lastPoll=${JSON.stringify(last)}; cookies=${cookies}`);
     }
     await page.locator('.pk-dashboard').waitFor({ timeout: 15000 });
     const matchedIndex = polls[key].findIndex((poll) => poll.http === 200 && poll.matched === true && poll.url === fixture.url);
