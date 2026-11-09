@@ -28,7 +28,7 @@ await page.route('**/*', async (route) => {
       const target = new URL(requestUrl);
       const host = target.host;
       target.hostname = '127.0.0.1';
-      const response = await fetch(target, { headers: { Host: host }, redirect: 'manual' });
+      const response = await fetch(target, { headers: { Host: host }, redirect: 'manual', signal: AbortSignal.timeout(8000) });
       const body = await response.text();
       await route.fulfill({ status: response.status, contentType: response.headers.get('content-type') || 'text/plain', body });
     } catch (error) {
