@@ -273,6 +273,8 @@ jobs:
             if [[ "$fatal_diag" =~ ^(missing_function|member_call|timeout|memory|missing_method|missing_class|missing_constant|missing_property|non_static_call|access_violation|not_callable|type_error|argument_error|fatal_other)@([A-Za-z0-9._-]+):([0-9]+)\|(method_present|method_absent)$ ]]; then
               echo "::notice title=Disposable WordPress PHP diagnostic::${BASH_REMATCH[1]} at ${BASH_REMATCH[2]}:${BASH_REMATCH[3]}; WhatsApp matcher ${BASH_REMATCH[4]}"
             fi
+            matcher_state="$(docker exec "$WP_CONTAINER" php -r 'require "/var/www/html/wp-load.php"; $d=json_decode(file_get_contents("/tmp/ci-listing.json"),true); $id=(int)($d["post_id"]??0); echo "matched=".(int)(bool)get_post_meta($id,"_pk_whatsapp_inbound_matched_at",true).";stamp=".(int)(bool)get_post_meta($id,"_pk_whatsapp_inbound_message_stamp",true);' 2>/dev/null || true)"
+            echo "::notice title=Disposable WordPress matcher state::$(printf '%s' "$matcher_state" | tr -cd 'a-z=;0-1')"
             diag="$(safe_diagnostic "$RUNNER_TEMP/n8n-error.log")"
             echo "::error title=n8n workflow::$diag"
             printf '%s\n' "$diag" | tee "$RUNNER_TEMP/failure-diagnostic.txt"

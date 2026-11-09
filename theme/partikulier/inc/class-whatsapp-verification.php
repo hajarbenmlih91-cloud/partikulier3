@@ -176,17 +176,19 @@ class Partikulier_WhatsApp_Verification {
 		if ( '' === $code || ! defined( 'PARTIKULIER_ESTATIK_POST_TYPE' ) ) {
 			return 0;
 		}
-		$posts = get_posts(
-			array(
-				'post_type'      => PARTIKULIER_ESTATIK_POST_TYPE,
-				'post_status'    => 'any',
-				'posts_per_page' => 1,
-				'fields'         => 'ids',
-				'meta_key'       => '_pk_whatsapp_verification_code',
-				'meta_value'     => $code,
+		global $wpdb;
+		if ( ! $wpdb instanceof wpdb ) {
+			return 0;
+		}
+		$post_id = $wpdb->get_var(
+			$wpdb->prepare(
+				"SELECT p.ID FROM {$wpdb->posts} AS p INNER JOIN {$wpdb->postmeta} AS pm ON pm.post_id = p.ID WHERE p.post_type = %s AND p.post_status NOT IN ('trash', 'auto-draft') AND pm.meta_key = %s AND pm.meta_value = %s ORDER BY p.ID ASC LIMIT 1",
+				PARTIKULIER_ESTATIK_POST_TYPE,
+				'_pk_whatsapp_verification_code',
+				$code
 			)
 		);
-		return $posts ? (int) $posts[0] : 0;
+		return absint( $post_id );
 	}
 
 	/**
