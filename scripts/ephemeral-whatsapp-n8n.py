@@ -31,7 +31,7 @@ def build():
     labels = ['Deposit', 'Creation', 'Connexion existing']
     events = []
     for index, (journey, label) in enumerate(zip(journeys, labels)):
-        events.append((f'{label} wrong sender', 'n8n-page-wrong-{index}', {
+        events.append((f'{label} wrong sender', f'n8n-page-wrong-{index}', {
             'code': journey['code'], 'sender_phone': '212699999999',
             'provider_message_id': f'ci-wrong-{index}-{run_id}',
         }))
@@ -42,7 +42,7 @@ def build():
         }))
     nodes = [{'id': str(uuid.uuid4()), 'name': 'Manual Trigger', 'type': 'n8n-nodes-base.manualTrigger', 'typeVersion': 1, 'position': [200, 300], 'parameters': {}}]
     for index, (name, suffix, payload) in enumerate(events):
-        event_id = f'{suffix}-{run_id}-{attempt}'
+        event_id = re.sub(r'[^A-Za-z0-9._:-]', '', f'{suffix}-{run_id}-{attempt}')
         body = json.dumps({'event_id': event_id, 'event_type': 'whatsapp_inbound', 'source': 'n8n', 'payload': payload}, separators=(',', ':'), ensure_ascii=False)
         timestamp = str(int(time.time()))
         canonical = f'POST\n/partikulier/v1/automation-event\n{timestamp}\n{body}'.encode()

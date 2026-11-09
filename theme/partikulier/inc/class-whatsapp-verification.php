@@ -178,8 +178,22 @@ class Partikulier_WhatsApp_Verification {
 		return 'pk_wa_auth_' . hash( 'sha256', (string) $code );
 	}
 
+	/**
+	 * Deux vues du même espace : l'accueil du profil, et les annonces du profil.
+	 * Le dépôt n'ouvre pas l'accueil.
+	 */
+	public static function profile_destination_url( $screen ) {
+		$base = function_exists( 'pk_page_url' ) ? pk_page_url( 'mes-annonces', '/mes-annonces/' ) : home_url( '/mes-annonces/' );
+		$view = 'listings' === $screen ? 'annonces' : 'accueil';
+		return add_query_arg( 'pk_ecran', $view, $base );
+	}
+
 	private static function auth_profile_url() {
-		return function_exists( 'pk_page_url' ) ? pk_page_url( 'mes-annonces', '/mes-annonces/' ) : home_url( '/mes-annonces/' );
+		return self::profile_destination_url( 'profile' );
+	}
+
+	private static function listings_profile_url() {
+		return self::profile_destination_url( 'listings' );
 	}
 
 	private static function find_user_by_phone( $phone ) {
@@ -355,7 +369,7 @@ class Partikulier_WhatsApp_Verification {
 		$post_id = self::post_id_for_code( $code );
 		if ( $post_id ) {
 			$matched = (bool) get_post_meta( $post_id, '_pk_whatsapp_inbound_matched_at', true );
-			return array( 'matched' => $matched, 'url' => $matched ? self::auth_profile_url() : '', 'screen' => 'listings' );
+			return array( 'matched' => $matched, 'url' => $matched ? self::listings_profile_url() : '', 'screen' => 'listings' );
 		}
 		$auth = get_transient( self::auth_transient_key( $code ) );
 		$matched = is_array( $auth ) && ! empty( $auth['matched_at'] ) && ! empty( $auth['user_id'] );

@@ -140,6 +140,15 @@ try {
     if (key === 'deposit' && (!screen.includes('Annonce éphémère en attente') || !screen.includes('En attente de validation WhatsApp'))) {
       throw new Error('deposit: pending listing not visible on profile listings screen');
     }
+    if (key !== 'deposit' && screen.includes('Annonce éphémère en attente')) {
+      throw new Error(`${key}: profile home opened the listings instead of the homepage`);
+    }
+    if (key === 'creation' && !screen.includes('Vous n’avez pas encore d’annonce')) {
+      throw new Error('creation: profile homepage missing');
+    }
+    if (key === 'login' && !screen.includes('Profil existant éphémère')) {
+      throw new Error('login: existing profile homepage missing');
+    }
     results[key] = {
       screen: key === 'deposit' ? 'annonces du profil' : (key === 'creation' ? 'accueil du profil — nouveau compte' : 'accueil du profil — compte existant'),
       http: polls[key][matchedIndex].http,
@@ -155,6 +164,13 @@ try {
     };
     if (!results[key].navigated) throw new Error(`${key}: browser did not navigate to its expected profile screen`);
   }
+  const depositUrl = new URL(scenarios.deposit.url);
+  const creationUrl = new URL(scenarios.creation.url);
+  const loginUrl = new URL(scenarios.login.url);
+  if (depositUrl.searchParams.get('pk_ecran') !== 'annonces') throw new Error('deposit destination is not the listings view');
+  if (creationUrl.searchParams.get('pk_ecran') !== 'accueil' || loginUrl.searchParams.get('pk_ecran') !== 'accueil') throw new Error('account destination is not the profile homepage');
+  if (depositUrl.href === creationUrl.href) throw new Error('deposit and profile homepage are the same destination');
+  if (creationUrl.href !== loginUrl.href) throw new Error('creation and connection do not share the profile homepage');
   if (submissions !== 3) throw new Error('Expected three browser-side journey starts');
   if (pollFailures.length) throw new Error(`poll transport failures: ${pollFailures.length}`);
   if (blockedExternalRequests !== 0) throw new Error('Browser attempted an external request; all egress must remain inside the disposable job');

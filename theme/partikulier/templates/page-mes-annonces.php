@@ -23,6 +23,8 @@ if ( ! is_user_logged_in() ) {
 }
 
 $current_user = wp_get_current_user();
+$pk_ecran = isset( $_GET['pk_ecran'] ) ? sanitize_key( wp_unslash( $_GET['pk_ecran'] ) ) : '';
+$pk_home_only = ( 'accueil' === $pk_ecran );
 $my_listings  = get_posts( array(
 		'post_type'      => PARTIKULIER_ESTATIK_POST_TYPE,
 		'post_status'    => array( 'publish', 'pending', 'draft', 'trash' ),
@@ -61,7 +63,7 @@ $status_labels = array(
 		<div class="pk-container">
                 <?php echo Partikulier_Geo::breadcrumbs_html(); // phpcs:ignore ?>
 
-				<header class="pk-dashboard-head">
+				<header class="pk-dashboard-head" id="pk-accueil">
 						<p class="pk-editorial-kicker"><?php esc_html_e( 'Espace propriétaire', 'partikulier' ); ?></p>
 						<h1 class="pk-dashboard-title">
 								<?php
@@ -118,13 +120,8 @@ $status_labels = array(
 						<?php endforeach; ?>
 				</div>
 
-				<?php if ( ! $my_listings ) : ?>
-						<div class="pk-dashboard-empty">
-								<p><?php esc_html_e( 'Vous n’avez pas encore d’annonce. C’est gratuit et ça prend 2 minutes !', 'partikulier' ); ?></p>
-								<a class="pk-btn pk-btn-primary" href="<?php echo esc_url( pk_page_url( 'deposer', '/deposer/' ) ); ?>"><?php esc_html_e( 'Déposer ma première annonce', 'partikulier' ); ?></a>
-						</div>
-				<?php else : ?>
-						<div class="pk-listing-table-wrap">
+				<?php if ( ! $pk_home_only && $my_listings ) : ?>
+						<div class="pk-listing-table-wrap" id="pk-annonces">
 								<ul class="pk-listing-list">
 										<?php foreach ( $my_listings as $listing ) :
 												$status        = get_post_meta( $listing->ID, '_pk_status', true );
@@ -209,6 +206,11 @@ $status_labels = array(
 										</li>
 										<?php endforeach; ?>
 								</ul>
+						</div>
+				<?php elseif ( ! $my_listings ) : ?>
+						<div class="pk-dashboard-empty" id="pk-accueil-vide">
+								<p><?php esc_html_e( 'Vous n’avez pas encore d’annonce. C’est gratuit et ça prend 2 minutes !', 'partikulier' ); ?></p>
+								<a class="pk-btn pk-btn-primary" href="<?php echo esc_url( pk_page_url( 'deposer', '/deposer/' ) ); ?>"><?php esc_html_e( 'Déposer ma première annonce', 'partikulier' ); ?></a>
 						</div>
 				<?php endif; ?>
 		</div>
