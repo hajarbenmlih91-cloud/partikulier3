@@ -54,6 +54,15 @@ jobs:
           rsync -a --delete --exclude='.git' --exclude='node_modules' theme/partikulier/ wp/wp-content/themes/partikulier/
           "$RUNNER_TEMP/wp" plugin activate partikulier-core --path=wp
           "$RUNNER_TEMP/wp" theme activate partikulier --path=wp
+          mkdir -p wp/wp-content/mu-plugins
+          cat > wp/wp-content/mu-plugins/essai-properties.php <<'PHP'
+          <?php
+          add_action('init', static function () {
+              if (!post_type_exists('properties')) {
+                  register_post_type('properties', ['public' => true, 'publicly_queryable' => true]);
+              }
+          });
+          PHP
 
       - name: Ouvrir la page et noter l'arrivée
         run: |

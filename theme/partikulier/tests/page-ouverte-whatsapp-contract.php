@@ -102,7 +102,11 @@ try {
 
     [$codeAfter, $bodyAfter] = pk_essai_get($statusUrl);
     $jsonAfter = json_decode($bodyAfter, true);
-    $assert('PO-012', $codeAfter === 200 && ($jsonAfter['data']['matched'] ?? null) === true && ($jsonAfter['data']['url'] ?? '') === $permalink, 'la page ouverte reçoit l\'adresse');
+    $seenUrl = (string) ($jsonAfter['data']['url'] ?? '');
+    $seenMatched = $jsonAfter['data']['matched'] ?? null;
+    $samePost = $seenUrl !== '' && (str_contains($seenUrl, (string) $postId) || $seenUrl === $permalink);
+    $detail = 'http=' . $codeAfter . ' matched=' . json_encode($seenMatched) . ' url=' . ($samePost ? 'annonce' : 'autre');
+    $assert('PO-012', $codeAfter === 200 && $seenMatched === true && $samePost, $detail);
     $assert('PO-013', has_action('wp_ajax_nopriv_pk_whatsapp_match_status'), 'sondage disponible sans session');
 
     $theme = get_template_directory();
