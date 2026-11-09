@@ -102,6 +102,12 @@ jobs:
           // WordPress' canonical redirect can loop in the container host alias;
           // keep the fixture permalink as the stable browser destination.
           add_filter('redirect_canonical', '__return_false');
+          add_filter('post_type_link', static function ($url, $post) {
+              if ($post instanceof WP_Post && $post->post_type === 'properties') {
+                  return add_query_arg('pk_ci_listing', (int) $post->ID, home_url('/'));
+              }
+              return $url;
+          }, 10, 2);
           add_action('template_redirect', static function () {
               $post_id = isset($_GET['pk_ci_listing']) ? absint($_GET['pk_ci_listing']) : 0;
               if (!$post_id || get_post_status($post_id) !== 'pending') return;
@@ -157,7 +163,7 @@ jobs:
           $post_id = wp_insert_post(['post_type' => 'properties', 'post_status' => 'pending', 'post_title' => 'Essai entrant ' . $code, 'post_content' => 'Annonce de test éphémère', 'post_author' => 1], true);
           if (is_wp_error($post_id) || !$post_id) { fwrite(STDERR, "Could not seed pending listing" . PHP_EOL); exit(1); }
           update_post_meta($post_id, '_pk_whatsapp_verification_code', $code);
-          $listing = ['code' => $code, 'post_id' => (int) $post_id, 'url' => add_query_arg('pk_ci_listing', (int) $post_id, home_url('/')), 'status_url' => Partikulier_WhatsApp_Verification::status_url($code)];
+          $listing = ['code' => $code, 'post_id' => (int) $post_id, 'url' => get_permalink($post_id), 'status_url' => Partikulier_WhatsApp_Verification::status_url($code)];
           file_put_contents('/tmp/ci-listing.json', wp_json_encode($listing), LOCK_EX);
           echo "Disposable WordPress initialized; pending listing seeded" . PHP_EOL;
           PHP
