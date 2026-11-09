@@ -205,7 +205,8 @@ jobs:
               $authPage = get_post($authPageId);
           }
           update_post_meta($authPage->ID, '_wp_page_template', 'templates/page-connexion.php');
-          update_option('permalink_structure', '/%postname%/');
+          global $wp_rewrite;
+          $wp_rewrite->set_permalink_structure('/%postname%/');
           flush_rewrite_rules(false);
           $authUrl = function_exists('pk_page_url') ? pk_page_url('connexion', '/connexion/') : get_permalink($authPage);
           $profileUrl = function_exists('pk_page_url') ? pk_page_url('mes-annonces', '/mes-annonces/') : get_permalink($page);
