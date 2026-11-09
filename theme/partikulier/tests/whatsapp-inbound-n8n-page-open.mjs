@@ -19,14 +19,21 @@ await page.route('**/*', (route) => {
   return route.continue();
 });
 const polls = [];
+const pollRequests = [];
+const pollFailures = [];
 let submitIntercepted = false;
 let navigationUrl = '';
+const isPollUrl = (value) => {
+  try { return new URL(value).searchParams.get('action') === 'pk_whatsapp_match_status'; } catch { return false; }
+};
+page.on('request', (request) => { if (isPollUrl(request.url())) pollRequests.push(request.url()); });
+page.on('requestfailed', (request) => { if (isPollUrl(request.url())) pollFailures.push(request.failure()?.errorText || 'request failed'); });
 page.on('response', async (response) => {
-  if (response.url() !== statusUrl) return;
+  if (!isPollUrl(response.url())) return;
   try {
     const json = await response.json();
     polls.push({ http: response.status(), matched: json?.data?.matched === true, url: json?.data?.url || '' });
-  } catch { /* response is not evidence */ }
+  } catch { pollFailures.push(`HTTP ${response.status()} returned non-JSON poll data`); }
 });
 page.on('framenavigated', (frame) => {
   if (frame === page.mainFrame()) navigationUrl = frame.url();
@@ -56,11 +63,14 @@ try {
   await page.getByText(/Cette page reste ouverte|This page stays open|تبقى هذه الصفحة مفتوحة/i).waitFor({ timeout: 5000 }).catch(() => {});
   await page.waitForFunction(() => document.querySelector('.pk-whatsapp-verification'), null, { timeout: 5000 });
 
-  // Record a real anonymous poll from the production main.js before n8n is released.
-  await page.waitForFunction((url) => performance.getEntriesByType('resource').some((entry) => entry.name === url), statusUrl, { timeout: 9000 });
-  for (let i = 0; i < 100 && !polls.some((poll) => poll.matched === false); i++) await new Promise((resolve) => setTimeout(resolve, 50));
+  // Wait for the production poller to make an anonymous request before releasing n8n.
+  for (let i = 0; i < 220 && !polls.some((poll) => poll.matched === false); i++) await new Promise((resolve) => setTimeout(resolve, 50));
   const pre = polls.find((poll) => poll.matched === false);
-  if (!submitIntercepted || !pre || pre.http !== 200) throw new Error('No HTTP 200 matched=false browser poll before n8n execution');
+  if (!submitIntercepted || !pre || pre.http !== 200) {
+    const lastRequest = pollRequests.at(-1) || 'no poll request observed';
+    const lastFailure = pollFailures.at(-1) || 'no response diagnostic';
+    throw new Error(`No HTTP 200 matched=false browser poll before n8n execution; ${lastRequest}; ${lastFailure}`);
+  }
   await fs.writeFile(resultFile, JSON.stringify({ before: pre, submitted: submitIntercepted, initialUrl: navigationUrl, polls }, null, 2));
 
   // The workflow runner starts n8n only after this file exists, keeping this browser page open.
