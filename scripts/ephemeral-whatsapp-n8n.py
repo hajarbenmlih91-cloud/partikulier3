@@ -202,9 +202,12 @@ def execute():
             if node_name not in ('WhatsApp status only', 'Payment status only', 'Unknown inbound code', 'First signed inbound', 'Exact inbound replay', 'Allow browser polls after non-matching events'):
                 node_name = 'unknown'
             http_code = execution_error.get('httpCode') if isinstance(execution_error, dict) else None
-            http_code = str(http_code) if str(http_code) in ('400', '401', '403', '404', '405', '409', '422', '429', '500', '502', '503') else 'none'
-            error_keys = sorted(execution_error.keys())[:16] if isinstance(execution_error, dict) else []
-            raise RuntimeError(f'n8n execution failed at {node_name}; safe error class={safe_class}; HTTP={http_code}; error type={type(execution_error).__name__}; keys={error_keys}')
+            http_code = str(http_code) if isinstance(http_code, (str, int)) and re.fullmatch(r'[A-Z0-9_]{2,30}', str(http_code)) else 'none'
+            error_name = execution_error.get('name') if isinstance(execution_error, dict) else None
+            if not isinstance(error_name, str) or not re.fullmatch(r'[A-Za-z0-9_]{1,40}', error_name): error_name = 'unknown'
+            node_keys = sorted(node.keys())[:12] if isinstance(node, dict) else []
+            error_keys = sorted(execution_error.keys())[:12] if isinstance(execution_error, dict) else []
+            raise RuntimeError(f'n8n execution failed at {node_name}; safe error class={safe_class}; HTTP={http_code}; error name={error_name}; node keys={node_keys}; error keys={error_keys}')
         run_data = find(execution, 'runData')
         if not isinstance(run_data, dict):
             data_value = execution.get('data') if isinstance(execution, dict) else None
