@@ -207,7 +207,8 @@ def execute():
                 return found
             safe_class = 'other'
             for path, text in collect_strings(execution_error):
-                for token, label in [('pk_automation_auth', 'shared_secret_rejected'), ('pk_automation_signature', 'signature_rejected'), ('pk_automation_payload', 'payload_rejected'), ('ECONNREFUSED', 'connection_refused'), ('ENOTFOUND', 'dns_failure'), ('ETIMEDOUT', 'connection_timeout'), ('401', 'http_401'), ('403', 'http_403'), ('404', 'http_404'), ('429', 'http_429'), ('500', 'http_500'), ('signature', 'signature_rejected'), ('timestamp', 'timestamp_rejected'), ('connect', 'connection_error'), ('timeout', 'timeout'), ('json', 'json_error')]:
+                for token, label in [('pk_automation_auth', 'shared_secret_rejected'), ('pk_automation_signature', 'signature_rejected'), ('pk_automation_payload', 'payload_rejected'), ('ECONNREFUSED', 'connection_refused'), ('ENOTFOUND', 'dns_failure'), ('ETIMEDOUT', 'connection_timeout'), ('401', 'http_401'), ('403', 'http_403'), ('404', 'http_404'), ('429', 'http_429'), ('500', 'http_500'), ('signature', 'signature_rejected'), ('timestamp', 'timestamp_rejected'), ('duplicate', 'duplicate_handling'), ('sql', 'database_error'), ('database', 'database_error'), ('table', 'database_error'), ('connect', 'connection_error'), ('timeout', 'timeout'), ('json', 'json_error')]:
+
                     if token.lower() in text.lower(): safe_class = label; break
                 if safe_class != 'other': break
             node = execution_error.get('node') if isinstance(execution_error, dict) else None
@@ -218,9 +219,11 @@ def execute():
             http_code = str(http_code) if isinstance(http_code, (str, int)) and re.fullmatch(r'[A-Z0-9_]{2,30}', str(http_code)) else 'none'
             error_name = execution_error.get('name') if isinstance(execution_error, dict) else None
             if not isinstance(error_name, str) or not re.fullmatch(r'[A-Za-z0-9_]{1,40}', error_name): error_name = 'unknown'
+            error_type = execution_error.get('type') if isinstance(execution_error, dict) else None
+            if not isinstance(error_type, str) or not re.fullmatch(r'[A-Za-z0-9_]{1,40}', error_type): error_type = 'unknown'
             node_keys = sorted(node.keys())[:12] if isinstance(node, dict) else []
             error_keys = sorted(execution_error.keys())[:12] if isinstance(execution_error, dict) else []
-            raise RuntimeError(f'n8n execution failed at {node_name}; safe error class={safe_class}; HTTP={http_code}; error name={error_name}; node keys={node_keys}; error keys={error_keys}')
+            raise RuntimeError(f'n8n execution failed at {node_name}; safe error class={safe_class}; HTTP={http_code}; type={error_type}; error name={error_name}; keys={error_keys}')
         run_data = find(execution, 'runData')
         if not isinstance(run_data, dict):
             data_value = execution.get('data') if isinstance(execution, dict) else None
