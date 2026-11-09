@@ -179,16 +179,29 @@ def execute():
                 if finished is True or state in ('success', 'error', 'crashed', 'canceled') or err is not None: break
             time.sleep(1)
         else: raise RuntimeError('execution timeout')
-        execution_error = find(find(execution, 'resultData') or {}, 'error')
+        result_data = find(execution, 'resultData') or {}
+        execution_error = find(result_data, 'error')
         if execution_error is not None:
-            error_text = str(execution_error.get('message', '')) if isinstance(execution_error, dict) else ''
+            def collect_strings(value, path='', depth=0):
+                found = []
+                if depth > 4: return found
+                if isinstance(value, dict):
+                    for key, child in list(value.items())[:40]:
+                        found.extend(collect_strings(child, f'{path}.{key}' if path else key, depth + 1))
+                elif isinstance(value, list):
+                    for child in value[:8]: found.extend(collect_strings(child, path, depth + 1))
+                elif isinstance(value, str): found.append((path, value[:500]))
+                return found
             safe_class = 'other'
-            for token, label in [('ECONNREFUSED', 'connection_refused'), ('ENOTFOUND', 'dns_failure'), ('ETIMEDOUT', 'connection_timeout'), ('401', 'http_401'), ('403', 'http_403'), ('404', 'http_404'), ('429', 'http_429'), ('500', 'http_500')]:
-                if token.lower() in error_text.lower(): safe_class = label; break
-            node_name = execution_error.get('node', {}).get('name') if isinstance(execution_error, dict) and isinstance(execution_error.get('node'), dict) else None
+            for path, text in collect_strings(execution_error):
+                for token, label in [('ECONNREFUSED', 'connection_refused'), ('ENOTFOUND', 'dns_failure'), ('ETIMEDOUT', 'connection_timeout'), ('401', 'http_401'), ('403', 'http_403'), ('404', 'http_404'), ('429', 'http_429'), ('500', 'http_500'), ('signature', 'signature_rejected'), ('timestamp', 'timestamp_rejected'), ('connect', 'connection_error'), ('timeout', 'timeout'), ('json', 'json_error')]:
+                    if token.lower() in text.lower(): safe_class = label; break
+                if safe_class != 'other': break
+            node_name = result_data.get('lastNodeExecuted') if isinstance(result_data, dict) else None
             if node_name not in ('WhatsApp status only', 'Payment status only', 'Unknown inbound code', 'First signed inbound', 'Exact inbound replay', 'Allow browser polls after non-matching events'):
                 node_name = 'unknown'
-            raise RuntimeError(f'n8n execution failed at {node_name}; safe error class={safe_class}')
+            error_keys = sorted(execution_error.keys())[:20] if isinstance(execution_error, dict) else []
+            raise RuntimeError(f'n8n execution failed at {node_name}; safe error class={safe_class}; error type={type(execution_error).__name__}; keys={error_keys}')
         run_data = find(execution, 'runData')
         if not isinstance(run_data, dict):
             data_value = execution.get('data') if isinstance(execution, dict) else None
