@@ -104,7 +104,7 @@ jobs:
               if (!$error || !in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR], true)) return;
               $message = strtolower((string) ($error['message'] ?? ''));
               $kind = 'fatal_other';
-              foreach (['undefined function' => 'missing_function', 'member function' => 'member_call', 'maximum execution time' => 'timeout', 'allowed memory' => 'memory', 'undefined method' => 'missing_method', 'class not found' => 'missing_class'] as $needle => $label) {
+              foreach (['undefined function' => 'missing_function', 'undefined method' => 'missing_method', 'undefined constant' => 'missing_constant', 'undefined property' => 'missing_property', 'class not found' => 'missing_class', 'non-static method' => 'non_static_call', 'protected method' => 'access_violation', 'private method' => 'access_violation', 'member function' => 'member_call', 'not callable' => 'not_callable', 'must be of type' => 'type_error', 'argument #' => 'argument_error', 'maximum execution time' => 'timeout', 'allowed memory' => 'memory'] as $needle => $label) {
                   if (strpos($message, $needle) !== false) { $kind = $label; break; }
               }
               $file = preg_replace('/[^A-Za-z0-9._-]/', '', basename((string) ($error['file'] ?? 'unknown')));
@@ -269,7 +269,7 @@ jobs:
           else
             n8n_rc=$?
             fatal_diag="$(docker exec "$WP_CONTAINER" sh -c 'cat /tmp/ci-fatal-kind 2>/dev/null || true' | tr -cd 'A-Za-z0-9._:@_-')"
-            if [[ "$fatal_diag" =~ ^(missing_function|member_call|timeout|memory|missing_method|missing_class|fatal_other)@([A-Za-z0-9._-]+):([0-9]+)$ ]]; then
+            if [[ "$fatal_diag" =~ ^(missing_function|member_call|timeout|memory|missing_method|missing_class|missing_constant|missing_property|non_static_call|access_violation|not_callable|type_error|argument_error|fatal_other)@([A-Za-z0-9._-]+):([0-9]+)$ ]]; then
               echo "::notice title=Disposable WordPress PHP diagnostic::${BASH_REMATCH[1]} at ${BASH_REMATCH[2]}:${BASH_REMATCH[3]}"
             fi
             diag="$(safe_diagnostic "$RUNNER_TEMP/n8n-error.log")"
