@@ -151,7 +151,7 @@ final class AutomationService
 			&& is_string($payload['code']) && is_string($payload['provider_message_id'])
 			&& self::has_whatsapp_verification_code($payload['code'])
 			&& class_exists('Partikulier_WhatsApp_Verification') ) {
-			Partikulier_WhatsApp_Verification::mark_inbound_matched(
+			\Partikulier_WhatsApp_Verification::mark_inbound_matched(
 				sanitize_text_field($payload['code']),
 				sanitize_text_field($payload['provider_message_id'])
 			);
