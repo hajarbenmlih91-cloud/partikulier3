@@ -141,8 +141,10 @@ try {
     const cookies = (await context.cookies()).filter((cookie) => cookie.name.startsWith('wordpress_') && cookie.name !== 'wordpress_test_cookie');
     if (!cookies.length && !state.authCookieOnDestination) throw new Error(`${key}: WordPress browser session cookie missing after correct confirmation`);
     const screen = await page.locator('body').innerText();
-    if (key === 'deposit' && (!screen.includes('Annonce éphémère en attente') || !screen.includes('En attente de validation WhatsApp'))) {
-      throw new Error('deposit: pending listing not visible on profile listings screen');
+    const visible = screen.toLocaleLowerCase('fr-FR');
+    if (key === 'deposit' && (!visible.includes('annonce éphémère en attente') || !visible.includes('en attente de validation whatsapp'))) {
+      const excerpt = screen.replace(/\s+/g, ' ').slice(0, 180);
+      throw new Error(`deposit: pending listing not visible on profile listings screen; excerpt=${excerpt}`);
     }
     if (key !== 'deposit' && screen.includes('Annonce éphémère en attente')) {
       throw new Error(`${key}: profile home opened the listings instead of the homepage`);

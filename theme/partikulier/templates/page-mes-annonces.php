@@ -34,6 +34,17 @@ $my_listings  = get_posts( array(
 		'order'          => 'DESC',
 		'lang'           => '', // T36 : le tableau de bord propriétaire liste ses annonces TOUTES langues — jamais filtré par la langue de l'interface.
 ) );
+// get_posts peut omettre une annonce pending sur le front. Le propriétaire doit
+// pourtant la voir dans ses annonces, sans la publier.
+if ( ! $my_listings ) {
+	global $wpdb;
+	$ids = $wpdb->get_col( $wpdb->prepare(
+		"SELECT ID FROM {$wpdb->posts} WHERE post_type = %s AND post_author = %d AND post_status IN ('publish', 'pending', 'draft', 'trash') ORDER BY post_date DESC",
+		PARTIKULIER_ESTATIK_POST_TYPE,
+		$current_user->ID
+	) );
+	$my_listings = array_values( array_filter( array_map( 'get_post', array_map( 'absint', (array) $ids ) ) ) );
+}
 
 $total_views  = 0;
 $total_saves  = 0;
