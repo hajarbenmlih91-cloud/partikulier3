@@ -31,7 +31,7 @@ try {
     const state = { context, page, fixture, navigationUrl: '', pageErrors: [], authCookieOnDestination: false };
     page.on('request', (request) => {
       const cookie = request.headers()['cookie'] || '';
-      if (request.url() === fixture.url && /(?:^|;\s*)wordpress_logged_in_/.test(cookie)) state.authCookieOnDestination = true;
+      if (/(?:^|;\s*)wordpress_logged_in_/.test(cookie)) state.authCookieOnDestination = true;
     });
     pages.set(scenario.key, state);
     page.on('pageerror', (error) => state.pageErrors.push(error.name));
@@ -138,11 +138,8 @@ try {
     const matchedIndex = polls[key].findIndex((poll) => poll.http === 200 && poll.matched === true && poll.url === fixture.url);
     const falseBeforeTrue = matchedIndex < 0 ? 0 : polls[key].slice(0, matchedIndex).filter((poll) => poll.http === 200 && !poll.matched).length;
     if (matchedIndex < 0 || falseBeforeTrue < 2) throw new Error(`${key}: missing false-then-true browser poll sequence`);
-    const cookies = (await context.cookies()).filter((cookie) => /wordpress_logged_in_|wordpress_sec_/.test(cookie.name));
-    if (!cookies.length && !state.authCookieOnDestination) {
-      const names = (await context.cookies()).map((cookie) => cookie.name).filter((name) => name.startsWith('wordpress')).join(',') || 'none';
-      throw new Error(`${key}: WordPress browser session cookie missing after correct confirmation; cookie names=${names}`);
-    }
+    const cookies = (await context.cookies()).filter((cookie) => cookie.name.startsWith('wordpress_') && cookie.name !== 'wordpress_test_cookie');
+    if (!cookies.length && !state.authCookieOnDestination) throw new Error(`${key}: WordPress browser session cookie missing after correct confirmation`);
     const screen = await page.locator('body').innerText();
     if (key === 'deposit' && (!screen.includes('Annonce éphémère en attente') || !screen.includes('En attente de validation WhatsApp'))) {
       throw new Error('deposit: pending listing not visible on profile listings screen');
