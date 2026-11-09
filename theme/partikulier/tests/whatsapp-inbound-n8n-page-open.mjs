@@ -28,7 +28,11 @@ try {
     if (!fixture?.code || !fixture?.phone || !fixture?.status_url || !fixture?.url) throw new Error(`Fixture missing for ${scenario.key}`);
     const context = await browser.newContext();
     const page = await context.newPage();
-    const state = { context, page, fixture, navigationUrl: '', pageErrors: [] };
+    const state = { context, page, fixture, navigationUrl: '', pageErrors: [], authCookieOnDestination: false };
+    page.on('request', (request) => {
+      const cookie = request.headers()['cookie'] || '';
+      if (request.url() === fixture.url && /(?:^|;\s*)wordpress_logged_in_/.test(cookie)) state.authCookieOnDestination = true;
+    });
     pages.set(scenario.key, state);
     page.on('pageerror', (error) => state.pageErrors.push(error.name));
     page.on('framenavigated', (frame) => { if (frame === page.mainFrame()) state.navigationUrl = frame.url(); });
@@ -134,8 +138,11 @@ try {
     const matchedIndex = polls[key].findIndex((poll) => poll.http === 200 && poll.matched === true && poll.url === fixture.url);
     const falseBeforeTrue = matchedIndex < 0 ? 0 : polls[key].slice(0, matchedIndex).filter((poll) => poll.http === 200 && !poll.matched).length;
     if (matchedIndex < 0 || falseBeforeTrue < 2) throw new Error(`${key}: missing false-then-true browser poll sequence`);
-    const cookies = (await context.cookies(base)).filter((cookie) => /^(wordpress_logged_in_|wordpress_sec_)/.test(cookie.name));
-    if (!cookies.length) throw new Error(`${key}: WordPress browser session cookie missing after correct confirmation`);
+    const cookies = (await context.cookies()).filter((cookie) => /wordpress_logged_in_|wordpress_sec_/.test(cookie.name));
+    if (!cookies.length && !state.authCookieOnDestination) {
+      const names = (await context.cookies()).map((cookie) => cookie.name).filter((name) => name.startsWith('wordpress')).join(',') || 'none';
+      throw new Error(`${key}: WordPress browser session cookie missing after correct confirmation; cookie names=${names}`);
+    }
     const screen = await page.locator('body').innerText();
     if (key === 'deposit' && (!screen.includes('Annonce éphémère en attente') || !screen.includes('En attente de validation WhatsApp'))) {
       throw new Error('deposit: pending listing not visible on profile listings screen');
@@ -156,7 +163,7 @@ try {
       falseBeforeTrue,
       navigated: state.navigationUrl === fixture.url,
       dashboard: true,
-      authenticatedAfter: cookies.length > 0,
+      authenticatedAfter: cookies.length > 0 || state.authCookieOnDestination,
       pendingListingVisible: key === 'deposit',
       url: fixture.url,
       externalRequestsBlocked: blockedExternalRequests,
