@@ -115,7 +115,10 @@ def execute():
         # n8n uses the Flatted JSON representation for execution payloads: a
         # string table whose first entries contain JSON objects and whose
         # numeric strings reference other table entries.
-        if not isinstance(value, list) or not value or not isinstance(value[0], str) or value[0][:1] not in ('{', '['):
+        if not isinstance(value, list) or not value:
+            return value
+        first = value[0]
+        if not isinstance(first, (dict, list)) and not (isinstance(first, str) and first[:1] in ('{', '[')):
             return value
         cache = {}
         def dereference(index, active):
