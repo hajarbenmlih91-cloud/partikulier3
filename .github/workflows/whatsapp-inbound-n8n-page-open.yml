@@ -99,6 +99,16 @@ jobs:
                   register_post_type('properties', ['public' => true, 'publicly_queryable' => true, 'rewrite' => ['slug' => 'properties'], 'supports' => ['title', 'editor']]);
               }
           }, 0);
+          register_shutdown_function(static function () {
+              $error = error_get_last();
+              if (!$error || !in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR], true)) return;
+              $message = strtolower((string) ($error['message'] ?? ''));
+              $kind = 'fatal_other';
+              foreach (['undefined function' => 'missing_function', 'member function' => 'member_call', 'maximum execution time' => 'timeout', 'allowed memory' => 'memory', 'undefined method' => 'missing_method', 'class not found' => 'missing_class'] as $needle => $label) {
+                  if (strpos($message, $needle) !== false) { $kind = $label; break; }
+              }
+              file_put_contents('/tmp/ci-fatal-kind', $kind, LOCK_EX);
+          });
           add_filter('pre_wp_mail', static function ($return) {
               update_option('_pk_ci_mail_attempts', (int) get_option('_pk_ci_mail_attempts', 0) + 1, false);
               return true;
@@ -256,6 +266,8 @@ jobs:
             touch "$SIGNAL"
           else
             n8n_rc=$?
+            fatal_kind="$(docker exec "$WP_CONTAINER" sh -c 'cat /tmp/ci-fatal-kind 2>/dev/null || true' | tr -cd 'a-z_')"
+            case "$fatal_kind" in missing_function|member_call|timeout|memory|missing_method|missing_class|fatal_other) echo "::notice title=Disposable WordPress PHP diagnostic::$fatal_kind";; esac
             diag="$(safe_diagnostic "$RUNNER_TEMP/n8n-error.log")"
             echo "::error title=n8n workflow::$diag"
             printf '%s\n' "$diag" | tee "$RUNNER_TEMP/failure-diagnostic.txt"
