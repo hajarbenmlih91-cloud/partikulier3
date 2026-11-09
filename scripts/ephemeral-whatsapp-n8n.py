@@ -55,7 +55,7 @@ def build():
             'method': 'POST', 'url': endpoint, 'sendHeaders': True,
             'headerParameters': {'parameters': headers}, 'sendBody': True,
             'contentType': 'raw', 'rawContentType': 'application/json', 'body': body,
-            'options': {'response': {'response': {'fullResponse': True, 'responseFormat': 'json'}}},
+            'options': {'response': {'response': {'fullResponse': True, 'neverError': True, 'responseFormat': 'json'}}},
         }
         node_name = name
         nodes.append({'id': str(uuid.uuid4()), 'name': node_name, 'type': 'n8n-nodes-base.httpRequest', 'typeVersion': 4.2, 'position': [440 + index * 240, 300], 'parameters': params})
@@ -168,7 +168,9 @@ def execute():
                         try: body = json.loads(body)
                         except Exception: body = {}
                     if isinstance(body, dict):
-                        return {'http': int(status or 0), 'accepted': body.get('accepted'), 'duplicate': body.get('duplicate'), 'processing': body.get('processing')}
+                        code = body.get('code', '')
+                        if not isinstance(code, str) or not re.fullmatch(r'(?:pk_automation_[a-z_]+|rest_[a-z_]+)', code): code = ''
+                        return {'http': int(status or 0), 'accepted': body.get('accepted'), 'duplicate': body.get('duplicate'), 'processing': body.get('processing'), 'code': code}
         return None
 
     try:
@@ -249,7 +251,7 @@ def execute():
         ]
         for (name, value), want in zip(outcomes.items(), expected):
             actual = (value['http'], value['accepted'], value['duplicate'], value['processing'])
-            if actual != want: raise RuntimeError(f'unexpected WordPress result for {name}: HTTP {value["http"]}')
+            if actual != want: raise RuntimeError(f'unexpected WordPress result for {name}: HTTP {value["http"]}; safe code={value["code"] or "none"}')
         output = {'responses': {name: {'http': value['http'], 'accepted': value['accepted'], 'duplicate': value['duplicate'], 'processing': value['processing']} for name, value in outcomes.items()}}
         (temp / 'n8n-results.json').write_text(json.dumps(output, separators=(',', ':')))
         print(json.dumps(output, separators=(',', ':')))
