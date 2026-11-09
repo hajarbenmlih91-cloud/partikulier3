@@ -33,7 +33,9 @@ page.on('framenavigated', (frame) => {
 });
 
 try {
-  await page.goto(base, { waitUntil: 'domcontentloaded' });
+  const harnessUrl = new URL('/__ci/whatsapp-page-open', base).href;
+  await page.route(harnessUrl, (route) => route.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: '<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Essai page ouverte</title></head><body><main></main></body></html>' }));
+  await page.goto(harnessUrl, { waitUntil: 'domcontentloaded' });
   await page.evaluate(() => {
     document.body.innerHTML = '<main><form id="pk-submit-form" novalidate><button id="pk-submit-btn" type="submit">Continuer</button></form><p id="pk-form-status"></p></main>';
     window.pkConfig = { ajaxUrl: `${location.origin}/wp-admin/admin-ajax.php`, homeUrl: location.origin, language: 'fr', i18n: {} };
