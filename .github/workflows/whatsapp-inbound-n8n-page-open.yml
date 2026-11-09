@@ -109,7 +109,8 @@ jobs:
               }
               $file = preg_replace('/[^A-Za-z0-9._-]/', '', basename((string) ($error['file'] ?? 'unknown')));
               $line = absint($error['line'] ?? 0);
-              file_put_contents('/tmp/ci-fatal-kind', $kind . '@' . ($file ?: 'unknown') . ':' . $line, LOCK_EX);
+              $method = class_exists('Partikulier_WhatsApp_Verification') && method_exists('Partikulier_WhatsApp_Verification', 'mark_inbound_matched') ? 'method_present' : 'method_absent';
+              file_put_contents('/tmp/ci-fatal-kind', $kind . '@' . ($file ?: 'unknown') . ':' . $line . '|' . $method, LOCK_EX);
           });
           add_filter('pre_wp_mail', static function ($return) {
               update_option('_pk_ci_mail_attempts', (int) get_option('_pk_ci_mail_attempts', 0) + 1, false);
@@ -268,9 +269,9 @@ jobs:
             touch "$SIGNAL"
           else
             n8n_rc=$?
-            fatal_diag="$(docker exec "$WP_CONTAINER" sh -c 'cat /tmp/ci-fatal-kind 2>/dev/null || true' | tr -cd 'A-Za-z0-9._:@_-')"
-            if [[ "$fatal_diag" =~ ^(missing_function|member_call|timeout|memory|missing_method|missing_class|missing_constant|missing_property|non_static_call|access_violation|not_callable|type_error|argument_error|fatal_other)@([A-Za-z0-9._-]+):([0-9]+)$ ]]; then
-              echo "::notice title=Disposable WordPress PHP diagnostic::${BASH_REMATCH[1]} at ${BASH_REMATCH[2]}:${BASH_REMATCH[3]}"
+            fatal_diag="$(docker exec "$WP_CONTAINER" sh -c 'cat /tmp/ci-fatal-kind 2>/dev/null || true' | tr -cd 'A-Za-z0-9._:@_|-')"
+            if [[ "$fatal_diag" =~ ^(missing_function|member_call|timeout|memory|missing_method|missing_class|missing_constant|missing_property|non_static_call|access_violation|not_callable|type_error|argument_error|fatal_other)@([A-Za-z0-9._-]+):([0-9]+)\|(method_present|method_absent)$ ]]; then
+              echo "::notice title=Disposable WordPress PHP diagnostic::${BASH_REMATCH[1]} at ${BASH_REMATCH[2]}:${BASH_REMATCH[3]}; WhatsApp matcher ${BASH_REMATCH[4]}"
             fi
             diag="$(safe_diagnostic "$RUNNER_TEMP/n8n-error.log")"
             echo "::error title=n8n workflow::$diag"
