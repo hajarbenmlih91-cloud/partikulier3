@@ -92,6 +92,7 @@ class Partikulier_Form {
 							'status'            => 'pending_whatsapp',
 							'url'               => get_permalink( $result ),
 							'whatsapp_url'      => $verification['url'],
+							'status_url'        => Partikulier_WhatsApp_Verification::status_url( $verification['code'] ),
 							'verification_code' => $verification['code'],
 							'photo_errors'      => is_array( $photo_errors ) ? $photo_errors : array(),
 					) ); // phpcs:ignore WordPress.Security.NonceVerification -- nonce vérifié en tête de handler
@@ -111,6 +112,7 @@ class Partikulier_Form {
 						'status'            => 'pending_whatsapp',
 						'url'               => get_permalink( $result ),
 						'whatsapp_url'      => $verification['url'],
+						'status_url'        => Partikulier_WhatsApp_Verification::status_url( $verification['code'] ),
 						'verification_code' => $verification['code'],
 						'photo_errors'      => is_array( $photo_errors ) ? $photo_errors : array(),
 				);

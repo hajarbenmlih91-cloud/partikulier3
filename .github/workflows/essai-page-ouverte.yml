@@ -1,0 +1,81 @@
+name: Essai page ouverte
+
+# Banc jetable. Ne déploie pas. N'utilise aucun secret. N'installe pas n8n.
+on:
+  push:
+    branches:
+      - essai/page-ouverte-whatsapp
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  essai:
+    name: WordPress jetable, page ouverte
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: partikulier
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --host=127.0.0.1 --protocol=tcp"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=20
+    steps:
+      - name: Checkout the tested branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: '8.3'
+          extensions: curl, mbstring, mysqli
+
+      - name: Exécuter la page ouverte
+        run: node theme/partikulier/tests/page-ouverte-ecran.test.cjs
+
+      - name: Installer WordPress jetable
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar -o "$RUNNER_TEMP/wp"
+          chmod +x "$RUNNER_TEMP/wp"
+          "$RUNNER_TEMP/wp" core download --version=6.6 --path=wp
+          "$RUNNER_TEMP/wp" config create --path=wp --dbname=partikulier --dbuser=root --dbpass=root --dbhost=127.0.0.1:3306 --skip-check
+          "$RUNNER_TEMP/wp" core install --path=wp --url=http://127.0.0.1:8099 --title=Partikulier \
+            --admin_user=ci-admin --admin_password=ci-only-admin --admin_email=ci@example.com --skip-email
+          rsync -a --delete --exclude='.git' plugin/partikulier-core/ wp/wp-content/plugins/partikulier-core/
+          rsync -a --delete --exclude='.git' --exclude='node_modules' theme/partikulier/ wp/wp-content/themes/partikulier/
+          "$RUNNER_TEMP/wp" plugin activate partikulier-core --path=wp
+          "$RUNNER_TEMP/wp" theme activate partikulier --path=wp
+
+      - name: Ouvrir la page et noter l'arrivée
+        run: |
+          set -euo pipefail
+          mkdir -p preuves-run
+          php -S 127.0.0.1:8099 -t wp theme/partikulier/tests/router-ci.php > preuves-run/serveur.log 2>&1 &
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8099/ || true)
+            if [ "$code" = "200" ]; then
+              break
+            fi
+            sleep 0.5
+          done
+          PK_WP_DIR="$PWD/wp" PK_BASE=http://127.0.0.1:8099 \
+            php theme/partikulier/tests/page-ouverte-whatsapp-contract.php | tee preuves-run/page-ouverte.json
+          php -r '$d=json_decode(file_get_contents("preuves-run/page-ouverte.json"), true); if (($d["status"] ?? "") !== "PASS") { fwrite(STDERR, "essai page ouverte: FAIL\n"); exit(1); } echo "essai page ouverte: PASS ".$d["passed"]."/".$d["total"]."\n";'
+
+      - name: Publier le résultat
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: essai-page-ouverte
+          path: preuves-run/page-ouverte.json
+          if-no-files-found: warn
+          retention-days: 14
