@@ -213,6 +213,17 @@ jobs:
           STATUS_URL="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["status_url"])' "$LISTING")"
           RESULT="$RUNNER_TEMP/browser-polls.json"
           SIGNAL="$RUNNER_TEMP/n8n-finished"
+          safe_diagnostic() {
+            python3 - "$1" <<'PY'
+          import pathlib,re,sys
+          text=pathlib.Path(sys.argv[1]).read_text(errors='replace') if pathlib.Path(sys.argv[1]).exists() else ''
+          text=re.sub(r'https?://[^\s]+/wp-admin/admin-ajax\.php[^\s]*','/wp-admin/admin-ajax.php?[query redacted]',text)
+          text=re.sub(r'\bCI-[A-Za-z0-9_-]+\b','CI-[redacted]',text)
+          text=re.sub(r'(?i)(secret|password|token|authorization)\s*[:=]\s*[^\s,;]+',r'\1=[redacted]',text)
+          candidates=[line.strip() for line in text.splitlines() if re.search(r'Error:|failed|No HTTP|n8n integration|timeout|missing|without observing|did not|unexpected',line,re.I)]
+          print((candidates[0] if candidates else 'step failed; sanitized detail unavailable')[:220])
+          PY
+          }
           rm -f "$SIGNAL" "$RESULT"
           node theme/partikulier/tests/whatsapp-inbound-n8n-page-open.mjs 'http://wordpress:8080' "$LISTING_URL" "$STATUS_URL" "$CODE" "$GITHUB_WORKSPACE/theme/partikulier/assets/js/main.js" "$RESULT" "$SIGNAL" > "$RUNNER_TEMP/browser.log" 2>&1 &
           BROWSER_PID=$!
@@ -220,20 +231,38 @@ jobs:
           trap 'touch "$SIGNAL"; kill "$BROWSER_PID" 2>/dev/null || true' EXIT
           for attempt in $(seq 1 60); do
             [[ -f "$RESULT" ]] && break
-            if ! kill -0 "$BROWSER_PID" 2>/dev/null; then cat "$RUNNER_TEMP/browser.log"; exit 1; fi
+            if ! kill -0 "$BROWSER_PID" 2>/dev/null; then diag="$(safe_diagnostic "$RUNNER_TEMP/browser.log")"; echo "::error title=Browser poller::$diag"; printf '%s\n' "$diag" | tee "$RUNNER_TEMP/failure-diagnostic.txt"; exit 1; fi
             sleep 1
           done
-          [[ -f "$RESULT" ]] || { cat "$RUNNER_TEMP/browser.log"; echo 'Browser did not record pre-event poll'; exit 1; }
+          if [[ ! -f "$RESULT" ]]; then diag="$(safe_diagnostic "$RUNNER_TEMP/browser.log")"; echo "::error title=Browser pre-event poll::$diag"; printf '%s\n' "$diag" | tee "$RUNNER_TEMP/failure-diagnostic.txt"; exit 1; fi
           python3 - "$RESULT" <<'PY'
           import json,sys
           data=json.load(open(sys.argv[1])); assert data['submitted'] and data['before']['http']==200 and data['before']['matched'] is False
           PY
 
           # Execute only the imported n8n workflow. The page is still open and its production poller is running.
-          python3 scripts/ephemeral-whatsapp-n8n.py execute > "$RUNNER_TEMP/n8n-result.log"
-          touch "$SIGNAL"
-          wait "$BROWSER_PID"
-          trap - EXIT
+          if python3 scripts/ephemeral-whatsapp-n8n.py execute > "$RUNNER_TEMP/n8n-result.log" 2> "$RUNNER_TEMP/n8n-error.log"; then
+            touch "$SIGNAL"
+          else
+            n8n_rc=$?
+            diag="$(safe_diagnostic "$RUNNER_TEMP/n8n-error.log")"
+            echo "::error title=n8n workflow::$diag"
+            printf '%s\n' "$diag" | tee "$RUNNER_TEMP/failure-diagnostic.txt"
+            touch "$SIGNAL"
+            wait "$BROWSER_PID" || true
+            trap - EXIT
+            exit "$n8n_rc"
+          fi
+          if wait "$BROWSER_PID"; then
+            trap - EXIT
+          else
+            browser_rc=$?
+            diag="$(safe_diagnostic "$RUNNER_TEMP/browser.log")"
+            echo "::error title=Browser transition::$diag"
+            printf '%s\n' "$diag" | tee "$RUNNER_TEMP/failure-diagnostic.txt"
+            trap - EXIT
+            exit "$browser_rc"
+          fi
           docker exec -e GITHUB_RUN_ID="$GITHUB_RUN_ID" -e GITHUB_RUN_ATTEMPT="$GITHUB_RUN_ATTEMPT" "$WP_CONTAINER" php -r '
           require "/var/www/html/wp-load.php";
           $data = json_decode(file_get_contents("/tmp/ci-listing.json"), true);
@@ -289,6 +318,8 @@ jobs:
           before=browser.get('before',{}); after=browser.get('after',{})
           lines += ['', '## Page ouverte et sondages navigateur', '',f"- Avant n8n : HTTP {before.get('http','non mesuré')}, `matched={before.get('matched','non mesuré')}`.",f"- Après l’événement signé : HTTP {after.get('http','non mesuré')}, `matched={after.get('matched','non mesuré')}`, URL de l’annonce `{after.get('url','non mesurée')}`.",f"- Sondages navigateur observés : {browser.get('pollCount','non mesuré')} ; `matched=false` avant le premier `true` : {browser.get('falseBeforeTrue','non mesuré')} ; changement d’écran/navigation : {browser.get('screenChanged','non mesuré')}.",
           f"- `whatsapp_status`, `payment_status` et l’autre code ne changent pas l’écran : ils précèdent les sondages `matched=false` puis le seul inbound correspondant.",f"- Annonce : statut `{wp.get('post_status','non mesuré')}` (reste non publiée). Payloads persistés uniquement sous forme hachée : `{wp.get('hashed_rows','non mesuré')}`.",f"- E-mails déclenchés : {wp.get('mail_attempts','non mesuré')} ; appels HTTP externes WordPress : {wp.get('external_http_attempts','non mesuré')}.",'','Aucun nœud WhatsApp, Meta ou Evolution ; réponses WhatsApp : zéro ; aucun secret UAT n’est utilisé. Le n8n jetable est filtré au niveau réseau pour ne joindre que WordPress ; les trois conteneurs sont détruits à la fin du job.','']
+          diagnostic=(temp/'failure-diagnostic.txt').read_text(encoding='utf-8').strip() if (temp/'failure-diagnostic.txt').exists() else ''
+          if diagnostic: lines += ['', f'Diagnostic d’échec assaini : `{diagnostic}`']
           report=chr(10).join(lines)
           (temp/'preuve.md').write_text(report,encoding='utf-8')
           with open(sys.argv[2],'a',encoding='utf-8') as summary: summary.write(report+chr(10))
@@ -308,6 +339,6 @@ jobs:
           WP_CONTAINER: ${{ job.services.wordpress.id }}
           N8N_CONTAINER: ${{ job.services.n8n.id }}
         run: |
-          rm -f "$RUNNER_TEMP/ephemeral-secret" "$RUNNER_TEMP/whatsapp-n8n-workflow.json" "$RUNNER_TEMP/whatsapp-n8n-workflow-id" "$RUNNER_TEMP/whatsapp-n8n-endpoint" "$RUNNER_TEMP/listing.json" "$RUNNER_TEMP/browser.log" "$RUNNER_TEMP/n8n-result.log"
+          rm -f "$RUNNER_TEMP/ephemeral-secret" "$RUNNER_TEMP/whatsapp-n8n-workflow.json" "$RUNNER_TEMP/whatsapp-n8n-workflow-id" "$RUNNER_TEMP/whatsapp-n8n-endpoint" "$RUNNER_TEMP/listing.json" "$RUNNER_TEMP/browser.log" "$RUNNER_TEMP/n8n-result.log" "$RUNNER_TEMP/n8n-error.log" "$RUNNER_TEMP/failure-diagnostic.txt"
           docker exec "$WP_CONTAINER" rm -f /tmp/ci-secret /tmp/ci-listing.json 2>/dev/null || true
           docker exec "$N8N_CONTAINER" rm -f /tmp/whatsapp-n8n-workflow.json 2>/dev/null || true
