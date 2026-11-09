@@ -133,7 +133,12 @@ try {
     const { key, label } = scenario;
     const state = pages.get(key);
     const { page, context, fixture } = state;
-    await page.waitForURL((url) => url.href === fixture.url, { waitUntil: 'commit', timeout: 30000 });
+    try {
+      await page.waitForURL((url) => url.href === fixture.url, { waitUntil: 'commit', timeout: 30000 });
+    } catch (e) {
+      const now = page.url();
+      throw new Error(`${key}: waitForURL(${fixture.url}) timed out; currentUrl=${now}`);
+    }
     await page.locator('.pk-dashboard').waitFor({ timeout: 15000 });
     const matchedIndex = polls[key].findIndex((poll) => poll.http === 200 && poll.matched === true && poll.url === fixture.url);
     const falseBeforeTrue = matchedIndex < 0 ? 0 : polls[key].slice(0, matchedIndex).filter((poll) => poll.http === 200 && !poll.matched).length;
