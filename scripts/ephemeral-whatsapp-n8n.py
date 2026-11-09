@@ -172,7 +172,10 @@ def execute():
                         if not isinstance(code, str) or not re.fullmatch(r'[a-z0-9_]{1,64}', code): code = ''
                         headers = value.get('headers', {})
                         content_type = headers.get('content-type', '') if isinstance(headers, dict) else ''
-                        return {'http': int(status or 0), 'accepted': body.get('accepted'), 'duplicate': body.get('duplicate'), 'processing': body.get('processing'), 'code': code, 'body_keys': sorted(body.keys())[:8], 'json': 'json' in str(content_type).lower()}
+                        message = body.get('message', '')
+                        message = message.lower() if isinstance(message, str) else ''
+                        message_kind = next((label for token, label in [('critical error', 'php_critical_error'), ('undefined function', 'missing_function'), ('member function', 'null_method_call'), ('duplicate', 'duplicate_handling'), ('sql', 'database_error'), ('database', 'database_error'), ('permission', 'permission_error'), ('invalid', 'invalid_request')] if token in message), 'other')
+                        return {'http': int(status or 0), 'accepted': body.get('accepted'), 'duplicate': body.get('duplicate'), 'processing': body.get('processing'), 'code': code, 'message_kind': message_kind, 'body_keys': sorted(body.keys())[:8], 'json': 'json' in str(content_type).lower()}
         return None
 
     try:
@@ -260,7 +263,7 @@ def execute():
         ]
         for (name, value), want in zip(outcomes.items(), expected):
             actual = (value['http'], value['accepted'], value['duplicate'], value['processing'])
-            if actual != want: raise RuntimeError(f'unexpected WordPress result for {name}: HTTP {value["http"]}; safe code={value["code"] or "none"}; JSON={value["json"]}; keys={value["body_keys"]}')
+            if actual != want: raise RuntimeError(f'unexpected WordPress result for {name}: HTTP {value["http"]}; safe code={value["code"] or "none"}; message kind={value["message_kind"]}; JSON={value["json"]}; keys={value["body_keys"]}')
         output = {'responses': {name: {'http': value['http'], 'accepted': value['accepted'], 'duplicate': value['duplicate'], 'processing': value['processing']} for name, value in outcomes.items()}}
         (temp / 'n8n-results.json').write_text(json.dumps(output, separators=(',', ':')))
         print(json.dumps(output, separators=(',', ':')))
