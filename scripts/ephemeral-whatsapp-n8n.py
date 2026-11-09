@@ -169,8 +169,10 @@ def execute():
                         except Exception: body = {}
                     if isinstance(body, dict):
                         code = body.get('code', '')
-                        if not isinstance(code, str) or not re.fullmatch(r'(?:pk_automation_[a-z_]+|rest_[a-z_]+)', code): code = ''
-                        return {'http': int(status or 0), 'accepted': body.get('accepted'), 'duplicate': body.get('duplicate'), 'processing': body.get('processing'), 'code': code}
+                        if not isinstance(code, str) or not re.fullmatch(r'[a-z0-9_]{1,64}', code): code = ''
+                        headers = value.get('headers', {})
+                        content_type = headers.get('content-type', '') if isinstance(headers, dict) else ''
+                        return {'http': int(status or 0), 'accepted': body.get('accepted'), 'duplicate': body.get('duplicate'), 'processing': body.get('processing'), 'code': code, 'body_keys': sorted(body.keys())[:8], 'json': 'json' in str(content_type).lower()}
         return None
 
     try:
@@ -258,7 +260,7 @@ def execute():
         ]
         for (name, value), want in zip(outcomes.items(), expected):
             actual = (value['http'], value['accepted'], value['duplicate'], value['processing'])
-            if actual != want: raise RuntimeError(f'unexpected WordPress result for {name}: HTTP {value["http"]}; safe code={value["code"] or "none"}')
+            if actual != want: raise RuntimeError(f'unexpected WordPress result for {name}: HTTP {value["http"]}; safe code={value["code"] or "none"}; JSON={value["json"]}; keys={value["body_keys"]}')
         output = {'responses': {name: {'http': value['http'], 'accepted': value['accepted'], 'duplicate': value['duplicate'], 'processing': value['processing']} for name, value in outcomes.items()}}
         (temp / 'n8n-results.json').write_text(json.dumps(output, separators=(',', ':')))
         print(json.dumps(output, separators=(',', ':')))
