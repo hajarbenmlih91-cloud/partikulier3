@@ -39,27 +39,18 @@ get_header();
                 <?php echo Partikulier_Geo::breadcrumbs_html(); // phpcs:ignore ?>
 
 				<header class="pk-auth-head">
-						<p class="pk-editorial-kicker"><?php esc_html_e( 'Espace propriétaire', 'partikulier' ); ?></p>
+						<p class="pk-editorial-kicker"><?php esc_html_e( 'Votre espace Partikulier', 'partikulier' ); ?></p>
 						<h1 class="pk-auth-title">
-								<?php esc_html_e( 'Vos annonces', 'partikulier' ); ?>
-								<span class="pk-hero-accent"><?php esc_html_e( 'vous attendent.', 'partikulier' ); ?></span>
+								<?php esc_html_e( 'Acheter et déposer', 'partikulier' ); ?>
+								<span class="pk-hero-accent"><?php esc_html_e( 'avec le même profil.', 'partikulier' ); ?></span>
 						</h1>
 						<p class="pk-auth-subtitle">
-								<?php esc_html_e( 'Connectez-vous pour les gérer, suivre leurs vues et vos contacts directs.', 'partikulier' ); ?>
+								<?php esc_html_e( 'Confirmez votre numéro depuis WhatsApp. La page restera ouverte et accédera à votre espace après validation.', 'partikulier' ); ?>
 						</p>
 				</header>
 
 				<div class="pk-auth-card">
-						<?php
-						if ( shortcode_exists( 'es_authentication' ) ) {
-								// Le shortcode lit lui-même ?auth_item et ?redirect_url.
-								echo do_shortcode( '[es_authentication]' );
-						} else {
-								// Estatik absent : repli documenté vers wp-login.
-								echo '<p class="pk-auth-fallback">' . esc_html__( 'Le module de connexion n’est pas disponible pour le moment.', 'partikulier' ) . '</p>';
-								echo '<a class="pk-btn pk-btn-primary" href="' . esc_url( wp_login_url() ) . '">' . esc_html__( 'Se connecter', 'partikulier' ) . '</a>';
-						}
-						?>
+						<?php echo Partikulier_WhatsApp_Verification::auth_widget(); // Le même parcours WhatsApp sert à toute personne, sans rôle « vendeur ». ?>
 				</div>
 
 				<ul class="pk-auth-trust" aria-label="<?php esc_attr_e( 'Garanties Partikulier', 'partikulier' ); ?>">

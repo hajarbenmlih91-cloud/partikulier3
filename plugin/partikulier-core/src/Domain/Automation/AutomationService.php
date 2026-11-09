@@ -147,13 +147,13 @@ final class AutomationService
 		// Seul un événement entrant WhatsApp normalisé et signé peut rapprocher
 		// un code. Les états WhatsApp et paiement restent journalisés seulement.
 		if ( 'whatsapp_inbound' === $event_type && is_array($payload)
-			&& isset($payload['code'], $payload['provider_message_id'])
-			&& is_string($payload['code']) && is_string($payload['provider_message_id'])
-			&& self::has_whatsapp_verification_code($payload['code'])
+			&& isset($payload['code'], $payload['provider_message_id'], $payload['sender_phone'])
+			&& is_string($payload['code']) && is_string($payload['provider_message_id']) && is_string($payload['sender_phone'])
 			&& class_exists('Partikulier_WhatsApp_Verification') ) {
 			\Partikulier_WhatsApp_Verification::mark_inbound_matched(
 				sanitize_text_field($payload['code']),
-				sanitize_text_field($payload['provider_message_id'])
+				sanitize_text_field($payload['provider_message_id']),
+				sanitize_text_field($payload['sender_phone'])
 			);
 		}
 
@@ -167,28 +167,6 @@ final class AutomationService
 		return self::receive_event($request);
 	}
 
-	/**
-	 * Vérifie le code via les tables WordPress sans lancer WP_Query pour un
-	 * code inexistant. Un inbound inconnu reste accepté et journalisé, mais ne
-	 * traverse pas le matcher de publication.
-	 */
-	private static function has_whatsapp_verification_code( string $code ): bool
-	{
-		if ( ! defined('PARTIKULIER_ESTATIK_POST_TYPE') ) {
-			return false;
-		}
-		global $wpdb;
-		if ( ! $wpdb instanceof \wpdb ) {
-			return false;
-		}
-		$sql = $wpdb->prepare(
-			"SELECT EXISTS (SELECT 1 FROM {$wpdb->posts} AS p INNER JOIN {$wpdb->postmeta} AS pm ON pm.post_id = p.ID WHERE p.post_type = %s AND p.post_status NOT IN ('trash', 'auto-draft') AND pm.meta_key = %s AND pm.meta_value = %s)",
-			PARTIKULIER_ESTATIK_POST_TYPE,
-			'_pk_whatsapp_verification_code',
-			sanitize_text_field($code)
-		);
-		return 1 === (int) $wpdb->get_var($sql);
-	}
 
 	/** Registre d'audit : require déterministe (incident B1 — page publique). */
 	private static function audit(): \Partikulier\Core\AuditLogger

@@ -477,7 +477,7 @@ function pkLimitTitle(value) {
 			panel.appendChild(note);
 			var wait = document.createElement("p");
 			wait.className = "pk-form-note";
-			wait.textContent = (pkConfig.i18n && pkConfig.i18n.whatsappWait) || "Cette page reste ouverte. Dès que votre message est reçu, elle ouvrira votre annonce. Aucune réponse WhatsApp n’est envoyée.";
+			wait.textContent = (pkConfig.i18n && pkConfig.i18n.whatsappWait) || "Cette page reste ouverte. Après confirmation de votre numéro, elle ouvrira les annonces de votre espace. Votre annonce restera en attente de validation. Aucune réponse WhatsApp n’est envoyée.";
 			panel.appendChild(wait);
 			form.parentNode.insertBefore(panel, form);
 			panel.focus();
@@ -2658,3 +2658,51 @@ function pkLimitTitle(value) {
 	place();
 }());
 
+
+/* Authentification commune acheteur/propriétaire : le navigateur ne reçoit
+ * une session qu'après confirmation HMAC par le serveur puis sondage positif. */
+(function () {
+	var form = document.getElementById('pk-whatsapp-auth-form');
+	if (!form) return;
+	var status = form.querySelector('[data-pk-auth-status]');
+	var activeTimer = null;
+	form.addEventListener('submit', function (event) {
+		event.preventDefault();
+		if (activeTimer) window.clearInterval(activeTimer);
+		var data = new FormData(form);
+		data.append('action', 'pk_whatsapp_auth_start');
+		if (status) status.textContent = 'Préparation de la confirmation WhatsApp…';
+		fetch(form.getAttribute('data-ajax-url'), { method: 'POST', body: data, credentials: 'same-origin' })
+			.then(function (response) { return response.json().then(function (body) {
+				if (!response.ok || !body || !body.success) throw new Error((body && body.data && body.data.message) || 'Impossible de préparer la confirmation.');
+				return body.data || {};
+			}); })
+			.then(function (challenge) {
+				if (!challenge.status_url || !challenge.whatsapp_url) throw new Error('Confirmation WhatsApp indisponible.');
+				if (status) {
+					status.textContent = 'Envoyez le message prérempli, puis laissez cette page ouverte. Elle ouvrira votre espace après confirmation.';
+					var link = document.createElement('a');
+					link.href = challenge.whatsapp_url;
+					link.target = '_blank';
+					link.rel = 'noopener';
+					link.className = 'pk-btn pk-btn-outline';
+					link.textContent = 'Ouvrir WhatsApp';
+					status.insertAdjacentElement('afterend', link);
+				}
+				var complete = false;
+				activeTimer = window.setInterval(function () {
+					if (complete) return;
+					fetch(challenge.status_url, { credentials: 'same-origin', cache: 'no-store' })
+						.then(function (response) { return response.json(); })
+						.then(function (body) {
+							var result = body && body.data ? body.data : {};
+						if (!result.matched || !result.url) return;
+						complete = true;
+						window.clearInterval(activeTimer);
+						window.location.assign(result.url);
+					}).catch(function () {});
+				}, 3000);
+			})
+			.catch(function (error) { if (status) status.textContent = error.message; });
+	});
+}());

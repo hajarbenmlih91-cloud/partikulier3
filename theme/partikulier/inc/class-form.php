@@ -454,8 +454,8 @@ class Partikulier_Form {
 		}
 					$email_ok = is_email( $email );
 					$phone_ok = preg_match( '/^[+]?\d[\d\s.\-()]{7,}$/', $phone );
-		if ( ! $phone_ok ) {
-			return new WP_Error( 'phone', __( 'Un numéro de téléphone valide est requis pour demander la validation WhatsApp.', 'partikulier' ) );
+		if ( ! $phone_ok || ! Partikulier_WhatsApp_Verification::normalize_phone_number( $phone ) ) {
+			return new WP_Error( 'phone', __( 'Un numéro mobile marocain valide est requis pour demander la validation WhatsApp.', 'partikulier' ) );
 		}
 		if ( ! class_exists( 'Partikulier_WhatsApp_Verification' ) || ! Partikulier_WhatsApp_Verification::is_configured() ) {
 			if ( current_user_can( 'manage_options' ) ) {
@@ -619,6 +619,11 @@ class Partikulier_Form {
 				update_post_meta( $post_id, '_pk_district_name', $district_name );
 		}
 
+							// Le rapprochement WhatsApp compare le numéro émetteur au téléphone de ce profil.
+		if ( $phone_ok && $user instanceof WP_User ) {
+			update_user_meta( $user->ID, '_pk_owner_phone_clean', Partikulier_WhatsApp_Verification::normalize_phone_number( $phone ) );
+			update_user_meta( $user->ID, '_pk_owner_phone_raw', $phone );
+		}
 							// --- Contact annonceur (toujours proprietaire : agents refuses) ---
 							update_post_meta( $post_id, '_pk_owner_name', $name );
 		if ( $email_ok ) {
@@ -892,10 +897,16 @@ class Partikulier_Form {
 			}
 		}
 
-		if ( $user && false === strpos( $email, '@partikulier.local' ) ) {
-			if ( is_user_logged_in() && get_current_user_id() === (int) $user->ID ) {
+		if ( $user && is_user_logged_in() && get_current_user_id() === (int) $user->ID ) {
+			return $user;
+		}
+		if ( $user && ! empty( $clean_phone ) ) {
+			$stored_phone = Partikulier_WhatsApp_Verification::normalize_phone_number( get_user_meta( $user->ID, '_pk_owner_phone_clean', true ) );
+			if ( $stored_phone && hash_equals( $stored_phone, Partikulier_WhatsApp_Verification::normalize_phone_number( $phone ) ) ) {
 				return $user;
 			}
+		}
+		if ( $user && false === strpos( $email, '@partikulier.local' ) ) {
 			return new WP_Error(
 				'pk_email_in_use',
 				__( 'Cette adresse e-mail est déjà associée à un compte. Veuillez vous connecter pour déposer votre annonce.', 'partikulier' )

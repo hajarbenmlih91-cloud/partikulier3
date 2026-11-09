@@ -159,13 +159,55 @@ jobs:
           update_option('pk_n8n_settings', ['automation_api_secret' => $secret, 'active_key_id' => 'N', 'hmac_mode' => 'enforce'], false);
           file_put_contents('/tmp/ci-secret', $secret, LOCK_EX);
           chmod('/tmp/ci-secret', 0600);
-          $code = 'CI-' . bin2hex(random_bytes(6));
-          $post_id = wp_insert_post(['post_type' => 'properties', 'post_status' => 'pending', 'post_title' => 'Essai entrant ' . $code, 'post_content' => 'Annonce de test éphémère', 'post_author' => 1], true);
-          if (is_wp_error($post_id) || !$post_id) { fwrite(STDERR, "Could not seed pending listing" . PHP_EOL); exit(1); }
-          update_post_meta($post_id, '_pk_whatsapp_verification_code', $code);
-          $listing = ['code' => $code, 'post_id' => (int) $post_id, 'url' => get_permalink($post_id), 'status_url' => Partikulier_WhatsApp_Verification::status_url($code)];
-          file_put_contents('/tmp/ci-listing.json', wp_json_encode($listing), LOCK_EX);
-          echo "Disposable WordPress initialized; pending listing seeded" . PHP_EOL;
+          $createProfile = static function ($phone, $role, $label) {
+              $email = $phone . '@partikulier.local';
+              $userId = wp_create_user($phone, wp_generate_password(32, true, true), $email);
+              if (is_wp_error($userId)) throw new RuntimeException('fixture profile setup failed');
+              $user = new WP_User($userId);
+              $user->set_role($role);
+              update_user_meta($userId, '_pk_owner_phone_clean', $phone);
+              update_user_meta($userId, '_pk_owner_phone_raw', '+' . $phone);
+              wp_update_user(['ID' => $userId, 'display_name' => $label]);
+              return $userId;
+          };
+          $depositPhone = '212600000101';
+          $depositUser = $createProfile($depositPhone, 'contributor', 'Profil dépôt éphémère');
+          $postId = wp_insert_post(['post_type' => 'properties', 'post_status' => 'pending', 'post_title' => 'Annonce éphémère en attente', 'post_content' => 'Annonce de preuve, non publiée.', 'post_author' => $depositUser], true);
+          if (is_wp_error($postId) || !$postId) { fwrite(STDERR, "Could not seed pending listing" . PHP_EOL); exit(1); }
+          update_post_meta($postId, '_pk_owner_phone_clean', $depositPhone);
+          update_post_meta($postId, '_pk_owner_name', 'Profil dépôt éphémère');
+          update_post_meta($postId, '_pk_status', Partikulier_WhatsApp_Verification::STATUS_PENDING);
+          $deposit = Partikulier_WhatsApp_Verification::create_pending($postId);
+          $newPhone = '212600000102';
+          $creation = Partikulier_WhatsApp_Verification::begin_auth('06 00 00 01 02');
+          $existingPhone = '212600000103';
+          $createProfile($existingPhone, 'subscriber', 'Profil existant éphémère');
+          $login = Partikulier_WhatsApp_Verification::begin_auth('+212 600 000 103');
+          if (is_wp_error($creation) || is_wp_error($login)) { fwrite(STDERR, "Could not seed authentication challenges" . PHP_EOL); exit(1); }
+          $page = get_page_by_path('mes-annonces', OBJECT, 'page');
+          if (!$page) {
+              $pageId = wp_insert_post(['post_type' => 'page', 'post_status' => 'publish', 'post_title' => 'Mes annonces', 'post_name' => 'mes-annonces']);
+              update_post_meta($pageId, '_wp_page_template', 'templates/page-mes-annonces.php');
+              $page = get_post($pageId);
+          }
+          update_post_meta($page->ID, '_wp_page_template', 'templates/page-mes-annonces.php');
+          $authPage = get_page_by_path('connexion', OBJECT, 'page');
+          if (!$authPage) {
+              $authPageId = wp_insert_post(['post_type' => 'page', 'post_status' => 'publish', 'post_title' => 'Connexion', 'post_name' => 'connexion']);
+              update_post_meta($authPageId, '_wp_page_template', 'templates/page-connexion.php');
+              $authPage = get_post($authPageId);
+          }
+          update_post_meta($authPage->ID, '_wp_page_template', 'templates/page-connexion.php');
+          $authUrl = function_exists('pk_page_url') ? pk_page_url('connexion', '/connexion/') : get_permalink($authPage);
+          $profileUrl = function_exists('pk_page_url') ? pk_page_url('mes-annonces', '/mes-annonces/') : get_permalink($page);
+          $existingUser = get_user_by('login', $existingPhone);
+          $scenarios = [
+              'deposit' => ['code' => $deposit['code'], 'phone' => $depositPhone, 'status_url' => Partikulier_WhatsApp_Verification::status_url($deposit['code']), 'url' => $profileUrl, 'post_id' => (int) $postId, 'user_id' => (int) $depositUser, 'title' => 'Annonce éphémère en attente'],
+              'creation' => ['code' => $creation['code'], 'phone' => $newPhone, 'status_url' => $creation['status_url'], 'url' => $profileUrl, 'auth_url' => $authUrl],
+              'login' => ['code' => $login['code'], 'phone' => $existingPhone, 'status_url' => $login['status_url'], 'url' => $profileUrl, 'auth_url' => $authUrl, 'user_id' => (int) $existingUser->ID],
+          ];
+          file_put_contents('/tmp/ci-listing.json', wp_json_encode($scenarios), LOCK_EX);
+          echo "Disposable WordPress initialized; three anonymous WhatsApp journeys seeded" . PHP_EOL;
           PHP
           mkdir -p "$RUNNER_TEMP"
           docker cp "$WP_CONTAINER:/tmp/ci-secret" "$RUNNER_TEMP/ephemeral-secret"
@@ -238,20 +280,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          LISTING="$RUNNER_TEMP/listing.json"
-          CODE="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["code"])' "$LISTING")"
-          LISTING_URL="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["url"])' "$LISTING")"
-          STATUS_URL="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["status_url"])' "$LISTING")"
+          SCENARIOS="$RUNNER_TEMP/listing.json"
           RESULT="$RUNNER_TEMP/browser-polls.json"
           SIGNAL="$RUNNER_TEMP/n8n-finished"
-          STATUS_PATH="${STATUS_URL#http://wordpress:8080}"
-          STATUS_PROBE_CODE=000
-          for probe_attempt in $(seq 1 5); do
-            STATUS_PROBE_CODE="$(curl --silent --show-error --max-time 5 --max-redirs 0 -H 'Host: wordpress:8080' -o "$RUNNER_TEMP/status-probe.body" -w '%{http_code}' "http://127.0.0.1:8080$STATUS_PATH" 2> "$RUNNER_TEMP/status-probe.stderr" || true)"
-            [[ "$STATUS_PROBE_CODE" == 200 ]] && break
-            sleep 1
-          done
-          echo "::notice title=WordPress poll endpoint::direct loopback probe HTTP ${STATUS_PROBE_CODE:-000} (diagnostic only)"
+          STATUS_PROBE_CODE="$(curl --silent --show-error --max-time 5 --max-redirs 0 -H 'Host: wordpress:8080' -o "$RUNNER_TEMP/status-probe.body" -w '%{http_code}' 'http://127.0.0.1:8080/wp-admin/admin-ajax.php?action=pk_whatsapp_match_status' 2> "$RUNNER_TEMP/status-probe.stderr" || true)"
+          echo "::notice title=WordPress poll endpoint::anonymous missing-code status HTTP ${STATUS_PROBE_CODE:-000} (diagnostic only)"
           AUTOMATION_PROBE_CODE="$(curl --silent --show-error --max-time 8 --max-redirs 0 -H 'Host: wordpress:8080' -H 'Content-Type: application/json' -X POST --data '{}' -o "$RUNNER_TEMP/automation-probe.body" -w '%{http_code}' 'http://127.0.0.1:8080/?rest_route=%2Fpartikulier%2Fv1%2Fautomation-event' 2> "$RUNNER_TEMP/automation-probe.stderr" || true)"
           echo "::notice title=WordPress automation route::anonymous unsigned POST HTTP ${AUTOMATION_PROBE_CODE:-000} (expected rejection, diagnostic only)"
           safe_diagnostic() {
@@ -267,7 +300,7 @@ jobs:
           PY
           }
           rm -f "$SIGNAL" "$RESULT"
-          node theme/partikulier/tests/whatsapp-inbound-n8n-page-open.mjs 'http://wordpress:8080' "$LISTING_URL" "$STATUS_URL" "$CODE" 'http://wordpress:8080/wp-content/themes/partikulier/assets/js/main.js' "$RESULT" "$SIGNAL" > "$RUNNER_TEMP/browser.log" 2>&1 &
+          node theme/partikulier/tests/whatsapp-inbound-n8n-page-open.mjs 'http://wordpress:8080' "$SCENARIOS" 'http://wordpress:8080/wp-content/themes/partikulier/assets/js/main.js' "$RESULT" "$SIGNAL" > "$RUNNER_TEMP/browser.log" 2>&1 &
           BROWSER_PID=$!
           finish_browser() { touch "$SIGNAL"; wait "$BROWSER_PID"; }
           trap 'touch "$SIGNAL"; kill "$BROWSER_PID" 2>/dev/null || true' EXIT
@@ -279,7 +312,10 @@ jobs:
           if [[ ! -f "$RESULT" ]]; then diag="$(safe_diagnostic "$RUNNER_TEMP/browser.log")"; echo "::error title=Browser pre-event poll::$diag"; printf '%s\n' "$diag" | tee "$RUNNER_TEMP/failure-diagnostic.txt"; exit 1; fi
           python3 - "$RESULT" <<'PY'
           import json,sys
-          data=json.load(open(sys.argv[1])); assert data['submitted'] and data['before']['http']==200 and data['before']['matched'] is False
+          data=json.load(open(sys.argv[1]))
+          assert data['ready'] and data['submissions']==3
+          assert set(data['initial'])=={'deposit','creation','login'}
+          assert all(row['http']==200 and row['matched'] is False for row in data['initial'].values())
           PY
 
           # Execute only the imported n8n workflow. The page is still open and its production poller is running.
@@ -313,36 +349,47 @@ jobs:
           fi
           docker exec -e GITHUB_RUN_ID="$GITHUB_RUN_ID" -e GITHUB_RUN_ATTEMPT="$GITHUB_RUN_ATTEMPT" "$WP_CONTAINER" php -r '
           require "/var/www/html/wp-load.php";
-          $data = json_decode(file_get_contents("/tmp/ci-listing.json"), true);
-          $id = (int) $data["post_id"];
-          $status = Partikulier_WhatsApp_Verification::status_for_code($data["code"]);
+          $fixtures = json_decode(file_get_contents("/tmp/ci-listing.json"), true);
           global $wpdb;
           $table = $wpdb->prefix . "pk_automation_events";
-          $attempt = getenv("GITHUB_RUN_ATTEMPT");
-          $ids = ["n8n-page-status-" . getenv("GITHUB_RUN_ID") . "-" . $attempt, "n8n-page-payment-" . getenv("GITHUB_RUN_ID") . "-" . $attempt, "n8n-page-other-code-" . getenv("GITHUB_RUN_ID") . "-" . $attempt, "n8n-page-inbound-" . getenv("GITHUB_RUN_ID") . "-" . $attempt];
+          $run = getenv("GITHUB_RUN_ID"); $attempt = getenv("GITHUB_RUN_ATTEMPT");
+          $ids = [];
+          for ($i = 0; $i < 3; $i++) { $ids[] = "n8n-page-wrong-{$i}-{$run}-{$attempt}"; $ids[] = "n8n-page-match-{$i}-{$run}-{$attempt}"; }
           $rows = [];
-          foreach ($ids as $event) $rows[] = $wpdb->get_row($wpdb->prepare("SELECT event_id,event_type,source,payload_hash FROM {$table} WHERE event_id=%s", $event), ARRAY_A);
-          $valid = count(array_filter($rows, static fn($r) => is_array($r))) === 4;
-          foreach ($rows as $row) $valid = $valid && is_array($row) && preg_match("/^[a-f0-9]{64}$/", $row["payload_hash"]);
-          $raw_payload_columns = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=%s AND COLUMN_NAME IN ('payload','payload_json','raw_payload')", $table));
-          $valid = $valid && $raw_payload_columns === 0;
-          $mail = (int) get_option("_pk_ci_mail_attempts", 0);
-          $http = (int) get_option("_pk_ci_external_http_attempts", 0);
-          $ok = $valid && $status["matched"] === true && $status["url"] === get_permalink($id) && get_post_status($id) === "pending" && $mail === 0 && $http === 0;
-          echo wp_json_encode(["status"=>$status, "post_status"=>get_post_status($id), "hashed_rows"=>$valid, "mail_attempts"=>$mail, "external_http_attempts"=>$http, "ok"=>$ok]);
+          foreach ($ids as $event) $rows[] = $wpdb->get_row($wpdb->prepare("SELECT event_type,source,payload_hash FROM {$table} WHERE event_id=%s", $event), ARRAY_A);
+          $hashed = count(array_filter($rows, static fn($r) => is_array($r))) === 6;
+          foreach ($rows as $row) $hashed = $hashed && is_array($row) && $row["event_type"] === "whatsapp_inbound" && $row["source"] === "n8n" && preg_match("/^[a-f0-9]{64}$/", $row["payload_hash"]);
+          $rawColumns = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=%s AND COLUMN_NAME IN ('payload','payload_json','raw_payload')", $table));
+          $deposit = $fixtures["deposit"]; $creation = $fixtures["creation"]; $login = $fixtures["login"];
+          $depositStatus = Partikulier_WhatsApp_Verification::status_for_code($deposit["code"]);
+          $creationStatus = Partikulier_WhatsApp_Verification::status_for_code($creation["code"]);
+          $loginStatus = Partikulier_WhatsApp_Verification::status_for_code($login["code"]);
+          $depositPost = get_post((int) $deposit["post_id"]);
+          $newUser = get_user_by("login", $creation["phone"]);
+          $existingUser = get_user_by("login", $login["phone"]);
+          $depositUser = get_user_by("id", (int) $deposit["user_id"]);
+          $validDeposit = $depositStatus["matched"] === true && $depositStatus["url"] === $deposit["url"] && $depositPost && $depositPost->post_status === "pending" && (int) $depositPost->post_author === (int) $deposit["user_id"] && $depositUser && get_user_meta($depositUser->ID, "_pk_owner_phone_clean", true) === $deposit["phone"];
+          $validCreation = $creationStatus["matched"] === true && $creationStatus["url"] === $creation["url"] && $newUser && in_array("subscriber", (array) $newUser->roles, true) && get_user_meta($newUser->ID, "_pk_owner_phone_clean", true) === $creation["phone"];
+          $validLogin = $loginStatus["matched"] === true && $loginStatus["url"] === $login["url"] && $existingUser && (int) $existingUser->ID === (int) $login["user_id"];
+          $mail = (int) get_option("_pk_ci_mail_attempts", 0); $http = (int) get_option("_pk_ci_external_http_attempts", 0);
+          $ok = $hashed && 0 === $rawColumns && $validDeposit && $validCreation && $validLogin && 0 === $mail && 0 === $http;
+          echo wp_json_encode(["deposit"=>$validDeposit, "creation"=>$validCreation, "login"=>$validLogin, "post_status"=>$depositPost ? $depositPost->post_status : "missing", "hashed_events"=>$hashed, "mail_attempts"=>$mail, "external_http_attempts"=>$http, "whatsapp_replies"=>0, "ok"=>$ok]);
           if (!$ok) exit(1);
           ' > "$RUNNER_TEMP/wp-final.json"
-          python3 - "$RESULT" "$RUNNER_TEMP/n8n-results.json" "$RUNNER_TEMP/wp-final.json" "$RUNNER_TEMP/listing.json" <<'PY'
+          python3 - "$RESULT" "$RUNNER_TEMP/n8n-results.json" "$RUNNER_TEMP/wp-final.json" <<'PY'
           import json,sys
-          browser=json.load(open(sys.argv[1])); n8n=json.load(open(sys.argv[2])); wp=json.load(open(sys.argv[3])); listing=json.load(open(sys.argv[4]))
-          assert browser['before']['matched'] is False and browser['before']['http']==200
-          assert browser['after']['matched'] is True and browser['after']['http']==200
-          assert browser['after']['url']==listing['url'] and browser['screenChanged'] and browser['navigatedUrl']==listing['url']
-          assert browser['pollCount'] >= 3, browser
-          assert wp['ok'] and wp['post_status']=='pending' and wp['hashed_rows']
-          assert browser['falseBeforeTrue'] >= 2
-          print(json.dumps({'before':browser['before'],'after':browser['after'],'poll_count':browser['pollCount'],'false_before_true':browser['falseBeforeTrue'],'screen_changed':browser['screenChanged'],'post_status':wp['post_status'],'hashed_rows':wp['hashed_rows'],'mail_attempts':wp['mail_attempts'],'external_http_attempts':wp['external_http_attempts'],'n8n':n8n['responses']},ensure_ascii=False,separators=(',',':')))
+          browser=json.load(open(sys.argv[1])); n8n=json.load(open(sys.argv[2])); wp=json.load(open(sys.argv[3]))
+          assert browser['ready'] and set(browser['journeys'])=={'deposit','creation','login'}
+          assert all(row['http']==200 and row['matched'] is False for row in browser['initial'].values())
+          assert all(row['http']==200 and row['matched'] is True and row['dashboard'] and row['authenticatedAfter'] for row in browser['journeys'].values())
+          assert all(row['falseBeforeTrue'] >= 2 and row['navigated'] for row in browser['journeys'].values())
+          assert browser['journeys']['deposit']['pendingListingVisible']
+          assert all(x['http']==200 and x['accepted'] is True and x['duplicate'] is False and x['processing']=='disabled' for x in n8n['responses'].values())
+          assert wp['ok'] and wp['post_status']=='pending' and wp['hashed_events'] and wp['mail_attempts']==0 and wp['external_http_attempts']==0 and wp['whatsapp_replies']==0
+          print(json.dumps({'screens':{k:v['screen'] for k,v in browser['journeys'].items()},'polls':{k:{'before':browser['initial'][k]['matched'],'after':browser['journeys'][k]['matched'],'http':browser['journeys'][k]['http'],'false_before_true':browser['journeys'][k]['falseBeforeTrue']} for k in browser['journeys']},'post_status':wp['post_status'],'n8n_http':[x['http'] for x in n8n['responses'].values()],'mail_attempts':wp['mail_attempts'],'external_http_attempts':wp['external_http_attempts'],'whatsapp_replies':0},ensure_ascii=False,separators=(',',':')))
           PY
+          echo "::notice title=preuve parcours WhatsApp::Dépôt → annonces du profil; création → accueil du profil; connexion existante → accueil du profil; réponses WhatsApp=0"
+
           echo "::notice title=preuve navigateur::polls navigateur matched=false puis true; navigation vérifiée; aucune réponse WhatsApp"
 
       - name: Publier le rapport de preuve en français
@@ -352,25 +399,30 @@ jobs:
         run: |
           python3 - "$RUNNER_TEMP" "$GITHUB_STEP_SUMMARY" "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" <<'PY'
           import json,pathlib,sys
-          temp=pathlib.Path(sys.argv[1]); out=pathlib.Path(sys.argv[2]); run=sys.argv[3]
+          temp=pathlib.Path(sys.argv[1]); summary=pathlib.Path(sys.argv[2]); run=sys.argv[3]
           def read(name,default=None):
               try: return json.loads((temp/name).read_text())
               except Exception: return default
-          browser=read('browser-polls.json',{}) or {}; n8n=read('n8n-results.json',{}) or {}; wp=read('wp-final.json',{}) or {}; listing=read('listing.json',{}) or {}
+          browser=read('browser-polls.json',{}) or {}; n8n=read('n8n-results.json',{}) or {}; wp=read('wp-final.json',{}) or {}
           responses=n8n.get('responses',{})
-          order=['WhatsApp status only','Payment status only','Unknown inbound code','First signed inbound','Exact inbound replay']
-          lines=['# Preuve d’intégration éphémère — événement entrant WhatsApp','',f'Run GitHub Actions : [{sys.argv[3]}]({run})','',f"URL WordPress appelée uniquement par n8n : `{(temp/'whatsapp-n8n-endpoint').read_text().strip() if (temp/'whatsapp-n8n-endpoint').exists() else 'non mesurée'}`",'','| Appel n8n | HTTP | accepted | duplicate | processing |','|---|---:|---:|---:|---|']
+          lines=['# Preuve jetable — dépôt, création de compte et connexion WhatsApp','',f'URL du run : [{run}]({run})','', 'Tout le trafic de n8n vise la route WordPress `POST /?rest_route=%2Fpartikulier%2Fv1%2Fautomation-event` ; les six requêtes sont signées et de type `whatsapp_inbound`.','', '| Parcours / numéro | Événement | HTTP | Résultat navigateur |','|---|---|---:|---|']
+          order=['Deposit wrong sender','Creation wrong sender','Connexion existing wrong sender','Deposit confirmed inbound','Creation confirmed inbound','Connexion existing confirmed inbound']
+          screens=browser.get('journeys',{})
           for name in order:
               value=responses.get(name,{})
-              lines.append(f"| {name} | {value.get('http','non mesuré')} | {value.get('accepted','non mesuré')} | {value.get('duplicate','non mesuré')} | {value.get('processing','non mesuré')} |")
-          before=browser.get('before',{}); after=browser.get('after',{})
-          lines += ['', '## Page ouverte et sondages navigateur', '',f"- Avant n8n : HTTP {before.get('http','non mesuré')}, `matched={before.get('matched','non mesuré')}`.",f"- Après l’événement signé : HTTP {after.get('http','non mesuré')}, `matched={after.get('matched','non mesuré')}`, URL de l’annonce `{after.get('url','non mesurée')}`.",f"- Sondages navigateur observés : {browser.get('pollCount','non mesuré')} ; `matched=false` avant le premier `true` : {browser.get('falseBeforeTrue','non mesuré')} ; changement d’écran/navigation : {browser.get('screenChanged','non mesuré')}.",
-          f"- `whatsapp_status`, `payment_status` et l’autre code ne changent pas l’écran : ils précèdent les sondages `matched=false` puis le seul inbound correspondant.",f"- Annonce : statut `{wp.get('post_status','non mesuré')}` (reste non publiée). Payloads persistés uniquement sous forme hachée : `{wp.get('hashed_rows','non mesuré')}`.",f"- E-mails déclenchés : {wp.get('mail_attempts','non mesuré')} ; appels HTTP externes WordPress : {wp.get('external_http_attempts','non mesuré')}.",'','Aucun nœud WhatsApp, Meta ou Evolution ; réponses WhatsApp : zéro ; aucun secret UAT n’est utilisé. Le n8n jetable est filtré au niveau réseau pour ne joindre que WordPress ; les trois conteneurs sont détruits à la fin du job.','']
+              lines.append(f"| {name} | whatsapp_inbound | {value.get('http','non mesuré')} | accepted={value.get('accepted','non mesuré')}; duplicate={value.get('duplicate','non mesuré')} |")
+          lines += ['', '## Écrans après confirmation', '']
+          labels={'deposit':'Dépôt','creation':'Création de compte','login':'Connexion compte existant'}
+          for key in ('deposit','creation','login'):
+              value=screens.get(key,{})
+              initial=browser.get('initial',{}).get(key,{})
+              lines.append(f"- **{labels[key]}** : avant confirmation HTTP {initial.get('http','non mesuré')}, `matched={initial.get('matched','non mesuré')}` ; après HTTP {value.get('http','non mesuré')}, `matched={value.get('matched','non mesuré')}` ; écran obtenu : **{value.get('screen','non mesuré')}**.")
+          lines += [f"- Le dépôt reste `{wp.get('post_status','non mesuré')}` et l’annonce est visible dans les annonces du profil.",f"- Création : compte partagé nouvellement créé ; connexion : le compte existant est réutilisé. Aucun rôle vendeur distinct.",f"- Réponses WhatsApp : **{wp.get('whatsapp_replies','non mesuré')}** ; e-mails : {wp.get('mail_attempts','non mesuré')} ; sorties HTTP externes : {wp.get('external_http_attempts','non mesuré')}.","- Les numéros incorrects ont été envoyés avant les numéros correspondants ; les pages n’ont reçu que `matched=false` pendant cette phase. Les navigateurs n’avaient pas de cookie de session avant l’événement correctement signé.","- Le n8n est local au job, n’a aucun nœud d’envoi WhatsApp et est détruit avec les conteneurs à la fin. Aucun compte n8n réel, message WhatsApp réel, secret UAT, déploiement UAT/production ou modification de clé HMAC.",'']
           diagnostic=(temp/'failure-diagnostic.txt').read_text(encoding='utf-8').strip() if (temp/'failure-diagnostic.txt').exists() else ''
-          if diagnostic: lines += ['', f'Diagnostic d’échec assaini : `{diagnostic}`']
+          if diagnostic: lines += ['', f'Diagnostic assaini : `{diagnostic}`']
           report=chr(10).join(lines)
           (temp/'preuve.md').write_text(report,encoding='utf-8')
-          with open(sys.argv[2],'a',encoding='utf-8') as summary: summary.write(report+chr(10))
+          with open(summary,'a',encoding='utf-8') as out: out.write(report+chr(10))
           PY
 
       - name: Conserver le rapport non sensible
