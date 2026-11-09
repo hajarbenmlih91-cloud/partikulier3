@@ -221,6 +221,8 @@ jobs:
             sleep 1
           done
           echo "::notice title=WordPress poll endpoint::direct loopback probe HTTP ${STATUS_PROBE_CODE:-000} (diagnostic only)"
+          AUTOMATION_PROBE_CODE="$(curl --silent --show-error --max-time 8 --max-redirs 0 -H 'Host: wordpress:8080' -H 'Content-Type: application/json' -X POST --data '{}' -o "$RUNNER_TEMP/automation-probe.body" -w '%{http_code}' 'http://127.0.0.1:8080/wp-json/partikulier/v1/automation-event' 2> "$RUNNER_TEMP/automation-probe.stderr" || true)"
+          echo "::notice title=WordPress automation route::anonymous unsigned POST HTTP ${AUTOMATION_PROBE_CODE:-000} (expected rejection, diagnostic only)"
           safe_diagnostic() {
             python3 - "$1" <<'PY'
           import pathlib,re,sys
