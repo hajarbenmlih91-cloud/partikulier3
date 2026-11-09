@@ -99,6 +99,9 @@ jobs:
                   register_post_type('properties', ['public' => true, 'publicly_queryable' => true, 'rewrite' => ['slug' => 'properties'], 'supports' => ['title', 'editor']]);
               }
           }, 0);
+          // WordPress' canonical redirect can loop in the container host alias;
+          // keep the fixture permalink as the stable browser destination.
+          add_filter('redirect_canonical', '__return_false');
           register_shutdown_function(static function () {
               $error = error_get_last();
               if (!$error || !in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR], true)) return;
