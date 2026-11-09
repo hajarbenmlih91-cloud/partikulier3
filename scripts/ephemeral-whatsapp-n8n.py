@@ -40,7 +40,7 @@ def build():
         event_id = f'{suffix}-{run_id}-{attempt}'
         body = json.dumps({'event_id': event_id, 'event_type': event_type, 'source': 'n8n', 'payload': payload}, separators=(',', ':'), ensure_ascii=False)
         timestamp = str(int(time.time()))
-        canonical = f'POST\n/wp-json/partikulier/v1/automation-event\n{timestamp}\n{body}'.encode()
+        canonical = f'POST\n/partikulier/v1/automation-event\n{timestamp}\n{body}'.encode()
         signature = 'sha256=' + hmac.new(key, canonical, hashlib.sha256).hexdigest()
         headers = [
             {'name': 'Content-Type', 'value': 'application/json'},
@@ -205,7 +205,7 @@ def execute():
                 return found
             safe_class = 'other'
             for path, text in collect_strings(execution_error):
-                for token, label in [('ECONNREFUSED', 'connection_refused'), ('ENOTFOUND', 'dns_failure'), ('ETIMEDOUT', 'connection_timeout'), ('401', 'http_401'), ('403', 'http_403'), ('404', 'http_404'), ('429', 'http_429'), ('500', 'http_500'), ('signature', 'signature_rejected'), ('timestamp', 'timestamp_rejected'), ('connect', 'connection_error'), ('timeout', 'timeout'), ('json', 'json_error')]:
+                for token, label in [('pk_automation_auth', 'shared_secret_rejected'), ('pk_automation_signature', 'signature_rejected'), ('pk_automation_payload', 'payload_rejected'), ('ECONNREFUSED', 'connection_refused'), ('ENOTFOUND', 'dns_failure'), ('ETIMEDOUT', 'connection_timeout'), ('401', 'http_401'), ('403', 'http_403'), ('404', 'http_404'), ('429', 'http_429'), ('500', 'http_500'), ('signature', 'signature_rejected'), ('timestamp', 'timestamp_rejected'), ('connect', 'connection_error'), ('timeout', 'timeout'), ('json', 'json_error')]:
                     if token.lower() in text.lower(): safe_class = label; break
                 if safe_class != 'other': break
             node = execution_error.get('node') if isinstance(execution_error, dict) else None
