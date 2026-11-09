@@ -188,12 +188,16 @@ def execute():
             if status_code == 200:
                 finished = find(execution, 'finished')
                 state = find(execution, 'status')
-                err = find(find(execution, 'resultData') or {}, 'error')
+                polled_result = find(execution, 'resultData') or {}
+                err = polled_result.get('error') if isinstance(polled_result, dict) else None
                 if finished is True or state in ('success', 'error', 'crashed', 'canceled') or err is not None: break
             time.sleep(1)
         else: raise RuntimeError('execution timeout')
         result_data = find(execution, 'resultData') or {}
-        execution_error = find(result_data, 'error')
+        # Only the top-level execution error means n8n itself failed. A
+        # recursive search also mistakes a WordPress response body's `error`
+        # field for an n8n engine failure (notably on an expected HTTP error).
+        execution_error = result_data.get('error') if isinstance(result_data, dict) else None
         if execution_error is not None:
             def collect_strings(value, path='', depth=0):
                 found = []
@@ -224,7 +228,7 @@ def execute():
             node_keys = sorted(node.keys())[:12] if isinstance(node, dict) else []
             error_keys = sorted(execution_error.keys())[:12] if isinstance(execution_error, dict) else []
             raise RuntimeError(f'n8n execution failed at {node_name}; safe error class={safe_class}; HTTP={http_code}; type={error_type}; error name={error_name}; keys={error_keys}')
-        run_data = find(execution, 'runData')
+        run_data = result_data.get('runData') if isinstance(result_data, dict) else None
         if not isinstance(run_data, dict):
             data_value = execution.get('data') if isinstance(execution, dict) else None
             try:
