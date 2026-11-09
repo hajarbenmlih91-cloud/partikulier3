@@ -197,11 +197,14 @@ def execute():
                 for token, label in [('ECONNREFUSED', 'connection_refused'), ('ENOTFOUND', 'dns_failure'), ('ETIMEDOUT', 'connection_timeout'), ('401', 'http_401'), ('403', 'http_403'), ('404', 'http_404'), ('429', 'http_429'), ('500', 'http_500'), ('signature', 'signature_rejected'), ('timestamp', 'timestamp_rejected'), ('connect', 'connection_error'), ('timeout', 'timeout'), ('json', 'json_error')]:
                     if token.lower() in text.lower(): safe_class = label; break
                 if safe_class != 'other': break
-            node_name = result_data.get('lastNodeExecuted') if isinstance(result_data, dict) else None
+            node = execution_error.get('node') if isinstance(execution_error, dict) else None
+            node_name = node.get('name') if isinstance(node, dict) else (result_data.get('lastNodeExecuted') if isinstance(result_data, dict) else None)
             if node_name not in ('WhatsApp status only', 'Payment status only', 'Unknown inbound code', 'First signed inbound', 'Exact inbound replay', 'Allow browser polls after non-matching events'):
                 node_name = 'unknown'
-            error_keys = sorted(execution_error.keys())[:20] if isinstance(execution_error, dict) else []
-            raise RuntimeError(f'n8n execution failed at {node_name}; safe error class={safe_class}; error type={type(execution_error).__name__}; keys={error_keys}')
+            http_code = execution_error.get('httpCode') if isinstance(execution_error, dict) else None
+            http_code = str(http_code) if str(http_code) in ('400', '401', '403', '404', '405', '409', '422', '429', '500', '502', '503') else 'none'
+            error_keys = sorted(execution_error.keys())[:16] if isinstance(execution_error, dict) else []
+            raise RuntimeError(f'n8n execution failed at {node_name}; safe error class={safe_class}; HTTP={http_code}; error type={type(execution_error).__name__}; keys={error_keys}')
         run_data = find(execution, 'runData')
         if not isinstance(run_data, dict):
             data_value = execution.get('data') if isinstance(execution, dict) else None
