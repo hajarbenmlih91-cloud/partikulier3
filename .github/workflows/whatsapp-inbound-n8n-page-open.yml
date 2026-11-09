@@ -97,10 +97,13 @@ jobs:
           docker exec "$WP_CONTAINER" mkdir -p /var/www/html/wp-content/mu-plugins
           docker exec -i "$WP_CONTAINER" sh -c 'cat > /var/www/html/wp-content/mu-plugins/ci-boundary.php' <<'PHP'
           <?php
+          if (!defined('PARTIKULIER_ESTATIK_POST_TYPE')) define('PARTIKULIER_ESTATIK_POST_TYPE', 'properties');
+          if (!defined('PARTIKULIER_ESTATIK_LOCATION_TAXONOMY')) define('PARTIKULIER_ESTATIK_LOCATION_TAXONOMY', 'es_location');
           add_action('init', static function () {
               if (!post_type_exists('properties')) {
                   register_post_type('properties', ['public' => true, 'publicly_queryable' => true, 'rewrite' => ['slug' => 'properties'], 'supports' => ['title', 'editor']]);
               }
+              if (!taxonomy_exists('es_location')) register_taxonomy('es_location', ['properties'], ['public' => true, 'hierarchical' => true]);
           }, 0);
           // WordPress' canonical redirect can loop in the container host alias;
           // keep the fixture permalink as the stable browser destination.
