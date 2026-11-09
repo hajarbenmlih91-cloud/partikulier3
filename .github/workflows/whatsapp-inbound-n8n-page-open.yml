@@ -144,7 +144,8 @@ jobs:
               return new WP_Error('pk_ci_external_http_blocked', 'External HTTP disabled in disposable CI.');
           }, 10, 3);
           PHP
-          docker exec -i "$WP_CONTAINER" php <<'PHP'
+          set +e
+          docker exec -i "$WP_CONTAINER" php > "$RUNNER_TEMP/wp-init.log" 2>&1 <<'PHP'
           <?php
           define('WP_INSTALLING', true);
           require '/var/www/html/wp-load.php';
@@ -212,6 +213,23 @@ jobs:
           file_put_contents('/tmp/ci-listing.json', wp_json_encode($scenarios), LOCK_EX);
           echo "Disposable WordPress initialized; three anonymous WhatsApp journeys seeded" . PHP_EOL;
           PHP
+          wp_init_rc=$?
+          set -e
+          if [[ "$wp_init_rc" -ne 0 ]]; then
+            diag="$(python3 - "$RUNNER_TEMP/wp-init.log" <<'PY'
+          import pathlib,re,sys
+          text=pathlib.Path(sys.argv[1]).read_text(errors='replace') if pathlib.Path(sys.argv[1]).exists() else ''
+          candidates=[line.strip() for line in text.splitlines() if re.search(r'(?i)(fatal error|parse error|uncaught|exception|error:)',line)]
+          value=candidates[-1] if candidates else 'WordPress fixture initialization failed without a safe PHP diagnostic'
+          value=re.sub(r'https?://[^\s]+','[url]',value)
+          value=re.sub(r'(?i)(secret|password|token|authorization)\s*[:=]\s*[^\s,;]+',r'\1=[redacted]',value)
+          value=re.sub(r'\b(?:212)?\d{9,12}\b','[number]',value)
+          print(value[:240])
+          PY
+          )"
+            echo "::error title=WordPress fixture initialization::$diag"
+            exit "$wp_init_rc"
+          fi
           mkdir -p "$RUNNER_TEMP"
           docker cp "$WP_CONTAINER:/tmp/ci-secret" "$RUNNER_TEMP/ephemeral-secret"
           docker cp "$WP_CONTAINER:/tmp/ci-listing.json" "$RUNNER_TEMP/listing.json"
@@ -442,6 +460,6 @@ jobs:
           WP_CONTAINER: ${{ job.services.wordpress.id }}
           N8N_CONTAINER: ${{ job.services.n8n.id }}
         run: |
-          rm -f "$RUNNER_TEMP/ephemeral-secret" "$RUNNER_TEMP/whatsapp-n8n-workflow.json" "$RUNNER_TEMP/whatsapp-n8n-workflow-id" "$RUNNER_TEMP/whatsapp-n8n-endpoint" "$RUNNER_TEMP/listing.json" "$RUNNER_TEMP/browser.log" "$RUNNER_TEMP/n8n-result.log" "$RUNNER_TEMP/n8n-error.log" "$RUNNER_TEMP/failure-diagnostic.txt"
+          rm -f "$RUNNER_TEMP/wp-init.log" "$RUNNER_TEMP/ephemeral-secret" "$RUNNER_TEMP/whatsapp-n8n-workflow.json" "$RUNNER_TEMP/whatsapp-n8n-workflow-id" "$RUNNER_TEMP/whatsapp-n8n-endpoint" "$RUNNER_TEMP/listing.json" "$RUNNER_TEMP/browser.log" "$RUNNER_TEMP/n8n-result.log" "$RUNNER_TEMP/n8n-error.log" "$RUNNER_TEMP/failure-diagnostic.txt"
           docker exec "$WP_CONTAINER" rm -f /tmp/ci-secret /tmp/ci-listing.json 2>/dev/null || true
           docker exec "$N8N_CONTAINER" rm -f /tmp/whatsapp-n8n-workflow.json 2>/dev/null || true
