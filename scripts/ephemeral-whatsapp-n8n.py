@@ -150,7 +150,7 @@ def execute():
         if not execution_id: raise RuntimeError('execution id missing')
         execution = {}
         for _ in range(120):
-            status_code, execution = call('GET', f'/rest/executions/{execution_id}')
+            status_code, execution = call('GET', f'/rest/executions/{execution_id}?includeData=true')
             if status_code == 200:
                 finished = find(execution, 'finished')
                 state = find(execution, 'status')
