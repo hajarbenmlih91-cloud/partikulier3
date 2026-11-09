@@ -108,6 +108,25 @@ jobs:
           // WordPress' canonical redirect can loop in the container host alias;
           // keep the fixture permalink as the stable browser destination.
           add_filter('redirect_canonical', '__return_false');
+          add_filter('rest_request_after_callbacks', static function ($response, $handler, $request) {
+              if (!$request instanceof WP_REST_Request || $request->get_route() !== '/partikulier/v1/automation-event' || !is_wp_error($response) || $response->get_error_code() !== 'pk_automation_payload') return $response;
+              $id = $request->get_param('event_id');
+              $type = $request->get_param('event_type');
+              $source = $request->get_param('source');
+              $payload = $request->get_param('payload');
+              $safe = [
+                  'id_string' => is_string($id),
+                  'id_sanitized' => is_string($id) && $id === sanitize_text_field($id),
+                  'id_prefix' => is_string($id) && str_starts_with($id, 'n8n-'),
+                  'id_pattern' => is_string($id) && 1 === preg_match('/^[A-Za-z0-9][A-Za-z0-9._:-]{0,190}$/D', $id),
+                  'type_exact' => is_string($type) && $type === 'whatsapp_inbound',
+                  'source_exact' => is_string($source) && $source === 'n8n',
+                  'payload_array' => is_array($payload),
+                  'json_keys' => array_keys((array) $request->get_json_params()),
+              ];
+              file_put_contents('/tmp/ci-event-shape.json', wp_json_encode($safe), LOCK_EX);
+              return $response;
+          }, 10, 3);
           add_filter('post_type_link', static function ($url, $post) {
               if ($post instanceof WP_Post && $post->post_type === 'properties') {
                   return add_query_arg('pk_ci_listing', (int) $post->ID, home_url('/'));
@@ -356,6 +375,8 @@ jobs:
             fi
             matcher_state="$(docker exec "$WP_CONTAINER" php -r 'require "/var/www/html/wp-load.php"; $d=json_decode(file_get_contents("/tmp/ci-listing.json"),true); $id=(int)($d["post_id"]??0); echo "matched=".(int)(bool)get_post_meta($id,"_pk_whatsapp_inbound_matched_at",true).";stamp=".(int)(bool)get_post_meta($id,"_pk_whatsapp_inbound_message_stamp",true);' 2>/dev/null || true)"
             echo "::notice title=Disposable WordPress matcher state::$(printf '%s' "$matcher_state" | tr -cd 'a-z=;0-1')"
+            event_shape="$(docker exec "$WP_CONTAINER" sh -c 'cat /tmp/ci-event-shape.json 2>/dev/null || true' | tr -cd 'A-Za-z0-9_,:{}[]')"
+            [[ -n "$event_shape" ]] && echo "::notice title=Payload validation flags::$event_shape"
             diag="$(safe_diagnostic "$RUNNER_TEMP/n8n-error.log")"
             echo "::error title=n8n workflow::$diag"
             printf '%s\n' "$diag" | tee "$RUNNER_TEMP/failure-diagnostic.txt"
