@@ -221,7 +221,7 @@ jobs:
           text=re.sub(r'\bCI-[A-Za-z0-9_-]+\b','CI-[redacted]',text)
           text=re.sub(r'(?i)(secret|password|token|authorization)\s*[:=]\s*[^\s,;]+',r'\1=[redacted]',text)
           lines=[line.strip() for line in text.splitlines() if line.strip()]
-          candidates=[line for line in lines if re.search(r'Error:|failed|No HTTP|n8n integration|timeout|missing|without observing|did not|unexpected|refused|not found|page\.goto|page\.add|playwright|ERR_',line,re.I)]
+          candidates=[line for line in lines if re.match(r'^(?:Error|TypeError|TimeoutError|page\.|n8n integration failed)',line,re.I)]
           print((candidates[0] if candidates else (lines[0] if lines else 'step failed; sanitized detail unavailable'))[:220])
           PY
           }

@@ -21,6 +21,8 @@ await page.route('**/*', (route) => {
 const polls = [];
 const pollRequests = [];
 const pollFailures = [];
+const pageErrors = [];
+page.on('pageerror', (error) => pageErrors.push(error.message));
 let submitIntercepted = false;
 let navigationUrl = '';
 const isPollUrl = (value) => {
@@ -46,6 +48,9 @@ try {
   await page.evaluate(() => {
     document.body.innerHTML = '<main><form id="pk-submit-form" novalidate><button id="pk-submit-btn" type="submit">Continuer</button></form><p id="pk-form-status"></p></main>';
     window.pkConfig = { ajaxUrl: `${location.origin}/wp-admin/admin-ajax.php`, homeUrl: location.origin, language: 'fr', i18n: {} };
+    const nativeFetch = window.fetch.bind(window);
+    window.__pkFetchCalls = [];
+    window.fetch = (...args) => { window.__pkFetchCalls.push(String(args[0])); return nativeFetch(...args); };
   });
   await page.route('**/wp-admin/admin-ajax.php', async (route) => {
     if (route.request().method() !== 'POST') return route.continue();
@@ -69,7 +74,11 @@ try {
   if (!submitIntercepted || !pre || pre.http !== 200) {
     const lastRequest = pollRequests.at(-1) || 'no poll request observed';
     const lastFailure = pollFailures.at(-1) || 'no response diagnostic';
-    throw new Error(`No HTTP 200 matched=false browser poll before n8n execution; ${lastRequest}; ${lastFailure}`);
+    const clientState = await page.evaluate(() => JSON.stringify({
+      fetchCalls: window.__pkFetchCalls || [], panel: !!document.querySelector('.pk-whatsapp-verification'),
+      config: !!window.pkConfig, scriptCount: document.scripts.length,
+    }));
+    throw new Error(`No HTTP 200 matched=false browser poll before n8n execution; ${lastRequest}; ${lastFailure}; ${clientState}; errors=${pageErrors.join('|')}`);
   }
   await fs.writeFile(resultFile, JSON.stringify({ before: pre, submitted: submitIntercepted, initialUrl: navigationUrl, polls }, null, 2));
 
