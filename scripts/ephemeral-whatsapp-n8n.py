@@ -111,6 +111,24 @@ def execute():
             except Exception: body = {}
             return exc.code, body
 
+    def unflatten(value):
+        if not isinstance(value, list) or not value or not isinstance(value[0], (dict, list)):
+            return value
+        cache = {}
+        def dereference(index, active):
+            if index in cache: return cache[index]
+            if index in active or index < 0 or index >= len(value): return None
+            result = expand(value[index], active | {index})
+            cache[index] = result
+            return result
+        def expand(item, active):
+            if isinstance(item, dict): return {key: expand(child, active) for key, child in item.items()}
+            if isinstance(item, list): return [expand(child, active) for child in item]
+            if isinstance(item, str) and item.isdigit() and int(item) < len(value) and isinstance(value[int(item)], (dict, list)):
+                return dereference(int(item), active)
+            return item
+        return dereference(0, set())
+
     def find(value, key):
         if isinstance(value, dict):
             if key in value: return value[key]
@@ -121,6 +139,9 @@ def execute():
             for child in value:
                 found = find(child, key)
                 if found is not None: return found
+        elif isinstance(value, str) and value.lstrip()[:1] in ('{', '['):
+            try: return find(unflatten(json.loads(value)), key)
+            except Exception: return None
         return None
 
     def response_for(run_data, node_name):
@@ -161,7 +182,20 @@ def execute():
         if find(find(execution, 'resultData') or {}, 'error') is not None:
             raise RuntimeError('n8n execution failed; raw diagnostic withheld')
         run_data = find(execution, 'runData')
-        if not isinstance(run_data, dict): raise RuntimeError('n8n execution data missing')
+        if not isinstance(run_data, dict):
+            data_value = execution.get('data') if isinstance(execution, dict) else None
+            try:
+                decoded_data = json.loads(data_value) if isinstance(data_value, str) else data_value
+            except Exception:
+                decoded_data = None
+            result_value = decoded_data.get('resultData') if isinstance(decoded_data, dict) else None
+            safe_shape = {
+                'top_keys': sorted(execution.keys())[:20] if isinstance(execution, dict) else [],
+                'data_type': type(data_value).__name__,
+                'data_keys': sorted(decoded_data.keys())[:20] if isinstance(decoded_data, dict) else [],
+                'result_data_keys': sorted(result_value.keys())[:20] if isinstance(result_value, dict) else [],
+            }
+            raise RuntimeError('n8n execution data missing; sanitized shape=' + json.dumps(safe_shape, separators=(',', ':')))
         names = ['WhatsApp status only', 'Payment status only', 'Unknown inbound code', 'First signed inbound', 'Exact inbound replay']
         outcomes = {name: response_for(run_data, name) for name in names}
         if any(value is None for value in outcomes.values()): raise RuntimeError('one or more WordPress request results are missing')
