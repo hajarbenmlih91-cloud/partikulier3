@@ -149,3 +149,37 @@ Si la session d'exécution subit le même filtrage réseau que celle qui a rédi
 `gh run view --log` et `gh run download` échoueront en `EOF`. Repli : annotations du check
 run (`gh api .../check-runs/<id>/annotations`) et le workflow `audit-uat-report.yml`, qui
 retrouve un run et son artefact côté serveur.
+
+## État constaté le 2026-11-10 (après création par le propriétaire)
+
+`uat-audit` a été créé hors de cette session. Relevé par `GET` :
+
+| Élément | Valeur constatée | Conforme ? |
+|---|---|---|
+| `required_reviewers` | `MehdiHayanai` | oui |
+| `deployment_branch_policy` | `custom_branch_policies: true`, `protected_branches: false` | oui |
+| Politiques | une seule : `audit-2.10.16-6.20.214-1` (tag) | oui |
+| Politique de `uat` | `pre-release-*`, inchangée | oui |
+| Politique de `prd` | inchangée | oui |
+
+Aucun `PUT` n'a été nécessaire : l'environnement existait déjà au moment de l'appel, et la
+règle « pas de `PUT` si l'existant » a été respectée (l'appel a d'ailleurs été refusé, voir
+ci-dessous).
+
+### Limite d'autorisation constatée
+
+Le jeton utilisé par cette session est une **intégration** (`hajarbenmlih91-cloud`), et les
+points d'entrée d'administration des environnements et des secrets répondent :
+
+```
+403 Resource not accessible by integration
+```
+
+Permissions manquantes, nommément :
+
+- `Environments: write` (création/modification d'environnement et de politiques) ;
+- `Secrets: write` (et même lecture des **noms** de secrets).
+
+Conséquence : cette session **ne peut ni créer, ni lister, ni écrire les secrets** de
+`uat-audit`. Les sept secrets sont donc à déposer par le propriétaire, dans GitHub. Aucune
+valeur ne doit transiter par une conversation, un commit ou un patch.
