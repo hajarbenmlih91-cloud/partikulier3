@@ -60,12 +60,14 @@ jobs:
         run: |
           set -euo pipefail
           APP_BASE_COMMIT='c9e141376179f1a47e567361c28e747b6e891cd0'
-          # Seuls ces deux fichiers peuvent différer du tag : le harnais d'audit et le
-          # contrat de cache. Toute autre modification — y compris deploy.yml, un autre
-          # test, ou une ligne de thème/plugin — invalide la preuve et arrête l'audit.
+          # Seuls ces trois fichiers peuvent différer du tag : le workflow, le contrat
+          # de cache et le parcours de connexion qui doit réellement consentir avant de
+          # cliquer. Toute autre modification — y compris deploy.yml, un autre test, ou
+          # une ligne de thème/plugin — invalide la preuve et arrête l'audit.
           ALLOWED=(
             '.github/workflows/audit-uat.yml'
             'theme/partikulier/tests/staging-cache.php'
+            'theme/partikulier/tests/audit-uat-login.mjs'
           )
           git cat-file -e "${APP_BASE_COMMIT}^{commit}" || {
             echo "::error::commit de référence ${APP_BASE_COMMIT} absent du clone (fetch-depth insuffisant)"; exit 1; }
@@ -269,6 +271,21 @@ jobs:
           set -euo pipefail
           php_rc=0
           php theme/partikulier/tests/staging-cache.php "$SITE_URL" /fr/annonces/ 20 2>&1 | tee "$AUDIT_OUT_DIR/cache-ttfb.txt" || php_rc=$?
+          # Forcer un rendu PHP par une URL nouvelle, sans purger ni supprimer de cache.
+          # La date et le TTFB de ce GET restent dans la preuve avant le find ci-dessous.
+          audit_ts="$(date +%s)"
+          audit_url="${SITE_URL}/fr/annonces/?pk_audit=${audit_ts}"
+          {
+            echo ''
+            echo "== RENDU PHP DEMANDÉ AVANT LA SONDE DU CACHE DU THÈME =="
+            echo "GET $audit_url"
+          } | tee -a "$AUDIT_OUT_DIR/cache-ttfb.txt"
+          if ! curl -fsS -o /dev/null --max-time 30 \
+            -w 'PHP-PROBE: HTTP %{http_code}; TTFB %{time_starttransfer} s; date %{time_local}\n' \
+            "$audit_url" 2>&1 | tee -a "$AUDIT_OUT_DIR/cache-ttfb.txt"; then
+            echo 'PHP-PROBE: échec du GET horodaté; le find seul ne sera pas converti en preuve de rendu.' | tee -a "$AUDIT_OUT_DIR/cache-ttfb.txt"
+            php_rc=1
+          fi
           # Second point de mesure, indépendant de LiteSpeed.
           # Le cache du thème est un cache de fichiers (wp-content/uploads/partikulier-cache).
           # On n'accepte QUE l'entrée de la page testée POUR L'HÔTE UAT : <hote>_fr_annonces.html,
@@ -382,6 +399,7 @@ jobs:
           AUDIT_LOGIN: ${{ steps.seed.outputs.login }}
           AUDIT_EMAIL: ${{ steps.seed.outputs.email }}
           AUDIT_MARKER: ${{ steps.seed.outputs.marker }}
+          AUDIT_USER_ID: ${{ steps.seed.outputs.user_id }}
         run: |
           set -euo pipefail
           ssh -F "$HOME/.ssh/config" partikulier-uat 'bash -s' -- "$WP_PATH" "$AUDIT_LOGIN" "$AUDIT_EMAIL" "$AUDIT_MARKER" <<'REMOTE'
@@ -402,6 +420,24 @@ jobs:
           [[ "$admin_id" =~ ^[0-9]+$ ]] || { echo 'Aucun administrateur de réaffectation sûr; compte conservé.' >&2; exit 1; }
           wp user delete "$user_id" --yes --reassign="$admin_id"
           echo "Compte temporaire supprimé et contenu réaffecté à un administrateur si nécessaire."
+          REMOTE
+          # Preuves de disparition, en lecture seule, sur l'ID créé puis sur le login unique.
+          ssh -F "$HOME/.ssh/config" partikulier-uat 'bash -s' -- "$WP_PATH" "$AUDIT_LOGIN" "$AUDIT_USER_ID" <<'REMOTE'
+          set -euo pipefail
+          wp_path="$1"; login="$2"; user_id="$3"
+          cd "$wp_path"
+          [[ "$user_id" =~ ^[0-9]+$ ]] || { echo 'ID créé non numérique; preuve impossible.' >&2; exit 1; }
+          if wp user get "$user_id" --field=ID >/dev/null 2>&1; then
+            echo "ÉCHEC: le compte jetable ID $user_id existe encore." >&2
+            exit 1
+          fi
+          echo "PREUVE SUPPRESSION: wp user get $user_id échoue, le compte ID $user_id est absent."
+          remaining="$(wp user list --search="$login" --field=ID --format=ids)"
+          if [[ -n "${remaining//[[:space:]]/}" ]]; then
+            echo "ÉCHEC: wp user list --search=$login retourne encore un compte." >&2
+            exit 1
+          fi
+          echo "PREUVE SUPPRESSION: wp user list --search=$login est vide."
           REMOTE
 
       - name: Lighthouse mobile et desktop (Performance, Accessibilité, SEO, Best Practices)
