@@ -356,3 +356,63 @@ montre que le correctif **ne rend pas le test complaisant** : un défaut réel r
 
 Le tag `pre-release-2.10.16-6.20.214` reste intact. Rien n'a été exécuté : ni tag, ni
 environnement, ni protection, ni run.
+
+---
+
+## 10. Correctif v4 — deux justesses du cache, critère d'acceptation, tests versionnés
+
+### 10.1 Le nom d'entrée n'était pas celui de l'hôte
+
+La v3 cherchait `*_fr_annonces.html` : n'importe quel hôte satisfaisait donc la preuve.
+La v4 lit l'hôte **sur le serveur** (`wp eval … home_url()`), construit le nom exact
+`<hote>_fr_annonces.html` et n'accepte que celui-là. Une entrée de même forme mais d'un
+autre hôte (`default_fr_annonces.html`) est signalée « entrées proches » et **ne prouve
+rien**. C'est le test **C3**.
+
+### 10.2 Un en-tête absent ne vaut pas « PHP a rendu la page »
+
+La v3 concluait que PHP avait rendu la réponse dès que l'en-tête LiteSpeed du 2ᵉ GET
+n'était pas `HIT` — y compris quand il était **absent**, alors qu'il était présent au
+1er GET. La v4 distingue trois cas seulement :
+
+| 1er GET | 2ᵉ GET | Conclusion |
+|---|---|---|
+| présent | **absent** | `NON VÉRIFIÉ` — on ne sait pas qui a rendu la page |
+| présent | `HIT` | en-tête rejoué : non probant (`ATT`) |
+| présent/absent | présent et ≠ `HIT`, ou absent des deux | PHP a rendu : l'en-tête fait foi (`OK` / `KO`) |
+
+C'est le scénario **D2** (`ls_header_gone`).
+
+### 10.3 Le critère d'acceptation est explicite, plus implicite
+
+Dire « non vérifié » ne suffit pas : il faut décider ce que vaut ce non-vérifié. La v4
+introduit **`PK_THEME_CACHE_REQUIRED`** sur l'étape de cache :
+
+| Valeur | Effet |
+|---|---|
+| `'false'` (défaut) | `NON VÉRIFIÉ` est journalisé, la suite reste verte **et le rapport écrit que sa portée s'arrête à LiteSpeed + TTFB** |
+| `'true'` | l'absence de preuve fait échouer la suite (`php_rc=1`, `::error::`) |
+
+Le rapport ne peut donc plus laisser croire à une validation complète du cache : chaque
+exécution écrit une ligne `PORTÉE:` dans `cache-ttfb.txt`, et le résumé du run ajoute
+« Statut « Cache/TTFB » : LiteSpeed et TTFB uniquement — le cache fichier du thème n'est
+pas validé » tant que l'entrée exacte n'est pas trouvée. **Le choix reste au propriétaire :
+c'est une ligne de configuration, pas une décision cachée dans le code.**
+
+### 10.4 Les tests sont désormais dans le dépôt
+
+`docs/audit/harnais-tests/` : `gen.py` (extrait les blocs du workflow), `run.sh`
+(séries A, B, C), `gen_php.py` + `run_php.mjs` (série D en PHP 8.2 WebAssembly), et le
+`README.md` de reproduction. Résultat sur la copie patchée de `c9e1413` :
+**22 tests, 22 PASS, 0 FAIL** (18 bash, 4 PHP). Détail : `docs/audit/UAT-HARNAIS-TESTS.md`.
+
+### 10.5 État inchangé
+
+`a28742e` puis ce commit n'appliquent toujours rien au workflow exécuté : ce sont des
+livrables de patch. Aucun tag, aucun environnement, aucune protection, aucun run, aucun
+déploiement. Le tag `pre-release-2.10.16-6.20.214` reste intact.
+
+Suite, dans cet ordre, sur autorisation : examen du patch → création et protection de
+`uat-audit` (tags `audit-*`, approbation, secrets UAT) → bascule de la ligne
+`environment:` → ref d'audit dont la garde vérifie elle-même l'identité du code applicatif
+avec `c9e1413` → exécution, sans déploiement.
