@@ -67,3 +67,56 @@ seul, sans accès au dépôt d'origine :
 
 À chaque nouveau tag de release : régénérer un bundle, consigner le SHA-256, refaire le test de
 restauration. Un bundle non rejoué après un changement de ref ne protège pas le nouveau ref.
+
+---
+
+## 6. Suite du 10 novembre — tag d'archive et second bundle
+
+### Tag annoté créé
+
+```text
+archive/pre-release-2.10.16-6.20.214
+  objet tag : 7ec7287ac1f9967966d5ce689a89fbda414a0380
+  pelé      : c9e141376179f1a47e567361c28e747b6e891cd0
+```
+
+Le message de l'annotation cite le bundle **pré-tag** (`1c712f5a…`), et non un bundle postérieur
+qui contiendrait la référence elle-même : une annotation ne doit jamais désigner un artefact qui
+dépend de son existence.
+
+Découvrabilité vérifiée dans un clone neuf :
+
+```bash
+git tag -l -n99 'archive/*'
+# archive/pre-release-2.10.16-6.20.214 Ancre de conservation — code de production de la release .214
+```
+
+`git ls-remote` renvoie l'objet tag, pas le commit ; le pelage explicite est nécessaire :
+
+```bash
+git rev-parse 'archive/pre-release-2.10.16-6.20.214^{commit}'
+```
+
+### Deux bundles conservés
+
+| Bundle | Rôle | Taille | SHA-256 |
+|---|---|---:|---|
+| `partikulier3-2026-11-10.bundle` | **pré-tag** — cité dans l'annotation | 24 Mo | `1c712f5aa7fe875f99a814fe0017c9a574e60c932c146bd313f1fc1c4889e876` |
+| `partikulier3-2026-11-10-post-tag.bundle` | post-tag — atteste l'état après création | 25 Mo | `b3e69e30bd9c513d87796d438a29239d2c6060436959aa64eb028edd6c75eea8` |
+
+Les deux ont été vérifiés (`complete history`) **et clonés** : le tag d'archive se résout sur `c9e1413`
+et l'arbre restauré est `b1da8781bb76dc46d4bd288b3aa72e4cebb6a66a`, identique à la source.
+
+### Effets mesurés
+
+- **Aucun déploiement** déclenché par la création du tag : `deploy.yml` ne réagit qu'aux motifs
+  `pre-release-*` et `release-*`, que `archive/…` ne satisfait pas. Deux runs CI seulement, en
+  `contents: read`.
+- **Aucune protection** : la création du ruleset a été refusée en HTTP 403 (`Administration: write`
+  manquante). Le tag existe donc **non protégé** à ce stade.
+
+### Ce qui reste à faire par le propriétaire
+
+1. copier les **deux** bundles hors du workspace, revérifier leurs SHA-256 après copie ;
+2. créer les rulesets (tags puis branches) — l'agent n'a pas la permission ;
+3. tester le refus d'une protection avant de la considérer acquise.
