@@ -1,0 +1,43 @@
+diff --git a/.github/workflows/audit-uat.yml b/.github/workflows/audit-uat.yml
+index 2f4b918..5df0697 100644
+--- a/.github/workflows/audit-uat.yml
++++ b/.github/workflows/audit-uat.yml
+@@ -169,8 +169,36 @@ jobs:
+             echo "Le compte jetable existe déjà; arrêt sans toucher au compte." >&2
+             exit 1
+           fi
+-          meta_input="{\"_pk_uat_audit_marker\":\"$marker\"}"
+-          wp user create "$login" "$email" --role=contributor --user_pass="$password" --meta_input="$meta_input" --porcelain
++          delete_created() {
++            local id="$1"
++            local now_email now_role admin_id
++            now_email="$(wp user get "$id" --field=user_email)"
++            now_role="$(wp user get "$id" --field=roles)"
++            [[ "$now_email" == "$email" && "$now_role" == contributor ]] || {
++              echo 'Compte créé mais identité hors contrat; aucune suppression effectuée.' >&2
++              exit 1
++            }
++            admin_id="$(wp user list --role=administrator --field=ID --format=ids | awk '{print $1}')"
++            [[ "$admin_id" =~ ^[0-9]+$ ]] || {
++              echo 'Aucun administrateur de réaffectation sûr; compte conservé.' >&2
++              exit 1
++            }
++            wp user delete "$id" --yes --reassign="$admin_id"
++            echo 'Compte temporaire supprimé après échec du marqueur.' >&2
++          }
++          user_id="$(wp user create "$login" "$email" --role=contributor --user_pass="$password" --porcelain)"
++          [[ "$user_id" =~ ^[0-9]+$ ]] || { echo 'WP-CLI n a pas renvoyé un ID utilisateur' >&2; exit 1; }
++          if ! wp user meta add "$user_id" _pk_uat_audit_marker "$marker" >/dev/null; then
++            delete_created "$user_id"
++            exit 1
++          fi
++          stored="$(wp user meta get "$user_id" _pk_uat_audit_marker 2>/dev/null || true)"
++          if [[ "$stored" != "$marker" ]]; then
++            delete_created "$user_id"
++            echo 'Marqueur absent après écriture.' >&2
++            exit 1
++          fi
++          printf '%s\n' "$user_id"
+           REMOTE
+           )"
+           [[ "$user_id" =~ ^[0-9]+$ ]] || { echo "WP-CLI n'a pas renvoyé un ID utilisateur" >&2; exit 1; }
