@@ -23,25 +23,47 @@ Protéger les tags ne protège donc pas d'une fusion. Protéger les **branches**
 | Objet | Nombre | Remarque |
 |---|---:|---|
 | Tags | 215 | dont 207 `pre-release-*`, 2 `audit-*`, 6 historiques `v2.10.x` |
-| Tags **orphelins** (sur aucune branche) | **3** | `pre-release-2.10.16-6.20.214`, `audit-…-1`, `audit-…-2` |
+| Tags **orphelins** (sur aucune branche) | **2** | `audit-…-1`, `audit-…-2` — voir la correction ci-dessous |
 | Branches distantes | 223 | |
 | Branches avec du travail absent de `main` | **123** | `arena/0e605e79` : 179 commits ; `essai/page-ouverte-whatsapp` : 116 ; `audit-uat-validation` : 115 ; `feat/profil-acheteur` : 114 ; `audit-workflow-fix` : 114 |
 | Rulesets ciblant les tags | **0** | aucune protection |
 | Rulesets ciblant les branches | 3 | tous sur `main` (dont un désactivé) |
 | Branche `develop` | **inexistante** | alors que `deploy.yml` route « push develop → dev » |
 
+### 2 bis — Correction de la mesure initiale (10/11, après contrôle)
+
+La première mesure annonçait **3 tags orphelins**, dont le tag de production. **C'était faux.**
+Le balayage ne testait que trois branches (`main`, `develop`, `arena/0e605e79`) et déclarait
+« aucune branche » pour tout le reste sans avoir tout regardé.
+
+Balayage complet des **223 branches** :
+
+| Réf | Porté par une branche ? | Constat |
+|---|---|---|
+| `c9e1413` (production `.214`) | **oui** | **tip de `origin/feat/profil-acheteur`**, ancêtre de `essai/page-ouverte-whatsapp` |
+| `4f4c354` (`audit-…-1`) | **non** | reconstituable depuis le patch documenté, mais aucune branche ne l'ancre |
+| `5aa70f44` (`audit-…-2`) | **non** | idem |
+
+Leçon retenue, et elle vaut au-delà de ce document : **un « aucune branche » n'a de valeur que si
+toutes les branches ont été parcourues.** C'est exactement ce que demandait la consigne « recalculer
+les refs avant toute opération » — la mesure a été refaite, et elle a changé la conclusion.
+
 ## 3. Niveaux de protection
 
 ### Niveau 1 — indispensable
 
-Les **trois tags orphelins** sont la seule référence vers les commits de production et de preuve.
-Leur suppression perd le code déployé et la chaîne d'audit.
+Les ancres du code de production et des preuves :
 
 ```text
-refs/tags/pre-release-2.10.16-6.20.214   → c9e1413
-refs/tags/audit-2.10.16-6.20.214-1       → 4f4c354
-refs/tags/audit-2.10.16-6.20.214-2       → 5aa70f44
+refs/tags/pre-release-2.10.16-6.20.214   → c9e1413   (aussi tip de feat/profil-acheteur)
+refs/tags/archive/pre-release-2.10.16-6.20.214 → c9e1413 (créé le 10/11, annoté)
+refs/tags/audit-2.10.16-6.20.214-1       → 4f4c354   (orphelin)
+refs/tags/audit-2.10.16-6.20.214-2       → 5aa70f44  (orphelin)
 ```
+
+La criticité du tag de production est **moindre** que mesurée d'abord : `c9e1413` survit à sa
+suppression tant que `feat/profil-acheteur` existe. En revanche, **cette branche devient l'ancre
+critique** — d'où la priorité différente au niveau 3.
 
 ### Niveau 2 — recommandé
 
@@ -58,22 +80,30 @@ Bypass vide. Aucune règle `creation` : elle bloquerait les releases futures.
 
 | Motif | Règle | Effet |
 |---|---|---|
-| les 5 branches à ≥ 100 commits | `deletion` | coût nul : personne n'a besoin de les supprimer |
+| `refs/heads/feat/profil-acheteur` | `deletion` + `non_fast_forward` | **priorité** : seul porteur du code de production ; un force-push détacherait `.214` de toute branche |
+| les 4 autres branches à ≥ 100 commits | `deletion` | empêche la suppression accidentelle, n'entrave aucun push |
 | `refs/heads/main` | déjà couvert | `deletion` + `non_fast_forward` + PR + checks (attention au bypass `RepositoryRole: always` de `main-2`) |
 | `refs/heads/*` | `deletion` — **différé** | voir la réserve ci-dessous |
 
-**Réserve acceptée.** Une règle `deletion` sur `refs/heads/*` n'est **pas** sans nuisance : elle empêche
-aussi la suppression après fusion, le nettoyage des branches de test et la suppression d'une branche
-créée par erreur. Sur un dépôt à 223 branches, elle figerait le problème de nettoyage au lieu de le
-résoudre.
+**Correction du 10/11 — « dormantes » était faux.** Les cinq branches ont reçu des commits dans les
+trois derniers jours (`arena/0e605e79` : 10/11 09:46 ; `essai/page-ouverte-whatsapp` : 09/11 15:06 ;
+`feat/profil-acheteur` : 09/11 01:46 ; `audit-uat-validation` : 08/11 14:58 ; `audit-workflow-fix` :
+08/11 14:24). Aucune dormance n'est établie, donc `non_fast_forward` ne peut pas être posé au motif
+qu'elles sont inactives.
 
-Séquence retenue : protéger d'abord les branches à travail unique, inventorier les 123 branches
-(travail réel / doublon / expérimentation), nettoyer les branches fusionnées, **puis** décider d'une
-règle globale. Une protection globale provisoire reste possible pendant l'inventaire, à condition
-d'avoir une date de fin et un critère de sortie écrits.
+Il reste justifié sur **`feat/profil-acheteur` seul**, et pour une autre raison : c'est l'ancre du code
+de production. Réécrire son histoire couperait `.214` de toute branche. Sur les quatre autres,
+`deletion` seule, et décision différée après inventaire.
 
-Facteur atténuant à intégrer : GitHub permet la restauration d'une branche récemment supprimée, ce qui
-réduit l'urgence d'une règle globale sans la supprimer.
+**Réserve sur `deletion` global** (acceptée) : une règle `deletion` sur `refs/heads/*` empêche aussi la
+suppression après fusion, le nettoyage des branches de test et la suppression d'une branche créée par
+erreur. Sur un dépôt à 223 branches, elle figerait le problème de nettoyage au lieu de le résoudre.
+Séquence retenue : protéger d'abord les branches à travail unique, inventorier les 123 branches,
+nettoyer les fusionnées, **puis** décider d'une règle globale — avec une date de fin et un critère de
+sortie écrits si une protection provisoire est appliquée.
+
+Facteur atténuant : GitHub permet la restauration d'une branche récemment supprimée, ce qui réduit
+l'urgence d'une règle globale sans la supprimer.
 
 **Ne pas** appliquer `non_fast_forward` à `refs/heads/*` : cela casserait toute réécriture d'historique
 sur les branches de travail, y compris les rebases légitimes.
@@ -97,3 +127,26 @@ il est facile à oublier. C'est ce que l'annotation et la documentation doivent 
 `deploy.yml` route un push sur `develop` vers l'environnement dev, mais la branche n'existe pas.
 Soit la créer et la protéger, soit retirer la route. Une configuration qui décrit un chemin inexistant
 finit par donner une fausse assurance.
+
+---
+
+## 6. État d'exécution au 10 novembre 2026
+
+| Action | État | Détail |
+|---|---|---|
+| Tag annoté `archive/pre-release-2.10.16-6.20.214` | **fait** | objet `7ec7287a…`, pèle sur `c9e1413` ; message complet vérifié dans un clone neuf |
+| Sonde `archive/_probe-ruleset` | **créée puis retirée** | inutile sans ruleset à tester ; aucun résidu sur `origin` |
+| Ruleset tags | **refusé — HTTP 403** | `Resource not accessible by integration` ; permission **`Administration: write`** absente du jeton |
+| Ruleset branches | **non tenté** | même permission requise ; inutile d'essayer sans elle |
+| Test de refus du ruleset | **non exécuté** | impossible sans ruleset ; `non_fast_forward` et `deletion` restent donc **non prouvés** |
+| Bundles | **faits** | pré-tag `1c712f5a…` (24 Mo, intact, cité dans l'annotation) ; post-tag `b3e69e30…` (25 Mo) ; les deux vérifiés et clonés |
+| Déploiement déclenché par le tag | **aucun** | seuls deux runs CI, `contents: read` |
+
+**Ce qui reste à faire par le propriétaire**, dans l'ordre :
+
+1. créer les deux rulesets (l'interface web suffit ; le jeton de l'agent ne le permet pas) ;
+2. **tester le refus** : créer `archive/_probe2`, tenter de le supprimer, consigner le refus ;
+3. copier les deux bundles hors du workspace et revérifier leurs SHA-256 après copie ;
+4. fixer la date de revue des règles (à chaque release).
+
+Tant que le point 2 n'a pas été exécuté, les règles sont **configurées mais non démontrées**.
