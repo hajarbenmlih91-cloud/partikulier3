@@ -153,3 +153,56 @@ finit par donner une fausse assurance.
 
 Tant que le point 2 n'a pas été exécuté, **les règles sont absentes** — et le contrôle négatif le
 démontre : une balise créée aujourd'hui est supprimable.
+
+---
+
+## 7. Protections créées et vérifiées — 10 novembre 2026 (soir)
+
+Les deux rulesets ont été créés par le propriétaire. Configuration relevée par l'API, puis **refus
+rejoués indépendamment** par l'agent.
+
+| Ruleset | ID | Cible | Motifs | Règles | Bypass | `can_bypass` |
+|---|---|---|---|---|---|---|
+| Refs — conservation des tags | **26966112** | `tag` | `pre-release-*`, `release-*`, `audit-*`, `archive/*` | `deletion`, `update` | 0 | `never` |
+| Refs — conservation des 5 branches | **26966115** | `branch` | les 5 branches | `deletion` | 0 | `never` |
+
+### Refus démontrés (rejoués par l'agent, sur la sonde uniquement)
+
+```text
+git push origin :refs/tags/archive/_probe3
+→ GH013 Repository rule violations found
+→ - Cannot delete this tag
+
+git push -f origin 5aa70f44:refs/tags/archive/_probe3
+→ GH013 Repository rule violations found
+→ - Cannot update this protected ref.
+```
+
+Le second test est celui qui compte le plus : **`update` est la règle qui empêche de repointer un tag**
+vers un autre commit — donc de rendre faux le lien « nom de release → code ». Il est démontré, pas
+seulement configuré. La sonde pointe toujours sur `c9e1413`.
+
+### Témoin permanent
+
+`archive/_probe3` est désormais **indestructible** : elle ne peut être ni supprimée ni déplacée.
+Elle reste comme témoin documenté. Si un jour une suppression d'une balise `archive/*` réussit, c'est
+que la protection a disparu — rejouer ce test avant de conclure.
+
+### Deux écarts à trancher explicitement
+
+**a) `refs/tags/v*` a été écarté sans décision écrite.** Les six tags historiques (`v2.10.5-6.20.4`,
+`v2.10.6-6.20.5`, `v2.10.7-6.20.6`, `v2.10.8-6.20.7`, `v2.10.8-6.20.7-final`) restent **supprimables
+et repointables**. Non critiques — les commits sont ancrés par des branches — mais l'exclusion doit être
+écrite, ou le motif ajouté. Une omission silencieuse est précisément ce que ce dispositif combat.
+
+**b) `non_fast_forward` est absent, y compris sur `feat/profil-acheteur`.** Cette branche porte
+`deletion` seule : elle ne peut plus être supprimée, mais son histoire peut encore être réécrite, ce qui
+détacherait `c9e3413` de toute branche. C'est le dernier trou identifié. Coût de le fermer sur cette
+seule branche : pas de rebase possible dessus — à accepter explicitement ou à refuser explicitement.
+
+### État des autres protections (inchangé, pour mémoire)
+
+- `main-2` (24456307) conserve un bypass `RepositoryRole: always` : un administrateur peut encore
+  fusionner avec un check rouge. C'est l'objet de la phase 2 de la V3.
+- `uat` porte toujours `audit-2.10.16-6.20.214-2` en plus de `pre-release-*` : l'élargissement
+  temporaire reste à retirer.
