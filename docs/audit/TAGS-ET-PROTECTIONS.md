@@ -130,23 +130,26 @@ finit par donner une fausse assurance.
 
 ---
 
-## 6. État d'exécution au 10 novembre 2026
+## 6. État d'exécution au 10 novembre 2026 (mis à jour)
 
 | Action | État | Détail |
 |---|---|---|
-| Tag annoté `archive/pre-release-2.10.16-6.20.214` | **fait** | objet `7ec7287a…`, pèle sur `c9e1413` ; message complet vérifié dans un clone neuf |
-| Sonde `archive/_probe-ruleset` | **créée puis retirée** | inutile sans ruleset à tester ; aucun résidu sur `origin` |
-| Ruleset tags | **refusé — HTTP 403** | `Resource not accessible by integration` ; permission **`Administration: write`** absente du jeton |
-| Ruleset branches | **non tenté** | même permission requise ; inutile d'essayer sans elle |
-| Test de refus du ruleset | **non exécuté** | impossible sans ruleset ; `non_fast_forward` et `deletion` restent donc **non prouvés** |
-| Bundles | **faits** | pré-tag `1c712f5a…` (24 Mo, intact, cité dans l'annotation) ; post-tag `b3e69e30…` (25 Mo) ; les deux vérifiés et clonés |
-| Déploiement déclenché par le tag | **aucun** | seuls deux runs CI, `contents: read` |
+| Tag annoté `archive/pre-release-2.10.16-6.20.214` | **fait** | objet `7ec7287a…`, pèle sur `c9e1413` ; message vérifié dans un clone neuf |
+| Ruleset **tags** | **refusé — HTTP 403** (tenté 2×) | `Resource not accessible by integration` ; permission **`Administration: write`** absente |
+| Ruleset **branche** (`feat/profil-acheteur`) | **refusé — HTTP 403** | même permission, même message |
+| **Contrôle négatif** | **fait** | `archive/_probe2` créée **puis supprimée avec succès** ⇒ les tags sont **effectivement non protégés** aujourd'hui ; aucun résidu sur `origin` |
+| Test de refus d'une protection | **impossible** | sans ruleset, il n'y a rien à faire refuser ; `deletion` et `non_fast_forward` restent **non démontrés** |
+| Bundles | **faits et déposés** | pré-tag `1c712f5a…` (drive `1gc8itUF…`), post-tag `b3e69e30…` (drive `1lMq-jAl…`), les deux **privés**, vérifiés et clonés |
+| Revue | **fixée** | issue **#221** — à chaque `pre-release-*`, et au plus tard **10 février 2027** |
+| Déploiement déclenché | **aucun** | seuls des runs CI, en `contents: read` |
 
-**Ce qui reste à faire par le propriétaire**, dans l'ordre :
+**Ce qui reste, et qui n'appartient qu'au propriétaire :**
 
-1. créer les deux rulesets (l'interface web suffit ; le jeton de l'agent ne le permet pas) ;
-2. **tester le refus** : créer `archive/_probe2`, tenter de le supprimer, consigner le refus ;
-3. copier les deux bundles hors du workspace et revérifier leurs SHA-256 après copie ;
-4. fixer la date de revue des règles (à chaque release).
+1. créer les deux rulesets dans l'interface (le jeton de l'agent est refusé en 403 — deux tentatives,
+   deux refus, aucun contournement essayé) ;
+2. **prouver le refus** : créer `archive/_probe3`, tenter de le supprimer, consigner le refus exact ;
+3. revérifier le SHA-256 des bundles après téléchargement (voir `MANIFESTE-VERIFICATION.txt`) ;
+4. rejouer la revue de l'issue #221 au premier des deux jalons.
 
-Tant que le point 2 n'a pas été exécuté, les règles sont **configurées mais non démontrées**.
+Tant que le point 2 n'a pas été exécuté, **les règles sont absentes** — et le contrôle négatif le
+démontre : une balise créée aujourd'hui est supprimable.
