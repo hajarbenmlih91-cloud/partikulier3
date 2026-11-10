@@ -120,3 +120,36 @@ et l'arbre restauré est `b1da8781bb76dc46d4bd288b3aa72e4cebb6a66a`, identique �
 1. copier les **deux** bundles hors du workspace, revérifier leurs SHA-256 après copie ;
 2. créer les rulesets (tags puis branches) — l'agent n'a pas la permission ;
 3. tester le refus d'une protection avant de la considérer acquise.
+
+---
+
+## 7. Dépôt hors site (10 novembre 2026)
+
+Les deux archives et un manifeste ont été déposés sur Google Drive, **en privé** — permissions
+vérifiées : un seul utilisateur autorisé, le propriétaire du compte.
+
+| Fichier | Identifiant Drive | Taille (octets) | SHA-256 |
+|---|---|---:|---|
+| `partikulier3-2026-11-10.bundle` (pré-tag) | `1gc8itUFOMTP7ki-lLUfFdiMNFEoFx0aG` | 25 045 164 | `1c712f5a…e876` |
+| `partikulier3-2026-11-10-post-tag.bundle` (post-tag) | `1lMq-jAlgx-dxozgC45uYwwAE8L09mn4H` | 25 931 641 | `b3e69e30…eea8` |
+| `MANIFESTE-VERIFICATION.txt` | `1mST0dM0hLVTjOH--CiUZ8sMq1Hll2yaF` | 1 589 | — |
+
+Les tailles relevées côté Drive **correspondent exactement** aux tailles locales.
+
+**Limite explicite :** une taille identique ne prouve pas un contenu identique. Le SHA-256 n'a pas pu
+être recalculé après transfert — le téléchargement des archives depuis l'espace de travail est bloqué
+et le renvoyer dans la conversation dépasserait toute limite utile. Le manifeste contient donc les
+commandes à exécuter après téléchargement :
+
+```bash
+sha256sum partikulier3-2026-11-10.bundle
+git bundle verify partikulier3-2026-11-10.bundle
+git clone partikulier3-2026-11-10-post-tag.bundle restauration
+```
+
+**Tant que ce contrôle n'a pas été exécuté, la copie n'est pas prouvée** — seulement effectuée.
+
+### Suivi de revue
+
+Créé : **issue #221** — « Revue des protections de refs — à rejouer à chaque release ».
+Revue fixée : à chaque tag `pre-release-*`, **et au plus tard le 10 février 2027**, au premier des deux.
