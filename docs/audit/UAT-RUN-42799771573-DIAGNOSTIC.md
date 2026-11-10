@@ -242,9 +242,10 @@ n'a été acheté en l'ignorant. La PR **#220** est `CLOSED` (non fusionnée) de
 2026-11-10T10:17:42Z ; sa fermeture **ne tranche pas** la décision produit (faut-il un
 numéro public, ou un point d'entrée centralisé ?). À traiter comme un sujet distinct.
 
-### 8.5 Correctif révisé — `docs/audit/fix-harness-audit-uat-c9e1413-v2.patch`
+### 8.5 Correctif révisé (v2 — remplacé par la v3, voir § 9)
 
-Remplace `fix-seed-audit-uat-c9e1413.patch` (dont il reprend le correctif de `seed`).
+Remplaçait `fix-seed-audit-uat-c9e1413.patch`, dont il reprenait le correctif de `seed`.
+La version en vigueur est la **v3** (§ 9).
 Deux fichiers, **aucune ligne de code applicatif** :
 
 | Fichier | Changement |
@@ -270,3 +271,88 @@ cet environnement existe d'abord (tags `audit-*`, approbation, mêmes secrets), 
 le job démarrerait sans secrets. Le tag `pre-release-2.10.16-6.20.214` reste intact, et
 son YAML immuable ne peut pas porter ces corrections : le relancer tel quel reproduit
 les trois échecs.
+
+---
+
+## 9. Correctif v3 — trois défauts de la v2 corrigés, et testé
+
+La v2 (`ef225c4`) était un **livrable de patch**, pas une correction appliquée : elle
+ajoutait le correctif et ce diagnostic dans `docs/audit/`, sans modifier le workflow ni le
+test. C'était volontaire — aucun fichier exécuté n'a été changé, et c'est précisément le
+point : la correction ne prend effet qu'au moment où l'on applique le patch sur un ref
+d'audit.
+
+Trois défauts de la v2 ont été relevés et corrigés.
+
+### 9.1 La preuve du cache était trop large
+
+La v2 acceptait **n'importe quel** `.html` de plus de 500 o modifié dans les 30 minutes,
+ce qui ne prouve rien sur `/fr/annonces/` : une autre page, ou le passage d'un visiteur,
+suffisait à produire un `OK`.
+
+La v3 ne regarde plus que l'entrée de la page testée — `<hote>_fr_annonces.html`, schéma
+documenté par `class-cache.php` (« mesure : fichier default_fr_annonces.html ») — et
+n'accepte aucun autre fichier. Et si la mesure n'est pas possible, le rapport l'écrit
+**`NON VÉRIFIÉ`** au lieu de laisser croire à un succès. Le statut est aussi repris dans le
+résumé du run, sur une ligne dédiée :
+
+| Situation | Ligne `cache-ttfb.txt` | Résumé |
+|---|---|---|
+| entrée exacte, fraîche, > 500 o | `CACHE-THEME: vérifié (<fichier>, <taille>)` | `vérifié (…)` |
+| aucune entrée pour cette page | `CACHE-THEME: non vérifié (aucune entrée pour /fr/annonces/)` | `non vérifié (…)` |
+| racine d'uploads illisible | `CACHE-THEME: non vérifié (racine uploads illisible)` | `non vérifié (…)` |
+
+Le seuil de TTFB reste inchangé (p50 268 ms, p95 361 ms au dernier run).
+
+### 9.2 La garde de traçabilité excluait trop
+
+Exclure tout `.github` laissait passer une modification de `deploy.yml` ; exclure tout
+`theme/partikulier/tests` laissait passer celle d'un autre test. La v3 remplace les
+exclusions par une **liste blanche de deux chemins** :
+
+```
+.github/workflows/audit-uat.yml
+theme/partikulier/tests/staging-cache.php
+```
+
+Tout autre fichier présent dans `git diff c9e1413..HEAD` est nommé et **fait échouer**
+l'audit avant toute exécution.
+
+### 9.3 Le compte des tentatives Lighthouse était faux
+
+La v2 incrémentait `attempt` après le dernier essai : deux échecs s'annonçaient « après
+3 tentatives ». La v3 compte les tentatives **réellement exécutées** (`attempts`,
+incrémenté avant l'essai, borné à 2) : un échec de configuration s'annonce « après 1
+tentative », deux échecs transitoires « après 2 ». Aucun cas ne transforme un échec
+persistant en succès.
+
+### 9.4 Tests d'intégration — 18/18
+
+Le patch a été appliqué sur une **copie propre de `c9e1413`**, puis les blocs bash ont été
+**extraits du YAML produit** et exécutés contre des doublures, et `staging-cache.php`
+exécuté par **PHP 8.2** (runtime WebAssembly) avec un transport HTTP scénarisé :
+
+| Série | Objet | Résultat |
+|---|---|---|
+| A (4) | garde de traçabilité : harnais accepté, `deploy.yml` / autre test / code applicatif refusés | 4/4 |
+| B (5) | Lighthouse : 1 tentative, 2 tentatives, message « après 2 », pas de « après 3 », erreur de config non rejouée | 5/5 |
+| C (6) | cache : entrée exacte acceptée, autre page / entrée tronquée / périmée / SSH absent refusés | 6/6 |
+| D (3) | contrat : `HIT` LiteSpeed rejoué → `ATT` (code 0) ; deux réponses PHP → `OK` ; deux réponses PHP sans réchauffement → `KO` (code 1) | 3/3 |
+
+Détail et limites : `docs/audit/UAT-HARNAIS-TESTS.md`. Le scénario `php_two_render_bad`
+montre que le correctif **ne rend pas le test complaisant** : un défaut réel reste un KO.
+
+### 9.5 Ce qui reste non couvert, et dans quel ordre avancer
+
+1. **Non couvert** : l'UAT réelle, LiteSpeed et WordPress réels, `wp_get_upload_dir()` sur
+   le serveur, Lighthouse contre un Chromium, et le rendu GitHub Actions (expressions,
+   secrets, politique d'environnement). Ces éléments exigent un run réel.
+2. **Ensuite seulement** : création de `uat-audit` par le responsable GitHub — motif de
+   tag étroit (`audit-*`), approbation requise, secrets UAT dupliqués — puis bascule de la
+   ligne `environment:` du workflow sur `uat-audit`.
+3. **Enfin, sur autorisation explicite** : ref d'audit dont le code applicatif est
+   **identique à `c9e1413`** (la garde le vérifie désormais elle-même), exécution de
+   l'audit, sans déploiement.
+
+Le tag `pre-release-2.10.16-6.20.214` reste intact. Rien n'a été exécuté : ni tag, ni
+environnement, ni protection, ni run.
