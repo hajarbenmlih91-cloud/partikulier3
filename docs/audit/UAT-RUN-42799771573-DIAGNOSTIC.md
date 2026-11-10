@@ -517,3 +517,35 @@ Rien n'a été exécuté : aucun tag, aucun environnement, aucune protection, au
 déploiement. Le tag `pre-release-2.10.16-6.20.214` reste intact. L'étape suivante
 (création de `uat-audit`) attend une confirmation explicite et se fait sans élargir la
 politique de l'environnement `uat`.
+
+---
+
+## 13. Étape 2 — procédure d'environnement corrigée
+
+Deux erreurs d'administration relevées en relecture, toutes deux fondées :
+
+1. **L'API GitHub crée ou met à jour un environnement par `PUT`**
+   (`/repos/{owner}/{repo}/environments/{environment_name}`), pas par `POST`. Un `POST`
+   de création n'existe pas. Et comme un `PUT` **remplace** la configuration, il faut
+   vérifier l'existence de l'environnement avant de l'appeler.
+2. **`audit-*` est plus large que nécessaire.** La politique ne doit couvrir que le tag
+   d'audit prévu, sinon tout futur tag d'audit hériterait des secrets UAT.
+
+État vérifié en lecture seule le 2026-11-10 :
+
+| Constat | Valeur |
+|---|---|
+| `uat-audit` | absent (`GET` → 404) |
+| Reviewer de `prd` | `MehdiHayanai`, id **50800775** |
+| Politique de `uat` | `pre-release-*` (tag) |
+| `deploy.yml` | déclenché par `develop` et les tags `pre-release-*` / `release-*` uniquement |
+
+Un tag `audit-…` ne déclenche donc **aucun** workflow de déploiement : il n'existe pas de
+déclencheur « tous les tags ».
+
+Procédure détaillée, commandes exactes, vérifications et retour arrière :
+`docs/audit/PROCEDURE-ENV-AUDIT.md`. Les secrets restent à déposer par le responsable dans
+GitHub — ils ne passent ni par une conversation, ni par un commit, ni par un patch.
+
+**Aucun appel n'a été effectué** : l'environnement n'existe pas, aucune politique n'a été
+créée, aucun tag n'a été posé.
