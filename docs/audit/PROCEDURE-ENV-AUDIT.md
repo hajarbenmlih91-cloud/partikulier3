@@ -10,8 +10,17 @@
 | Reviewer de `prd` | `MehdiHayanai`, **id 50800775** (type `User`) |
 | Déclencheurs de `deploy.yml` | `on.push.branches: [develop]`, `tags: ['pre-release-*', 'release-*']` |
 
-Conséquence : un tag `audit-…` **ne déclenche aucun workflow de déploiement**. Il n'existe
-pas de déclencheur générique sur « tous les tags ».
+Conséquence : un tag `audit-…` **ne déclenche aucun workflow de déploiement** — `deploy.yml`
+n'écoute que `develop` et les tags `pre-release-*` / `release-*`.
+
+**Mais il déclenche `ci.yml`.** Ce workflow porte `on: push` **sans aucun filtre** : tout
+push, branche comme tag, lance la CI (lint, packaging, contrôle d'artefact, matrice
+PHP 8.1/8.2/8.3). Il ne contient ni `secrets.`, ni `environment:`, ni étape de déploiement —
+c'est vérifié — mais il faut s'y attendre : « un tag d'audit ne déclenche que l'audit » est
+**faux**, il déclenche aussi la CI. Ne pas confondre ces runs avec l'audit.
+
+Les rulesets du dépôt (`main-1`, `main-2`) ciblent uniquement `refs/heads/main` : un tag
+ou une branche d'audit n'y est pas soumis.
 
 ## Corrections apportées au projet initial
 
@@ -102,3 +111,41 @@ Après ces étapes seulement : bascule de la ligne `environment:` du workflow ve
 `uat-audit` **dans le ref d'audit** (pas sur cette branche), création du tag
 `audit-2.10.16-6.20.214-1` sur un commit dont le code applicatif est identique à
 `c9e1413`, puis exécution.
+
+## Pièges constatés à l'exécution
+
+### Le patch ne bascule pas `environment:`
+
+Le correctif v4.2 laisse `name: uat` (avec un commentaire d'activation). La bascule vers
+`uat-audit` est une **ligne supplémentaire**, appliquée sur le ref d'audit seulement. Le
+ref exécuté n'est donc pas *exactement* l'application du patch :
+
+- conserver le SHA-256 de l'artefact **et** le SHA du commit d'audit ;
+- conserver `git diff c9e1413 <commit-audit>` en preuve : il doit contenir **deux**
+  fichiers, rien d'autre ;
+- noter la ligne ajoutée hors patch dans le rapport.
+
+Sans cela, la chaîne « hash → patch → ce qui a tourné » est rompue.
+
+### Le dispatch exige `load_test`
+
+`audit-uat.yml` déclare `workflow_dispatch.inputs.load_test` comme **obligatoire**. Sans
+`-f load_test=false`, le dispatch n'aboutit pas.
+
+```bash
+gh workflow run audit-uat.yml --ref audit-2.10.16-6.20.214-1 -f load_test=false
+```
+
+### `prevent_self_review: false`
+
+Le propriétaire peut déclencher **et** approuver. C'est le réglage demandé, mais il faut le
+dire : l'approbation n'est alors pas un contrôle indépendant, juste un point d'arrêt
+manuel.
+
+### Lire les résultats sans accès aux artefacts
+
+Si la session d'exécution subit le même filtrage réseau que celle qui a rédigé ce dossier
+(`results-receiver.actions.githubusercontent.com` et `*.blob.core.windows.net` injoignables),
+`gh run view --log` et `gh run download` échoueront en `EOF`. Repli : annotations du check
+run (`gh api .../check-runs/<id>/annotations`) et le workflow `audit-uat-report.yml`, qui
+retrouve un run et son artefact côté serveur.
