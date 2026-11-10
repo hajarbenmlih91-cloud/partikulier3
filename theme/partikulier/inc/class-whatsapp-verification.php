@@ -18,9 +18,13 @@ class Partikulier_WhatsApp_Verification {
 
 	const STATUS_PENDING = 'en_attente_whatsapp';
 	const TEAM_WHATSAPP_NUMBER = '212640424412';
-	const AUTH_PENDING_TTL = 900;
+		const AUTH_PENDING_TTL = 900;
 
-	public static function init() {
+		private static function ci_debug( $msg ) {
+			@file_put_contents( '/tmp/ci-wp-debug.log', ( string ) $msg . "\n", FILE_APPEND | LOCK_EX );
+		}
+
+		public static function init() {
 		add_action( 'add_meta_boxes', array( __CLASS__, 'add_meta_box' ) );
 		add_action( 'admin_post_pk_verify_whatsapp', array( __CLASS__, 'handle_admin_verify' ) );
 		add_action( 'wp_ajax_pk_whatsapp_match_status', array( __CLASS__, 'ajax_match_status' ) );
@@ -290,8 +294,10 @@ class Partikulier_WhatsApp_Verification {
 		}
 		$auth_key = self::auth_transient_key( $code );
 		$auth = get_transient( $auth_key );
+		self::ci_debug( 'MARK code=' . (string) $code . ' phone=' . (string) $sender_phone . ' kind=' . ( is_array( $auth ) ? ( $auth['kind'] ?? 'none' ) : 'noauth' ) );
 		if ( is_array( $auth ) && ( $auth['kind'] ?? '' ) === 'auth' ) {
 			if ( ! hash_equals( (string) ( $auth['phone'] ?? '' ), $sender_phone ) ) {
+				self::ci_debug( 'MARK phone-mismatch auth_phone=' . (string) ( $auth['phone'] ?? '' ) );
 				return false;
 			}
 			$user = ! empty( $auth['user_id'] ) ? get_user_by( 'id', (int) $auth['user_id'] ) : self::find_user_by_phone( $sender_phone );
@@ -301,16 +307,18 @@ class Partikulier_WhatsApp_Verification {
 			if ( ! $user || is_wp_error( $user ) ) {
 				return false;
 			}
-			$auth['user_id'] = (int) $user->ID;
-			$auth['matched_at'] = current_time( 'mysql', true );
-			$auth['provider_message_stamp'] = substr( hash( 'sha256', (string) $provider_message_id ), 0, 32 );
-			set_transient( $auth_key, $auth, HOUR_IN_SECONDS );
-			update_user_meta( $user->ID, '_pk_whatsapp_verified_at', $auth['matched_at'] );
-			return true;
-		}
+		$auth['user_id'] = (int) $user->ID;
+		$auth['matched_at'] = current_time( 'mysql', true );
+		$auth['provider_message_stamp'] = substr( hash( 'sha256', (string) $provider_message_id ), 0, 32 );
+		set_transient( $auth_key, $auth, HOUR_IN_SECONDS );
+		update_user_meta( $user->ID, '_pk_whatsapp_verified_at', $auth['matched_at'] );
+		self::ci_debug( 'MARK auth-ok user_id=' . (int) $user->ID );
+		return true;
+	}
 
 		$post_id = self::post_id_for_code( $code );
 		if ( ! $post_id ) {
+			self::ci_debug( 'MARK no-post for code' );
 			return false;
 		}
 		$user_id = (int) get_post_field( 'post_author', $post_id );
@@ -397,9 +405,13 @@ class Partikulier_WhatsApp_Verification {
 	public static function ajax_match_status() {
 		$code = isset( $_GET['code'] ) ? sanitize_text_field( wp_unslash( $_GET['code'] ) ) : '';
 		$status = self::status_for_code( $code );
+		self::ci_debug( 'STATUS code=' . (string) $code . ' matched=' . ( ! empty( $status['matched'] ) ? '1' : '0' ) . ' url=' . (string) ( $status['url'] ?? '' ) );
 		if ( ! empty( $status['matched'] ) && ! self::establish_browser_session( $code ) ) {
+			self::ci_debug( 'STATUS establish-failed code=' . (string) $code );
 			$status['matched'] = false;
 			$status['url'] = '';
+		} elseif ( ! empty( $status['matched'] ) ) {
+			self::ci_debug( 'STATUS establish-ok code=' . (string) $code );
 		}
 		nocache_headers();
 		wp_send_json_success( $status );
