@@ -420,7 +420,7 @@ jobs:
           $validCreation = $creationStatus["matched"] === true && $creationStatus["url"] === $creation["url"] && $newUser && in_array("subscriber", (array) $newUser->roles, true) && get_user_meta($newUser->ID, "_pk_owner_phone_clean", true) === $creation["phone"];
           $validLogin = $loginStatus["matched"] === true && $loginStatus["url"] === $login["url"] && $existingUser && (int) $existingUser->ID === (int) $login["user_id"];
           $mail = (int) get_option("_pk_ci_mail_attempts", 0); $http = (int) get_option("_pk_ci_external_http_attempts", 0);
-          $distinct = $deposit['url'] !== $creation['url'] && $creation['url'] === $login['url'];
+          $distinct = $deposit["url"] !== $creation["url"] && $creation["url"] === $login["url"];
           $ok = $hashed && 0 === $rawColumns && $validDeposit && $validCreation && $validLogin && $distinct && 0 === $mail && 0 === $http;
           echo wp_json_encode(["deposit"=>$validDeposit, "creation"=>$validCreation, "login"=>$validLogin, "post_status"=>$depositPost ? $depositPost->post_status : "missing", "hashed_events"=>$hashed, "mail_attempts"=>$mail, "external_http_attempts"=>$http, "whatsapp_replies"=>0, "ok"=>$ok]);
           if (!$ok) exit(1);
