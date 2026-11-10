@@ -132,9 +132,18 @@ rm -rf "$CACHE_ROOT"; mkdir -p "$CACHE"
 run_cache c1.out
 check "C1 répertoire vide -> NON VÉRIFIÉ" "grep -q 'CACHE-THEME: non vérifié (aucune entrée' c1.out && grep -q 'PORTÉE: cache fichier du thème NON VÉRIFIÉ' c1.out"
 
-head -c 800 /dev/zero | tr '\0' 'x' > "$CACHE/${HOTE}_fr_annonces.html"
+# Fixture réaliste : une vraie page HTML, > 500 o, comme celle qu'écrit class-cache.php.
+html_page() { { echo '<!doctype html><html><head><title>Annonces</title></head><body>'; head -c 800 /dev/zero | tr '\0' 'x'; echo '</body></html>'; }; }
+html_page > "$CACHE/${HOTE}_fr_annonces.html"
 run_cache c2.out
-check "C2 entrée exacte de l'hôte UAT -> vérifié" "grep -q 'CACHE-THEME: vérifié (${HOTE}_fr_annonces.html, 800 o)' c2.out && grep -q 'PORTÉE: cache fichier du thème vérifié' c2.out"
+check "C2 entrée réelle (HTML, fraîche) -> entrée valide" "grep -q 'CACHE-THEME: entrée valide (${HOTE}_fr_annonces.html,' c2.out && grep -q 'PORTÉE:.*présence d une entrée valide' c2.out"
+
+# Le défaut relevé : un fichier de 800 caractères x n'est pas une page.
+head -c 800 /dev/zero | tr '\0' 'x' > "$CACHE/${HOTE}_fr_annonces.html"
+run_cache c2b.out
+check "C2b fichier sans HTML (800 x) -> non vérifié" "grep -q 'CACHE-THEME: non vérifié (entrée ${HOTE}_fr_annonces.html sans en-tête HTML)' c2b.out && ! grep -q 'CACHE-THEME: entrée valide' c2b.out"
+
+html_page > "$CACHE/${HOTE}_fr_annonces.html"
 
 rm -f "$CACHE/${HOTE}_fr_annonces.html"
 head -c 800 /dev/zero | tr '\0' 'x' > "$CACHE/default_fr_annonces.html"
@@ -165,9 +174,9 @@ rm -f "$CACHE/${HOTE}_fr_annonces.html"
 run_cache c8.out PK_THEME_CACHE_REQUIRED=true
 check "C8 cache exigé et non vérifié -> échec (php_rc=1)" "grep -q 'RCPHP=1' c8.out && grep -q '::error::cache fichier du thème exigé' c8.out"
 
-head -c 800 /dev/zero | tr '\0' 'x' > "$CACHE/${HOTE}_fr_annonces.html"
+html_page > "$CACHE/${HOTE}_fr_annonces.html"
 run_cache c9.out PK_THEME_CACHE_REQUIRED=true
-check "C9 cache exigé et vérifié -> php_rc=0" "grep -q 'RCPHP=0' c9.out"
+check "C9 cache exigé et valide -> php_rc=0" "grep -q 'RCPHP=0' c9.out"
 
 echo
 echo "=== RÉSULTAT : $PASS PASS · $FAIL FAIL ==="

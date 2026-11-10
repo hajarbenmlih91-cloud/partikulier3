@@ -416,3 +416,60 @@ Suite, dans cet ordre, sur autorisation : examen du patch → création et prote
 `uat-audit` (tags `audit-*`, approbation, secrets UAT) → bascule de la ligne
 `environment:` → ref d'audit dont la garde vérifie elle-même l'identité du code applicatif
 avec `c9e1413` → exécution, sans déploiement.
+
+---
+
+## 11. Correctif v4.1 — une présence n'est pas une preuve de cache
+
+Relevé en relecture, et fondé : la v4 déclarait l'entrée « vérifiée » sur son **nom**, sa
+**taille** et sa **date**. Son propre test C2 fabriquait un fichier de 800 caractères `x`
+et attendait « vérifié ». Cela prouvait qu'un fichier récent portait le bon nom — rien de
+plus. Ni page HTML valide, ni service de la page par le cache.
+
+### 11.1 Le contenu est désormais contrôlé
+
+La v4.1 exige en plus que le fichier **commence par `<!doctype html` ou `<html`** — c'est
+exactement le critère que le thème applique pour refuser une entrée empoisonnée
+(`class-cache.php`, `entry_is_poisoned`: taille < 500 o, ou absence de balise HTML).
+Le libellé passe de « vérifié » à **`CACHE-THEME: entrée valide`**, et le contrôle
+d'acceptation ainsi que le résumé du run sont alignés sur ce libellé.
+
+Le test **C2b** reprend le cas critiqué : un fichier de 800 `x` au bon nom est désormais
+**non vérifié**.
+
+### 11.2 La portée est écrite noir sur blanc
+
+Même en cas de succès, la sonde écrit :
+
+> `PORTÉE: l entrée attendue existe, est fraîche et commence par du HTML. Le SERVICE de cette page par le cache n est pas prouvé pour autant`
+
+et le résumé du run ajoute : « une entrée valide existe, ce qui ne prouve pas que la page
+soit réellement servie depuis ce cache ». La distinction « entrée valide » / « page servie »
+n'est plus implicite.
+
+### 11.3 Décision d'acceptation pour l'audit `.214`
+
+`PK_THEME_CACHE_REQUIRED` reste à **`'false'`**, avec la portée annoncée : **LiteSpeed et
+TTFB validés, cache fichier du thème non validé**. Le passer à `'true'` supposerait
+d'abord une preuve de service — à construire, et à discuter comme exigence de recette.
+
+### 11.4 Application : viser le ref d'audit, jamais cette branche
+
+Confirmé : ce patch suppose un ref dont le **code applicatif est identique à `c9e1413`**.
+L'appliquer sur `arena/f15ac349-partikulier3` produirait un ref dont le code applicatif
+vient de `main` : la garde de traçabilité **ferait échouer l'audit**, à juste titre.
+
+Procédure, dans cet ordre, chaque étape restant soumise à autorisation :
+
+1. **Examen** du patch `fix-harness-audit-uat-c9e1413-v4.1.patch` (sha256 `109e3fa5…`).
+2. **Création et protection de `uat-audit`** par le responsable : tags `audit-*`,
+   approbation requise, secrets UAT dupliqués. Aucune protection existante n'est élargie.
+3. **Bascule** de la ligne `environment:` du workflow vers `uat-audit` (une ligne).
+4. **Ref d'audit** : branche issue de `c9e1413`, patch appliqué, tag `audit-…` — jamais
+   `pre-release-*`, pour ne déclencher aucun déploiement. La garde vérifie alors elle-même
+   que seuls les deux fichiers autorisés diffèrent.
+5. **Exécution** de l'audit, puis lecture des `outcome` et du verdict.
+
+État à cet instant : **rien n'a été exécuté** — aucun tag, aucun environnement, aucune
+protection, aucun run, aucun déploiement. Le tag `pre-release-2.10.16-6.20.214` reste
+intact.

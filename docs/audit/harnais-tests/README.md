@@ -1,6 +1,6 @@
 # Harnais de test du correctif d'audit UAT
 
-Tests d'intégration du patch `fix-harness-audit-uat-c9e1413-v4.patch`, exécutables
+Tests d'intégration du patch `fix-harness-audit-uat-c9e1413-v4.1.patch`, exécutables
 indépendamment, sans UAT, sans SSH et sans réseau.
 
 ## Principe
@@ -16,7 +16,7 @@ transport HTTP y est simulé.
 # 1. copie de référence + correctif
 git clone <dépôt> /tmp/audit-check && cd /tmp/audit-check
 git checkout c9e1413
-git apply /chemin/vers/fix-harness-audit-uat-c9e1413-v4.patch
+git apply /chemin/vers/fix-harness-audit-uat-c9e1413-v4.1.patch
 
 # 2. séries A, B, C (bash)
 cd /chemin/vers/harnais-tests

@@ -1,6 +1,6 @@
-# Tests du harnais d'audit UAT — correctif v4
+# Tests du harnais d'audit UAT — correctif v4.1
 
-Date : 2026-11-10. Objet : vérifier `docs/audit/fix-harness-audit-uat-c9e1413-v4.patch`
+Date : 2026-11-10. Objet : vérifier `docs/audit/fix-harness-audit-uat-c9e1413-v4.1.patch`
 **après application sur une copie propre de `c9e1413`**.
 
 Le code des tests est versionné dans `docs/audit/harnais-tests/` et rejouable :
@@ -33,23 +33,28 @@ Le code des tests est versionné dans `docs/audit/harnais-tests/` et rejouable :
 | B3b — jamais « tentative 3/2 » ni « après 3 » | absent | **PASS** |
 | B4 — erreur de configuration (`does not match formFactor`) | 1 seule tentative, pas de rejeu | **PASS** |
 
-## C. Cache du thème — entrée exacte, portée, acceptation (9)
+## C. Cache du thème — entrée exacte, contenu, portée, acceptation (10)
 
 Nom attendu : `<hote>_fr_annonces.html`, avec l'hôte lu sur le serveur via `home_url()`.
+Le début du fichier doit aussi être du HTML — critère que le thème applique lui-même
+(`class-cache.php`, `entry_is_poisoned`).
 
 | Scénario | Attendu | Résultat |
 |---|---|---|
 | C1 — répertoire vide | `NON VÉRIFIÉ` + `PORTÉE: … NON VÉRIFIÉ` | **PASS** |
-| C2 — entrée exacte de l'hôte UAT, 800 o | `CACHE-THEME: vérifié` + portée élargie | **PASS** |
-| C3 — **même nom mais autre hôte** (`default_fr_annonces.html`) | **refusée**, signalée « entrées proches » | **PASS** |
+| C2 — entrée réelle (page HTML, fraîche) | `CACHE-THEME: entrée valide` | **PASS** |
+| C2b — **fichier de 800 `x`** au bon nom | **non vérifié** (pas d'en-tête HTML) | **PASS** |
+| C3 — **même nom mais autre hôte** (`default_fr_annonces.html`) | refusée, « entrées proches » | **PASS** |
 | C4 — autre page du bon hôte | refusée | **PASS** |
 | C5 — entrée tronquée (200 o) | non vérifié | **PASS** |
 | C6 — entrée de 2 h | non vérifié | **PASS** |
 | C7 — SSH absent | non vérifié (hôte ou racine illisible) | **PASS** |
 | C8 — `PK_THEME_CACHE_REQUIRED=true` + non vérifié | `php_rc=1` + `::error::` | **PASS** |
-| C9 — `PK_THEME_CACHE_REQUIRED=true` + vérifié | `php_rc=0` | **PASS** |
+| C9 — `PK_THEME_CACHE_REQUIRED=true` + valide | `php_rc=0` | **PASS** |
 
-C3 corrige le défaut v3 (motif `*_fr_annonces.html`, donc n'importe quel hôte).
+C2b corrige le défaut relevé en relecture : un fichier de 800 caractères `x` satisfaisait
+la v4 au seul motif de son nom, de sa taille et de sa date. Nom, taille et fraîcheur ne
+prouvent qu'une **présence** ; le début de page HTML est désormais exigé.
 
 ## D. Contrat de cache — décisions exécutées en PHP 8.2 (4)
 
@@ -69,8 +74,22 @@ absence réelle de réchauffement, observée sur une réponse rendue par PHP, re
 
 ## Total
 
-**22 tests, 22 PASS, 0 FAIL**, exécutés sur la copie patchée de `c9e1413`
-(18 en bash, 4 en PHP 8.2).
+**23 tests, 23 PASS, 0 FAIL**, exécutés sur la copie patchée de `c9e1413`
+(19 en bash, 4 en PHP 8.2).
+
+## Ce que la sonde prouve — et ce qu'elle ne prouve pas
+
+| Prouvé par la sonde | Non prouvé |
+|---|---|
+| l'entrée de cette page, pour cet hôte, existe | que la page soit réellement **servie** depuis ce cache |
+| elle est fraîche (< 30 min) et fait plus de 500 o | que son contenu soit complet (seul le début est lu) |
+| elle commence par `<!doctype html` ou `<html` | que la purge du thème purge correctement LiteSpeed |
+
+Le rapport l'écrit désormais lui-même : même en cas de succès, la ligne `PORTÉE:` précise
+que « le SERVICE de cette page par le cache n'est pas prouvé pour autant ». Tant que
+`PK_THEME_CACHE_REQUIRED` reste à `'false'`, la portée annoncée est : **LiteSpeed et TTFB
+validés, cache fichier du thème non validé**. Passer à `'true'` demanderait d'abord une
+preuve de service, qui reste à construire.
 
 ## Ce que ces tests ne couvrent pas
 
