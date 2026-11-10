@@ -16,10 +16,13 @@ const php = new PHP(id);
 
 const attendus = {
   ls_hit_replay: { rc: 0, re: /ATT\s+cache thème :.*NON PROBANT/, nom: 'rejoué par LiteSpeed -> ATT (code 0)' },
-  // L'en-tête LiteSpeed disparaît au 2ᵉ GET : le contrôle LiteSpeed échoue (code 1, à juste titre),
-  // mais le cache du thème doit être déclaré NON VÉRIFIÉ et non « rendu par PHP ».
   ls_header_gone: { rc: 1, re: /ATT\s+cache thème : échantillon NON VÉRIFIÉ/, nom: 'en-tête présent puis absent -> cache thème NON VÉRIFIÉ' },
-  php_two_render: { rc: 0, re: /OK\s+cache thème : x-partikulier-cache = HIT au 2ᵉ GET \(deux réponses rendues par PHP\)/, nom: 'deux réponses PHP, 2ᵉ HIT -> OK' },
+  // Aucun en-tête LiteSpeed sur les deux réponses : PHP n'est pas prouvé avoir servi la page.
+  // Le contrôle LiteSpeed sort en ATT (non observable) et le contrat ne conclut pas : code 0.
+  ls_both_absent: { rc: 0, re: /ATT\s+cache thème : échantillon NON VÉRIFIÉ — aucune des deux réponses ne porte x-litespeed-cache/, nom: 'deux en-têtes absents -> NON VÉRIFIÉ (code 0)' },
+  // En-tête présent et sans HIT sur les deux GET : PHP rend bien la page, mais le contrôle
+  // LiteSpeed échoue à juste titre (pas de HIT externe). Le contrat du thème, lui, conclut OK.
+  php_two_render: { rc: 1, re: /OK\s+cache thème : x-partikulier-cache = HIT au 2ᵉ GET \(deux réponses rendues par PHP\)/, nom: 'deux réponses PHP, 2ᵉ HIT -> cache thème OK' },
   php_two_render_bad: { rc: 1, re: /KO\s+cache thème : x-partikulier-cache = MISS/, nom: 'deux réponses PHP, 2ᵉ MISS -> KO (code 1)' },
 };
 

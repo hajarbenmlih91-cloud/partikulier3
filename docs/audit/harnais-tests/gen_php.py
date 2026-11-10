@@ -32,12 +32,14 @@ STUB = '''function get_http( string $url ): array {
                         case 'ls_header_gone':
                                 if ( $rang >= 2 ) { $ls = null; }
                                 break;
-                        case 'php_two_render':
+                        case 'ls_both_absent':
                                 $ls = null;
+                                break;
+                        case 'php_two_render':
+                                // PHP rend les deux réponses : en-tête présent et sans HIT.
                                 if ( $rang >= 2 ) { $pk = 'HIT'; }
                                 break;
                         case 'php_two_render_bad':
-                                $ls = null;
                                 break;
                 }
         }
@@ -60,6 +62,6 @@ base = base.replace(
 )
 base = base.replace("if ( PHP_SAPI !== 'cli' ) {", "if ( false ) { // harnais : pas de SAPI cli")
 
-for sc in ('ls_hit_replay', 'ls_header_gone', 'php_two_render', 'php_two_render_bad'):
+for sc in ('ls_hit_replay', 'ls_header_gone', 'ls_both_absent', 'php_two_render', 'php_two_render_bad'):
     (out / f'contract_{sc}.php').write_text(base.replace('__SC__', sc))
 print('contrats générés dans', out)

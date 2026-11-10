@@ -473,3 +473,47 @@ Procédure, dans cet ordre, chaque étape restant soumise à autorisation :
 État à cet instant : **rien n'a été exécuté** — aucun tag, aucun environnement, aucune
 protection, aucun run, aucun déploiement. Le tag `pre-release-2.10.16-6.20.214` reste
 intact.
+
+---
+
+## 12. Correctif v4.2 — l'absence des deux en-têtes ne prouve pas PHP
+
+Dernier cas de classification non prouvée, relevé en relecture. Quand **les deux** réponses
+sont dépourvues de `x-litespeed-cache`, la v4.1 calculait `$php2 = true` : elle en déduisait
+que PHP avait servi la page, puis jugeait `x-partikulier-cache: MISS` comme un échec réel.
+Or l'absence d'en-tête ne prouve rien de tel — un proxy peut le retirer, une réponse peut
+venir d'un cache intermédiaire, et l'hébergement peut être dépourvu de LSCache.
+
+C'est la même erreur de raisonnement que celle corrigée au § 11, une couche plus bas.
+
+### 12.1 Quatre cas, dont deux qui ne concluent pas
+
+| En-tête `x-litespeed-cache` | Conclusion |
+|---|---|
+| absent sur les **deux** réponses | **`NON VÉRIFIÉ`** — on ne sait pas qui a servi la page |
+| présent puis **absent** | **`NON VÉRIFIÉ`** — ambigu |
+| `HIT` au 2ᵉ GET | en-tête du thème rejoué, non probant (`ATT`) |
+| présent, ≠ `HIT` (ou absent des deux GET mais avec en-tête) | PHP a rendu : l'en-tête fait foi (`OK` / `KO`) |
+
+Le contrat ne fait donc plus échouer le contrôle sur l'en-tête du thème quand la preuve
+manque. Le scénario `ls_both_absent` est ajouté aux tests versionnés (série D, 5 cas).
+
+### 12.2 Effet sur le verdict de l'audit
+
+Aucun changement de comportement attendu sur l'UAT réelle : les deux GET y portent des
+en-têtes LiteSpeed, et le second est un `HIT` — cas déjà classé `ATT` non probant depuis
+la v2. La v4.2 ferme un trou de raisonnement dans un cas que l'UAT n'a pas présenté, mais
+qui se présenterait sur un hébergement sans LSCache ou derrière un proxy filtrant.
+
+### 12.3 État et suite
+
+Correctif : `docs/audit/fix-harness-audit-uat-c9e1413-v4.2.patch` (sha256 `14a081cd…`),
+`PK_THEME_CACHE_REQUIRED` maintenu à **`'false'`** avec portée annoncée : **LiteSpeed et
+TTFB validés, cache fichier du thème non validé**.
+
+Tests : **24 PASS, 0 FAIL** (19 bash, 5 PHP) sur la copie patchée de `c9e1413`.
+
+Rien n'a été exécuté : aucun tag, aucun environnement, aucune protection, aucun run, aucun
+déploiement. Le tag `pre-release-2.10.16-6.20.214` reste intact. L'étape suivante
+(création de `uat-audit`) attend une confirmation explicite et se fait sans élargir la
+politique de l'environnement `uat`.

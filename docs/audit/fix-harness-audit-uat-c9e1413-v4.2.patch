@@ -276,10 +276,10 @@ index 2f4b918..39dddb2 100644
              if [ -f "$summary" ]; then cat "$summary" | tee -a "$GITHUB_STEP_SUMMARY" "$AUDIT_OUT_DIR/README.md"; fi
            done
 diff --git a/theme/partikulier/tests/staging-cache.php b/theme/partikulier/tests/staging-cache.php
-index 24e4ec7..8a91f77 100644
+index 24e4ec7..5c0b13b 100644
 --- a/theme/partikulier/tests/staging-cache.php
 +++ b/theme/partikulier/tests/staging-cache.php
-@@ -118,8 +118,25 @@ if ( $ls_observable ) {
+@@ -118,8 +118,33 @@ if ( $ls_observable ) {
  }
  v( $n1 > 0, "1er GET : $n1 carte(s) annonce(s) dans le HTML" );
  v( $n2 > 0 && $n2 === $n1, "2ᵉ GET (HIT) : $n2 cartes — pas le catalogue vide du bug 6.17.24" );
@@ -290,12 +290,20 @@ index 24e4ec7..8a91f77 100644
 +// qu'il a été stocké : il décrit l'état du cache à l'instant du stockage, pas maintenant.
 +// C'est la doctrine du dépôt (pk-diagnostic.php : « les en-têtes X-Partikulier-Cache ne
 +// prouvent plus rien pour un visiteur ») ; le workflow mesure donc ce cache côté serveur.
-+// Trois cas seulement : en-tête présent puis ABSENT (ambigu, on ne conclut pas) ; servi par
-+// LiteSpeed (rejoué, non probant) ; sinon PHP a rendu la page et l'en-tête fait foi.
-+$ambigu = ( $c1 !== null && $c2 === null );
-+$rejoue = ( $c2 !== null && stripos( (string) $c2, 'hit' ) !== false );
-+$php2   = ( ! $ambigu && ! $rejoue );
-+if ( $ambigu ) {
++// Quatre cas seulement, et deux d'entre eux ne concluent pas.
++//   1. aucun en-tête LiteSpeed sur les deux réponses : rien ne prouve que PHP a servi la
++//      page (proxy qui retire l'en-tête, réponse en cache, hébergement sans LSCache) ;
++//   2. en-tête présent au 1er GET, absent au 2ᵉ : ambigu ;
++//   3. servi par LiteSpeed (HIT) : en-tête du thème rejoué, non probant ;
++//   4. sinon seulement, PHP a rendu la page et l'en-tête du thème fait foi. C'est le seul
++//      cas où l'on juge, parce que c'est le seul où la preuve existe réellement.
++$ls_aucun = ( $c1 === null && $c2 === null );
++$ambigu   = ( $c1 !== null && $c2 === null );
++$rejoue   = ( $c2 !== null && stripos( (string) $c2, 'hit' ) !== false );
++$php2     = ( ! $ls_aucun && ! $ambigu && ! $rejoue );
++if ( $ls_aucun && ( $k1 !== null || $k2 !== null ) ) {
++        v( false, "cache thème : échantillon NON VÉRIFIÉ — aucune des deux réponses ne porte x-litespeed-cache : impossible de savoir si PHP a servi la page (proxy, réponse en cache ou en-tête retiré)", true );
++} elseif ( $ambigu ) {
 +        v( false, "cache thème : échantillon NON VÉRIFIÉ — x-litespeed-cache présent au 1er GET (" . ( $c1 ?? 'absent' ) . ") mais absent au 2ᵉ : impossible de savoir si PHP a rendu la page", true );
 +} elseif ( $php2 ) {
 +        // Deux réponses rendues par PHP : le réchauffement du cache est réellement observable.

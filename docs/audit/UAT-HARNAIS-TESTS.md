@@ -1,6 +1,6 @@
-# Tests du harnais d'audit UAT — correctif v4.1
+# Tests du harnais d'audit UAT — correctif v4.2
 
-Date : 2026-11-10. Objet : vérifier `docs/audit/fix-harness-audit-uat-c9e1413-v4.1.patch`
+Date : 2026-11-10. Objet : vérifier `docs/audit/fix-harness-audit-uat-c9e1413-v4.2.patch`
 **après application sur une copie propre de `c9e1413`**.
 
 Le code des tests est versionné dans `docs/audit/harnais-tests/` et rejouable :
@@ -56,26 +56,30 @@ C2b corrige le défaut relevé en relecture : un fichier de 800 caractères `x` 
 la v4 au seul motif de son nom, de sa taille et de sa date. Nom, taille et fraîcheur ne
 prouvent qu'une **présence** ; le début de page HTML est désormais exigé.
 
-## D. Contrat de cache — décisions exécutées en PHP 8.2 (4)
+## D. Contrat de cache — décisions exécutées en PHP 8.2 (5)
 
 | Scénario | Attendu | Sortie réelle | Code | Résultat |
 |---|---|---|---|---|
-| `ls_hit_replay` — LiteSpeed `HIT`, en-tête thème `MISS` rejoué | `ATT` motivé | `ATT cache thème : … NON PROBANT (PHP n a pas tourné)` | 0 | **PASS** |
-| `ls_header_gone` — en-tête présent au 1er GET, absent au 2ᵉ | `ATT` « échantillon NON VÉRIFIÉ » | `ATT cache thème : échantillon NON VÉRIFIÉ …` | 1 *(contrôle LiteSpeed)* | **PASS** |
-| `php_two_render` — deux réponses PHP, 2ᵉ `HIT` | `OK` | `OK cache thème : … HIT au 2ᵉ GET` | 0 | **PASS** |
-| `php_two_render_bad` — deux réponses PHP, 2ᵉ `MISS` | `KO`, code 1 | `KO cache thème : … MISS au 2ᵉ GET` | 1 | **PASS** |
+| `ls_hit_replay` — LiteSpeed `HIT`, en-tête thème `MISS` rejoué | `ATT` motivé | `ATT … NON PROBANT (PHP n a pas tourné)` | 0 | **PASS** |
+| `ls_header_gone` — présent au 1er GET, absent au 2ᵉ | `ATT` « NON VÉRIFIÉ » | `ATT … échantillon NON VÉRIFIÉ` | 1 *(LiteSpeed)* | **PASS** |
+| `ls_both_absent` — **aucun** en-tête LiteSpeed sur les deux réponses | `ATT` « NON VÉRIFIÉ » | `ATT … aucune des deux réponses ne porte x-litespeed-cache` | 0 | **PASS** |
+| `php_two_render` — deux réponses PHP, 2ᵉ `HIT` | `OK` du thème | `OK … HIT au 2ᵉ GET` | 1 *(LiteSpeed)* | **PASS** |
+| `php_two_render_bad` — deux réponses PHP, 2ᵉ `MISS` | `KO`, code 1 | `KO … MISS au 2ᵉ GET` | 1 | **PASS** |
 
-`ls_header_gone` corrige le défaut v3 : un en-tête LiteSpeed absent au 2ᵉ GET n'est plus
-interprété comme « PHP a rendu la page ». Le code 1 vient du contrôle LiteSpeed lui-même
-(en-tête disparu), pas du cache du thème, qui est correctement déclaré non vérifié.
+Deux lignes portent le code 1 pour une raison qui **n'est pas le cache du thème** : quand
+PHP rend les deux réponses, le contrôle LiteSpeed échoue à juste titre (aucun `HIT`
+externe). Le contrat du thème, lui, conclut correctement — c'est ce que la colonne
+« sortie réelle » vérifie.
 
-`php_two_render_bad` montre que le correctif **ne rend pas le test complaisant** : une
-absence réelle de réchauffement, observée sur une réponse rendue par PHP, reste un KO.
+`ls_both_absent` corrige le défaut relevé en relecture : l'absence des **deux** en-têtes
+LiteSpeed n'est pas une preuve que PHP a servi la page (un proxy peut les retirer, ou
+servir une réponse en cache). Le contrat ne conclut plus dans ce cas, et ne fait donc plus
+échouer le contrôle sur l'en-tête du thème.
 
 ## Total
 
-**23 tests, 23 PASS, 0 FAIL**, exécutés sur la copie patchée de `c9e1413`
-(19 en bash, 4 en PHP 8.2).
+**24 tests, 24 PASS, 0 FAIL**, exécutés sur la copie patchée de `c9e1413`
+(19 en bash, 5 en PHP 8.2).
 
 ## Ce que la sonde prouve — et ce qu'elle ne prouve pas
 
