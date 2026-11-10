@@ -252,6 +252,7 @@ class Partikulier_WhatsApp_Verification {
 			'provider_message_stamp' => '',
 		);
 		set_transient( self::auth_transient_key( $code ), $record, self::AUTH_PENDING_TTL );
+		self::ci_debug( 'BEGIN code=' . (string) $code . ' key=' . self::auth_transient_key( $code ) . ' phone=' . (string) $record['phone'] );
 		$message = 'Bonjour, je confirme mon numéro pour accéder à mon espace Partikulier. Code : ' . $code;
 		return array(
 			'code' => $code,
@@ -294,7 +295,7 @@ class Partikulier_WhatsApp_Verification {
 		}
 		$auth_key = self::auth_transient_key( $code );
 		$auth = get_transient( $auth_key );
-		self::ci_debug( 'MARK code=' . (string) $code . ' phone=' . (string) $sender_phone . ' kind=' . ( is_array( $auth ) ? ( $auth['kind'] ?? 'none' ) : 'noauth' ) );
+		self::ci_debug( 'MARK code=' . (string) $code . ' phone=' . (string) $sender_phone . ' auth_is_array=' . ( is_array( $auth ) ? '1' : '0' ) . ' kind=' . ( is_array( $auth ) ? ( $auth['kind'] ?? 'none' ) : 'noauth' ) . ' auth=' . ( is_array( $auth ) ? substr( wp_json_encode( $auth ), 0, 120 ) : '-' ) );
 		if ( is_array( $auth ) && ( $auth['kind'] ?? '' ) === 'auth' ) {
 			if ( ! hash_equals( (string) ( $auth['phone'] ?? '' ), $sender_phone ) ) {
 				self::ci_debug( 'MARK phone-mismatch auth_phone=' . (string) ( $auth['phone'] ?? '' ) );
@@ -307,13 +308,13 @@ class Partikulier_WhatsApp_Verification {
 			if ( ! $user || is_wp_error( $user ) ) {
 				return false;
 			}
-		$auth['user_id'] = (int) $user->ID;
-		$auth['matched_at'] = current_time( 'mysql', true );
-		$auth['provider_message_stamp'] = substr( hash( 'sha256', (string) $provider_message_id ), 0, 32 );
-		set_transient( $auth_key, $auth, HOUR_IN_SECONDS );
-		update_user_meta( $user->ID, '_pk_whatsapp_verified_at', $auth['matched_at'] );
-		self::ci_debug( 'MARK auth-ok user_id=' . (int) $user->ID );
-		return true;
+			$auth['user_id'] = (int) $user->ID;
+			$auth['matched_at'] = current_time( 'mysql', true );
+			$auth['provider_message_stamp'] = substr( hash( 'sha256', (string) $provider_message_id ), 0, 32 );
+			set_transient( $auth_key, $auth, HOUR_IN_SECONDS );
+			update_user_meta( $user->ID, '_pk_whatsapp_verified_at', $auth['matched_at'] );
+			self::ci_debug( 'MARK auth-ok user_id=' . (int) $user->ID );
+			return true;
 	}
 
 		$post_id = self::post_id_for_code( $code );
