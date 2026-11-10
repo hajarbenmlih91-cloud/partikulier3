@@ -183,3 +183,29 @@ Permissions manquantes, nommément :
 Conséquence : cette session **ne peut ni créer, ni lister, ni écrire les secrets** de
 `uat-audit`. Les sept secrets sont donc à déposer par le propriétaire, dans GitHub. Aucune
 valeur ne doit transiter par une conversation, un commit ou un patch.
+
+## Pourquoi `uat-audit` et pas `uat`, où les secrets existent déjà
+
+Question posée à juste titre. Deux faits vérifiés le 2026-11-10 tranchent :
+
+| Environnement | Approbation requise | Politique de ref |
+|---|---|---|
+| `uat` | **aucune** (0 reviewer) | `pre-release-*` |
+| `uat-audit` | `MehdiHayanai` | `audit-2.10.16-6.20.214-1` |
+
+1. **La politique de `uat` refuse un tag d'audit.** Elle n'admet que `pre-release-*`.
+   Un run sur `audit-…` avec `environment: uat` serait refusé au démarrage. Et le ref
+   patché ne peut pas être un `pre-release-*` : tout tag de cette forme déclenche
+   `deploy.yml`, donc un déploiement — interdit.
+2. **`uat` n'exige aucune approbation.** Y faire tourner l'audit reviendrait à consommer
+   des secrets donnant un accès shell **sans aucun point d'arrêt humain**. `uat-audit`
+   impose l'approbation de MehdiHayanai.
+
+Coût assumé de la séparation : les sept secrets sont dupliqués, et la rotation devra
+couvrir les deux environnements.
+
+Alternative, si la duplication paraît excessive : élargir la politique de `uat` au tag
+d'audit exact, et y ajouter un reviewer. Prix : on modifie la protection de
+l'environnement qui **déploie** (interdit par le mode opératoire en vigueur) et chaque
+déploiement UAT devient soumis à approbation. Décision du propriétaire, hors du périmètre
+de cette session.
