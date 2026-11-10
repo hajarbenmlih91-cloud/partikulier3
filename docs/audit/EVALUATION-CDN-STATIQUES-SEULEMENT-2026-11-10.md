@@ -74,30 +74,50 @@
 
 | Contrôle | Statut | Raison exacte et règle de gouvernance |
 |---|---|---|
-| Inspection hPanel (`CDN`, `Cache bypass`, mode dev, cache serveur, règles/exclusions, présence adresse officielle d'origine + Host/SNI) | **`NON EXÉCUTÉ`** | Aucun accès hPanel dans cette session. |
-| Inspection serveur UAT (`.htaccess`, indicateurs non secrets `wp-config.php`, plugins actifs, options `litespeed.*` non sensibles, `wp-content/uploads/partikulier-cache/`) | **`NON EXÉCUTÉ`** | Aucun accès SSH/WP-CLI dans cette session ; aucun nouveau workflow `uat` autorisé. |
+| Inspection hPanel (`CDN`, `Cache bypass`, mode dev, cache serveur, règles/exclusions, présence adresse officielle d'origine + Host/SNI) | **PARTIEL** | Confirmation fournie par la propriétaire que l'IP officielle d'origine et le `Host`/SNI ont été trouvés et conservés en espace privé (non recopiés) ; les valeurs du tableau hPanel (`CDN`, `Cache bypass`, mode dev, cache serveur, exclusions) n'ont pas encore été collées dans le message. |
+| Inspection serveur UAT (`.htaccess`, indicateurs non secrets `wp-config.php`, plugins actifs, options `litespeed.*` non sensibles, `wp-content/uploads/partikulier-cache/`) | **EXÉCUTÉ** | Run GitHub Actions lecture seule [`42920928851`](https://github.com/hajarbenmlih91-cloud/partikulier3/actions/runs/42920928851) (`2026-11-10T23:10:15Z`) approuvé par `hajarbenmlih91-cloud` sur `uat` (`audit/cdn-ro-check`, politique temporaire `66251081` supprimée aussitôt après). |
 | Sonde directe à l'origine | **`NON EXÉCUTÉ`** | Exige une autorisation explicite distincte, l'adresse officielle fournie par hPanel (non recopiée), un `Host`/SNI conforme, un certificat valide et `≤ 10` `GET` (aucune sonde locale `127.0.0.1` ou `--resolve` autorisée). |
 | Vérification HTTP authentifiée | **`NON EXÉCUTÉ`** | Aucun test authentifié ni création de compte jetable / capture de cookie autorisé (arrêt en `403`). |
 | Vérification réelle `hcdn` (`DYNAMIC` HTML / `HIT` statiques) sans `Cache bypass` | **`NON EXÉCUTÉ`** | Toute modification CDN est interdite à ce stade. |
 
-### Demande prête pour la session disposant des accès autorisés (strictement en lecture seule)
+---
 
-> **Cadre strict :** passer uniquement par un accès déjà autorisé, strictement en lecture seule — **sans nouveau workflow, sans modification, sans purge, sans création de compte, sans capture de cookie / test authentifié et sans sonde locale `127.0.0.1`**.
->
-> 1. **hPanel (lecture seule) :**
->    - Relever l'état exact de : `CDN`, `Cache bypass`, mode dev, cache serveur, règles/exclusions éventuelles.
->    - Vérifier si l'adresse IP officielle d'origine et le `Host`/SNI associés sont disponibles ; **ne pas recopier l'adresse IP officielle d'origine dans la réponse, un rapport ou le chat** : confirmer uniquement si elle a été trouvée et la conserver dans l'espace privé autorisé. *(Toute sonde éventuelle vers l'origine reste une étape distincte soumise à autorisation explicite, avec `Host`/SNI conformes, certificat valide et maximum 10 `GET`, sinon arrêt.)*
-> 2. **Serveur UAT (lecture seule, sans exposer aucun secret, mot de passe, sel ou clé API) :**
->    - Lire `.htaccess` à la racine WordPress et `wp-content/uploads/.htaccess` (notamment toute règle `mod_headers` / `LiteSpeed` / `Cache-Control`).
->    - Vérifier dans `wp-config.php` uniquement la présence/valeur booléenne de `WP_CACHE` et la forme du préfixe `DB_HOST` (`p:` ou non).
->    - Lister les plugins actifs (`wp plugin list --status=active`) et les options non sensibles `litespeed.*` (politique de cache, exclusions REST/`404`/query strings, émission `Cache-Control` / `X-LiteSpeed-Cache-Control`), afin notamment de clarifier l'anomalie apparente observée sur `/wp-json/partikulier/v1/health` (`x-litespeed-cache: hit` malgré `Cache-Control: no-store`).
->    - Inspecter en lecture seule l'inventaire (`ls -la`, dates/tailles, sans écriture ni purge) de `wp-content/uploads/partikulier-cache/`.
-> 3. **Repli :** si ces accès ne sont pas disponibles dans cette autre session non plus, conserver l'état actuel (`Cache bypass` actif) et la conclusion **`C`**.
+## 3 bis. Résultats de l'inspection serveur lecture seule (run `42920928851`, `2026-11-10T23:10:15Z`)
+
+*(Exécuté sur `audit/cdn-ro-check` (`f1b05aeec`), issu de `4f14acd9`, après approbation du reviewer `hajarbenmlih91-cloud` sur `uat` ; politique temporaire `66251081` retirée de `uat` après exécution ; zéro secret, zéro cookie et zéro ID compte exposé.)*
+
+1. **Identité et PHP serveur :**
+   - `home` = `siteurl` = `https://darkcyan-yak-151002.hostingersite.com` ; PHP CLI `8.2.35`.
+2. **`.htaccess` (`2451` octets à la racine, `85` dans `wp-content/uploads/`, `1070` dans `wp-content/litespeed/`) :**
+   - **Aucune règle `Header set` / `Header always set Cache-Control` sur les pages HTML ou PHP** à la racine.
+   - Bloc `# BEGIN LSCACHE` actif : `CacheLookup on`, `CacheKeyModify -qs:fbclid/gclid/utm*/_ga`, exclusions `REST AUTH` (uniquement si `HTTP:Authorization` non vide sur `/wp-json` ou `rest_route=`) et `POSTPASS`.
+   - Bloc `# BEGIN Partikulier hygiene` : `Header set Cache-Control "public, max-age=31536000, immutable"` sur `\.(avif|webp|jpe?g|png|gif|svg|woff2?)$` uniquement (`.css` et `.js` restent sous en-tête serveur LiteSpeed `public, max-age=604800`).
+3. **`wp-config.php` (indicateurs booléens/préfixe non secrets uniquement) :**
+   - `WP_CACHE=true`, `WP_CACHE_KEY_SALT` défini, `WP_DEBUG=false`.
+   - **`DB_HOST_PERSISTENT_PREFIX=no`** (pas de préfixe `p:` sur la connexion MariaDB : chaque boot WordPress/PHP ouvre une nouvelle connexion vers le plafond Hostinger annoncé à `20` nouvelles connexions/s).
+4. **Plugins actifs et drop-ins :**
+   - **8 plugins actifs :** `litespeed-cache 7.9.3`, `partikulier-core 2.10.16`, `estatik 4.3.6`, `polylang 3.9.2`, `hostinger 3.0.80`, `hostinger-ai-assistant 3.1.7`, `hostinger-easy-onboarding 3.0.5`, `hostinger-reach 1.8.7`.
+   - **0 drop-in** (`advanced-cache.php`, `object-cache.php`, `db.php` tous `ABSENT`).
+5. **Options `litespeed.*` non sensibles (`wp_options`) — explication directe des anomalies observées :**
+   - `litespeed.conf.cache = "1"` (cache LSCache actif), `cache-priv = "1"` (`cache-ttl_priv = "1800"`), `cache-browser = ""`, `cache-exc = "[]"`, `cache-exc_cookies = "[]"`, `cache-exc_roles = "[]"`, `cache-exc_qs = "[]"`.
+   - **`litespeed.conf.cache-ttl_pub = "604800"` (7 jours)** et absence d'exclusion sur query strings : explique `x-litespeed-cache-control: public,max-age=594591` / `x-litespeed-cache: hit` observés sur `/fr/annonces/?es_city=casablanca` et `public,max-age=604800` sur `/fr/annonce/...`.
+   - **`litespeed.conf.cache-rest = "1"` et `litespeed.conf.cache-ttl_rest = "604800"` :** explique factuellement l'anomalie apparente sur `/wp-json/partikulier/v1/health` (`x-litespeed-cache: hit` + `x-litespeed-cache-control: public,max-age=593505` malgré `Cache-Control: no-store` émis par `RestController.php:167`, car LSCache se pilote par `X-LiteSpeed-Cache-Control` / `DONOTCACHEPAGE`, pas par `Cache-Control: no-store`).
+   - **`litespeed.conf.cache-ttl_status = ["404 3600","500 600"]` :** explique `x-litespeed-cache-control: public,max-age=3600` sur la `404`.
+6. **Cache fichier (`wp-content/uploads/partikulier-cache/`) :**
+   - `PRESENT` : `19` fichiers (`2.3M`), dont les `.html` / `.html.gz` de `/fr/`, `/en/`, `/ar/`, `/fr/annonces/` et la fiche `/fr/annonce/settat/...` générée lors de la sonde anonyme du `Nov 10 22:41` ; `wp-content/cache` et `.litespeed_conf.dat` absents.
+
+### Impact sur la faisabilité « CDN pour fichiers statiques seulement »
+- **État actuel sans modification :** incompatible avec la coupure de `Cache bypass`, car `.htaccess` ne force pas `Cache-Control: private, no-store` sur HTML/PHP, `Partikulier_Cache` (`4f14acd9`) émet `public, max-age=43200` avant `template_redirect`, et `litespeed-cache 7.9.3` émet `x-litespeed-cache-control: public,max-age=604800` (y compris sur `REST` et `404`) sans `Cache-Control: private, no-store` sur `?es_city=casablanca` ni `/fr/contact/`.
+- **Piste `B` par configuration serveur/WP seule (sans toucher `4f14acd9`) vs `B` cycle produit :**
+  - Même en combinant réglages WP-Admin `litespeed-cache` (`cache-rest = 0`, exclusions/TTL) + règle `.htaccess` `Header always set Cache-Control "private, no-store"` hors extensions statiques, trois vérifications décisives restent non démontrées : (a) précédence réelle d'une règle `.htaccess` sur les réponses `x-litespeed-cache: hit` sans neutraliser `LSCache` serveur (critique car `DB_HOST` est sans `p:` et `Partikulier_Cache` exécute PHP + `wp-settings.php` + connexion MariaDB), (b) comportement exact de `hcdn` face à `x-litespeed-cache-control: public` + `Cache-Control: private, no-store`, et (c) absence d'observation en session authentifiée et à l'origine directe.
 
 ---
 
 ## 4. Portée et conclusion
 
-- **Portée et outcome :** les 13 sondes anonymes réfutent que la configuration active actuelle émette uniformément `Cache-Control: private, no-store` sur l'ensemble des réponses HTML ; la possibilité de corriger ce comportement par configuration serveur seule sans modifier `4f14acd9` reste à examiner via une inspection autorisée de hPanel et de la configuration serveur.
+- **Portée et outcome :**
+  - Les **13 sondes HTTP anonymes** et **l'inspection serveur lecture seule (run `42920928851`)** établissent que la configuration active actuelle (`.htaccess` sans règle `Cache-Control` sur HTML + `Partikulier_Cache` + `litespeed-cache 7.9.3` avec `cache-ttl_pub=604800`, `cache-rest=1`, `cache-exc=[]`, `cache-exc_qs=[]`) **ne permet pas** de désactiver `Cache bypass` en l'état pour du « statiques-seulement », et expliquent directement la cause serveur des anomalies observées (`/fr/annonces/?es_city=casablanca`, `/wp-json/partikulier/v1/health`, `404`).
+  - La faisabilité en **`B` par configuration serveur/WP seule** (sans modifier `4f14acd9`) versus un **cycle produit ciblé** reste dépendante du relevé complet hPanel et des vérifications encore non autorisées/non exécutées (sonde directe à l'origine avec IP officielle + `Host`/SNI conformes et `≤ 10 GET`, session authentifiée, et mesure réelle post-bascule).
 - **Conclusion : `C. non démontré avec les garanties et accès disponibles`.**
 - **Décision conservatoire maintenue :** **`Cache bypass` reste activé** ; aucune purge, aucun déploiement et aucune modification du code audité (`4f14acd9` / `c9e1413` / `audit-2.10.16-6.20.214-3`) ne sont effectués.
+
