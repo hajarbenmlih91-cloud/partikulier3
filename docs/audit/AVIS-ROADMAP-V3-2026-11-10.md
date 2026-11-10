@@ -165,3 +165,35 @@ travail, **sous réserve** de trois modifications avant diffusion large :
 
 Sans le point 1, la phase 1 déclarerait fermée une exposition qui resterait ouverte dans un README public.
 C'est le seul point de cet avis qui, à lui seul, justifie de ne pas entériner le document en l'état.
+
+---
+
+## 9. Suivi — V3.1 du 10 novembre 2026
+
+**Verdict révisé : les trois réserves sont levées. V3.1 validée.**
+
+| Réserve | Traitement | Contrôle effectué |
+|---|---|---|
+| §3 — phase 1 incomplète | recherche exhaustive + contrôle en échec + limites de l'historique ; mécanisme par empreinte, **sans réintroduire le littéral** | lu dans le document |
+| §4 — dépôt public absent | §0.2 « Visibilité du dépôt et exposition publique » | lu ; `visibility=public` recoupé |
+| §5 — diffusion large | fichier privé dès création, partages publics antérieurs retirés | `list_permissions` : **1 seul** utilisateur (propriétaire) sur V3.1 **et** sur V3 |
+| §6.1 — maillon de traçabilité | SHA-256 du diff tagué consigné | `d638529a…` présent ; **identique** à `git diff c9e1413 4f4c354 \| sha256sum` |
+| Assainissement | valeur compromise absente | 0 occurrence ; SHA-256 du fichier identique à celui annoncé (`40a9a125…`) |
+
+**Faits préservés après réécriture** : 179 commits, 77 fichiers, `14a081cd…`, `4f4c354…`, `c9e1413`,
+`989dcd1…`, 24 PASS, note non calculable. Tag revérifié : `audit-2.10.16-6.20.214-1` pointe toujours
+sur `4f4c354…` — aucun déplacement.
+
+**Correction de cet avis, due à la V3.1.** Le §4 ci-dessus affirmait le dépôt « public depuis le début ».
+L'API ne permet pas de prouver l'historique de visibilité : seul l'état courant est établi. La V3.1
+formule cette limite correctement (« public depuis sa création » n'est retenu qu'avec une preuve
+d'historique). C'est la bonne formulation ; la mienne était trop forte. La fenêtre d'exposition de la
+valeur reste de l'ordre de six semaines, mesurée depuis son introduction le 30 septembre, et non
+depuis la création du dépôt.
+
+**Point résiduel, non bloquant** : §2.1 affirme toujours des chemins cassés dans `check-hardcoded.sh`
+sans mesure datée. À vérifier au moment de l'exécution.
+
+**La validation porte sur le document, pas sur le programme** : les sept secrets d'environnement restent
+absents, aucune UAT réelle n'a été exécutée, et la note demeure **non calculable** tant que les deux
+conditions bloquantes sont ouvertes.
