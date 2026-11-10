@@ -1,0 +1,280 @@
+name: Inspection lecture seule CDN et serveur UAT
+
+# Strictement lecture seule sur l'environnement protégé uat (approbation reviewer requise).
+# Zéro modification serveur/hPanel/code, zéro purge, zéro création de compte,
+# zéro cookie/session authentifiée, zéro sonde 127.0.0.1/--resolve, zéro test de charge.
+
+on:
+  push:
+    branches:
+      - audit/cdn-ro-check
+
+permissions:
+  contents: read
+
+concurrency:
+  group: audit-cdn-ro-uat
+  cancel-in-progress: false
+
+jobs:
+  inspect-readonly:
+    name: Inspection serveur UAT (lecture seule)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment:
+      name: uat
+      url: https://darkcyan-yak-151002.hostingersite.com
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Vérifier la branche cible autorisée
+        run: |
+          set -euo pipefail
+          test "${GITHUB_REF_NAME:-}" = "audit/cdn-ro-check"
+          echo "Branche autorisée : $GITHUB_REF_NAME"
+
+      - name: Inspection SSH strictement lecture seule sur UAT
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+          WP_PATH: ${{ secrets.WP_PATH }}
+        run: |
+          set -euo pipefail
+          : "${SSH_HOST:?Secret SSH_HOST absent}"
+          : "${SSH_PORT:?Secret SSH_PORT absent}"
+          : "${SSH_USER:?Secret SSH_USER absent}"
+          : "${SSH_PRIVATE_KEY:?Secret SSH_PRIVATE_KEY absent}"
+          : "${SSH_KNOWN_HOSTS:?Secret SSH_KNOWN_HOSTS absent}"
+          : "${WP_PATH:?Secret WP_PATH absent}"
+          echo "::add-mask::$SSH_HOST"
+          echo "::add-mask::$SSH_USER"
+          echo "::add-mask::$WP_PATH"
+          [[ "$SSH_HOST" =~ ^[A-Za-z0-9][A-Za-z0-9.-]*$ ]] || { echo 'SSH_HOST refusé' >&2; exit 2; }
+          [[ "$SSH_USER" =~ ^[A-Za-z0-9._-]+$ ]] || { echo 'SSH_USER refusé' >&2; exit 2; }
+          [[ "$SSH_PORT" =~ ^[1-9][0-9]{0,4}$ ]] && (( SSH_PORT <= 65535 )) || { echo 'SSH_PORT refusé' >&2; exit 2; }
+          [[ "$WP_PATH" == /* && "$WP_PATH" != *$'\n'* ]] || { echo 'WP_PATH refusé' >&2; exit 2; }
+
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
+          chmod 600 "$HOME/.ssh/id_ed25519"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 644 "$HOME/.ssh/known_hosts"
+          {
+            echo "Host partikulier-uat"
+            echo "  HostName $SSH_HOST"
+            echo "  Port $SSH_PORT"
+            echo "  User $SSH_USER"
+            echo "  IdentityFile $HOME/.ssh/id_ed25519"
+            echo "  UserKnownHostsFile $HOME/.ssh/known_hosts"
+            echo "  StrictHostKeyChecking yes"
+            echo "  IdentitiesOnly yes"
+            echo "  BatchMode yes"
+            echo "  ConnectionAttempts 4"
+            echo "  ConnectTimeout 15"
+          } > "$HOME/.ssh/config"
+          chmod 600 "$HOME/.ssh/config"
+
+          ssh -F "$HOME/.ssh/config" partikulier-uat 'bash -s' -- "$WP_PATH" > audit-cdn-ro-report.txt <<'REMOTE'
+          set -euo pipefail
+          wp_path="$1"
+          test -f "$wp_path/wp-config.php" || { echo 'wp-config.php absent' >&2; exit 1; }
+          cd "$wp_path"
+          command -v wp >/dev/null 2>&1 || { echo 'WP-CLI absent' >&2; exit 1; }
+          command -v php >/dev/null 2>&1 || { echo 'PHP CLI absent' >&2; exit 1; }
+
+          expected='darkcyan-yak-151002.hostingersite.com'
+          home="$(wp option get home --quiet)"
+          siteurl="$(wp option get siteurl --quiet)"
+          case "${home%/}" in "https://$expected") ;; *) echo 'home WordPress hors UAT' >&2; exit 1 ;; esac
+          case "${siteurl%/}" in "https://$expected"|"https://$expected/"*) ;; *) echo 'siteurl WordPress hors UAT' >&2; exit 1 ;; esac
+
+          echo "=== 0. ENVIRONNEMENT VERIFIE (LECTURE SEULE) ==="
+          echo "timestamp_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          echo "home=${home%/}"
+          echo "siteurl=${siteurl%/}"
+          echo "php_cli=$(php -v | head -n 1)"
+          echo "php_sapi=$(php -r 'echo PHP_SAPI;')"
+
+          mask_ips_and_secrets() {
+            sed -E \
+              -e 's/\b([0-9]{1,3}\.){3}[0-9]{1,3}\b/[IP-MASKED]/g' \
+              -e 's/([0-9a-fA-F]{1,4}:){3,7}[0-9a-fA-F]{1,4}/[IP6-MASKED]/g' \
+              -e 's/::[0-9a-fA-F:]{2,}/[IP6-MASKED]/g' \
+              -e 's/(SetEnv[[:space:]]+[^[:space:]]*(SECRET|KEY|PASS|TOKEN|AUTH)[^[:space:]]*[[:space:]]+).*/\1[REDACTED]/Ig' \
+              -e 's/(AuthUserFile[[:space:]]+).*/\1[REDACTED]/Ig'
+          }
+
+          echo ""
+          echo "=== 1. FICHIERS .htaccess (MASQUES IP/SECRETS) ==="
+          for rel in ".htaccess" "wp-content/.htaccess" "wp-content/uploads/.htaccess" "wp-content/cache/.htaccess" "wp-content/litespeed/.htaccess"; do
+            if [ -f "$wp_path/$rel" ]; then
+              echo "--- FILE: $rel (bytes=$(wc -c < "$wp_path/$rel"), lines=$(wc -l < "$wp_path/$rel")) ---"
+              mask_ips_and_secrets < "$wp_path/$rel"
+            else
+              echo "--- FILE: $rel (ABSENT) ---"
+            fi
+          done
+
+          echo ""
+          echo "=== 2. INDICATEURS NON SECRETS wp-config.php (SANS LECTURE DE SECRETS) ==="
+          php -r '
+            $src = file_get_contents("wp-config.php");
+            $tokens = token_get_all($src);
+            $defines = [];
+            $n = count($tokens);
+            for ($i = 0; $i < $n; $i++) {
+              if (is_array($tokens[$i]) && $tokens[$i][0] === T_STRING && strtolower($tokens[$i][1]) === "define") {
+                $j = $i + 1;
+                while ($j < $n && is_array($tokens[$j]) && $tokens[$j][0] === T_WHITESPACE) $j++;
+                if ($j >= $n || $tokens[$j] !== "(") continue;
+                $args = []; $cur = ""; $depth = 0;
+                for ($k = $j + 1; $k < $n; $k++) {
+                  $t = $tokens[$k];
+                  if ($t === "(" || (is_array($t) && $t[0] === T_CURLY_OPEN)) $depth++;
+                  elseif ($t === ")") {
+                    if ($depth === 0) { $args[] = trim($cur); break; }
+                    $depth--;
+                  } elseif ($t === "," && $depth === 0) {
+                    $args[] = trim($cur); $cur = ""; continue;
+                  }
+                  $cur .= is_array($t) ? $t[1] : $t;
+                }
+                if (count($args) >= 2) {
+                  $name = trim($args[0], " \t\n\r\0\x0B\"'\''");
+                  $val = $args[1];
+                  $defines[$name] = $val;
+                }
+              }
+            }
+            $allowBool = ["WP_CACHE", "WP_DEBUG", "WP_DEBUG_LOG", "WP_DEBUG_DISPLAY", "LSCACHE_ADV_CACHE", "LSCACHE_DISABLE_ALL", "LITESPEED_DISABLE_ALL", "LITESPEED_DISABLE_OBJECT", "WP_MEMORY_LIMIT", "WP_MAX_MEMORY_LIMIT"];
+            foreach ($allowBool as $k) {
+              if (array_key_exists($k, $defines)) {
+                $v = trim($defines[$k], " \t\n\r\"'\''");
+                if (preg_match("/^(true|false|0|1|[0-9]+[MGK]?)$/i", $v)) {
+                  echo "$k=$v\n";
+                } else {
+                  echo "$k=[DEFINED_NON_BOOLEAN]\n";
+                }
+              } else {
+                echo "$k=[NOT_DEFINED]\n";
+              }
+            }
+            if (array_key_exists("DB_HOST", $defines)) {
+              $dbv = trim($defines["DB_HOST"], " \t\n\r\"'\''");
+              echo "DB_HOST_PERSISTENT_PREFIX=" . (strpos($dbv, "p:") === 0 ? "yes (p:)" : "no") . "\n";
+            } else {
+              echo "DB_HOST_PERSISTENT_PREFIX=[NOT_FOUND]\n";
+            }
+            $ls_consts = array_values(array_filter(array_keys($defines), function($k) {
+              return preg_match("/^(LSCACHE|LITESPEED|WP_CACHE)/i", $k);
+            }));
+            echo "CACHE_RELATED_CONSTANTS_DEFINED=" . (empty($ls_consts) ? "none" : implode(",", $ls_consts)) . "\n";
+          '
+
+          echo ""
+          echo "=== 3. PLUGINS ACTIFS & DROP-INS ==="
+          wp plugin list --status=active --fields=name,version,update_version --format=table --quiet
+          echo "--- Drop-ins ---"
+          for drop in "advanced-cache.php" "object-cache.php" "db.php"; do
+            p="$wp_path/wp-content/$drop"
+            if [ -e "$p" ] || [ -L "$p" ]; then
+              echo "$drop: PRESENT (bytes=$(wc -c < "$p"), link=$(readlink "$p" 2>/dev/null || echo no))"
+              head -n 20 "$p" | mask_ips_and_secrets
+            else
+              echo "$drop: ABSENT"
+            fi
+          done
+
+          echo ""
+          echo "=== 4. OPTIONS WORDPRESS NON SENSIBLES (litespeed.* & cache) ==="
+          wp eval '
+            global $wpdb;
+            $rows = $wpdb->get_results("SELECT option_name, option_value FROM {$wpdb->options} WHERE option_name LIKE '\''litespeed.%'\'' OR option_name LIKE '\''%cache%'\'' ORDER BY option_name");
+            $sensitiveRe = "/(^|[._-])(key|keys|token|secret|pass|password|auth|cloud|api|api_key|ip|ips|server_ip|client_ip|salt|hash|license|qc_|notify|webhook|email|user|domain_key|pk_n8n)([._-]|$)/i";
+            $maskFn = function($v) use (&$maskFn, $sensitiveRe) {
+              if (is_array($v)) {
+                $out = [];
+                foreach ($v as $k => $val) {
+                  if (preg_match($sensitiveRe, (string)$k)) {
+                    $out[$k] = "[REDACTED]";
+                  } else {
+                    $out[$k] = $maskFn($val);
+                  }
+                }
+                return $out;
+              }
+              if (is_string($v)) {
+                return preg_replace("/\b([0-9]{1,3}\.){3}[0-9]{1,3}\b/", "[IP-MASKED]", $v);
+              }
+              return $v;
+            };
+            foreach ($rows as $r) {
+              $name = $r->option_name;
+              if (strpos($name, "_transient") === 0 || strpos($name, "_site_transient") === 0) {
+                continue;
+              }
+              if (preg_match($sensitiveRe, $name)) {
+                echo $name . " = [REDACTED len=" . strlen((string)$r->option_value) . "]\n";
+                continue;
+              }
+              $val = maybe_unserialize($r->option_value);
+              $val = $maskFn($val);
+              echo $name . " = " . json_encode($val, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n";
+            }
+          ' --quiet
+
+          echo ""
+          echo "=== 5. INVENTAIRE CACHE FICHIER (LECTURE SEULE) ==="
+          for cdir in "wp-content/uploads/partikulier-cache" "wp-content/litespeed" "wp-content/cache"; do
+            if [ -d "$wp_path/$cdir" ]; then
+              cnt="$(find "$wp_path/$cdir" -type f | wc -l)"
+              sz="$(du -sh "$wp_path/$cdir" 2>/dev/null | awk '{print $1}')"
+              echo "--- DIR $cdir : PRESENT (files=$cnt, size=$sz) ---"
+              ls -lt "$wp_path/$cdir" | head -n 26
+            else
+              echo "--- DIR $cdir : ABSENT ---"
+            fi
+          done
+          if [ -f "$wp_path/wp-content/.litespeed_conf.dat" ]; then
+            echo "--- .litespeed_conf.dat PRESENT (bytes=$(wc -c < "$wp_path/wp-content/.litespeed_conf.dat")) ---"
+            php -r '
+              $raw = file_get_contents("wp-content/.litespeed_conf.dat");
+              $d = json_decode($raw, true);
+              if (!is_array($d)) { echo "non-json\n"; exit(0); }
+              $sens = "/(^|[._-])(key|keys|token|secret|pass|password|auth|cloud|api|api_key|ip|ips|server_ip|client_ip|salt|hash|license|qc_|notify|webhook|email|user|domain_key|server)([._-]|$)/i";
+              ksort($d);
+              $out = [];
+              foreach ($d as $k => $v) {
+                if (preg_match($sens, (string)$k)) {
+                  $out[$k] = "[REDACTED]";
+                } else {
+                  $enc = json_encode($v, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+                  $enc = preg_replace("/\b([0-9]{1,3}\.){3}[0-9]{1,3}\b/", "[IP-MASKED]", $enc);
+                  $out[$k] = json_decode($enc, true);
+                }
+              }
+              echo json_encode($out, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n";
+            ' || echo "parse skipped"
+          else
+            echo "--- .litespeed_conf.dat ABSENT ---"
+          fi
+          REMOTE
+          cat audit-cdn-ro-report.txt
+
+      - name: Nettoyer la clé SSH
+        if: always()
+        run: rm -f "$HOME/.ssh/id_ed25519" "$HOME/.ssh/known_hosts" "$HOME/.ssh/config"
+
+      - name: Publier le rapport lecture seule
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: audit-cdn-ro-report
+          path: audit-cdn-ro-report.txt
+          retention-days: 7
+          if-no-files-found: ignore
