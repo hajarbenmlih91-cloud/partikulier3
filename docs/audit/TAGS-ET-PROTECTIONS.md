@@ -197,7 +197,7 @@ et repointables**. Non critiques — les commits sont ancrés par des branches �
 
 **b) `non_fast_forward` est absent, y compris sur `feat/profil-acheteur`.** Cette branche porte
 `deletion` seule : elle ne peut plus être supprimée, mais son histoire peut encore être réécrite, ce qui
-détacherait `c9e3413` de toute branche. C'est le dernier trou identifié. Coût de le fermer sur cette
+détacherait `c9e1413` de toute branche. C'est le dernier trou identifié. Coût de le fermer sur cette
 seule branche : pas de rebase possible dessus — à accepter explicitement ou à refuser explicitement.
 
 ### État des autres protections (inchangé, pour mémoire)
