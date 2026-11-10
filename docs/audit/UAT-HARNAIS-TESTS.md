@@ -1,24 +1,29 @@
-# Tests du harnais d'audit UAT — correctif v4.2
+# Tests du harnais d'audit UAT — séries A à E
 
-Date : 2026-11-10. Objet : vérifier `docs/audit/fix-harness-audit-uat-c9e1413-v4.2.patch`
-**après application sur une copie propre de `c9e1413`**.
+Date : 2026-11-10. Objet : vérifier le harnais d'audit UAT au commit `4f14acd9`
+(parent `5aa70f44`, base applicative `c9e1413`).
 
-Le code des tests est versionné dans `docs/audit/harnais-tests/` et rejouable :
-`gen.py`, `run.sh`, `gen_php.py`, `run_php.mjs` (voir son `README.md`).
+Le code des tests est versionné dans `docs/audit/harnais-tests/` sur une branche dédiée
+(**jamais** dans le ref/tag d'audit) : `gen.py`, `run.sh`, `gen_php.py`, `run_php.mjs`,
+`run_login.mjs`, `playwright_mock_register.mjs`, `playwright_mock_hooks.mjs`,
+`playwright_mock.mjs` (voir `docs/audit/harnais-tests/README.md`).
 
 ## Méthode
 
-1. `git clone` d'une copie neuve, `git checkout c9e1413`, `git apply` du correctif.
-2. Les blocs bash sont **extraits du YAML produit par le patch** (jamais recopiés), puis
+1. Extraction propre de `4f14acd9` sans modifier le commit ni le tag `audit-2.10.16-6.20.214-3`.
+2. **Séries A, B, C (19 tests bash)** : blocs bash **extraits du YAML de `4f14acd9`** par `gen.py`,
    exécutés contre des doublures (`ssh`, `wp`, `lighthouse`) placées dans le `PATH`.
-3. `staging-cache.php` est exécuté par **PHP 8.2 réel** (`@php-wasm/node`) ; seul le
-   transport `get_http()` est simulé.
+3. **Série D (5 tests PHP 8.2)** : `staging-cache.php` exécuté par **PHP 8.2 réel** (`@php-wasm/node`) ;
+   seul le transport `get_http()` est simulé.
+4. **Série E (6 tests Node ESM)** : `theme/partikulier/tests/audit-uat-login.mjs` de `4f14acd9` exécuté
+   **tel quel** via un hook ESM Node interceptant `'playwright'` ; les callbacks `page.evaluate()` et les
+   assertions de `audit-uat-login.mjs` s'exécutent réellement dans `vm` sur des scénarios DOM/URL/cookie.
 
 ## A. Garde de traçabilité — liste blanche exacte (4)
 
 | Scénario | Attendu | Résultat |
 |---|---|---|
-| A1 — seuls `audit-uat.yml` et `staging-cache.php` diffèrent | accepté | **PASS** |
+| A1 — fichiers dans `ALLOWED` seuls | accepté | **PASS** |
 | A2 — `deploy.yml` diffère aussi | refusé, fichier nommé | **PASS** |
 | A3 — un autre test (`audit-uat.mjs`) diffère | refusé, fichier nommé | **PASS** |
 | A4 — `theme/partikulier/functions.php` diffère | refusé, fichier nommé | **PASS** |
@@ -43,8 +48,8 @@ Le début du fichier doit aussi être du HTML — critère que le thème appliqu
 |---|---|---|
 | C1 — répertoire vide | `NON VÉRIFIÉ` + `PORTÉE: … NON VÉRIFIÉ` | **PASS** |
 | C2 — entrée réelle (page HTML, fraîche) | `CACHE-THEME: entrée valide` | **PASS** |
-| C2b — **fichier de 800 `x`** au bon nom | **non vérifié** (pas d'en-tête HTML) | **PASS** |
-| C3 — **même nom mais autre hôte** (`default_fr_annonces.html`) | refusée, « entrées proches » | **PASS** |
+| C2b — fichier de 800 `x` au bon nom | **non vérifié** (pas d'en-tête HTML) | **PASS** |
+| C3 — même nom mais autre hôte (`default_fr_annonces.html`) | refusée, « entrées proches » | **PASS** |
 | C4 — autre page du bon hôte | refusée | **PASS** |
 | C5 — entrée tronquée (200 o) | non vérifié | **PASS** |
 | C6 — entrée de 2 h | non vérifié | **PASS** |
@@ -52,57 +57,42 @@ Le début du fichier doit aussi être du HTML — critère que le thème appliqu
 | C8 — `PK_THEME_CACHE_REQUIRED=true` + non vérifié | `php_rc=1` + `::error::` | **PASS** |
 | C9 — `PK_THEME_CACHE_REQUIRED=true` + valide | `php_rc=0` | **PASS** |
 
-C2b corrige le défaut relevé en relecture : un fichier de 800 caractères `x` satisfaisait
-la v4 au seul motif de son nom, de sa taille et de sa date. Nom, taille et fraîcheur ne
-prouvent qu'une **présence** ; le début de page HTML est désormais exigé.
-
 ## D. Contrat de cache — décisions exécutées en PHP 8.2 (5)
 
 | Scénario | Attendu | Sortie réelle | Code | Résultat |
 |---|---|---|---|---|
 | `ls_hit_replay` — LiteSpeed `HIT`, en-tête thème `MISS` rejoué | `ATT` motivé | `ATT … NON PROBANT (PHP n a pas tourné)` | 0 | **PASS** |
 | `ls_header_gone` — présent au 1er GET, absent au 2ᵉ | `ATT` « NON VÉRIFIÉ » | `ATT … échantillon NON VÉRIFIÉ` | 1 *(LiteSpeed)* | **PASS** |
-| `ls_both_absent` — **aucun** en-tête LiteSpeed sur les deux réponses | `ATT` « NON VÉRIFIÉ » | `ATT … aucune des deux réponses ne porte x-litespeed-cache` | 0 | **PASS** |
+| `ls_both_absent` — aucun en-tête LiteSpeed sur les deux réponses | `ATT` « NON VÉRIFIÉ » | `ATT … aucune des deux réponses ne porte x-litespeed-cache` | 0 | **PASS** |
 | `php_two_render` — deux réponses PHP, 2ᵉ `HIT` | `OK` du thème | `OK … HIT au 2ᵉ GET` | 1 *(LiteSpeed)* | **PASS** |
 | `php_two_render_bad` — deux réponses PHP, 2ᵉ `MISS` | `KO`, code 1 | `KO … MISS au 2ᵉ GET` | 1 | **PASS** |
 
-Deux lignes portent le code 1 pour une raison qui **n'est pas le cache du thème** : quand
-PHP rend les deux réponses, le contrôle LiteSpeed échoue à juste titre (aucun `HIT`
-externe). Le contrat du thème, lui, conclut correctement — c'est ce que la colonne
-« sortie réelle » vérifie.
+## E. Parcours connecté et consentement — `audit-uat-login.mjs` réel (6)
 
-`ls_both_absent` corrige le défaut relevé en relecture : l'absence des **deux** en-têtes
-LiteSpeed n'est pas une preuve que PHP a servi la page (un proxy peut les retirer, ou
-servir une réponse en cache). Le contrat ne conclut plus dans ce cas, et ne fait donc plus
-échouer le contrôle sur l'en-tête du thème.
+Exécuté contre `theme/partikulier/tests/audit-uat-login.mjs` au commit `4f14acd9` (et vérifié par
+mutations négatives : chaque régression ciblée fait échouer le test E correspondant).
 
-## Total
+| Scénario | Propriété vérifiée | Attendu | Résultat |
+|---|---|---|---|
+| E1 | URL de retour avec `?redirect_url=…` et `#…` (`pathname` `/fr/mes-annonces/`) | préfixe `/mes-annonces` accepté, 4 parcours `PASS`, exit 0 | **PASS** |
+| E2 | URL sans paramètre (`/mes-annonces`) | préfixe `/mes-annonces` accepté, 4 parcours `PASS`, exit 0 | **PASS** |
+| E3 | `.pk-dashboard` absent du DOM | parcours en `FAIL` explicite (`dashboard=false`), exit 1 | **PASS** |
+| E4 | bandeau `.pk-cookie-bar` absent dans un contexte neuf | parcours en `FAIL` explicite (`Consent banner absent`), exit 1 | **PASS** |
+| E5 | `.pk-dashboard-empty` présent (et contrôle négatif s'il manque) | validé si présent (exit 0), refusé si absent (exit 1) | **PASS** |
+| E6 | cookie `wordpress_logged_in_*` intercepté par `Proxy` | `name` lu, `.value` **jamais** lu (`read=false`), aucune fuite | **PASS** |
 
-**24 tests, 24 PASS, 0 FAIL**, exécutés sur la copie patchée de `c9e1413`
-(19 en bash, 5 en PHP 8.2).
+## Total réel exécuté (sans arrondi)
 
-## Ce que la sonde prouve — et ce qu'elle ne prouve pas
+**30 tests exécutés : 30 PASS · 0 FAIL**
+- `19` tests bash (`run.sh` : A = 4, B = 5, C = 10)
+- `5` tests PHP 8.2 (`run_php.mjs` : D = 5)
+- `6` tests Node ESM (`run_login.mjs` : E = 6)
 
-| Prouvé par la sonde | Non prouvé |
-|---|---|
-| l'entrée de cette page, pour cet hôte, existe | que la page soit réellement **servie** depuis ce cache |
-| elle est fraîche (< 30 min) et fait plus de 500 o | que son contenu soit complet (seul le début est lu) |
-| elle commence par `<!doctype html` ou `<html` | que la purge du thème purge correctement LiteSpeed |
+*(Correction documentaire : le commentaire de `README.md` indiquait précédemment « 18 tests » pour `run.sh` alors qu'il en exécute réellement 19 ; il est aligné sur le chiffre exact.)*
 
-Le rapport l'écrit désormais lui-même : même en cas de succès, la ligne `PORTÉE:` précise
-que « le SERVICE de cette page par le cache n'est pas prouvé pour autant ». Tant que
-`PK_THEME_CACHE_REQUIRED` reste à `'false'`, la portée annoncée est : **LiteSpeed et TTFB
-validés, cache fichier du thème non validé**. Passer à `'true'` demanderait d'abord une
-preuve de service, qui reste à construire.
+## Ce que ces tests simulés ne couvrent pas
 
-## Ce que ces tests ne couvrent pas
-
-- **L'UAT réelle** : aucune requête réseau, aucun compte créé, aucune commande SSH.
-- **LiteSpeed et WordPress réels** : réponses simulées ; `wp_get_upload_dir()` et
-  `home_url()` ne sont pas interrogés sur le serveur.
-- **Lighthouse contre un Chromium** : seule la logique de tentatives est testée. Le
-  correctif `--preset=desktop` s'appuie sur le message d'erreur de
-  `core/config/validation.js`, ligne 181, dans Lighthouse 12.8.2.
-- **Le rendu GitHub Actions** : expressions `${{ }}`, résolution des `secrets`, politique
-  de l'environnement. Validables seulement par un run réel, donc après création de
-  l'environnement d'audit.
+- **L'UAT réelle** : aucune requête réseau, aucun compte WordPress créé, aucune commande SSH.
+- **LiteSpeed et WordPress réels** : réponses simulées ; `wp_get_upload_dir()` et `home_url()` ne sont pas interrogés sur le serveur.
+- **Un vrai Chromium contre UAT** : la série E simule les réponses Playwright ; de plus, dans `audit-uat-login.mjs`, si `AUTHORIZED` est faux, le statut global peut valoir `PASS` alors que les 4 parcours connectés ont été sautés (limite connue documentée, non corrigée dans `4f14acd9`).
+- **Lighthouse contre un Chromium réel** et **rendu GitHub Actions** (`${{ }}`, secrets, politiques d'environnement).
