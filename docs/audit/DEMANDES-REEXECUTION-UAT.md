@@ -1,120 +1,161 @@
-# Demandes de réexécution UAT — formulations à transmettre
+# Demandes à transmettre — campagne UAT jusqu'à validation
 
-**Date :** 10 novembre 2026
-**Contexte :** run 42854353976 (`audit-2.10.16-6.20.214-2`, commit `5aa70f44…`) — verdict `failure`,
-causé uniquement par `OWNER_RESULT`. Cinq lignes du bilan sont « non faites » pour trois raisons
-différentes. Chaque bloc ci-dessous est rédigé pour être copié tel quel.
+**Version 2 — 10 novembre 2026.** Remplace la version 1 du même jour.
+**Motif du remplacement :** la version 1 répondait à « comment faire exister les cinq lignes du bilan »,
+la version 2 répond à « comment tout tester jusqu'à validation ». Le bloc « charge » de la v1 entrait en
+conflit avec l'ordre de la campagne : il a été fusionné dans l'étape 4 (§6 de ce document).
 
-**Rappels valables pour les cinq blocs :** aucune production, aucun `deploy.yml`, aucun tag
-`pre-release-*`, aucun retag ni déplacement de tag existant, aucun secret transmis ou affiché.
-Un échec par permission manquante s'arrête et se nomme, sans contournement.
+**Cible :** `uat` uniquement. Aucune production, aucun `deploy.yml`, aucun tag `pre-release-*`,
+aucun retag, aucun déplacement de tag, aucun secret transmis. Un échec par permission manquante
+s'arrête et se nomme, sans contournement.
 
 ---
 
-## A. Tests de charge (10 puis 100 req/s)
+## 1. Gouvernance — à faire une fois, avant tout le reste
 
-**Demande à transmettre :**
+> Remplace l'entrée `audit-2.10.16-6.20.214-2` de la policy de l'environnement `uat` par le motif
+> `audit-2.10.16-6.20.214-*`, en conservant `pre-release-*`. Vérifie l'existence avant création ;
+> aucun `PUT` si l'environnement existe ; ne touche pas à `prd` ; ne retire aucun check requis ;
+> ne modifie aucun reviewer.
 
-> Réexécute l'audit sur **le même tag `audit-2.10.16-6.20.214-2`**, sans créer de nouveau tag ni
-> modifier aucune protection, avec l'input de charge activé :
+Motif et non `audit-*` : couvre toutes les itérations de **cette** release sans élargir aux futures.
+
+**Décision à prendre maintenant :** `uat` n'a aucun reviewer, donc aucune validation à quatre yeux.
+Pour l'itération, c'est acceptable. Pour le run qui fera foi, il faut une barrière : reviewer ajouté
+à `uat`, ou retour à `uat-audit`. Trancher avant, pas après.
+
+---
+
+## 2. Diagnostic du consentement — lecture seule, avant toute correction
+
+> Exécute un contrôle Playwright en lecture seule, sans relancer l'audit complet. Contextes :
+> `390×844, isMobile` puis `1440×900`. Sur la page de connexion, réponds à quatre questions
+> séparément, avec la trace :
 >
-> ```bash
-> gh workflow run audit-uat.yml --ref audit-2.10.16-6.20.214-2 -f load_test=true
-> ```
+> 1. Quels contrôles de consentement existent, visibles, avec rôle et nom accessible ?
+> 2. Sont-ils atteignables et activables au clavier (`Tab`, `Shift+Tab`, `Enter`) et à la souris ?
+> 3. Après **Refuser**, puis dans un contexte neuf après **Accepter**, la connexion aboutit-elle
+>    réellement (marqueur de tableau de bord atteint) ?
+> 4. Le comportement diffère-t-il entre mobile et desktop ?
 >
-> Contraintes : sonde 10 req/s (10 s) d'abord, charge 100 req/s (30 s) seulement si la sonde tient ;
-> arrêt immédiat si des 5xx apparaissent ; pas de relance automatique. Rapport attendu : latences
-> p50/p95, débit réel, taux d'erreur, et statut des deux étapes séparément. Précise que ces étapes
-> sont en `continue-on-error: true` — leur échec ne rougit pas le run, donc leur résultat doit être
-> lu dans l'artefact, pas dans la conclusion.
-
-**Prérequis :** fenêtre creuse sur l'UAT ; accord explicite sur le risque hébergeur (mutualisé).
-**Coût :** ~40 s de charge + réexécution complète du job (~4 min).
-**Pourquoi sur le même tag :** une valeur d'input n'est pas une raison de créer un tag. Zéro
-modification de protection, zéro approbation supplémentaire.
-
----
-
-## B. Cache LiteSpeed
-
-**Ce n'est pas une action de l'agent.** Le serveur n'émet pas `x-litespeed-cache` : rien ne peut être
-prouvé depuis l'extérieur. C'est un réglage d'hébergement.
-
-**Demande à transmettre :**
-
-> Produis la procédure exacte à exécuter dans hPanel pour que LiteSpeed Cache soit actif sur le site
-> UAT **et** que l'en-tête `x-litespeed-cache` apparaisse dans les réponses. Indique précisément :
-> où l'activer, quel réglage expose ou masque l'en-tête, comment vérifier sans modifier le contenu,
-> et comment revenir en arrière si l'activation change le comportement du site. Ne modifie rien
-> toi-même : je ferai le changement avec mon accès propriétaire.
-
-**Preuve attendue après activation :** deux GET consécutifs portant `x-litespeed-cache: hit`/`miss`,
-puis relecture du contrat cache dans un nouveau run.
-
-**Ne pas faire :** passer `PK_THEME_CACHE_REQUIRED=true` avant d'avoir cette preuve.
-
----
-
-## C. Cache fichier du thème
-
-La sonde a tourné, mais l'entrée existe sans être fraîche : PHP n'a pas été exécuté pendant l'audit.
-
-**Demande à transmettre :**
-
-> Ajoute une **sonde ponctuelle**, sans suppression ni purge, qui force un rendu PHP puis revérifie
-> l'entrée. Concrètement : relever la date de modification de `${hote}_fr_annonces.html`, faire un
-> GET sur `/fr/annonces/` avec une chaîne de requête unique (par exemple `?pk_audit=<horodatage>`)
-> pour éviter une réponse servie par LiteSpeed, puis rejouer la recherche `find` existante
-> (`-newermt '-30 minutes' -size +500c`) et le contrôle « les 2048 premiers octets commencent par du
-> HTML ». Ne supprime aucun fichier de cache et ne modifie aucun réglage. Rapporte le résultat même
-> s'il est négatif, et ne convertis pas un `NON VÉRIFIÉ` en `OK`.
-
-**Prérequis :** autorisation d'émettre des requêtes supplémentaires contre l'UAT (lecture seule).
-**Interdit :** effacer des entrées de cache pour « forcer » la preuve — cela détruirait la preuve au
-lieu de la produire.
-
----
-
-## D. Parcours de connexion — trancher avant de corriger
-
-C'est le seul échec réel du run. Deux hypothèses de gravité très différente.
-
-**Demande à transmettre :**
-
-> Avant toute adaptation du harnais, détermine si `pk-cookie-bar` recouvre réellement le bouton de
-> soumission de connexion. Méthode : sur la page de connexion UAT, en Chromium, évaluer
-> `document.elementFromPoint` au centre du bouton et rapporter le nœud retourné (tag, classes,
-> identifiant) ; répéter en mobile 375 px et en desktop 1440 px. Conclusion attendue, en une phrase :
-> — nœud retourné **hors** du bandeau ⇒ défaut du **harnais** (clic trop tôt) ;
-> — nœud retourné **dans** `pk-cookie-bar` ⇒ défaut **produit** : la connexion est impossible pour de
-> vrais visiteurs, donc incident, pas artefact de test.
+> Rapporte aussi `document.elementFromPoint` au centre du bouton, mais comme indice, pas comme
+> verdict : il indique qui reçoit le clic, pas si le blocage est légitime.
 >
-> Ne modifie pas le harnais avant d'avoir tranché, et ne conclus jamais « identifiants invalides »
-> à partir de ce symptôme. Aucune écriture sur l'UAT à cette étape.
+> Interdits : `force: true`, masquer ou retirer le bandeau, poser un cookie pour sauter le
+> consentement, augmenter le timeout pour contourner.
 
-**Suite selon le verdict :**
-- **harnais** → fermer/accepter le bandeau avant le clic, rejouer les 24 tests, produire un nouveau
-  commit d'audit dérivé de `c9e1413` et un **nouveau** tag `audit-…-3` (le tag `-2` reste intact).
-- **produit** → ticket produit, correctif de superposition, puis réexécution du parcours.
+**Grille de lecture :**
 
----
-
-## E. Déploiement
-
-**Rien à demander.** `deploy.yml` se déclenche sur les tags `pre-release-*` ; seuls des tags `audit-*`
-ont été créés. Aucun déploiement n'était possible ni souhaitable. Ne pas inclure cette ligne dans les
-demandes : la formuler comme une action à faire serait une erreur de cadrage.
+| Constat | Verdict |
+|---|---|
+| Consentement accessible, les deux choix fonctionnent, connexion OK ensuite | défaut du **harnais** seul |
+| Consentement absent, inatteignable ou inopérant | défaut **produit** |
+| Blocage après consentement donné | défaut **produit** |
+| Problème seulement sur une taille d'écran | défaut **produit responsive** |
 
 ---
 
-## Points de gouvernance à joindre à l'envoi
+## 3. Correction aux deux niveaux
 
-1. **Policy `uat`** : elle contient encore `audit-2.10.16-6.20.214-2` en plus de `pre-release-*`.
-   Demander le retour à `pre-release-*` seul, sauf si une réexécution sur ce tag est encore prévue —
-   dans ce cas différer le retrait jusqu'à la fin, puis le faire.
-2. **Approbation** : `uat` n'a aucun reviewer. Une réexécution sur le même tag n'ajoute donc pas de
-   barrière. Pour le run de **validation finale** (celui qui doit faire foi), passer par `uat-audit`,
-   qui porte un reviewer et une policy au tag exact.
-3. **Artefact** : demander l'extraction de `load-smoke.txt`, `load-full.txt` et `cache-ttfb.txt` de
-   l'artefact `audit-uat-16` — les conclusions d'étape ne prouvent pas l'exécution, comme l'a montré
-   le run 42799771573.
+> **Harnais, dans tous les cas** : sélection du consentement par rôle et nom accessible, les deux
+> choix testés, assertion que le dialogue est fermé, assertion que le bouton Connexion reçoit
+> effectivement le clic, assertion que la connexion aboutit. Si le dialogue réapparaît ou intercepte
+> encore, le test reste rouge.
+>
+> **Produit, si la grille du §2 le conclut** : corriger accessibilité, `z-index` et `pointer-events`
+> du bandeau, garantir que les deux choix débloquent la connexion, ajouter des tests mobile et desktop.
+
+Le harnais ne fait aujourd'hui **aucune** tentative de consentement (`audit-uat-login.mjs` : zéro
+occurrence de `cookie`, `consent`, `accept`, `dialog`). Ce défaut est acquis indépendamment du verdict
+produit.
+
+---
+
+## 4. Nouveau ref d'audit
+
+> Nouveau commit dérivé de `c9e1413`, nouveau tag `audit-2.10.16-6.20.214-3`. Ne déplace aucun tag
+> existant. Rejoue les 24 tests du harnais. Publie le SHA du commit, la liste exacte des fichiers
+> touchés, et le SHA-256 de `git diff c9e1413 <commit>`.
+
+---
+
+## 5. — voir §6, tout part dans le même run
+
+---
+
+## 6. Le run unique : tout ce qui n'a jamais tourné
+
+> Un seul run sur le tag `-3`, avec `load_test=true` :
+>
+> - **Charge** : sonde 10 req/s (10 s) d'abord, 100 req/s (30 s) seulement si la sonde tient, arrêt
+>   immédiat sur 5xx, fenêtre explicitement autorisée. Rapporte p50/p95, débit réel et taux d'erreur.
+>   Ces étapes sont en `continue-on-error` : leur résultat se lit dans l'artefact, pas dans la
+>   conclusion du run.
+> - **Cache du thème** : relever la date de l'entrée, GET sur `/fr/annonces/?pk_audit=<horodatage>`
+>   pour forcer un rendu PHP, puis rejouer le `find` existant. Aucune suppression de fichier,
+>   aucun `NON VÉRIFIÉ` converti en `OK`.
+> - **SSH réel** : création puis suppression du compte jetable, avec preuve de l'identifiant créé et
+>   de sa disparition.
+> - **LiteSpeed** : reste `NON VÉRIFIÉ` tant que l'en-tête n'est pas émis côté hébergeur.
+
+**LiteSpeed n'est pas une action de l'agent.** Demander la procédure, pas l'action :
+
+> Produis la procédure exacte à exécuter dans hPanel pour que LiteSpeed Cache soit actif sur l'UAT et
+> que `x-litespeed-cache` apparaisse. Où l'activer, quel réglage expose l'en-tête, comment vérifier,
+> comment revenir en arrière. Ne modifie rien.
+
+Le changement se fait avec l'accès propriétaire, **avant** ce run, sinon la ligne reste indéfiniment
+non vérifiée.
+
+---
+
+## 7. Seuils de release — à figer avant le run de validation
+
+> Propose un tableau de seuils versionné, par type de page : performance, SEO, accessibilité, TBT et
+> LCP maximaux, avertissements acceptés vs bloquants. Justifie chaque valeur par une référence externe
+> ou par l'historique du site, **pas par les résultats à venir**. Ces seuils seront validés par le
+> responsable produit puis appliqués tels quels.
+
+Sans cela, « non bloquant » reste une impression et le prochain run se juge à l'œil.
+
+---
+
+## 8. Tickets séparés
+
+- FR home mobile : TBT 601 ms contre 3 ms en EN/AR — l'anomalie est la **page**, pas le mobile.
+- Six avertissements de destinataire WhatsApp.
+- SEO Lighthouse 61 (EN) / 69 (FR, AR) : examiner les audits responsables avant de fixer un seuil.
+- Cache non prouvé, charge non concluante tant que non exécutée.
+
+---
+
+## 9. Run de validation finale — le seul qui autorise à calculer la note
+
+Sur `uat-audit` (reviewer) ou sur `uat` avec reviewer ajouté. Même patch, `load_test=true`.
+Tant qu'il n'a pas réussi **et** que les seuils du §7 ne sont pas satisfaits, la note reste
+**non calculable** et la release **non validée**.
+
+---
+
+## 10. Ce qu'il ne faut pas demander
+
+- **Purger le cache** pour forcer la preuve — cela détruit la preuve.
+- **`force: true` ou masquer le bandeau** — cela transforme un test rouge en test menteur.
+- **Créer un tag pour changer un input** — même tag, nouveau run.
+- **`PK_THEME_CACHE_REQUIRED=true`** avant preuve de service.
+- **La charge avant la correction du consentement** — on mesurerait un site dont un parcours est cassé.
+- **Déploiement** : `deploy.yml` ne part que sur `pre-release-*` ; il n'y a rien à faire et le formuler
+  comme une action serait une erreur de cadrage.
+- Toucher `prd`, déplacer un tag, retirer un check requis.
+
+---
+
+## 11. Ce qui change par rapport à la version 1
+
+| Bloc v1 | Devient | Raison |
+|---|---|---|
+| A — charge sur le tag `-2`, même tag | **fusionné au §6**, sur le tag `-3` | Deux runs de charge sur un hébergement mutualisé, dont un avant correction : risque doublé, mesure bruitée |
+| B — LiteSpeed | §6, inchangé | action propriétaire |
+| C — sonde cache | §6, inchangé | aucune suppression |
+| D — verdict binaire via `elementFromPoint` | **remplacé par §2**, quatre questions | `elementFromPoint` seul ne distingue pas un blocage légitime d'un défaut |
+| E — déploiement | §10 | inchangé |
