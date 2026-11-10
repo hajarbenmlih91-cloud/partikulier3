@@ -149,6 +149,51 @@ revue ni passage par `main`.
 **À trancher :** depuis quel commit le prochain tag `pre-release-*` sera-t-il créé ? La réponse doit
 être explicite, écrite, et précéder la création du tag — pas la suivre.
 
+### 10.3 Mesure de l'écart entre les deux candidats
+
+Comparaison de l'arbre de production `c9e1413` avec le tip de branche `2783e6e`, **restreinte aux
+chemins réellement déployés** (`theme/partikulier`, `plugin/`) :
+
+```text
+12 fichiers — 604 insertions, 3485 suppressions
+```
+
+| État | Fichier déployé |
+|---|---|
+| **D** | `theme/partikulier/apercu/profil-acheteur-{ar,en,fr}.html` |
+| **D** | `theme/partikulier/inc/class-buyer-profile-preview.php` |
+| **M** | `theme/partikulier/inc/class-whatsapp-verification.php` (+286) |
+| **M** | `theme/partikulier/templates/page-connexion.php`, `page-mes-annonces.php` |
+| **M** | `theme/partikulier/assets/js/main.js` (+71), `inc/class-form.php`, `functions.php` |
+| **M** | `plugin/partikulier-core/src/Domain/Automation/AutomationService.php` |
+| **A** | `theme/partikulier/tests/whatsapp-inbound-n8n-page-open.mjs` |
+
+Autres faits : `2783e6e` porte **66 commits** absents de la lignée `.214` ; les releases `.212` et `.213`
+sont des ancêtres de la branche, `.214` non.
+
+### 10.4 Recommandation
+
+**Créer le prochain `pre-release-*` depuis la lignée d'audit — `c9e1413` plus le correctif de
+consentement — jamais depuis le tip de la branche.**
+
+Motifs :
+
+1. L'UAT valide le code de `c9e1413` ; le contrôle de traçabilité du workflow refuse explicitement un
+   commit applicatif différent. Taguer `2783e6e` déploierait du code qui n'a pas été audité.
+2. Le tip **supprime l'aperçu du profil acheteur** — trois pages et sa classe PHP — alors que `.214`
+   venait de le publier. Suppression volontaire ou régression, la question doit être tranchée
+   explicitement, pas absorbée par un tag de release.
+3. `class-whatsapp-verification.php` gagne 286 lignes sur un chemin sensible, sans UAT correspondante.
+
+**Corollaire, à vérifier avant de taguer :** si le correctif de consentement est **uniquement** dans le
+harnais, alors la release déployée ne change pas et **aucun nouveau tag n'est nécessaire** — la
+conclusion porte sur `.214` tel quel. Un nouveau `pre-release-*` ne se justifie que si un fichier
+déployé change.
+
+**Préserver `c9e1413` sans attendre :** ce commit n'est atteignable que par un tag. Un `git bundle`
+vérifié et restauré (phase 0 de la V3) est la seule protection contre la disparition du code de
+production.
+
 ---
 
 ## 11. Ce qu'il ne faut pas demander
