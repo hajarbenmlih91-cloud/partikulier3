@@ -1,0 +1,223 @@
+diff --git a/.github/workflows/audit-uat.yml b/.github/workflows/audit-uat.yml
+index 2f4b918..d21547c 100644
+--- a/.github/workflows/audit-uat.yml
++++ b/.github/workflows/audit-uat.yml
+@@ -32,6 +32,9 @@ jobs:
+     runs-on: ubuntu-24.04
+     timeout-minutes: 60
+     environment:
++      # `uat` n'admet que les tags `pre-release-*` : un tag d'audit y est refusé par la
++      # politique de déploiement. Une fois l'environnement `uat-audit` créé (tags `audit-*`,
++      # approbation requise, mêmes secrets), remplacer `uat` par `uat-audit` ci-dessous.
+       name: uat
+       url: https://darkcyan-yak-151002.hostingersite.com
+     env:
+@@ -50,6 +53,24 @@ jobs:
+     steps:
+       - name: Récupérer le dépôt
+         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
++        with:
++          fetch-depth: 0
++
++      - name: Traçabilité — refuser un code applicatif différent de c9e1413
++        run: |
++          set -euo pipefail
++          APP_BASE_COMMIT='c9e141376179f1a47e567361c28e747b6e891cd0'
++          # L'audit ne vaut que si le code applicatif testé est celui du tag livré.
++          # Seuls le harnais (.github/) et ses scripts de test (theme/partikulier/tests/)
++          # peuvent différer du tag : tout autre écart invalide la preuve.
++          git cat-file -e "${APP_BASE_COMMIT}^{commit}" || {
++            echo "::error::commit de référence ${APP_BASE_COMMIT} absent du clone (fetch-depth insuffisant)"; exit 1; }
++          if ! git diff --quiet "$APP_BASE_COMMIT" HEAD -- . ':(exclude).github' ':(exclude)theme/partikulier/tests'; then
++            git diff --stat "$APP_BASE_COMMIT" HEAD -- . ':(exclude).github' ':(exclude)theme/partikulier/tests' >&2
++            echo "::error::le code applicatif diffère de ${APP_BASE_COMMIT} : audit refusé (traçabilité)."
++            exit 1
++          fi
++          echo "Code applicatif identique à ${APP_BASE_COMMIT} ; harnais audité : $(git rev-parse HEAD) — $(git log -1 --pretty=%s)"
+ 
+       - name: Vérifier la cible UAT (interdit de viser la production)
+         run: |
+@@ -169,8 +190,36 @@ jobs:
+             echo "Le compte jetable existe déjà; arrêt sans toucher au compte." >&2
+             exit 1
+           fi
+-          meta_input="{\"_pk_uat_audit_marker\":\"$marker\"}"
+-          wp user create "$login" "$email" --role=contributor --user_pass="$password" --meta_input="$meta_input" --porcelain
++          delete_created() {
++            local id="$1"
++            local now_email now_role admin_id
++            now_email="$(wp user get "$id" --field=user_email)"
++            now_role="$(wp user get "$id" --field=roles)"
++            [[ "$now_email" == "$email" && "$now_role" == contributor ]] || {
++              echo 'Compte créé mais identité hors contrat; aucune suppression effectuée.' >&2
++              exit 1
++            }
++            admin_id="$(wp user list --role=administrator --field=ID --format=ids | awk '{print $1}')"
++            [[ "$admin_id" =~ ^[0-9]+$ ]] || {
++              echo 'Aucun administrateur de réaffectation sûr; compte conservé.' >&2
++              exit 1
++            }
++            wp user delete "$id" --yes --reassign="$admin_id"
++            echo 'Compte temporaire supprimé après échec du marqueur.' >&2
++          }
++          user_id="$(wp user create "$login" "$email" --role=contributor --user_pass="$password" --porcelain)"
++          [[ "$user_id" =~ ^[0-9]+$ ]] || { echo 'WP-CLI n a pas renvoyé un ID utilisateur' >&2; exit 1; }
++          if ! wp user meta add "$user_id" _pk_uat_audit_marker "$marker" >/dev/null; then
++            delete_created "$user_id"
++            exit 1
++          fi
++          stored="$(wp user meta get "$user_id" _pk_uat_audit_marker 2>/dev/null || true)"
++          if [[ "$stored" != "$marker" ]]; then
++            delete_created "$user_id"
++            echo 'Marqueur absent après écriture.' >&2
++            exit 1
++          fi
++          printf '%s\n' "$user_id"
+           REMOTE
+           )"
+           [[ "$user_id" =~ ^[0-9]+$ ]] || { echo "WP-CLI n'a pas renvoyé un ID utilisateur" >&2; exit 1; }
+@@ -194,7 +243,31 @@ jobs:
+         continue-on-error: true
+         run: |
+           set -euo pipefail
+-          php theme/partikulier/tests/staging-cache.php "$SITE_URL" /fr/annonces/ 20 2>&1 | tee "$AUDIT_OUT_DIR/cache-ttfb.txt"
++          php_rc=0
++          php theme/partikulier/tests/staging-cache.php "$SITE_URL" /fr/annonces/ 20 2>&1 | tee "$AUDIT_OUT_DIR/cache-ttfb.txt" || php_rc=$?
++          # Second point de mesure, indépendant de LiteSpeed : le cache du thème est un cache
++          # de fichiers (wp-content/uploads/partikulier-cache). On vérifie sur le serveur que
++          # des entrées fraîches y sont écrites, ce qu'aucun en-tête rejoué ne peut prouver.
++          {
++            echo ''
++            echo '== CACHE DU THÈME, MESURÉ SUR LE SERVEUR (indépendant de LiteSpeed) =='
++            cache_root=''
++            if [ -f "$HOME/.ssh/config" ]; then
++              cache_root="$(ssh -F "$HOME/.ssh/config" partikulier-uat "cd '$WP_PATH' && wp eval 'echo trailingslashit( wp_get_upload_dir()[\"basedir\"] );'" 2>/dev/null || true)"
++            fi
++            if [ -z "$cache_root" ]; then
++              echo '  ATT  racine d uploads illisible (SSH non configuré ou WP-CLI en échec) : cache du thème non mesuré côté serveur'
++            else
++              entries="$(ssh -F "$HOME/.ssh/config" partikulier-uat "find '$cache_root/partikulier-cache' -maxdepth 1 -type f -name '*.html' -newermt '-30 minutes' -size +500c -printf '%f %s\n' 2>/dev/null | sort | head -20" || true)"
++              if [ -n "$entries" ]; then
++                echo "  OK   $(printf '%s\n' "$entries" | wc -l) entrée(s) fraîche(s) (< 30 min, > 500 o) dans partikulier-cache"
++                printf '%s\n' "$entries" | sed 's/^/       /'
++              else
++                echo '  ATT  aucune entrée fraîche dans partikulier-cache pendant le run : cache du thème non réchauffé (à recouper avec les en-têtes)'
++              fi
++            fi
++          } | tee -a "$AUDIT_OUT_DIR/cache-ttfb.txt"
++          exit "$php_rc"
+ 
+       - name: Sondage de charge prudent (10 req/s pendant 10 s)
+         id: load_smoke
+@@ -272,27 +345,51 @@ jobs:
+           admin_id="$(wp user list --role=administrator --field=ID --format=ids | awk '{print $1}')"
+           [[ "$admin_id" =~ ^[0-9]+$ ]] || { echo 'Aucun administrateur de réaffectation sûr; compte conservé.' >&2; exit 1; }
+           wp user delete "$user_id" --yes --reassign="$admin_id"
+-          REMOTE
+           echo "Compte temporaire supprimé et contenu réaffecté à un administrateur si nécessaire."
++          REMOTE
+ 
+       - name: Lighthouse mobile et desktop (Performance, Accessibilité, SEO, Best Practices)
+         id: lighthouse
+-        continue-on-error: true
+         run: |
+           set -euo pipefail
+           npm install --global lighthouse@12.8.2
+           chrome_path="$(cd theme/partikulier && node --input-type=module -e 'import { chromium } from "playwright"; console.log(chromium.executablePath())')"
++          lh_failed=0
+           run_lh() {
+             local label="$1" url="$2" form="$3"
+-            echo "Lighthouse $label — $url ($form)"
+-            lighthouse "$url" \
+-              --chrome-path="$chrome_path" \
+-              --chrome-flags='--headless --no-sandbox --disable-dev-shm-usage' \
+-              --only-categories=performance,accessibility,best-practices,seo \
+-              --form-factor="$form" \
+-              --output=json \
+-              --output-path="$AUDIT_OUT_DIR/lighthouse-$label.json" \
+-              --quiet
++            local -a native=()
++            # Lighthouse 12 lève une erreur DÉTERMINISTE (core/config/validation.js) quand
++            # formFactor vaut desktop alors que l'émulation d'écran reste celle du mobile :
++            # « Screen emulation mobile setting (true) does not match formFactor setting
++            # (desktop) ». `--preset=desktop` fixe les deux ensemble (écran + throttling).
++            if [[ "$form" == desktop ]]; then native=(--preset=desktop); fi
++            local attempt=1 ok=0 err
++            while (( attempt <= 2 )); do
++              echo "Lighthouse $label — $url ($form) — tentative $attempt/2"
++              if err="$(lighthouse "$url" \
++                --chrome-path="$chrome_path" \
++                --chrome-flags='--headless --no-sandbox --disable-dev-shm-usage' \
++                --only-categories=performance,accessibility,best-practices,seo \
++                "${native[@]}" \
++                --output=json \
++                --output-path="$AUDIT_OUT_DIR/lighthouse-$label.json" \
++                --quiet 2>&1)"; then
++                ok=1
++                break
++              fi
++              printf '%s\n' "$err" | tail -20 >&2
++              # Erreur de configuration = déterministe : la rejouer ne changerait rien.
++              if printf '%s' "$err" | grep -qi 'does not match formFactor\|must be defined as'; then
++                echo "Lighthouse $label : erreur de configuration, aucune nouvelle tentative." >&2
++                break
++              fi
++              attempt=$((attempt + 1))
++              sleep 3
++            done
++            if (( ok == 0 )); then
++              echo "Lighthouse $label en échec après $attempt tentative(s)." >&2
++              lh_failed=1
++            fi
+           }
+           run_lh fr-home-mobile "$SITE_URL/fr/" mobile
+           run_lh en-home-mobile "$SITE_URL/en/" mobile
+@@ -319,6 +416,10 @@ jobs:
+           (root / 'lighthouse-summary.md').write_text('\n'.join(lines) + '\n')
+           print('\n'.join(lines))
+           PY
++          if (( lh_failed != 0 )); then
++            echo '::error::Lighthouse en échec sur au moins un profil (voir lighthouse-*.json).'
++            exit 1
++          fi
+ 
+       - name: Résumé des contrôles et nettoyage des clés SSH
+         if: always()
+@@ -354,6 +455,11 @@ jobs:
+             echo "| Interactions JavaScript + LCP/INP | ${INTERACTIONS_RESULT:-skipped} |"
+             echo "| Lighthouse | ${LIGHTHOUSE_RESULT:-skipped} |"
+           } | tee -a "$AUDIT_OUT_DIR/README.md" || true
++          {
++            echo ''
++            echo "Harnais audité : \`$(git rev-parse HEAD)\`"
++            echo "Code applicatif de référence : \`c9e141376179f1a47e567361c28e747b6e891cd0\` (vérifié identique par git diff)"
++          } | tee -a "$GITHUB_STEP_SUMMARY" "$AUDIT_OUT_DIR/README.md" || true
+           for summary in "$AUDIT_OUT_DIR/interaction-web-vitals.md" "$AUDIT_OUT_DIR/lighthouse-summary.md"; do
+             if [ -f "$summary" ]; then cat "$summary" | tee -a "$GITHUB_STEP_SUMMARY" "$AUDIT_OUT_DIR/README.md"; fi
+           done
+diff --git a/theme/partikulier/tests/staging-cache.php b/theme/partikulier/tests/staging-cache.php
+index 24e4ec7..433f886 100644
+--- a/theme/partikulier/tests/staging-cache.php
++++ b/theme/partikulier/tests/staging-cache.php
+@@ -118,8 +118,19 @@ if ( $ls_observable ) {
+ }
+ v( $n1 > 0, "1er GET : $n1 carte(s) annonce(s) dans le HTML" );
+ v( $n2 > 0 && $n2 === $n1, "2ᵉ GET (HIT) : $n2 cartes — pas le catalogue vide du bug 6.17.24" );
+-if ( $k1 !== null || $k2 !== null ) {
+-        v( stripos( (string) $k2, 'hit' ) !== false, "cache thème : x-partikulier-cache = " . ( $k2 ?? 'absent' ) . " au 2ᵉ GET" );
++// Le cache du thème n'est lisible que dans une réponse RENDUE PAR PHP. Quand LiteSpeed
++// sert la réponse (x-litespeed-cache: hit), l'en-tête x-partikulier-cache est rejoué tel
++// qu'il a été stocké : il décrit l'état du cache à l'instant du stockage, pas maintenant.
++// C'est la doctrine du dépôt (pk-diagnostic.php : « les en-têtes X-Partikulier-Cache ne
++// prouvent plus rien pour un visiteur ») ; le workflow mesure donc ce cache côté serveur.
++$php2 = stripos( (string) $c2, 'hit' ) === false;
++if ( $php2 ) {
++        // Deux réponses rendues par PHP : le réchauffement du cache est réellement observable.
++        if ( $k1 !== null || $k2 !== null ) {
++                v( stripos( (string) $k2, 'hit' ) !== false, "cache thème : x-partikulier-cache = " . ( $k2 ?? 'absent' ) . " au 2ᵉ GET (deux réponses rendues par PHP)" );
++        }
++} elseif ( $k1 !== null || $k2 !== null ) {
++        v( false, "cache thème : x-partikulier-cache = " . ( $k2 ?? 'absent' ) . " sur la réponse rejouée par LiteSpeed — NON PROBANT (PHP n a pas tourné) ; mesuré séparément côté serveur", true );
+ }
+ 
+ // --- 2) Une fiche détail ----------------------------------------------------

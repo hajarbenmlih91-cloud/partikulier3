@@ -158,3 +158,115 @@ Le compte `pk_audit_42799771573_1` / `_2` **n'a jamais été créé** : WP-CLI v
 
 - Les **journaux bruts** des étapes sont hébergés sur `results-receiver.actions.githubusercontent.com` et l'artefact sur `productionresultssa11.blob.core.windows.net`. Les deux sont **inaccessibles depuis cet environnement** (sortie réseau restreinte) : `gh run view --log` et `gh run download` échouent en `EOF`. Le diagnostic s'appuie donc sur les **annotations du check run** (qui prouvent quelles étapes ont sorti en code 1), sur le **fichier de workflow du commit**, sur la **synopsis WP-CLI** et sur l'**historique Git** — pas sur le texte du log.
 - Aucun test n'a été mené contre l'UAT (aucune requête, aucun compte créé, aucune commande SSH).
+- **Mise à jour du 10 novembre** : le propriétaire du dépôt a fourni les extraits de journal
+  (erreur Lighthouse, bilan du contrat de cache). Les causes des trois échecs sont donc
+  établies sur pièces au § 8, et cette limite ne porte plus que sur l'accès direct de
+  l'agent aux fichiers de log.
+
+---
+
+## 8. Mise à jour du 10 novembre — preuves de log et correctif révisé (v2)
+
+Les deux points laissés ouverts au § 2 sont désormais tranchés par les extraits de
+journal fournis par le propriétaire du dépôt.
+
+### 8.1 Lighthouse — cause établie, erreur déterministe
+
+Les quatre profils mobiles s'exécutent, puis le profil desktop échoue **immédiatement**
+sur un conflit de réglages : `mobile setting (true)` contre `formFactor (desktop)`.
+
+Message exact dans Lighthouse 12.8.2 (paquet npm inspecté, fichier
+`core/config/validation.js`, ligne 181) :
+
+```
+Screen emulation mobile setting (${settings.screenEmulation.mobile}) does not match
+formFactor setting (${settings.formFactor}).
+```
+
+Cette validation s'exécute **avant** tout appel réseau. Ce n'est donc ni un délai, ni un
+problème Chromium, ni une instabilité : relancer ne changerait rien. Le workflow passait
+`--form-factor=desktop` sans fixer l'émulation d'écran, qui reste celle du mobile.
+
+**Correctif retenu** : `--preset=desktop` (fixe ensemble écran, *form factor*, agent
+utilisateur et *throttling*), et **au plus 2 tentatives**, désactivées dès que l'erreur
+est reconnue comme une erreur de configuration.
+
+### 8.2 Cache — un seul KO, et il n'est pas une panne de cache
+
+Relevé du fichier `cache-ttfb.txt` : **8 OK, 1 KO, 1 à regarder**. Le seul KO est
+`X-Partikulier-Cache: MISS` reçu sur une réponse que LiteSpeed annonce `HIT`.
+Latences : **p50 268 ms**, **p95 361 ms** — le seuil de 800 ms n'est donc pas en cause
+et **n'est pas modifié**.
+
+Le dépôt documente déjà ce piège, dans son propre diagnostic
+(`theme/partikulier/pk-diagnostic.php`, ligne 1974) :
+
+> « LiteSpeed Cache actif : c'est lui qui sert le HTML aux visiteurs ; les en-têtes
+> X-Partikulier-Cache ne prouvent plus rien pour un visiteur »
+
+Quand LiteSpeed sert une réponse stockée, PHP ne s'exécute pas : l'en-tête du thème est
+**rejoué** tel qu'il a été enregistré (au moment où le cache du thème était froid). Il
+décrit le passé, pas l'état courant. Le test en faisait pourtant une preuve de `MISS`.
+
+**Correctif retenu** :
+
+- si la réponse du 2ᵉ GET a été rendue par PHP, l'en-tête reste une preuve et le
+  réchauffement est jugé normalement (KO si `MISS`) ;
+- si LiteSpeed a servi la réponse, l'en-tête n'est plus probant : **`ATT`**, avec la
+  mention explicite, au lieu d'un faux KO ;
+- **second point de mesure, indépendant de LiteSpeed** : le cache du thème est un cache
+  de fichiers (`wp-content/uploads/partikulier-cache`). Le workflow vérifie désormais
+  **sur le serveur** (SSH déjà configuré par l'étape 7) la présence d'entrées fraîches
+  (`find -newermt '-30 minutes' -size +500c`), et les journalise dans `cache-ttfb.txt`.
+
+Le seuil TTFB, les contrôles de cartes et d'`og:image` sont inchangés.
+
+### 8.3 Nettoyage — message conditionné à la suppression réelle
+
+Confirmé : l'`echo` « Compte temporaire supprimé… » était **hors** du bloc distant, donc
+imprimé même lorsque le distant répondait `Compte temporaire absent; aucun nettoyage
+requis.` Le message est déplacé **à l'intérieur** du bloc, après la suppression effective.
+
+### 8.4 Liens WhatsApp — constat distinct, non bloquant
+
+Vérifié dans le code du test (`theme/partikulier/tests/audit-uat.mjs`) :
+
+| Ligne | Effet |
+|---|---|
+| 158 | `record('ux', …, 'warning')` — sévérité **avertissement** |
+| 265 | `status = … 'error' ? 'FAIL' : 'PASS_WITH_FINDINGS'` |
+| 272 | `process.exitCode = 1` seulement si `status === 'FAIL'` |
+
+Un avertissement ne rougit donc jamais le run : rien n'était masqué, et aucun « vert »
+n'a été acheté en l'ignorant. La PR **#220** est `CLOSED` (non fusionnée) depuis le
+2026-11-10T10:17:42Z ; sa fermeture **ne tranche pas** la décision produit (faut-il un
+numéro public, ou un point d'entrée centralisé ?). À traiter comme un sujet distinct.
+
+### 8.5 Correctif révisé — `docs/audit/fix-harness-audit-uat-c9e1413-v2.patch`
+
+Remplace `fix-seed-audit-uat-c9e1413.patch` (dont il reprend le correctif de `seed`).
+Deux fichiers, **aucune ligne de code applicatif** :
+
+| Fichier | Changement |
+|---|---|
+| `.github/workflows/audit-uat.yml` | garde de traçabilité, `fetch-depth: 0`, `seed` corrigé, `cleanup` conditionné, Lighthouse `--preset=desktop` + 2 tentatives + échec non masqué, mesure serveur du cache, commits tracés dans le résumé |
+| `theme/partikulier/tests/staging-cache.php` | en-tête rejoué par LiteSpeed traité en `ATT`, plus en KO |
+
+**Validations** (sans exécution distante) :
+
+- `git apply --check` : OK sur un clone vierge de `c9e1413` ;
+- YAML : 20 étapes (19 + la garde), parse PyYAML sans erreur ;
+- `bash -n` : tous les blocs `run` valides ;
+- `staging-cache.php` : syntaxe validée par `php-parser` 3 ;
+- `continue-on-error` **conservé** sur `seed` et `cache` (sinon les étapes suivantes,
+  dépourvues de `if:`, seraient sautées) ; le verdict lit toujours `outcome`.
+
+**Déjà présent, donc inchangé** : la concurrence est **déjà** définie sur le tag
+(`concurrency: group: audit-uat-partikulier`, `cancel-in-progress: false`). Rien à ajouter.
+
+**Non fait, volontairement** : aucun tag, aucune protection modifiée, aucun environnement
+créé, aucun run relancé. L'`environment` reste `uat` ; basculer vers `uat-audit` exige que
+cet environnement existe d'abord (tags `audit-*`, approbation, mêmes secrets), sans quoi
+le job démarrerait sans secrets. Le tag `pre-release-2.10.16-6.20.214` reste intact, et
+son YAML immuable ne peut pas porter ces corrections : le relancer tel quel reproduit
+les trois échecs.
