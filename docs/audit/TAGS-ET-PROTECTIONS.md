@@ -54,13 +54,26 @@ refs/tags/audit-2.10.16-6.20.214-2       → 5aa70f44
 
 Bypass vide. Aucune règle `creation` : elle bloquerait les releases futures.
 
-### Niveau 3 — branches, là où le risque est réel
+### Niveau 3 — branches, là où le risque est réel *(révisé le 10/11)*
 
 | Motif | Règle | Effet |
 |---|---|---|
-| `refs/heads/*` | `deletion` | empêche la suppression accidentelle d'une branche portant du travail unique — n'entrave aucun `push` |
+| les 5 branches à ≥ 100 commits | `deletion` | coût nul : personne n'a besoin de les supprimer |
 | `refs/heads/main` | déjà couvert | `deletion` + `non_fast_forward` + PR + checks (attention au bypass `RepositoryRole: always` de `main-2`) |
-| `refs/heads/arena/*`, `refs/heads/feat/*` | `non_fast_forward` | **facultatif** : bloque le rebase sur ces branches ; à réserver à celles qui portent ≥ 100 commits |
+| `refs/heads/*` | `deletion` — **différé** | voir la réserve ci-dessous |
+
+**Réserve acceptée.** Une règle `deletion` sur `refs/heads/*` n'est **pas** sans nuisance : elle empêche
+aussi la suppression après fusion, le nettoyage des branches de test et la suppression d'une branche
+créée par erreur. Sur un dépôt à 223 branches, elle figerait le problème de nettoyage au lieu de le
+résoudre.
+
+Séquence retenue : protéger d'abord les branches à travail unique, inventorier les 123 branches
+(travail réel / doublon / expérimentation), nettoyer les branches fusionnées, **puis** décider d'une
+règle globale. Une protection globale provisoire reste possible pendant l'inventaire, à condition
+d'avoir une date de fin et un critère de sortie écrits.
+
+Facteur atténuant à intégrer : GitHub permet la restauration d'une branche récemment supprimée, ce qui
+réduit l'urgence d'une règle globale sans la supprimer.
 
 **Ne pas** appliquer `non_fast_forward` à `refs/heads/*` : cela casserait toute réécriture d'historique
 sur les branches de travail, y compris les rebases légitimes.
@@ -70,9 +83,14 @@ sur les branches de travail, y compris les rebases légitimes.
 | Objet | Tag ? | Pourquoi |
 |---|---|---|
 | `c9e1413` (production `.214`) | **oui** — `archive/pre-release-2.10.16-6.20.214` | seule référence ; le tag doit être annoté avec le SHA du bundle |
-| Les 5 branches à ≥ 100 commits | **non** | un tag sur un travail non fusionné le fige sans le rendre utilisable ; préférer `deletion` + bundle |
+| Les 5 branches à ≥ 100 commits | **facultatif** | un tag **est** exploitable (`git switch -c restauration <tag>`, worktree, cherry-pick) : c'est une ancre de restauration valable. Il n'intègre pas le travail et ne remplace pas une branche active — protection de branche + bundle restent la référence, le tag vient en seconde ancre |
 | `main` | non | déjà ancrée par une branche protégée |
 | Les 212 tags ancrés par une branche | non | aucun besoin de protection contre la perte |
+
+**Correction du 10/11.** La formulation « un tag sur un travail non fusionné le fige sans le rendre
+utilisable » était trop forte. Un tag est un **point de restauration exploitable** ; il est simplement
+un mauvais **référentiel de travail** : invisible dans `git branch`, il ne reçoit ni PR ni commits, et
+il est facile à oublier. C'est ce que l'annotation et la documentation doivent compenser.
 
 ## 5. Correctif annexe
 
