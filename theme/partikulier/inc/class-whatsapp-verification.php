@@ -295,7 +295,10 @@ class Partikulier_WhatsApp_Verification {
 		}
 		$auth_key = self::auth_transient_key( $code );
 		$auth = get_transient( $auth_key );
-		self::ci_debug( 'MARK code=' . (string) $code . ' phone=' . (string) $sender_phone . ' auth_is_array=' . ( is_array( $auth ) ? '1' : '0' ) . ' kind=' . ( is_array( $auth ) ? ( $auth['kind'] ?? 'none' ) : 'noauth' ) . ' auth=' . ( is_array( $auth ) ? substr( wp_json_encode( $auth ), 0, 120 ) : '-' ) );
+		$transient_option = '_transient_' . $auth_key;
+		$transient_value  = get_option( $transient_option );
+		$transient_timeout= get_option( '_transient_timeout_' . $auth_key );
+		self::ci_debug( 'MARK code=' . (string) $code . ' phone=' . (string) $sender_phone . ' auth_is_array=' . ( is_array( $auth ) ? '1' : '0' ) . ' kind=' . ( is_array( $auth ) ? ( $auth['kind'] ?? 'none' ) : 'noauth' ) . ' option=' . ( is_string( $transient_value ) ? 'set' : 'missing' ) . ' timeout=' . (string) $transient_timeout . ' now=' . time() );
 		if ( is_array( $auth ) && ( $auth['kind'] ?? '' ) === 'auth' ) {
 			if ( ! hash_equals( (string) ( $auth['phone'] ?? '' ), $sender_phone ) ) {
 				self::ci_debug( 'MARK phone-mismatch auth_phone=' . (string) ( $auth['phone'] ?? '' ) );
