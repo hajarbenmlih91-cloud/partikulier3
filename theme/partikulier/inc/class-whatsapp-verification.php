@@ -21,7 +21,7 @@ class Partikulier_WhatsApp_Verification {
 		const AUTH_PENDING_TTL = 900;
 
 		private static function ci_debug( $msg ) {
-			@file_put_contents( '/tmp/ci-wp-debug.log', ( string ) $msg . "\n", FILE_APPEND | LOCK_EX );
+			@error_log( 'WP-DEBUG ' . ( string ) $msg );
 		}
 
 		public static function init() {
