@@ -252,7 +252,7 @@ jobs:
           echo "::add-mask::$N8N_OWNER_PASSWORD"
 
           PK_EPHEMERAL_SECRET="$EPHEMERAL_SECRET" WP_SERVICE_IP="$WP_CONTAINER_IP" SEED_JSON="$SEED_JSON" GITHUB_RUN_ID="$GITHUB_RUN_ID" N8N_BASE="$N8N_BASE" N8N_OWNER_PASSWORD="$N8N_OWNER_PASSWORD" N8N_CONTAINER="$N8N_CONTAINER" OUT_DIR="$OUT_DIR" python3 - <<'PY'
-          import base64, hashlib, hmac, http.cookiejar, json, os, pathlib, time, urllib.error, urllib.parse, urllib.request, uuid
+          import base64, hashlib, hmac, http.cookiejar, json, os, pathlib, subprocess, time, urllib.error, urllib.parse, urllib.request, uuid
 
           secret = os.environ['PK_EPHEMERAL_SECRET']
           key = base64.b64decode(secret, validate=True)
@@ -262,6 +262,7 @@ jobs:
           run_id = os.environ['GITHUB_RUN_ID']
           n8n_base = os.environ['N8N_BASE'].rstrip('/')
           password = os.environ['N8N_OWNER_PASSWORD']
+          n8n_container = os.environ['N8N_CONTAINER']
           out_dir = pathlib.Path(os.environ['OUT_DIR'])
           ts = str(int(time.time()))
 
@@ -388,77 +389,113 @@ jobs:
           workflow = {
               "id": wf_id,
               "name": "Simulation Meta WA + WP",
+              "active": False,
               "nodes": nodes,
               "connections": connections,
-              "settings": {},
-              "active": False,
-              "versionId": str(uuid.uuid4()),
+              "settings": {"executionOrder": "v1"},
+              "staticData": None,
+              "pinData": {},
+              "tags": [],
           }
+          wf_path = pathlib.Path(os.environ['RUNNER_TEMP']) / 'wa-sim-workflow.json'
+          wf_path.write_text(json.dumps(workflow, separators=(',', ':')), encoding='utf-8')
+          wf_path.chmod(0o600)
 
           cj = http.cookiejar.CookieJar()
-          opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
+          opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar := cj))
 
           def api(method, path, body=None):
               data = None if body is None else json.dumps(body).encode()
               req = urllib.request.Request(n8n_base + path, data=data, method=method, headers={"Content-Type": "application/json", "Accept": "application/json"})
               try:
                   with opener.open(req, timeout=60) as resp:
-                      return resp.status, json.loads(resp.read().decode())
+                      raw = resp.read().decode('utf-8', 'replace')
+                      return resp.status, (json.loads(raw) if raw else {})
               except urllib.error.HTTPError as e:
-                  return e.code, json.loads(e.read().decode() or '{}')
+                  raw = e.read().decode('utf-8', 'replace')
+                  print(f"HTTP {e.code} on {method} {path}: {raw[:300]}")
+                  try:
+                      return e.code, json.loads(raw or '{}')
+                  except Exception:
+                      return e.code, {'raw': raw[:200]}
+
+          def unflatten(value):
+              if not isinstance(value, list) or not value:
+                  return value
+              first = value[0]
+              if not isinstance(first, (dict, list)) and not (isinstance(first, str) and first[:1] in ('{', '[')):
+                  return value
+              cache = {}
+              def deref(idx, active):
+                  if idx in cache: return cache[idx]
+                  if idx in active or idx < 0 or idx >= len(value): return None
+                  raw_val = value[idx]
+                  try: dec = json.loads(raw_val) if isinstance(raw_val, str) and raw_val[:1] in ('{', '[') else raw_val
+                  except Exception: dec = raw_val
+                  res = expand(dec, active | {idx})
+                  cache[idx] = res
+                  return res
+              def expand(item, active):
+                  if isinstance(item, dict): return {k: expand(v, active) for k, v in item.items()}
+                  if isinstance(item, list): return [expand(v, active) for v in item]
+                  if isinstance(item, str) and item.isdigit() and int(item) < len(value):
+                      return deref(int(item), active)
+                  return item
+              return deref(0, set())
+
+          def find(value, key):
+              if isinstance(value, dict):
+                  if key in value: return value[key]
+                  for v in value.values():
+                      r = find(v, key)
+                      if r is not None: return r
+              elif isinstance(value, list):
+                  for v in value:
+                      r = find(v, key)
+                      if r is not None: return r
+              elif isinstance(value, str) and value[:1] in ('{', '['):
+                  try: return find(unflatten(json.loads(value)), key)
+                  except Exception: pass
+              return None
 
           st_setup, _ = api("POST", "/rest/owner/setup", {"email": "ci-n8n@example.invalid", "firstName": "CI", "lastName": "Sim", "password": password})
           assert st_setup in (200, 400, 403), f"Owner setup failed: {st_setup}"
           st_login, _ = api("POST", "/rest/login", {"emailOrLdapLoginId": "ci-n8n@example.invalid", "password": password})
           assert st_login == 200, f"Login failed: {st_login}"
 
-          st_wf, created = api("POST", "/rest/workflows", workflow)
-          assert st_wf in (200, 201), f"Workflow create failed: {st_wf}"
-          real_wf_id = created.get("data", {}).get("id") or created.get("id") or wf_id
-          st_run, run_resp = api("POST", f"/rest/workflows/{real_wf_id}/run", {"workflowData": {**workflow, "id": real_wf_id}})
+          subprocess.run(['docker', 'cp', str(wf_path), f'{n8n_container}:/tmp/wa-sim-workflow.json'], check=True)
+          subprocess.run(['docker', 'exec', '-u', '0:0', n8n_container, 'chown', 'node:node', '/tmp/wa-sim-workflow.json'], check=True)
+          subprocess.run(['docker', 'exec', '-u', 'node', '-e', 'N8N_DISABLED_MODULES=mcp-registry', n8n_container, 'n8n', 'import:workflow', '--input=/tmp/wa-sim-workflow.json'], check=True)
+
+          st_get, _ = api("GET", f"/rest/workflows/{wf_id}")
+          if st_get != 200:
+              st_wf, created = api("POST", "/rest/workflows", {
+                  "name": workflow["name"],
+                  "nodes": workflow["nodes"],
+                  "connections": workflow["connections"],
+                  "settings": workflow["settings"],
+              })
+              assert st_wf in (200, 201), f"Workflow create failed: {st_wf}"
+              wf_id = find(created, 'id')
+              assert wf_id, "missing created workflow id"
+
+          st_run, run_resp = api("POST", f"/rest/workflows/{wf_id}/run", {"triggerToStartFrom": {"name": "Manual Trigger"}})
           assert st_run in (200, 201), f"Workflow run failed: {st_run}"
-          exec_id = run_resp.get("data", {}).get("executionId") or run_resp.get("executionId")
+          exec_id = find(run_resp, 'executionId')
+          assert exec_id, "missing executionId"
 
-          exec_data = None
+          execution = {}
           for _ in range(90):
-              st_ex, ex = api("GET", f"/rest/executions/{exec_id}?includeData=true")
-              data_obj = ex.get("data", ex)
-              if data_obj.get("finished") is True or data_obj.get("status") in ("success", "error", "crashed"):
-                  exec_data = data_obj
-                  break
+              st_ex, execution = api("GET", f"/rest/executions/{exec_id}?includeData=true")
+              if st_ex == 200:
+                  finished = find(execution, 'finished')
+                  status = find(execution, 'status')
+                  if finished is True or status in ('success', 'error', 'crashed', 'canceled'):
+                      break
               time.sleep(1)
-          assert exec_data and exec_data.get("status") == "success", f"Execution failed: {exec_data.get('status') if exec_data else None}"
 
-          raw_data = exec_data.get("data")
-          if isinstance(raw_data, str):
-              raw_data = json.loads(raw_data)
-          run_data = None
-          if isinstance(raw_data, dict):
-              run_data = raw_data.get("resultData", {}).get("runData")
-          elif isinstance(raw_data, list):
-              # n8n flatted JSON encoding
-              def deref(v):
-                  if isinstance(v, str) and v.isdigit():
-                      return raw_data[int(v)]
-                  return v
-              def resolve_obj(obj, depth=0):
-                  if depth > 6:
-                      return obj
-                  obj = deref(obj)
-                  if isinstance(obj, dict):
-                      return {k: resolve_obj(v, depth + 1) for k, v in obj.items()}
-                  if isinstance(obj, list):
-                      return [resolve_obj(v, depth + 1) for v in obj]
-                  return obj
-              root = raw_data[0]
-              if isinstance(root, dict) and "resultData" in root:
-                  rd_idx = int(root["resultData"]) if isinstance(root["resultData"], str) else None
-                  rd_obj = raw_data[rd_idx] if rd_idx is not None else root["resultData"]
-                  run_idx = int(rd_obj["runData"]) if isinstance(rd_obj.get("runData"), str) else None
-                  run_raw = raw_data[run_idx] if run_idx is not None else rd_obj.get("runData")
-                  run_data = resolve_obj(run_raw)
-
-          assert isinstance(run_data, dict), "Unable to extract n8n runData"
+          run_data = find(execution, 'runData')
+          assert isinstance(run_data, dict), f"Unable to extract n8n runData; status={find(execution, 'status')}"
 
           def get_node_result(node_name):
               entries = run_data.get(node_name, [])

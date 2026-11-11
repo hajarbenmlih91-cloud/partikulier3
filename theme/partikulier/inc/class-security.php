@@ -1,14 +1,6 @@
 <?php
 /**
- * Module : protections HTTP, sécurité de l'authentification et réduction de l’exposition WordPress.
- *
- * Implémente :
- *   1. Protection anti-énumération utilisateurs (REST /wp/v2/users, archives auteurs et erreurs de login unifiées).
- *   2. Rate Limiter anti-brute-force conforme CGNAT (clé composite IP + compte visé).
- *   3. Authentification transparente par numéro de téléphone portable marocain (+212, 06, 07).
- *   4. Masquage facultatif de l'écran wp-login.php; wp-admin reste protégé par l'authentification WordPress.
- *   5. En-têtes HTTP défensifs (CSP, HSTS, X-Frame-Options, Permissions-Policy).
- *
+ * Protections HTTP, sécurité d'authentification et réduction de l'exposition WordPress.
  * @package Partikulier
  */
 
@@ -18,15 +10,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class Partikulier_Security {
 
-	/**
-	 * Ferme XML-RPC hors production. pep.ma conserve le filtre actuel.
-	 * L'UAT et la recette reçoivent un refus HTTP avant le serveur IXR.
-	 */
+	/** Ferme XML-RPC hors production (pep.ma conserve le filtre actuel). */
 	public static function refuse_xmlrpc_outside_production() {
-		if ( ! defined( 'XMLRPC_REQUEST' ) || ! XMLRPC_REQUEST ) {
-			return;
-		}
-		if ( self::is_production_xmlrpc_host() ) {
+		if ( ! defined( 'XMLRPC_REQUEST' ) || ! XMLRPC_REQUEST || self::is_production_xmlrpc_host() ) {
 			return;
 		}
 		if ( ! headers_sent() ) {
@@ -37,11 +23,6 @@ class Partikulier_Security {
 		exit;
 	}
 
-	/**
-	 * Vrai seulement pour le domaine public de production.
-	 *
-	 * @return bool
-	 */
 	private static function is_production_xmlrpc_host() {
 		$hosts = array();
 		if ( isset( $_SERVER['HTTP_HOST'] ) ) {
@@ -316,14 +297,7 @@ class Partikulier_Security {
 		exit;
 	}
 
-	/**
-	 * /wp/v2/media n'est pas une vitrine. Un visiteur non connecté reçoit 401.
-	 *
-	 * @param mixed           $result  Réponse déjà décidée.
-	 * @param WP_REST_Server  $server  Serveur REST.
-	 * @param WP_REST_Request $request Requête.
-	 * @return mixed
-	 */
+	/** /wp/v2/media n'est pas une vitrine. Un visiteur non connecté reçoit 401. */
 	public static function close_public_media_list( $result, $server, $request ) {
 		unset( $server );
 		if ( is_user_logged_in() || ! $request instanceof WP_REST_Request ) {
@@ -333,25 +307,10 @@ class Partikulier_Security {
 		if ( ! preg_match( '#^/wp/v2/media(?:/|$)#', $route ) ) {
 			return $result;
 		}
-		return new WP_Error(
-			'rest_not_logged_in',
-			__( 'Authentification requise.', 'partikulier' ),
-			array( 'status' => 401 )
-		);
+		return new WP_Error( 'rest_not_logged_in', __( 'Authentification requise.', 'partikulier' ), array( 'status' => 401 ) );
 	}
 
-	/**
-	 * En-têtes défensifs compatibles avec les ressources actuelles du thème.
-	 */
-
-	/**
-	 * La redirection de langue part avant send_headers. On repose les en-têtes
-	 * juste avant Location, sinon / annonce la version PHP.
-	 *
-	 * @param string $location Cible.
-	 * @param int    $status   Code.
-	 * @return string
-	 */
+	/** Pose les en-têtes défensifs avant Location sur redirection de langue. */
 	public static function keep_public_headers_on_redirect( $location, $status = 302 ) {
 		unset( $status );
 		self::send_public_headers();
