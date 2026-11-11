@@ -25,7 +25,9 @@ const record = (testId, category, ok, detail, severity = 'error') => {
 };
 
 const clearGates = async (page) => {
+  await page.waitForLoadState('load').catch(() => {});
   const gate = page.locator('[data-pk-lang-gate]');
+  await gate.waitFor({ state: 'visible', timeout: 1000 }).catch(() => {});
   if (await gate.isVisible().catch(() => false)) {
     const closeBtn = gate.locator('[data-pk-lang-dismiss]');
     if (await closeBtn.count()) {
@@ -34,6 +36,7 @@ const clearGates = async (page) => {
     }
   }
   const cookieBar = page.locator('[data-pk-cookie]');
+  await cookieBar.waitFor({ state: 'visible', timeout: 1000 }).catch(() => {});
   if (await cookieBar.isVisible().catch(() => false)) {
     const refuseBtn = cookieBar.locator('[data-no]');
     if (await refuseBtn.count()) {
@@ -637,6 +640,8 @@ try {
 
   record('E2E-JS-ERRORS-001', 'runtime', pageErrors.length === 0, pageErrors.join(' | ') || 'none');
   record('E2E-HTTP-5XX-001', 'runtime', server5xx.length === 0, server5xx.join(' | ') || 'none');
+} catch (err) {
+  record('E2E-UNEXPECTED-ERR-001', 'runtime', false, err?.stack || err?.message || String(err));
 } finally {
   await browser.close();
 }
