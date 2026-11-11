@@ -1,0 +1,301 @@
+name: Diagnostic UAT lecture seule et reproduction Lighthouse
+
+on:
+  push:
+    branches:
+      - audit/uat-diag-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: audit-uat-diag-v1
+  cancel-in-progress: false
+
+jobs:
+  uat-diag:
+    name: Diagnostic WP-CLI lecture seule et 3x Lighthouse fr-home-mobile
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    environment:
+      name: uat
+      url: https://darkcyan-yak-151002.hostingersite.com
+    env:
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+      SSH_PORT: ${{ secrets.SSH_PORT }}
+      SSH_USER: ${{ secrets.SSH_USER }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+      WP_PATH: ${{ secrets.WP_PATH }}
+      SITE_URL: https://darkcyan-yak-151002.hostingersite.com
+      OUT_DIR: ${{ github.workspace }}/uat-diag-artifacts
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout audited baseline
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Verify only diagnostic workflow differs beyond 4f14acd9
+        run: |
+          set -euo pipefail
+          APP_BASE='c9e141376179f1a47e567361c28e747b6e891cd0'
+          ALLOWED=(
+            '.github/workflows/audit-uat.yml'
+            'theme/partikulier/tests/staging-cache.php'
+            'theme/partikulier/tests/audit-uat-login.mjs'
+            '.github/workflows/audit-uat-diag-v1.yml'
+          )
+          while IFS= read -r f; do
+            [ -z "$f" ] && continue
+            ok=0
+            for a in "${ALLOWED[@]}"; do [ "$f" = "$a" ] && ok=1 && break; done
+            [ "$ok" -eq 1 ] || { echo "::error::unexpected diff file: $f"; exit 1; }
+          done <<< "$(git diff --name-only "$APP_BASE" HEAD)"
+          mkdir -p "$OUT_DIR"
+
+      - name: Read-only SSH and WP-CLI diagnostic on UAT
+        id: wpdiag
+        run: |
+          set -euo pipefail
+          [[ "$SSH_HOST" =~ ^[A-Za-z0-9][A-Za-z0-9.-]*$ ]]
+          [[ "$SSH_USER" =~ ^[A-Za-z0-9._-]+$ ]]
+          [[ "$SSH_PORT" =~ ^[1-9][0-9]{0,4}$ ]] && (( SSH_PORT <= 65535 ))
+          [[ "$WP_PATH" == /* && "$WP_PATH" != *$'\n'* ]]
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
+          chmod 600 "$HOME/.ssh/id_ed25519"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 644 "$HOME/.ssh/known_hosts"
+          cat > "$HOME/.ssh/config" <<CFG
+          Host partikulier-uat
+            HostName $SSH_HOST
+            Port $SSH_PORT
+            User $SSH_USER
+            IdentityFile $HOME/.ssh/id_ed25519
+            UserKnownHostsFile $HOME/.ssh/known_hosts
+            StrictHostKeyChecking yes
+            IdentitiesOnly yes
+            BatchMode yes
+            ConnectTimeout 15
+          CFG
+          chmod 600 "$HOME/.ssh/config"
+
+          ssh -F "$HOME/.ssh/config" partikulier-uat 'bash -s' -- "$WP_PATH" <<'REMOTE' > "$OUT_DIR/wp-diag.txt" 2>&1
+          set -euo pipefail
+          wp_path="$1"
+          cd "$wp_path"
+
+          echo "=== 1. IDENTITE WORDPRESS UAT ==="
+          home="$(wp option get home --quiet)"
+          siteurl="$(wp option get siteurl --quiet)"
+          echo "home=$home"
+          echo "siteurl=$siteurl"
+          test "${home%/}" = "https://darkcyan-yak-151002.hostingersite.com"
+          wp eval 'echo "active_theme=" . wp_get_theme()->get_stylesheet() . "\n";' --quiet
+          wp eval 'foreach(["WP_ENVIRONMENT_TYPE","WP_CACHE","DISABLE_WP_CRON","ALTERNATE_WP_CRON","WP_DEBUG","WP_DEBUG_LOG"] as $c){echo $c."=".(defined($c)?var_export(constant($c),true):"UNDEF")."\n";}' --quiet
+
+          echo ""
+          echo "=== 2. WHATSAPP & TEMPLATES (SANS EXPOSER DE NUMERO) ==="
+          wp eval '
+          $raw = class_exists("Partikulier_Settings") ? (string) Partikulier_Settings::get("buyer_whatsapp_number") : "";
+          $digits = preg_replace("/\D+/", "", $raw);
+          echo "Partikulier_Settings::buyer_whatsapp_number set=" . ($digits !== "" ? "yes" : "no") . " digits_len=" . strlen($digits) . "\n";
+          $theme_mods = get_theme_mods();
+          if (is_array($theme_mods)) {
+              $wa_mods = array_filter(array_keys($theme_mods), fn($k) => stripos((string)$k, "whatsapp") !== false);
+              foreach ($wa_mods as $k) {
+                  $d = preg_replace("/\D+/", "", (string)$theme_mods[$k]);
+                  echo "theme_mod[$k] set=" . ($d !== "" ? "yes" : "no") . " len=" . strlen($d) . "\n";
+              }
+          }
+          $lead_set = get_option("pk_lead_settings", []);
+          echo "pk_lead_settings_present=" . (is_array($lead_set) && !empty($lead_set) ? "yes" : "no") . "\n";
+          $n8n = get_option("pk_n8n_settings", []);
+          echo "pk_n8n_settings hmac_mode=" . ($n8n["hmac_mode"] ?? "unset") . " active_key_id=" . ($n8n["active_key_id"] ?? "unset") . " webhook_set=" . (!empty($n8n["n8n_webhook_url"]) ? "yes" : "no") . "\n";
+          $posts = get_posts(["post_type" => "properties", "post_status" => "publish", "numberposts" => 1]);
+          if ($posts) {
+              $pid = $posts[0]->ID;
+              $url = class_exists("Partikulier_Buyer_Qualification") ? Partikulier_Buyer_Qualification::contact_url($pid) : "";
+              $parts = $url ? parse_url($url) : [];
+              $path_digits = preg_replace("/\D+/", "", (string)($parts["path"] ?? ""));
+              echo "sample_post_id=$pid contact_url_present=" . ($url !== "" ? "yes" : "no") . " host=" . ($parts["host"] ?? "none") . " recipient_digits_len=" . strlen($path_digits) . "\n";
+              echo "single_template=" . locate_template(["single-properties.php", "estatik4/front/property/single.php", "templates/single.php", "single.php"]) . "\n";
+          } else {
+              echo "sample_post_id=none\n";
+          }
+          ' --quiet
+
+          echo ""
+          echo "=== 3. LITESPEED CACHE, REST & HEADER ANOMALY ==="
+          wp plugin list --status=active --fields=name,version --format=table
+          wp eval '
+          global $wpdb;
+          $rows = $wpdb->get_results("SELECT option_name, option_value FROM {$wpdb->options} WHERE option_name LIKE \"litespeed.conf.%\" ORDER BY option_name");
+          foreach ($rows as $r) {
+              $n = $r->option_name;
+              if (preg_match("/key|token|secret|pass|hash|api|cloud/i", $n)) {
+                  echo "$n=[REDACTED len=" . strlen((string)$r->option_value) . "]\n";
+              } else {
+                  echo "$n=" . $r->option_value . "\n";
+              }
+          }
+          $pkc = get_option("pk_cache_settings", null);
+          echo "pk_cache_settings=" . json_encode($pkc) . "\n";
+          ' --quiet
+          echo "--- .htaccess cache/rewrite excerpts ---"
+          if [ -f "$wp_path/.htaccess" ]; then
+              grep -niE 'LiteSpeed|LSCACHE|Cache|Rewrite|partikulier|health|wp-json' "$wp_path/.htaccess" | head -n 60 || true
+          fi
+          echo "--- partikulier-cache dir ---"
+          if [ -d "$wp_path/wp-content/uploads/partikulier-cache" ]; then
+              ls -la "$wp_path/wp-content/uploads/partikulier-cache" | head -n 30
+          else
+              echo "partikulier-cache missing"
+          fi
+
+          echo ""
+          echo "=== 4. WP-CRON & MAIL CONFIG ==="
+          wp cron event list --fields=hook,next_run_gmt,recurrence --format=table | head -n 40
+          wp eval '
+          $ae = (string) get_option("admin_email", "");
+          $dom = strstr($ae, "@") ?: "none";
+          echo "admin_email_domain=$dom\n";
+          echo "mailserver_url_set=" . (get_option("mailserver_url", "") ? "yes" : "no") . "\n";
+          foreach (["wp_mail_smtp", "fluentmail-settings", "post_smtp_options"] as $opt) {
+              $v = get_option($opt, null);
+              if ($v !== null) {
+                  echo "mail_opt[$opt] present=yes keys=" . (is_array($v) ? implode(",", array_keys($v)) : gettype($v)) . "\n";
+              }
+          }
+          ' --quiet
+
+          echo ""
+          echo "=== 5. INVENTAIRE & INTEGRITE SAUVEGARDES SSH ==="
+          df -h "$HOME" "$wp_path"
+          du -sh "$wp_path/wp-content/uploads" "$wp_path/wp-content/plugins/partikulier-core" "$wp_path/wp-content/themes/partikulier" 2>/dev/null || true
+          echo "--- Home/backups tree ---"
+          find "$HOME" -maxdepth 3 \( -name '*backup*' -o -name '*.tar.gz' -o -name '*.sql*' -o -name '*.zip' \) -ls 2>/dev/null | head -n 50 || true
+          if [ -d "$HOME/backups/partikulier" ]; then
+              ls -lht "$HOME/backups/partikulier"
+              latest="$(ls -1t "$HOME/backups/partikulier" | head -n 1)"
+              if [ -n "$latest" ]; then
+                  echo "--- Latest backup dir: $latest ---"
+                  ls -lh "$HOME/backups/partikulier/$latest"
+                  if [ -f "$HOME/backups/partikulier/$latest/database.sql.gz" ]; then
+                      gzip -t "$HOME/backups/partikulier/$latest/database.sql.gz" && echo "db_gzip_test=OK"
+                      echo "db_create_table_count=$(zcat "$HOME/backups/partikulier/$latest/database.sql.gz" | grep -c '^CREATE TABLE' || true)"
+                      echo "db_first_tables=$(zcat "$HOME/backups/partikulier/$latest/database.sql.gz" | grep '^CREATE TABLE' | head -n 10 | tr '\n' ';')"
+                  fi
+                  for t in partikulier-core.tar.gz partikulier.tar.gz; do
+                      if [ -f "$HOME/backups/partikulier/$latest/$t" ]; then
+                          tar -tzf "$HOME/backups/partikulier/$latest/$t" >/dev/null && echo "$t tar_test=OK entries=$(tar -tzf "$HOME/backups/partikulier/$latest/$t" | wc -l)"
+                      fi
+                  done
+              fi
+          else
+              echo "NO ~/backups/partikulier dir"
+          fi
+          REMOTE
+          cat "$OUT_DIR/wp-diag.txt"
+
+          echo "=== 6. HTTP HEADERS CHECK FROM RUNNER (/health & /fr/contact/) ===" | tee -a "$OUT_DIR/wp-diag.txt"
+          for ep in "/wp-json/partikulier/v1/health" "/fr/contact/"; do
+            for n in 1 2; do
+              echo "--- GET $ep (#$n) ---" | tee -a "$OUT_DIR/wp-diag.txt"
+              curl -s -D - -o /dev/null --max-time 20 "${SITE_URL}${ep}" | grep -iE '^(HTTP/|cache-control|x-litespeed|x-partikulier|x-hcdn|cf-|age|pragma|expires|vary|set-cookie)' | tee -a "$OUT_DIR/wp-diag.txt" || true
+            done
+          done
+
+      - name: Setup Node & Playwright Chromium for 3x Lighthouse reproduction
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+
+      - name: Install Playwright Chromium & Lighthouse 12.8.2
+        run: |
+          set -euo pipefail
+          cd theme/partikulier
+          npm ci
+          npx playwright install --with-deps chromium
+          npm install --global lighthouse@12.8.2
+
+      - name: Run 3x Lighthouse fr-home-mobile + 1x en-home-mobile & analyze traces
+        run: |
+          set -euo pipefail
+          chrome_path="$(cd theme/partikulier && node --input-type=module -e 'import { chromium } from "playwright"; console.log(chromium.executablePath())')"
+          for run in 1 2 3; do
+            echo "Running fr-home-mobile #$run..."
+            lighthouse "$SITE_URL/fr/" \
+              --chrome-path="$chrome_path" \
+              --chrome-flags='--headless --no-sandbox --disable-dev-shm-usage' \
+              --only-categories=performance,accessibility,best-practices,seo \
+              --output=json \
+              --output-path="$OUT_DIR/lighthouse-fr-home-mobile-${run}.json" \
+              --quiet
+            sleep 3
+          done
+          echo "Running en-home-mobile..."
+          lighthouse "$SITE_URL/en/" \
+            --chrome-path="$chrome_path" \
+            --chrome-flags='--headless --no-sandbox --disable-dev-shm-usage' \
+            --only-categories=performance,accessibility,best-practices,seo \
+            --output=json \
+            --output-path="$OUT_DIR/lighthouse-en-home-mobile.json" \
+            --quiet
+
+          python3 - "$OUT_DIR" <<'PY'
+          import json, pathlib, sys
+          out = pathlib.Path(sys.argv[1])
+          lines = ['# Analyse Lighthouse 3x fr-home-mobile + en-home-mobile', '']
+          lines.append('| Run | Perf | A11y | BP | SEO | benchmarkIndex | LCP ms | TBT ms | FCP ms | TTFB ms | CLS |')
+          lines.append('|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|')
+          for name in ['fr-home-mobile-1', 'fr-home-mobile-2', 'fr-home-mobile-3', 'en-home-mobile']:
+              d = json.loads((out / f'lighthouse-{name}.json').read_text())
+              c = d.get('categories', {})
+              a = d.get('audits', {})
+              sc = lambda k: round((c.get(k, {}).get('score') or 0) * 100)
+              mv = lambda k: round(a.get(k, {}).get('numericValue') or 0)
+              cls = round(a.get('cumulative-layout-shift', {}).get('numericValue') or 0, 4)
+              bi = round((d.get('environment') or {}).get('benchmarkIndex') or 0)
+              lines.append(f"| {name} | {sc('performance')} | {sc('accessibility')} | {sc('best-practices')} | {sc('seo')} | {bi} | {mv('largest-contentful-paint')} | {mv('total-blocking-time')} | {mv('first-contentful-paint')} | {mv('server-response-time')} | {cls} |")
+
+          lines.append('')
+          for name in ['fr-home-mobile-1', 'fr-home-mobile-2', 'fr-home-mobile-3']:
+              d = json.loads((out / f'lighthouse-{name}.json').read_text())
+              a = d.get('audits', {})
+              lines.append(f'## Détails `{name}`')
+              lcp_el = (a.get('largest-contentful-paint-element', {}).get('details') or {}).get('items', [])
+              lines.append(f'- **LCP element:** `{json.dumps(lcp_el[:1], ensure_ascii=False)[:300]}`')
+              mt = (a.get('mainthread-work-breakdown', {}).get('details') or {}).get('items', [])
+              lines.append('- **Main-thread breakdown (top 6):** ' + '; '.join(f"{x.get('groupLabel')}: {round(x.get('duration',0))} ms" for x in mt[:6]))
+              bu = (a.get('bootup-time', {}).get('details') or {}).get('items', [])
+              lines.append('- **Script bootup-time (top 6):** ' + '; '.join(f"{x.get('url','').split('?')[0][-55:]}: total={round(x.get('total',0))}ms eval={round(x.get('scripting',0))}ms" for x in bu[:6]))
+              lt = (a.get('long-tasks', {}).get('details') or {}).get('items', [])
+              lines.append('- **Long tasks (top 5):** ' + '; '.join(f"{x.get('url','').split('?')[0][-45:]} ({round(x.get('duration',0))} ms)" for x in lt[:5]))
+              rb = (a.get('render-blocking-resources', {}).get('details') or {}).get('items', [])
+              lines.append('- **Render-blocking (top 5):** ' + '; '.join(f"{x.get('url','').split('?')[0][-45:]} ({round(x.get('wastedMs',0))} ms)" for x in rb[:5]))
+              lines.append('')
+
+          en = json.loads((out / 'lighthouse-en-home-mobile.json').read_text())
+          lt_items = (en.get('audits', {}).get('link-text', {}).get('details') or {}).get('items', [])
+          lines.append('## Détails `en-home-mobile` SEO `link-text` & `/favicon.ico`')
+          lines.append(f'- `link-text` score: `{en.get("audits", {}).get("link-text", {}).get("score")}` | items: `{json.dumps(lt_items, ensure_ascii=False)[:500]}`')
+          errors_in_console = (en.get('audits', {}).get('errors-in-console', {}).get('details') or {}).get('items', [])
+          lines.append(f'- `errors-in-console`: `{json.dumps(errors_in_console, ensure_ascii=False)[:500]}`')
+
+          (out / 'lighthouse-analysis.md').write_text('\n'.join(lines) + '\n')
+          print('\n'.join(lines))
+          PY
+
+      - name: Upload UAT diagnostic artifacts
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: uat-diag-v1-report
+          path: ${{ github.workspace }}/uat-diag-artifacts
+          retention-days: 14
