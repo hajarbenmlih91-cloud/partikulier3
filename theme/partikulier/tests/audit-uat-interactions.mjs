@@ -463,7 +463,7 @@ try {
       await heartBtn.click();
       await uatPage.waitForTimeout(400);
       const favReq = uatPage.waitForResponse(
-        r => r.url().includes('/admin-ajax.php') && r.request().postData()?.includes('action=pk_favorites_list'),
+        r => r.url().includes('/admin-ajax.php') && r.request().postData()?.includes('pk_favorites_list'),
         { timeout: 15000 }
       );
       await uatPage.goto(`${BASE}/fr/favoris/?pk_audit=219`, { waitUntil: 'domcontentloaded', timeout: 30000 });
@@ -530,9 +530,9 @@ try {
     const rstLink = uatPage.locator('.pk-auth-card [data-auth-item="reset-form"]').first();
     if (await rstLink.count()) {
       await rstLink.click();
-      const rstOn = await uatPage.locator('.es-auth__reset-form').evaluate(el => !el.classList.contains('es-auth__item--hidden'));
+      const rstOn = await uatPage.locator('.pk-auth-card .es-auth__reset-form').first().evaluate(el => !el.classList.contains('es-auth__item--hidden'));
       await uatPage.locator('.pk-auth-card [data-auth-item="login-form"]').first().click();
-      const loginOn = await uatPage.locator('.es-auth__login-form').evaluate(el => !el.classList.contains('es-auth__item--hidden'));
+      const loginOn = await uatPage.locator('.pk-auth-card .es-auth__login-form').first().evaluate(el => !el.classList.contains('es-auth__item--hidden'));
       authToggleOk = rstOn && loginOn;
     }
     record('interaction', 'UAT /fr/connexion/ auth screen toggles work', authToggleOk, `authToggleOk=${authToggleOk}`);

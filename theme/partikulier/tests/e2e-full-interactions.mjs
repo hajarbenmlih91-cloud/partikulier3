@@ -321,18 +321,19 @@ try {
   const closedState = await page.evaluate(() => ({
     hasClosedClass: !!document.querySelector('.pk-single-closed'),
     hasSoldBanner: !!document.querySelector('.pk-contact-sold'),
-    waCount: document.querySelectorAll('a.pk-btn-whatsapp').length,
+    directWaCount: document.querySelectorAll('.pk-buyer-contact-flow a.pk-btn-whatsapp, .pk-wa-sticky a.pk-btn-whatsapp').length,
+    similarWaCount: document.querySelectorAll('.pk-closure-similar a.pk-btn-whatsapp').length,
     hasSimilarBlock: !!document.querySelector('.pk-closure-similar, .pk-single-related'),
   }));
   record('E2E-SINGLE-CLOSED-001', 'single',
-    closedState.hasClosedClass && closedState.hasSoldBanner && closedState.waCount === 0,
+    closedState.hasClosedClass && closedState.hasSoldBanner && closedState.directWaCount === 0 && closedState.similarWaCount >= 1,
     JSON.stringify(closedState));
 
   // =========================================================================
   // 4. Favorites Page (/fr/favoris/ + /en/favoris/)
   // =========================================================================
   const favListPromise = page.waitForResponse(
-    (res) => res.url().includes('/admin-ajax.php') && res.request().postData()?.includes('action=pk_favorites_list'),
+    (res) => res.url().includes('/admin-ajax.php') && res.request().postData()?.includes('pk_favorites_list'),
     { timeout: 15000 }
   );
   await page.goto(fixture.pages.favorisFr, { waitUntil: 'domcontentloaded', timeout: 30000 });
@@ -514,12 +515,12 @@ try {
   let authToggleOk = false;
   if (await resetLink.count()) {
     await resetLink.click();
-    const resetVisible = await page.locator('.es-auth__reset-form').evaluate((el) => !el.classList.contains('es-auth__item--hidden'));
+    const resetVisible = await page.locator('.pk-auth-card .es-auth__reset-form').first().evaluate((el) => !el.classList.contains('es-auth__item--hidden'));
     const backLogin = page.locator('.pk-auth-card [data-auth-item="login-form"]').first();
     if (await backLogin.count()) {
       await backLogin.click();
     }
-    const loginVisible = await page.locator('.es-auth__login-form').evaluate((el) => !el.classList.contains('es-auth__item--hidden'));
+    const loginVisible = await page.locator('.pk-auth-card .es-auth__login-form').first().evaluate((el) => !el.classList.contains('es-auth__item--hidden'));
     authToggleOk = resetVisible && loginVisible;
   }
   record('E2E-CONNEXION-TOGGLES-001', 'auth', authToggleOk, `authToggleOk=${authToggleOk}`);
