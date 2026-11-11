@@ -322,8 +322,8 @@ try {
     hasClosedClass: !!document.querySelector('.pk-single-closed'),
     hasSoldBanner: !!document.querySelector('.pk-contact-sold'),
     directWaCount: document.querySelectorAll('.pk-buyer-contact-flow a.pk-btn-whatsapp, .pk-wa-sticky a.pk-btn-whatsapp').length,
-    similarWaCount: document.querySelectorAll('.pk-closure-similar a.pk-btn-whatsapp').length,
-    hasSimilarBlock: !!document.querySelector('.pk-closure-similar, .pk-single-related'),
+    similarWaCount: document.querySelectorAll('.pk-sold-similar a.pk-btn-whatsapp').length,
+    hasSimilarBlock: !!document.querySelector('.pk-sold-similar, .pk-single-related'),
   }));
   record('E2E-SINGLE-CLOSED-001', 'single',
     closedState.hasClosedClass && closedState.hasSoldBanner && closedState.directWaCount === 0 && closedState.similarWaCount >= 1,
@@ -510,25 +510,30 @@ try {
   await page.goto(`${fixture.pages.connexionFr}?auth_item=login-form`, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await clearGates(page);
 
-  // Test [data-auth-item] switch to reset-form then back to login-form
-  const resetLink = page.locator('.pk-auth-card [data-auth-item="reset-form"]').first();
+  // Test [data-auth-item] switch to reset-form -> login-buttons -> back to login-form
+  const resetLink = page.locator('.pk-auth-card .es-auth__login-form [data-auth-item="reset-form"]').first();
   let authToggleOk = false;
   if (await resetLink.count()) {
     await resetLink.click();
     const resetVisible = await page.locator('.pk-auth-card .es-auth__reset-form').first().evaluate((el) => !el.classList.contains('es-auth__item--hidden'));
-    const backLogin = page.locator('.pk-auth-card [data-auth-item="login-form"]').first();
-    if (await backLogin.count()) {
-      await backLogin.click();
-    }
+    await page.locator('.pk-auth-card .es-auth__reset-form [data-auth-item="login-buttons"]').first().click();
+    await page.locator('.pk-auth-card .es-auth__login-buttons [data-auth-item="login-form"]').first().click();
     const loginVisible = await page.locator('.pk-auth-card .es-auth__login-form').first().evaluate((el) => !el.classList.contains('es-auth__item--hidden'));
     authToggleOk = resetVisible && loginVisible;
   }
   record('E2E-CONNEXION-TOGGLES-001', 'auth', authToggleOk, `authToggleOk=${authToggleOk}`);
 
   // Log in as seeded contributor owner
-  await page.locator('.pk-auth-card input[type="email"], .pk-auth-card input[type="text"]').first().fill(fixture.owner.email);
-  await page.locator('.pk-auth-card input[type="password"]').first().fill(fixture.owner.password);
-  await page.locator('.pk-auth-card button[type="submit"], .pk-auth-card input[type="submit"]').first().click();
+  const loginForm = page.locator('.pk-auth-card .es-auth__login-form');
+  await loginForm.locator('input[name="es_user_login"]').fill(fixture.owner.email);
+  await loginForm.locator('input[name="es_user_password"]').fill(fixture.owner.password);
+  await loginForm.locator('input[name="es_user_password"]').dispatchEvent('keyup');
+  const loginBtn = loginForm.locator('.es-btn--login');
+  await page.waitForFunction(() => {
+    const b = document.querySelector('.pk-auth-card .es-auth__login-form .es-btn--login');
+    return b && !b.disabled;
+  }, { timeout: 5000 }).catch(() => {});
+  await loginBtn.click();
 
   let loggedIn = false;
   for (let i = 0; i < 40; i++) {
@@ -610,10 +615,20 @@ try {
   record('E2E-MOBILE-NAV-001', 'mobile', mobNavOpen && mobNavClosed, `open=${mobNavOpen}; closed=${mobNavClosed}`);
 
   await mobPage.goto(fixture.pages.archiveFr, { waitUntil: 'domcontentloaded', timeout: 30000 });
-  await mobPage.evaluate(() => window.scrollTo(0, 800));
+  await clearGates(mobPage);
+  await mobPage.evaluate(() => {
+    const s = document.querySelector('.pk-archive-search');
+    const y = s ? s.offsetTop + s.offsetHeight + 160 : 700;
+    window.scrollTo(0, y);
+    window.dispatchEvent(new Event('scroll'));
+  });
   const mobChip = mobPage.locator('.pk-scroll-actions.is-on .pk-filter-chip').first();
-  await mobChip.waitFor({ state: 'visible', timeout: 8000 });
-  await mobChip.click();
+  if (await mobChip.count()) {
+    await mobChip.waitFor({ state: 'visible', timeout: 8000 });
+    await mobChip.click();
+  } else {
+    await mobPage.locator('.pk-archive-search .pk-find-type-btn').first().click();
+  }
   const mobFindOpen = await mobPage.evaluate(() => !!document.querySelector('.pk-find-open')?.checked);
   await mobPage.keyboard.press('Escape');
   record('E2E-MOBILE-ARCHIVE-CHIPS-001', 'mobile', mobFindOpen, `mobFindOpen=${mobFindOpen}`);

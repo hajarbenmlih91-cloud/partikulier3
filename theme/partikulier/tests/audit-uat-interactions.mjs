@@ -2,6 +2,7 @@ import { chromium } from 'playwright';
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
+import { fileURLToPath } from 'node:url';
 
 const BASE = (process.env.PK_BASE || '').replace(/\/$/, '');
 const OUT = process.env.AUDIT_OUT_DIR || 'audit-artifacts';
@@ -492,8 +493,8 @@ try {
           const arBadges = await uatPage.evaluate(() =>
             Array.from(document.querySelectorAll('.pk-card-badge, .pk-badge')).slice(0, 6).map(el => el.textContent?.trim() || '')
           );
-          const hasMissingAr = arBadges.some(t => /للإيجار|للبيع/.test(t));
-          record('finding', 'UAT AR archive badges inspected', !hasMissingAr,
+          const hasFallbackBadge = arBadges.some(t => /À louer|À vendre|For Rent|For Sale/i.test(t));
+          record('finding', 'UAT AR archive badges localized', arBadges.length > 0 && !hasFallbackBadge,
             `ar sample badges=${JSON.stringify(arBadges)}`, 'warning');
         }
         const firstCardUrl = await uatPage.locator('.pk-card a[href]').first().getAttribute('href');
@@ -527,11 +528,12 @@ try {
     await uatPage.goto(`${BASE}/fr/connexion/?auth_item=login-form&pk_audit=219`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await clearUatModals(uatPage);
     let authToggleOk = false;
-    const rstLink = uatPage.locator('.pk-auth-card [data-auth-item="reset-form"]').first();
+    const rstLink = uatPage.locator('.pk-auth-card .es-auth__login-form [data-auth-item="reset-form"]').first();
     if (await rstLink.count()) {
       await rstLink.click();
       const rstOn = await uatPage.locator('.pk-auth-card .es-auth__reset-form').first().evaluate(el => !el.classList.contains('es-auth__item--hidden'));
-      await uatPage.locator('.pk-auth-card [data-auth-item="login-form"]').first().click();
+      await uatPage.locator('.pk-auth-card .es-auth__reset-form [data-auth-item="login-buttons"]').first().click();
+      await uatPage.locator('.pk-auth-card .es-auth__login-buttons [data-auth-item="login-form"]').first().click();
       const loginOn = await uatPage.locator('.pk-auth-card .es-auth__login-form').first().evaluate(el => !el.classList.contains('es-auth__item--hidden'));
       authToggleOk = rstOn && loginOn;
     }
@@ -567,7 +569,8 @@ try {
     await uatPage.locator('#bu-places [data-dir="1"]').click();
     await uatPage.locator('#bu-amenagement [data-val="ouvert"]').click();
     await uatPage.fill('#bu-prix', '2400000');
-    await uatPage.setInputFiles('#photos-input', path.resolve('assets/img/pep-logo.png'));
+    const logoPath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../assets/img/pep-logo.png');
+    await uatPage.setInputFiles('#photos-input', logoPath);
     await uatPage.locator('#photos-liste > *').first().waitFor({ state: 'visible', timeout: 10000 });
     await uatPage.locator('#next').click();
     const s3 = await uatPage.locator('#page-3').evaluate(el => !el.hidden);
