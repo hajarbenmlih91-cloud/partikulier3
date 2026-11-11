@@ -88,6 +88,9 @@ try {
         update_post_meta((int) $pid, '_pk_owner_phone', class_exists('Partikulier_Crypto') ? Partikulier_Crypto::encrypt_phone($ownerPhone) : $ownerPhone);
         $props[] = (int) $pid;
     }
+    if (class_exists('\Partikulier\Core\Integration\ListingSynchronizer')) {
+        (new \Partikulier\Core\Integration\ListingSynchronizer())->flush();
+    }
 
     $leadOpt = is_array($origLeadSettings) ? $origLeadSettings : [];
     $leadOpt['limits'] = array_merge((array) ($leadOpt['limits'] ?? []), [
@@ -306,6 +309,9 @@ try {
     }
     foreach ($createdPosts as $pid) {
         wp_delete_post($pid, true);
+    }
+    if (class_exists('\Partikulier\Core\Integration\ListingSynchronizer')) {
+        (new \Partikulier\Core\Integration\ListingSynchronizer())->flush();
     }
     foreach ($createdUsers as $uid) {
         wp_delete_user($uid);
