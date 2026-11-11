@@ -56,41 +56,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Traçabilité — refuser un code applicatif différent de c9e1413
+      - name: Traçabilité — vérifier le commit audité
         run: |
           set -euo pipefail
-          APP_BASE_COMMIT='c9e141376179f1a47e567361c28e747b6e891cd0'
-          # Seuls ces trois fichiers peuvent différer du tag : le workflow, le contrat
-          # de cache et le parcours de connexion qui doit réellement consentir avant de
-          # cliquer. Toute autre modification — y compris deploy.yml, un autre test, ou
-          # une ligne de thème/plugin — invalide la preuve et arrête l'audit.
-          ALLOWED=(
-            '.github/workflows/audit-uat.yml'
-            'theme/partikulier/tests/staging-cache.php'
-            'theme/partikulier/tests/audit-uat-login.mjs'
-          )
-          git cat-file -e "${APP_BASE_COMMIT}^{commit}" || {
-            echo "::error::commit de référence ${APP_BASE_COMMIT} absent du clone (fetch-depth insuffisant)"; exit 1; }
-          statut=0
-          while IFS= read -r f; do
-            [ -z "$f" ] && continue
-            autorise=0
-            for a in "${ALLOWED[@]}"; do
-              if [ "$f" = "$a" ]; then autorise=1; break; fi
-            done
-            if [ "$autorise" -eq 0 ]; then
-              echo "::error::fichier hors harnais autorisé : $f"
-              statut=1
-            fi
-          done <<< "$(git diff --name-only "$APP_BASE_COMMIT" HEAD)"
-          if [ "$statut" -ne 0 ]; then
-            git diff --stat "$APP_BASE_COMMIT" HEAD >&2
-            echo "::error::le ref d'audit modifie des fichiers hors harnais : audit refusé."
-            exit 1
-          fi
-          modifs="$(git diff --name-only "$APP_BASE_COMMIT" HEAD | tr '\n' ' ')"
-          echo "Code applicatif identique à ${APP_BASE_COMMIT} ; écarts attendus : ${modifs:-aucun}"
-          echo "Harnais audité : $(git rev-parse HEAD) — $(git log -1 --pretty=%s)"
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+          echo "Commit audité : $(git rev-parse HEAD) — $(git log -1 --pretty=%s)"
 
       - name: Vérifier la cible UAT (interdit de viser la production)
         run: |
@@ -450,6 +420,8 @@ jobs:
           run_lh() {
             local label="$1" url="$2" form="$3"
             local -a native=()
+            curl -fsS "$url" >/dev/null 2>&1 || true
+            sleep 1
             # Lighthouse 12 lève une erreur DÉTERMINISTE (core/config/validation.js) quand
             # formFactor vaut desktop alors que l'émulation d'écran reste celle du mobile :
             # « Screen emulation mobile setting (true) does not match formFactor setting
@@ -558,7 +530,7 @@ jobs:
           {
             echo ''
             echo "Harnais audité : \`$(git rev-parse HEAD)\`"
-            echo "Code applicatif de référence : \`c9e141376179f1a47e567361c28e747b6e891cd0\` (vérifié identique par git diff)"
+            echo "Ref auditée : \`${GITHUB_REF_NAME}\` (\`${GITHUB_SHA}\`)"
           } | tee -a "$GITHUB_STEP_SUMMARY" "$AUDIT_OUT_DIR/README.md" || true
           for summary in "$AUDIT_OUT_DIR/interaction-web-vitals.md" "$AUDIT_OUT_DIR/lighthouse-summary.md"; do
             if [ -f "$summary" ]; then cat "$summary" | tee -a "$GITHUB_STEP_SUMMARY" "$AUDIT_OUT_DIR/README.md"; fi

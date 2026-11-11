@@ -20,6 +20,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 <meta charset="<?php bloginfo( 'charset' ); ?>">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#111111">
+<?php if ( ! function_exists( 'has_site_icon' ) || ! has_site_icon() ) : ?>
+<link rel="icon" href="<?php echo esc_url( PARTIKULIER_URI . '/assets/img/favicon.svg' ); ?>" type="image/svg+xml">
+<link rel="icon" href="<?php echo esc_url( PARTIKULIER_URI . '/assets/img/favicon.ico' ); ?>" sizes="32x32">
+<?php endif; ?>
 <link rel="profile" href="https://gmpg.org/xfn/11">
 <?php wp_head(); ?>
 <style id="pk-desktop-nav-red">

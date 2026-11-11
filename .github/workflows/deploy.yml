@@ -306,8 +306,16 @@ jobs:
       - name: Vérifications WordPress post-déploiement
         env:
           WP_PATH: ${{ secrets.WP_PATH }}
+          PK_TEST_WA_NUMBER: ${{ secrets.PK_TEST_WA_NUMBER }}
         run: |
           set -euo pipefail
+          wa_digits=""
+          if [ "$DEPLOY_ENVIRONMENT" = "uat" ] && [ -n "${PK_TEST_WA_NUMBER:-}" ]; then
+            echo "::add-mask::$PK_TEST_WA_NUMBER"
+            wa_digits="${PK_TEST_WA_NUMBER//[^0-9]/}"
+            echo "::add-mask::$wa_digits"
+            [[ "$wa_digits" =~ ^[0-9]{8,15}$ ]] || { echo "PK_TEST_WA_NUMBER invalide (8-15 chiffres requis)" >&2; exit 1; }
+          fi
           ssh partikulier-hostinger 'bash -s' -- "$WP_PATH" "$DEPLOY_ENVIRONMENT" <<'REMOTE'
           set -euo pipefail
           WP_PATH="$1"
@@ -323,7 +331,6 @@ jobs:
           wp eval 'if ( "devpartikulier" === (string) get_option( "blogname" ) ) { update_option( "blogname", "Partikulier" ); }'
           if [ "$DEPLOY_ENV" = "uat" ]; then
             wp eval-file wp-content/themes/partikulier/cli/demo-seed.php
-            wp eval-file wp-content/themes/partikulier/cli/uat-whatsapp.php
             wp eval-file wp-content/themes/partikulier/cli/uat-editorial.php
             printf 'User-agent: *\nDisallow: /\n' > "$WP_PATH/robots.txt"
             echo "ORIGIN robots.txt:"
@@ -333,6 +340,9 @@ jobs:
           wp eval 'if ( class_exists( "Partikulier_Cache" ) ) { Partikulier_Cache::purge_all(); }' || true
           wp rewrite flush || true
           REMOTE
+          if [ "$DEPLOY_ENVIRONMENT" = "uat" ] && [ -n "$wa_digits" ]; then
+            ssh partikulier-hostinger "cd $(printf '%q' "$WP_PATH") && PK_TEST_WA_NUMBER=$(printf '%q' "$wa_digits") wp eval-file wp-content/themes/partikulier/cli/uat-whatsapp.php"
+          fi
 
       - name: Désactiver le mode maintenance
         if: always()

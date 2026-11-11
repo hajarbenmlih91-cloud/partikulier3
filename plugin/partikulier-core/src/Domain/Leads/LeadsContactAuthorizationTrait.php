@@ -110,14 +110,37 @@ trait LeadsContactAuthorizationTrait
 				}
 				return new \WP_REST_Response(['allowed' => false, 'reason' => 'intermediary_refused', 'message' => $msg, 'lead_id' => $lead_id], 200);
 			}
-			// R3 : seuils éditables via LeadSettings (source de vérité WP) — fenêtre stockée en h/j, convertie en s pour SQL
+			// Idempotence exacte par provider_message_id avant toute vérification de quota.
+			$seen = (int) $must($wpdb->get_var($wpdb->prepare("SELECT id FROM {$messages} WHERE provider_message_id = %s FOR UPDATE", $provider_message_id)));
+			if ( $seen ) {
+				$wpdb->query('ROLLBACK');
+				return new \WP_REST_Response(['allowed' => false, 'reason' => 'duplicate_message'], 200);
+			}
+
+			// Rejeu sur une annonce déjà divulguée : ne consomme ni max_24h, ni max_7d, ni daily_limit.
+			$existing = $must($wpdb->get_var($wpdb->prepare("SELECT id FROM {$disclosures} WHERE lead_id = %d AND property_id = %d FOR UPDATE", $lead_id, $property_id)));
+			if ( $existing ) {
+				$must($wpdb->insert($messages, ['provider_message_id' => $provider_message_id, 'lead_id' => $lead_id, 'direction' => 'inbound', 'message_type' => 'property_interest', 'created_at' => $now]));
+				$must($wpdb->insert($interests, [
+					'lead_id'             => $lead_id,
+					'property_id'         => $property_id,
+					'reference_code'      => self::reference_for($property_id),
+					'property_snapshot'   => wp_json_encode(self::property_snapshot($property_id)),
+					'provider_message_id' => $provider_message_id,
+					'created_at'          => $now,
+				]));
+				$must($wpdb->query('COMMIT'));
+				return new \WP_REST_Response(array_merge(self::contact_response($property_id, true), ['lead_id' => $lead_id]), 200);
+			}
+
+			// R3 : seuils éditables via LeadSettings (source de vérité WP) — comptés sur les divulgations effectives.
 			$max24  = class_exists(LeadSettings::class) ? (int) LeadSettings::get_limit('max_24h') : 2;
 			$win24h = class_exists(LeadSettings::class) ? (int) LeadSettings::get_limit('window_24h') : 24;
 			$max7d  = class_exists(LeadSettings::class) ? (int) LeadSettings::get_limit('max_7d') : 5;
 			$win7dj = class_exists(LeadSettings::class) ? (int) LeadSettings::get_limit('window_7d') : 7;
 			$win24  = max(1, $win24h) * 3600;
 			$win7d  = max(1, $win7dj) * 86400;
-			$count24 = (int) $must($wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$interests} WHERE lead_id = %d AND created_at >= DATE_SUB(%s, INTERVAL %d SECOND)", $lead_id, $now, $win24)));
+			$count24 = (int) $must($wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$disclosures} WHERE lead_id = %d AND sent_at >= DATE_SUB(%s, INTERVAL %d SECOND)", $lead_id, $now, $win24)));
 			if ( $count24 >= $max24 ) {
 				$wpdb->query('ROLLBACK');
 				$wpdb->query('START TRANSACTION');
@@ -131,15 +154,11 @@ trait LeadsContactAuthorizationTrait
 				]);
 				$wpdb->query('COMMIT');
 				$lang = self::detect_lang_for_lead($wa_id, $property_id, $message_text);
-				if ( class_exists(LeadSettings::class) ) {
-					$msg = LeadSettings::get_message('manual_review', $lang);
-				} else {
-					$msg = $lang === 'ar' ? 'لأسباب أمنية، سيتم إرسال جهة الاتصال يدويا. شكرا لصبركم.' : 'Pour des raisons de sécurité, l’envoi du contact se fera manuellement. Merci de votre patience.';
-				}
+				$msg  = class_exists(LeadSettings::class) ? LeadSettings::get_message('manual_review', $lang) : ($lang === 'ar' ? 'لأسباب أمنية، سيتم إرسال جهة الاتصال يدويا. شكرا لصبركم.' : 'Pour des raisons de sécurité, l’envoi du contact se fera manuellement. Merci de votre patience.');
 				return new \WP_REST_Response(['allowed' => false, 'reason' => 'manual_review', 'message' => $msg, 'lead_id' => $lead_id, 'limit' => '24h_3contacts'], 200);
 			}
-			// R3 : plafond hebdo éditable — on compte uniquement les envois automatiques (sans _manual)
-			$count7d = (int) $must($wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$interests} WHERE lead_id = %d AND created_at >= DATE_SUB(%s, INTERVAL %d SECOND) AND provider_message_id NOT LIKE %s", $lead_id, $now, $win7d, '%_manual%')));
+			// R3 : plafond hebdo éditable — compté sur les divulgations automatiques effectives.
+			$count7d = (int) $must($wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$disclosures} WHERE lead_id = %d AND sent_at >= DATE_SUB(%s, INTERVAL %d SECOND)", $lead_id, $now, $win7d)));
 			if ( $count7d >= $max7d ) {
 				$wpdb->query('ROLLBACK');
 				$wpdb->query('START TRANSACTION');
@@ -153,19 +172,10 @@ trait LeadsContactAuthorizationTrait
 				]);
 				$wpdb->query('COMMIT');
 				$lang = self::detect_lang_for_lead($wa_id, $property_id, $message_text);
-				if ( class_exists(LeadSettings::class) ) {
-					$msg = LeadSettings::get_message('manual_review', $lang);
-				} else {
-					$msg = $lang === 'ar' ? 'لأسباب أمنية، سيتم إرسال جهة الاتصال يدويا. شكرا لصبركم.' : 'Pour des raisons de sécurité, l’envoi du contact se fera manuellement. Merci de votre patience.';
-				}
+				$msg  = class_exists(LeadSettings::class) ? LeadSettings::get_message('manual_review', $lang) : ($lang === 'ar' ? 'لأسباب أمنية، سيتم إرسال جهة الاتصال يدويا. شكرا لصبركم.' : 'Pour des raisons de sécurité, l’envoi du contact se fera manuellement. Merci de votre patience.');
 				return new \WP_REST_Response(['allowed' => false, 'reason' => 'manual_review', 'message' => $msg, 'lead_id' => $lead_id, 'limit' => '7d_5contacts'], 200);
 			}
 
-			$seen = (int) $must($wpdb->get_var($wpdb->prepare("SELECT id FROM {$messages} WHERE provider_message_id = %s FOR UPDATE", $provider_message_id)));
-			if ( $seen ) {
-				$wpdb->query('ROLLBACK');
-				return new \WP_REST_Response(['allowed' => false, 'reason' => 'duplicate_message'], 200);
-			}
 			$must($wpdb->insert($messages, ['provider_message_id' => $provider_message_id, 'lead_id' => $lead_id, 'direction' => 'inbound', 'message_type' => 'property_interest', 'created_at' => $now]));
 			$must($wpdb->insert($interests, [
 				'lead_id'             => $lead_id,
@@ -175,12 +185,6 @@ trait LeadsContactAuthorizationTrait
 				'provider_message_id' => $provider_message_id,
 				'created_at'          => $now,
 			]));
-
-			$existing = $must($wpdb->get_var($wpdb->prepare("SELECT id FROM {$disclosures} WHERE lead_id = %d AND property_id = %d FOR UPDATE", $lead_id, $property_id)));
-			if ( $existing ) {
-				$must($wpdb->query('COMMIT'));
-				return new \WP_REST_Response(array_merge(self::contact_response($property_id, true), ['lead_id' => $lead_id]), 200);
-			}
 
 			// La limite porte sur des propriétaires distincts : deux annonces du même
 			// propriétaire dans la journée ne consomment qu'un seul contact.

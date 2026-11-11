@@ -17,6 +17,8 @@ class Partikulier_Site_Hygiene {
 	const MARKER = 'Partikulier hygiene';
 
 	public static function init() {
+		add_action( 'init', array( __CLASS__, 'serve_favicon' ), 0 );
+		add_action( 'do_faviconico', array( __CLASS__, 'output_favicon_ico' ) );
 		add_action( 'init', array( __CLASS__, 'remove_readme' ), 1 );
 		add_action( 'init', array( __CLASS__, 'close_uat_robots' ), 1 );
 		add_action( 'init', array( __CLASS__, 'retire_default_hello_world' ), 1 );
@@ -27,6 +29,35 @@ class Partikulier_Site_Hygiene {
 		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'dequeue_hostinger_chat' ), 100 );
 		add_filter( 'script_loader_tag', array( __CLASS__, 'strip_hostinger_tag' ), 10, 3 );
 		add_action( 'template_redirect', array( __CLASS__, 'strip_hostinger_buffer' ), 0 );
+	}
+
+	public static function serve_favicon() {
+		if ( is_admin() || wp_doing_ajax() || ( defined( 'WP_CLI' ) && WP_CLI ) || ( defined( 'REST_REQUEST' ) && REST_REQUEST ) ) {
+			return;
+		}
+		$path = isset( $_SERVER['REQUEST_URI'] ) ? (string) wp_parse_url( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ), PHP_URL_PATH ) : '';
+		if ( '/favicon.ico' !== $path ) {
+			return;
+		}
+		if ( is_file( ABSPATH . 'favicon.ico' ) || ( function_exists( 'has_site_icon' ) && has_site_icon() ) ) {
+			return;
+		}
+		self::output_favicon_ico();
+	}
+
+	public static function output_favicon_ico() {
+		$ico = PARTIKULIER_DIR . '/assets/img/favicon.ico';
+		if ( ! is_file( $ico ) || ! is_readable( $ico ) ) {
+			return;
+		}
+		if ( ! headers_sent() ) {
+			status_header( 200 );
+			header( 'Content-Type: image/x-icon' );
+			header( 'Cache-Control: public, max-age=604800' );
+		}
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_readfile
+		readfile( $ico );
+		exit;
 	}
 
 	public static function remove_readme() {

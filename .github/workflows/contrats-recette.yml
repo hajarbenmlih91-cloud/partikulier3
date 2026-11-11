@@ -2,7 +2,7 @@ name: Contrats de recette (WordPress)
 
 on:
   push:
-    branches: [main]
+    branches: [main, fix/v1-preprod-corrections]
   pull_request:
   workflow_dispatch:
 
@@ -654,6 +654,14 @@ jobs:
           curl --retry 5 --retry-connrefused --retry-delay 1 --fail --silent http://127.0.0.1:8099/fr/ > /dev/null
           PK_BASE=http://127.0.0.1:8099 PK_MERGE_FIXTURE=$PWD/preuves-run/integration/browser-fixture.json \
             node theme/partikulier/tests/merge-v3.mjs > preuves-run/integration/merge-browser.json 2> /tmp/merge-browser.stderr.log
+      - name: Contrat de non-régression V1 préproduction (P0 -> P2)
+        run: |
+          set -euo pipefail
+          mkdir -p preuves-run/integration
+          PK_WP_DIR=$PWD/wp PK_COMMIT=${{ github.sha }} \
+            php plugin/partikulier-core/tests/v1-preprod-fixes-contract.php \
+              > preuves-run/integration/v1-preprod-fixes-contract.json
+          cat preuves-run/integration/v1-preprod-fixes-contract.json
       - name: Vérifier l'oracle 456/456 (durci, 44 suites — schéma, cohérence, unicité, totaux épinglés, results exigé hors suites historiques ; reprise F3 + tests v3 §9.2)
         run: |
           # Validateur durci (reprise du 20/09/2026 F3, durci le 21/09/2026

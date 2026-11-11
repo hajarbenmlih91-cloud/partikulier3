@@ -54,21 +54,21 @@ class Partikulier_Visit_Counter {
 		$lang = class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::current_language() : 'fr';
 		if ( 'en' === $lang ) {
 			$before = 'We can count visits in aggregate, without names or profiles. This measurement starts only with your consent. ';
-			$link   = 'Learn more';
+			$link   = 'Read the cookie policy';
 			$after  = '.';
 			$yes    = 'Allow visit counting';
 			$no     = 'Continue without measurement';
 			$html_lang = 'en';
 		} elseif ( 'ar' === $lang ) {
 			$before = 'يمكن للموقع إحصاء الزيارات بشكل إجمالي، دون أسماء أو ملفات تعريف. لا يبدأ هذا القياس إلا بموافقتك. ';
-			$link   = 'اعرف المزيد';
+			$link   = 'الاطلاع على سياسة ملفات تعريف الارتباط';
 			$after  = '.';
 			$yes    = 'أوافق على إحصاء الزيارات';
 			$no     = 'المتابعة دون قياس';
 			$html_lang = 'ar';
 		} else {
 			$before = 'Le site peut compter les visites de manière agrégée, sans nom ni profil. Cette mesure ne démarre qu’avec votre accord. ';
-			$link   = 'En savoir plus';
+			$link   = 'Consulter la politique de cookies';
 			$after  = '.';
 			$yes    = 'Accepter la mesure';
 			$no     = 'Continuer sans mesure';
@@ -79,7 +79,14 @@ class Partikulier_Visit_Counter {
 		$cookies_page = get_page_by_path( 'cookies' );
 		$on_cookies = false;
 		if ( $cookies_page instanceof WP_Post ) {
-			$cookies_url = get_permalink( $cookies_page );
+			$target_id = (int) $cookies_page->ID;
+			if ( function_exists( 'pll_get_post' ) ) {
+				$lang_id = (int) pll_get_post( $cookies_page->ID, $lang );
+				if ( $lang_id > 0 && 'publish' === get_post_status( $lang_id ) ) {
+					$target_id = $lang_id;
+				}
+			}
+			$cookies_url = (string) get_permalink( $target_id );
 			$cookie_ids  = array( (int) $cookies_page->ID );
 			if ( function_exists( 'pll_get_post' ) ) {
 				foreach ( array( 'fr', 'en', 'ar' ) as $cookie_lang ) {

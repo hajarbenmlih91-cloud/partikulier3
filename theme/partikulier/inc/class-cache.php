@@ -23,7 +23,7 @@ class Partikulier_Cache {
 		/** Version de ce module : changer cette valeur declenche UNE purge complete au
 		 *  premier passage HTTP qui suit la mise a jour (entrees ecrites par la version
 		 *  precedente). Voir maybe_purge_after_update(). */
-		const CACHE_VERSION = '2026-10-28-contacter-whatsapp';
+		const CACHE_VERSION = '2026-11-11-v1-preprod-fixes';
 
 		/** Une seule demande de purge hote par requete PHP : plusieurs hooks de purge
 		 *  peuvent se declencher dans la meme requete (save_post, edited_term, ...). */
@@ -197,13 +197,13 @@ class Partikulier_Cache {
 	public static function exclude_private_pages_from_host_cache() {
 			$path = isset( $_SERVER['REQUEST_URI'] ) ? wp_parse_url( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ), PHP_URL_PATH ) : '';
 			$path = trim( (string) $path, '/' );
-			if ( ! preg_match( '#(?:^|/)(?:deposer(?:-une-annonce|-annonce|-en|-ar)?|mes-annonces(?:-en|-ar)?|favoris(?:-en|-ar)?|connexion(?:-en|-ar)?)(?:/|$)#', $path ) ) {
+			if ( ! preg_match( '#(?:^|/)(?:deposer(?:-une-annonce|-annonce|-en|-ar)?|mes-annonces(?:-en|-ar)?|favoris(?:-en|-ar)?|connexion(?:-en|-ar)?|contact(?:-en|-ar)?)(?:/|$)#', $path ) ) {
 				return;
 			}
 			do_action( 'litespeed_control_set_nocache', 'page privee Partikulier' );
 			if ( ! headers_sent() ) {
 				header( 'X-LiteSpeed-Cache-Control: no-cache' );
-				header( 'Cache-Control: private, no-store, max-age=0' );
+				header( 'Cache-Control: private, no-store, no-cache, must-revalidate, max-age=0' );
 			}
 		}
 
@@ -590,9 +590,9 @@ class Partikulier_Cache {
 		if ( 0 === strpos( $path, 'wp-content/' ) || 0 === strpos( $path, 'wp-includes/' ) ) {
 				return true;
 		}
-			// Les pages de dépôt et d’espace personnel peuvent être préfixées par
+			// Les pages de dépôt, compte, connexion et contact peuvent être préfixées par
 			// Polylang (`fr/`, `en/`, `ar/`) et ne doivent jamais devenir publiques.
-		if ( preg_match( '#(?:^|/)(?:deposer(?:-une-annonce|-annonce|-en|-ar)?|mes-annonces(?:-en|-ar)?|favoris(?:-en|-ar)?)(?:/|$)#', $path ) ) {
+		if ( preg_match( '#(?:^|/)(?:deposer(?:-une-annonce|-annonce|-en|-ar)?|mes-annonces(?:-en|-ar)?|favoris(?:-en|-ar)?|connexion(?:-en|-ar)?|contact(?:-en|-ar)?)(?:/|$)#', $path ) ) {
 				return true;
 		}
 			return 0 === strpos( $path, 'wp-admin/' ) || 0 === strpos( $path, 'wp-json/' );

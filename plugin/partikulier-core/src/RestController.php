@@ -158,27 +158,35 @@ final class RestController
 			'args'                => ['listing_id' => ['required' => true, 'type' => 'integer', 'minimum' => 1]],
 		], 'plugin');
 
-		RouteRegistry::declare('/health', [
-			'methods'             => 'GET',
-			'callback'            => function(): WP_REST_Response {
-				$raw  = $this->health()->get();
-				$code = ( $raw['status'] ?? 'ok' ) === 'ok' ? 200 : 503;
-				// Ne jamais cacher le health : sonde liveness/readiness pour orchestrator.
-				$headers = ['Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0'];
-				if ( ! current_user_can('manage_options') ) {
-					$resp = new WP_REST_Response([
-						'status'   => $raw['status'] ?? 'ok',
-						'database' => $raw['database'] ?? 'ready',
-					], $code);
-					$resp->header('Cache-Control', $headers['Cache-Control']);
+			RouteRegistry::declare('/health', [
+				'methods'             => 'GET',
+				'callback'            => function(): WP_REST_Response {
+					$raw  = $this->health()->get();
+					$code = ( $raw['status'] ?? 'ok' ) === 'ok' ? 200 : 503;
+					// Ne jamais cacher le health (ni côté navigateur/CDN, ni côté LiteSpeed cache-rest).
+					do_action('litespeed_control_set_nocache', 'Partikulier health endpoint');
+					$headers = [
+						'Cache-Control'             => 'no-store, no-cache, must-revalidate, max-age=0',
+						'X-LiteSpeed-Cache-Control' => 'no-cache',
+					];
+					if ( ! headers_sent() ) {
+						header('Cache-Control: ' . $headers['Cache-Control']);
+						header('X-LiteSpeed-Cache-Control: no-cache');
+					}
+					$payload = current_user_can('manage_options')
+						? $raw
+						: [
+							'status'   => $raw['status'] ?? 'ok',
+							'database' => $raw['database'] ?? 'ready',
+						];
+					$resp = new WP_REST_Response($payload, $code);
+					foreach ( $headers as $k => $v ) {
+						$resp->header($k, $v);
+					}
 					return $resp;
-				}
-				$resp = new WP_REST_Response($raw, $code);
-				$resp->header('Cache-Control', $headers['Cache-Control']);
-				return $resp;
-			},
-			'permission_callback' => [$this, 'guardPublic'],
-		], 'plugin');
+				},
+				'permission_callback' => [$this, 'guardPublic'],
+			], 'plugin');
 
 		// Lot R1 — export Data Qualifiée pour n8n → Google Sheets
 		// GET /export/interests?since=…&limit=500 -> tableau 1 ligne = 1 intention

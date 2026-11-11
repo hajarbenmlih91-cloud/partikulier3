@@ -9360,3 +9360,14 @@ html body .pk-cookie-actions button[data-yes] {
 	border-color: #C8242B !important;
 	color: #fff !important;
 }
+
+.pk-single-contact-unavailable {
+	margin-top: .75rem;
+	padding: .85rem 1rem;
+	border: 1px solid rgba(255, 255, 255, .18);
+	background: rgba(255, 255, 255, .06);
+}
+.pk-single-contact-unavailable .pk-contact-note {
+	margin: 0;
+	color: rgba(255, 255, 255, .86);
+}
