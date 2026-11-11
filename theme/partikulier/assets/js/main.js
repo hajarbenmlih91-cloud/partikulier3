@@ -2067,7 +2067,6 @@ function pkLimitTitle(value) {
 		if (!target || !target.closest) return;
 		if (target.closest(".pk-find-tx-btn, .pk-find-type-card, .pk-suggest, .pk-place-suggestions, .pk-find-chip, .pk-find-room, .pk-find-check")) scheduleCount();
 	});
-	scheduleCount();
 }());
 
 /* Boutons dépôt / annonces : hors du hero, visibles seulement après la barre. */
