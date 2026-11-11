@@ -117,6 +117,8 @@ jobs:
           bash .github/scripts/recipe-setup-command.sh wordpress-config -- \
             wp config create --path=wp --dbname="$WP_DB_NAME" --dbuser="$WP_DB_USER" \
               --dbpass="$WP_DB_PASSWORD" --dbhost="$WP_DB_HOST" --skip-check
+          bash .github/scripts/recipe-setup-command.sh wordpress-config-env -- \
+            wp config set WP_ENVIRONMENT_TYPE local --path=wp
       - name: Installer WordPress sur la base jetable
         run: |
           set -euo pipefail

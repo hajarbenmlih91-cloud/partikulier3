@@ -106,9 +106,27 @@ jobs:
           done
 
           # Install plugin & theme from checkout into disposable WordPress
-          docker exec "$WP_CONTAINER" mkdir -p /var/www/html/wp-content/plugins/partikulier-core /var/www/html/wp-content/themes/partikulier /var/www/html/wp-content/uploads/partikulier-cache
+          docker exec "$WP_CONTAINER" mkdir -p /var/www/html/wp-content/plugins/partikulier-core /var/www/html/wp-content/themes/partikulier /var/www/html/wp-content/mu-plugins /var/www/html/wp-content/uploads/partikulier-cache
           docker cp plugin/partikulier-core/. "$WP_CONTAINER:/var/www/html/wp-content/plugins/partikulier-core/"
           docker cp theme/partikulier/. "$WP_CONTAINER:/var/www/html/wp-content/themes/partikulier/"
+          docker exec -i "$WP_CONTAINER" sh -c 'cat > /var/www/html/wp-content/mu-plugins/ci-properties-cpt.php' <<'PHP'
+          <?php
+          add_action('init', static function () {
+              if (!post_type_exists('properties')) {
+                  register_post_type('properties', [
+                      'public' => true,
+                      'has_archive' => 'annonces',
+                      'rewrite' => ['slug' => 'properties'],
+                      'supports' => ['title', 'editor', 'author'],
+                  ]);
+              }
+              foreach (['es_type', 'es_status', 'es_category', 'es_location'] as $tax) {
+                  if (!taxonomy_exists($tax)) {
+                      register_taxonomy($tax, 'properties', ['public' => true]);
+                  }
+              }
+          }, 0);
+          PHP
 
           # Start ephemeral Meta WhatsApp Business Cloud API HTTP Simulator on TCP/18080 inside container
           docker exec -i "$WP_CONTAINER" sh -c 'cat > /tmp/meta-wa-mock.php' <<'PHP'
@@ -169,7 +187,7 @@ jobs:
           echo "::add-mask::$EPHEMERAL_SECRET"
           echo "::add-mask::$ERASE_SECRET"
 
-          SEED_JSON="$(docker exec -e PK_EPHEMERAL_SECRET="$EPHEMERAL_SECRET" -e PK_ERASE_SECRET="$ERASE_SECRET" -i "$WP_CONTAINER" php <<'PHP'
+          docker exec -i "$WP_CONTAINER" php <<'PHP'
           <?php
           define('WP_INSTALLING', true);
           require '/var/www/html/wp-load.php';
@@ -187,6 +205,11 @@ jobs:
               file_put_contents(ABSPATH . '.htaccess', "# BEGIN WordPress\n<IfModule mod_rewrite.c>\nRewriteEngine On\nRewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]\nRewriteBase /\nRewriteRule ^index\\.php$ - [L]\nRewriteCond %{REQUEST_FILENAME} !-f\nRewriteCond %{REQUEST_FILENAME} !-d\nRewriteRule . /index.php [L]\n</IfModule>\n# END WordPress\n");
           }
           update_option('permalink_structure', '/%postname%/');
+          PHP
+
+          SEED_JSON="$(docker exec -e PK_EPHEMERAL_SECRET="$EPHEMERAL_SECRET" -e PK_ERASE_SECRET="$ERASE_SECRET" -i "$WP_CONTAINER" php <<'PHP'
+          <?php
+          require '/var/www/html/wp-load.php';
           flush_rewrite_rules(false);
 
           update_option('pk_n8n_settings', [
@@ -563,8 +586,8 @@ jobs:
           curl -sS -D /tmp/hdr-health.txt -o /tmp/body-health.json -H 'Host: wordpress' "$WP_BASE/?rest_route=%2Fpartikulier%2Fv1%2Fhealth"
           curl -sS -D /tmp/hdr-contact.txt -o /dev/null -H 'Host: wordpress' "$WP_BASE/contact/"
           curl -sS -D /tmp/hdr-favicon.txt -o /tmp/favicon.bin -H 'Host: wordpress' "$WP_BASE/favicon.ico"
-          curl -sS -H 'Host: wordpress' "$WP_BASE/" -o /tmp/home.html
-          curl -sS -H 'Host: wordpress' "$WP_BASE$FIRST_PROP_PATH" -o /tmp/single-unset.html
+          curl -sS -D /tmp/hdr-home.txt -H 'Host: wordpress' "$WP_BASE/" -o /tmp/home.html
+          curl -sS -D /tmp/hdr-single-unset.txt -H 'Host: wordpress' "$WP_BASE$FIRST_PROP_PATH" -o /tmp/single-unset.html
 
           # Configure masked PK_TEST_WA_NUMBER (or synthetic CI fallback) ONLY in-memory in WordPress option and verify rendered link without leaking digits
           docker exec -e PK_CI_WA="$TEST_WA_DIGITS" -i "$WP_CONTAINER" php <<'PHP'
@@ -578,7 +601,7 @@ jobs:
               Partikulier_Cache::purge_all();
           }
           PHP
-          curl -sS -H 'Host: wordpress' "$WP_BASE$FIRST_PROP_PATH" -o /tmp/single-set.html
+          curl -sS -D /tmp/hdr-single-set.txt -H 'Host: wordpress' "$WP_BASE$FIRST_PROP_PATH" -o /tmp/single-set.html
 
           # Render EN cookie banner via WordPress runtime
           COOKIE_EN_HTML="$(docker exec -i "$WP_CONTAINER" php <<'PHP'
@@ -606,6 +629,9 @@ jobs:
           hdr_health = pathlib.Path('/tmp/hdr-health.txt').read_text().lower()
           hdr_contact = pathlib.Path('/tmp/hdr-contact.txt').read_text().lower()
           hdr_favicon = pathlib.Path('/tmp/hdr-favicon.txt').read_text().lower()
+          hdr_home = pathlib.Path('/tmp/hdr-home.txt').read_text().lower()
+          hdr_single_unset = pathlib.Path('/tmp/hdr-single-unset.txt').read_text().lower()
+          hdr_single_set = pathlib.Path('/tmp/hdr-single-set.txt').read_text().lower()
           home_html = pathlib.Path('/tmp/home.html').read_text()
           single_unset = pathlib.Path('/tmp/single-unset.html').read_text()
           single_set = pathlib.Path('/tmp/single-set.html').read_text()
@@ -617,11 +643,11 @@ jobs:
               ("S25_meta_inbox_count", "Meta Cloud API Mock a capturé les 3 messages sortants (masqués)", len(meta_lines) == 3, f"captured={len(meta_lines)}"),
               ("S26_health_nocache", "/health émet Cache-Control: no-store + X-LiteSpeed-Cache-Control: no-cache", ("no-store" in hdr_health and "x-litespeed-cache-control: no-cache" in hdr_health), "headers verified"),
               ("S27_contact_nocache", "/contact/ émet Cache-Control: private, no-store + X-LiteSpeed-Cache-Control: no-cache", ("private" in hdr_contact and "no-store" in hdr_contact and "x-litespeed-cache-control: no-cache" in hdr_contact), "headers verified"),
-              ("S28_favicon_200", "/favicon.ico répond HTTP 200 image/x-icon + <link rel=\"icon\">", (" 200" in hdr_favicon.splitlines()[0] and "image/x-icon" in hdr_favicon and "favicon.svg" in home_html), f"bytes={pathlib.Path('/tmp/favicon.bin').stat().st_size}"),
-              ("S29_style_min", "style.min.css référencé dans le HTML public", "style.min.css" in home_html, "style.min.css linked"),
-              ("S30_single_unset_no_bare_wa", "Sans numéro configuré : 0 lien wa.me/?text= et notice affichée", ("wa.me/?text=" not in single_unset and "pk-single-contact-unavailable" in single_unset), "bare fallback absent"),
-              ("S31_single_set_numeric_wa", f"Avec numéro configuré ({'secret masqué' if wa_secret_used else 'numéro CI synthétique'}) : lien numérique wa.me rendu sans exposition", (f"https://wa.me/{test_wa}?text=" in single_set and "wa.me/?text=" not in single_set), "masked=" + ("[SECRET]" if wa_secret_used else "synthetic")),
-              ("S32_cookies_en_link", "Bannière cookies EN sans 'Learn more' (libellé descriptif)", ("Learn more" not in cookie_en and "Read the cookie policy" in cookie_en), "descriptive link verified"),
+              ("S28_favicon_200", "/favicon.ico répond HTTP 200 image/x-icon + <link rel=\"icon\">", (" 200" in hdr_favicon.splitlines()[0] and "image/x-icon" in hdr_favicon and " 200" in hdr_home.splitlines()[0] and "favicon.svg" in home_html), f"bytes={pathlib.Path('/tmp/favicon.bin').stat().st_size} home={hdr_home.splitlines()[0].strip()}"),
+              ("S29_style_min", "style.min.css référencé dans le HTML public", (" 200" in hdr_home.splitlines()[0] and "style.min.css" in home_html), f"home_len={len(home_html)}"),
+              ("S30_single_unset_no_bare_wa", "Sans numéro configuré : 0 lien wa.me/?text= et notice affichée", (" 200" in hdr_single_unset.splitlines()[0] and "wa.me/?text=" not in single_unset and "pk-single-contact-unavailable" in single_unset), f"single={hdr_single_unset.splitlines()[0].strip()} len={len(single_unset)}"),
+              ("S31_single_set_numeric_wa", f"Avec numéro configuré ({'secret masqué' if wa_secret_used else 'numéro CI synthétique'}) : lien numérique wa.me rendu sans exposition", (" 200" in hdr_single_set.splitlines()[0] and f"https://wa.me/{test_wa}?text=" in single_set and "wa.me/?text=" not in single_set), "masked=" + ("[SECRET]" if wa_secret_used else "synthetic") + f" single={hdr_single_set.splitlines()[0].strip()}"),
+              ("S32_cookies_en_link", "Bannière cookies EN sans 'Learn more' (libellé descriptif)", ("Learn more" not in cookie_en and "Read the cookie policy" in cookie_en), f"len={len(cookie_en)}"),
           ]
 
           all_ok = all(s['pass'] for s in steps) and all(ok for _, _, ok, _ in extra)

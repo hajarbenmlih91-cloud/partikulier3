@@ -272,7 +272,7 @@ while ( have_posts() ) :
 								<?php endif; ?>
 							<?php elseif ( ! $pk_is_closed ) : ?>
 								<?php
-								$pk_wa_lang        = class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::current_language() : 'fr';
+								$pk_wa_lang        = class_exists( 'Partikulier_Settings' ) ? Partikulier_Settings::current_language() : ( class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::current_language() : 'fr' );
 								$pk_wa_unavailable = 'en' === $pk_wa_lang
 									? 'WhatsApp contact is currently unavailable for this listing.'
 									: ( 'ar' === $pk_wa_lang

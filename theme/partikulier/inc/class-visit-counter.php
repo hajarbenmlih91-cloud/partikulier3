@@ -51,7 +51,7 @@ class Partikulier_Visit_Counter {
 		if ( self::on_deposit() ) {
 			return;
 		}
-		$lang = class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::current_language() : 'fr';
+		$lang = class_exists( 'Partikulier_Settings' ) ? Partikulier_Settings::current_language() : ( class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::current_language() : 'fr' );
 		if ( 'en' === $lang ) {
 			$before = 'We can count visits in aggregate, without names or profiles. This measurement starts only with your consent. ';
 			$link   = 'Read the cookie policy';
