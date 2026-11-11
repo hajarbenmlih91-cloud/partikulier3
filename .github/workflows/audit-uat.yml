@@ -94,6 +94,14 @@ jobs:
           node-version: '22'
       - run: |
           set -euo pipefail
+          if ! getent ahostsv4 azure.archive.ubuntu.com >/dev/null 2>&1; then
+            printf 'Acquire::ForceIPv4 "true";\nAcquire::http::Timeout "15";\nAcquire::https::Timeout "15";\n' | sudo tee /etc/apt/apt.conf.d/99runner-net >/dev/null
+            if getent ahostsv4 archive.ubuntu.com >/dev/null 2>&1; then
+              sudo sed -i 's|http://azure\.archive\.ubuntu\.com/ubuntu|http://archive.ubuntu.com/ubuntu|g' /etc/apt/apt-mirrors.txt /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null || true
+            elif getent ahostsv4 mirrors.edge.kernel.org >/dev/null 2>&1; then
+              sudo sed -i 's|http://azure\.archive\.ubuntu\.com/ubuntu|https://mirrors.edge.kernel.org/ubuntu|g' /etc/apt/apt-mirrors.txt /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null || true
+            fi
+          fi
           cd theme/partikulier
           npm ci
           npm install --no-save axe-core@4.10.3

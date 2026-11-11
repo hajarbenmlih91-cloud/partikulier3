@@ -302,6 +302,9 @@ jobs:
           rsync -az --delete -e "ssh -F $HOME/.ssh/config" \
             build/deploy-artifacts/polylang/ \
             "partikulier-hostinger:$WP_PATH/wp-content/plugins/polylang/"
+          rsync -az -e "ssh -F $HOME/.ssh/config" \
+            build/deploy-artifacts/partikulier/assets/img/favicon.ico \
+            "partikulier-hostinger:$WP_PATH/favicon.ico"
 
       - name: Vérifications WordPress post-déploiement
         env:
