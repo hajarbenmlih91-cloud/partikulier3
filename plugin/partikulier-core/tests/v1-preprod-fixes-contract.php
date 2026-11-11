@@ -274,6 +274,7 @@ try {
 
     // 7. FIX-FAVICON-07 : favicon.svg, favicon.ico, header link, site hygiene handler, style.min.css.
     $headerCode = (string) file_get_contents($themeRoot . '/templates/header.php');
+    $searchFormCode = (string) file_get_contents($themeRoot . '/templates/parts/search-form.php');
     $rawCss = $themeRoot . '/assets/css/style.css';
     $minCss = $themeRoot . '/assets/css/style.min.css';
     $favSvg = $themeRoot . '/assets/img/favicon.svg';
@@ -285,6 +286,16 @@ try {
         && method_exists('Partikulier_Site_Hygiene', 'output_favicon_ico')
         && is_file($minCss) && filesize($minCss) < filesize($rawCss),
         sprintf('svg=%s ico=%dB min=%dB raw=%dB', is_file($favSvg) ? 'yes' : 'no', is_file($favIco) ? (int) filesize($favIco) : 0, is_file($minCss) ? (int) filesize($minCss) : 0, is_file($rawCss) ? (int) filesize($rawCss) : 0)
+    );
+
+    // 8. FIX-A11Y-LABEL-09 : label-content-name-mismatch (WCAG 2.5.3) sur .pk-lang-toggle et .pk-find-type-btn.
+    $assert(
+        'FIX-A11Y-LABEL-09',
+        str_contains($headerCode, "strtoupper( \$pk_current_lang )")
+        && preg_match('/class="pk-lang-toggle"[^>]*aria-label="[^"]*strtoupper/', $headerCode) === 1
+        && str_contains($searchFormCode, 'aria-labelledby="pk-find-type-label pk-find-type-current"')
+        && str_contains($searchFormCode, 'id="pk-find-type-current"'),
+        'pk-lang-toggle aria-label includes lang code and pk-find-type-btn aria-labelledby includes pk-find-type-current'
     );
 } catch (Throwable $e) {
     $assert('FIX-UNEXPECTED', false, $e->getMessage());

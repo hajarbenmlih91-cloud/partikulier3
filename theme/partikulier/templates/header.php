@@ -177,7 +177,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 						);
 						?>
 						<div class="pk-lang" data-pk-lang>
-								<button type="button" class="pk-lang-toggle" aria-expanded="false" aria-haspopup="true" aria-label="<?php esc_attr_e( 'Choisir la langue', 'partikulier' ); ?>">
+								<button type="button" class="pk-lang-toggle" aria-expanded="false" aria-haspopup="true" aria-label="<?php echo esc_attr( __( 'Choisir la langue', 'partikulier' ) . ' — ' . strtoupper( $pk_current_lang ) ); ?>">
 										<?php echo $pk_flag_svg( $pk_current_lang ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 										<span class="pk-lang-code"><?php echo esc_html( strtoupper( $pk_current_lang ) ); ?></span>
 								</button>
