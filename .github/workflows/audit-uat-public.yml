@@ -84,22 +84,6 @@ jobs:
           set -euo pipefail
           php theme/partikulier/tests/staging-cache.php "$SITE_URL" /fr/annonces/ 20 2>&1 | tee "$AUDIT_OUT_DIR/cache-ttfb.txt"
 
-      - name: Sondage prudent (10 req/s pendant 10 s)
-        id: load_smoke
-        if: ${{ inputs.load_test }}
-        continue-on-error: true
-        run: |
-          set -euo pipefail
-          php theme/partikulier/tests/staging-charge.php "$SITE_URL" 10 10 /fr/annonces/ /fr/ /fr/annonces/?es_city=casablanca 2>&1 | tee "$AUDIT_OUT_DIR/load-smoke.txt"
-
-      - name: Charge complète (100 req/s pendant 30 s si la sonde tient)
-        id: load_full
-        if: ${{ inputs.load_test && steps.load_smoke.outcome == 'success' }}
-        continue-on-error: true
-        run: |
-          set -euo pipefail
-          php theme/partikulier/tests/staging-charge.php "$SITE_URL" 100 30 /fr/annonces/ /fr/ /fr/annonces/?es_city=casablanca 2>&1 | tee "$AUDIT_OUT_DIR/load-full.txt"
-
       - name: Responsive, SEO, Axe et XSS réfléchi avec Chromium
         id: browser_audit
         continue-on-error: true
@@ -179,6 +163,22 @@ jobs:
           (root / 'lighthouse-summary.md').write_text('\n'.join(lines) + '\n')
           print('\n'.join(lines))
           PY
+
+      - name: Sondage prudent (10 req/s pendant 10 s)
+        id: load_smoke
+        if: ${{ inputs.load_test }}
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          php theme/partikulier/tests/staging-charge.php "$SITE_URL" 10 10 /fr/annonces/ /fr/ /fr/annonces/?es_city=casablanca 2>&1 | tee "$AUDIT_OUT_DIR/load-smoke.txt"
+
+      - name: Charge complète (100 req/s pendant 30 s si la sonde tient)
+        id: load_full
+        if: ${{ inputs.load_test && steps.load_smoke.outcome == 'success' }}
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          php theme/partikulier/tests/staging-charge.php "$SITE_URL" 100 30 /fr/annonces/ /fr/ /fr/annonces/?es_city=casablanca 2>&1 | tee "$AUDIT_OUT_DIR/load-full.txt"
 
       - name: Ajouter le résultat des suites au rapport
         if: always()
