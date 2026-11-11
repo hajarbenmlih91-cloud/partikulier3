@@ -85,7 +85,7 @@ try {
         }
         $createdPosts[] = (int) $pid;
         $ownerPhone = '+21260011000' . $i;
-        update_post_meta((int) $pid, '_pk_owner_phone', class_exists('Partikulier_Crypto') ? Partikulier_Crypto::protect_phone($ownerPhone) : $ownerPhone);
+        update_post_meta((int) $pid, '_pk_owner_phone', class_exists('Partikulier_Crypto') ? Partikulier_Crypto::encrypt_phone($ownerPhone) : $ownerPhone);
         $props[] = (int) $pid;
     }
 
@@ -175,7 +175,8 @@ try {
     $isPrivateMethod->setAccessible(true);
     $contactPathsOk = true;
     foreach (['fr/contact', 'en/contact', 'ar/contact', 'contact-en', 'contact-ar', 'fr/connexion'] as $p) {
-        if (!$isPrivateMethod->invoke(null, $p)) {
+        $_SERVER['REQUEST_URI'] = '/' . $p . '/';
+        if (!$isPrivateMethod->invoke(null)) {
             $contactPathsOk = false;
         }
     }
@@ -209,7 +210,15 @@ try {
     update_option('pk_theme_options', $optsWithNum);
     $urlSet = Partikulier_Buyer_Qualification::contact_url($props[0]);
 
+    $origQueriedObj   = $GLOBALS['wp_query']->queried_object ?? null;
+    $origQueriedObjId = $GLOBALS['wp_query']->queried_object_id ?? null;
+    $origIsSingle     = $GLOBALS['wp_query']->is_single ?? false;
+    $origIsSingular   = $GLOBALS['wp_query']->is_singular ?? false;
     $GLOBALS['post'] = get_post($props[0]);
+    $GLOBALS['wp_query']->queried_object = $GLOBALS['post'];
+    $GLOBALS['wp_query']->queried_object_id = $props[0];
+    $GLOBALS['wp_query']->is_single = true;
+    $GLOBALS['wp_query']->is_singular = true;
     setup_postdata($GLOBALS['post']);
     update_option('pk_theme_options', $optsNoNum);
     ob_start();
@@ -219,6 +228,10 @@ try {
     }
     $htmlUnset = (string) ob_get_clean();
     wp_reset_postdata();
+    $GLOBALS['wp_query']->queried_object = $origQueriedObj;
+    $GLOBALS['wp_query']->queried_object_id = $origQueriedObjId;
+    $GLOBALS['wp_query']->is_single = $origIsSingle;
+    $GLOBALS['wp_query']->is_singular = $origIsSingular;
 
     $assert(
         'FIX-SINGLE-05',

@@ -81,6 +81,7 @@ $call = static function (string $xml) use ($base): array {
 
 /* Décodage structurel des réponses XML-RPC (aucun grep de balise). */
 $decodeList = static function (string $xml): ?array {
+    if (trim($xml) === '') { return null; }
     $dom = new DOMDocument();
     if (!@$dom->loadXML($xml) || $dom->documentElement === null || $dom->documentElement->nodeName !== 'methodResponse') { return null; }
     if ($dom->getElementsByTagName('fault')->length > 0) { return null; }
@@ -97,6 +98,7 @@ $decodeList = static function (string $xml): ?array {
     return $methods;
 };
 $decodeFault = static function (string $xml): ?int {
+    if (trim($xml) === '') { return null; }
     $dom = new DOMDocument();
     if (!@$dom->loadXML($xml) || $dom->documentElement === null || $dom->documentElement->nodeName !== 'methodResponse') { return null; }
     $faults = $dom->getElementsByTagName('fault');

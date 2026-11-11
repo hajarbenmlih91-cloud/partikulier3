@@ -247,7 +247,7 @@ jobs:
               ]);
               if (is_wp_error($pid) || !$pid) { fwrite(STDERR, "Post insert failed\n"); exit(1); }
               $phoneRaw = "+21261111000{$i}";
-              $phoneVal = class_exists('Partikulier_Crypto') ? Partikulier_Crypto::protect_phone($phoneRaw) : $phoneRaw;
+              $phoneVal = class_exists('Partikulier_Crypto') ? Partikulier_Crypto::encrypt_phone($phoneRaw) : $phoneRaw;
               update_post_meta($pid, '_pk_owner_name', "Propriétaire Sim {$i}");
               update_post_meta($pid, '_pk_owner_phone', $phoneVal);
               update_post_meta($pid, '_pk_approved_at', gmdate('Y-m-d H:i:s', time() - 3600));
