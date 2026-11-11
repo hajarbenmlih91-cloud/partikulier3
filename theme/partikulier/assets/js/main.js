@@ -1991,6 +1991,20 @@ function pkLimitTitle(value) {
 	}
 	var countTimer = 0;
 	var countSeq = 0;
+	var countController = null;
+	var pageUnloading = false;
+	function abortCount() {
+		pageUnloading = true;
+		window.clearTimeout(countTimer);
+		if (countController) {
+			try {
+				countController.abort();
+			} catch (e) {}
+			countController = null;
+		}
+	}
+	window.addEventListener("pagehide", abortCount);
+	window.addEventListener("beforeunload", abortCount);
 	function collectCountBody() {
 		syncHiddenIntent();
 		var body = new URLSearchParams();
@@ -2020,14 +2034,22 @@ function pkLimitTitle(value) {
 		return body;
 	}
 	function refreshCount() {
-		if (!window.fetch || typeof pkConfig === "undefined" || !pkConfig.ajaxUrl) return;
+		if (pageUnloading || !window.fetch || typeof pkConfig === "undefined" || !pkConfig.ajaxUrl) return;
 		var seq = ++countSeq;
-		fetch(pkConfig.ajaxUrl, {
+		if (countController) {
+			try {
+				countController.abort();
+			} catch (e) {}
+		}
+		countController = typeof AbortController !== "undefined" ? new AbortController() : null;
+		var opts = {
 			method: "POST",
 			credentials: "same-origin",
 			headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
 			body: collectCountBody().toString()
-		}).then(function (res) {
+		};
+		if (countController) opts.signal = countController.signal;
+		fetch(pkConfig.ajaxUrl, opts).then(function (res) {
 			return res.json();
 		}).then(function (data) {
 			if (seq !== countSeq) return;
@@ -2035,6 +2057,7 @@ function pkLimitTitle(value) {
 		}).catch(function () {});
 	}
 	function scheduleCount() {
+		if (pageUnloading) return;
 		window.clearTimeout(countTimer);
 		countTimer = window.setTimeout(refreshCount, 220);
 	}
