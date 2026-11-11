@@ -672,14 +672,14 @@ jobs:
             php plugin/partikulier-core/tests/v1-preprod-fixes-contract.php \
               > preuves-run/integration/v1-preprod-fixes-contract.json
           cat preuves-run/integration/v1-preprod-fixes-contract.json
-      - name: Vérifier l'oracle 456/456 (durci, 44 suites — schéma, cohérence, unicité, totaux épinglés, results exigé hors suites historiques ; reprise F3 + tests v3 §9.2)
+      - name: Vérifier l'oracle 457/457 (durci, 44 suites — schéma, cohérence, unicité, totaux épinglés, results exigé hors suites historiques ; reprise F3 + tests v3 §9.2)
         run: |
           # Validateur durci (reprise du 20/09/2026 F3, durci le 21/09/2026
           # §9.2) : l'ancien validateur additionnait total/passed DECLARES et
           # acceptait un unique faux rapport auto-contradictoire. Le contrôle,
           # pour CHAQUE suite : JSON valide ; status === "PASS" ; total/passed/
           # failed entiers ; passed + failed === total ; failed === 0 ; total
-          # === LE total épingle de la suite (table ci-dessous, somme = 456) ;
+          # === LE total épingle de la suite (table ci-dessous, somme = 457, dont CORE-RATE-HEADER-001 de bf811aa) ;
           # la cle results est EXIGEE pour toute suite hors liste blanche
           # (v3 §9.2 : sa suppression de SE-041/SE-027 restait acceptee en
           # v2) ; SI results est fourni : total === count(results), passed ===
@@ -687,8 +687,8 @@ jobs:
           # test_id. Les 9 suites historiques sans results — core, services,
           # load, rest-lite, routes-collision, sync, payments, premium, leads —
           # sont les seules autorisees a s'en passer (search-arrays EMET
-          # results). Cardinalite et ensemble EXACT des 40 suites
-          # attendues ; aucun fichier en trop ou manquant ; total global 456/456.
+          # results). Cardinalite et ensemble EXACT des 44 suites
+          # attendues ; aucun fichier en trop ou manquant ; total global 457/457.
           set +e
           php <<'ORACLE' 2>&1 | tee "$RUNNER_TEMP/oracle-validation.log"
           <?php
@@ -697,7 +697,7 @@ jobs:
           "artifact-hygiene-contract.json" => 3,
           "automation-domain-contract.json" => 24,
           "avif-security-contract.json" => 15,
-          "core-contract.json" => 8,
+          "core-contract.json" => 9,
           "dp9-availability-contract.json" => 20,
           "dp9-owner-journey-contract.json" => 25,
           "dp9-partial-failure-contract.json" => 12,
@@ -788,14 +788,14 @@ jobs:
           }
           $tot += $d["total"]; $pas += $d["passed"];
           }
-          if ($tot !== 456 || $pas !== 456) { fwrite(STDERR, "oracle inattendu (attendu 456/456 — 44 suites : 384 reference + 5 extensions SE-044/DP-9 + 67 dp9)\n"); exit(1); }
+          if ($tot !== 457 || $pas !== 457) { fwrite(STDERR, "oracle inattendu (attendu 457/457 — 44 suites : 385 reference + 5 extensions SE-044/DP-9 + 67 dp9)\n"); exit(1); }
           echo "contrats dynamiques : $pas/$tot (" . count($bases) . " suites, schema, coherence, unicitte, totaux epingles, ensemble exact et results exig hors historiques verifies)\n";
           ORACLE
           oracle_status=${PIPESTATUS[0]}
           set -e
           if (( oracle_status != 0 )); then
             detail=$(tail -n 5 "$RUNNER_TEMP/oracle-validation.log" | tr '\n' ' ' | cut -c 1-500)
-            echo "::error title=Oracle 456/456::$detail"
+            echo "::error title=Oracle 457/457::$detail"
             exit "$oracle_status"
           fi
       - name: Publier les résultats
