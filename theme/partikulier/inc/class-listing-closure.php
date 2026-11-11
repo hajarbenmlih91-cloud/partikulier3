@@ -239,7 +239,7 @@ class Partikulier_Listing_Closure {
 							<p class="pk-sold-similar-empty"><?php esc_html_e( 'Aucune annonce publiée récemment.', 'partikulier' ); ?></p>
 					<?php endif; ?>
 					<?php if ( $wa_url ) : ?>
-							<a class="pk-btn pk-btn-primary pk-btn-block pk-btn-whatsapp" href="<?php echo esc_url( $wa_url ); ?>" target="_blank" rel="noopener">
+							<a class="pk-btn pk-btn-primary pk-btn-block pk-btn-whatsapp" href="<?php echo class_exists( 'Partikulier_Buyer_Qualification' ) ? Partikulier_Buyer_Qualification::esc_wa_url( $wa_url ) : esc_url( $wa_url ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- échappé via esc_wa_url() ?>" target="_blank" rel="noopener">
 									<?php esc_html_e( 'Demander des biens similaires sur WhatsApp', 'partikulier' ); ?>
 							</a>
 					<?php endif; ?>

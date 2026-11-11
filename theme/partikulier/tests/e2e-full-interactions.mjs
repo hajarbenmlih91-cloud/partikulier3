@@ -247,8 +247,7 @@ try {
     record('E2E-ARCHIVE-WISHLIST-POSTSWAP-001', 'archive', swappedWorked,
       swappedWorked
         ? `aria-pressed toggled ${beforePressed} -> ${afterPressed} after AJAX swap`
-        : `DEFECT: .pk-card-wishlist detached after archive AJAX swap (aria-pressed stayed ${beforePressed}) because swap() skips pkBindWishlist()`,
-      swappedWorked ? 'error' : 'finding');
+        : `.pk-card-wishlist detached after archive AJAX swap (aria-pressed stayed ${beforePressed})`);
     if (swappedWorked) {
       await postSwapHeart.click(); // restore state cleanly
     }
@@ -295,13 +294,11 @@ try {
   const waHref = await page.locator('a.pk-btn-whatsapp[href]').first().getAttribute('href');
   const waUrl = waHref ? new URL(waHref) : null;
   const waText = waUrl ? (waUrl.searchParams.get('text') || '') : '';
+  const waHasNewline = waText.includes('\n');
   const waGlued = /PK-[A-Z0-9-]+\.(?:Lien|Link|الرابط)/i.test(waText);
   record('E2E-SINGLE-WHATSAPP-HREF-001', 'single',
-    Boolean(waHref) && waHref.startsWith('https://wa.me/') && !waGlued,
-    waGlued
-      ? `DEFECT: esc_url() stripped %0A newline, gluing reference and Lien: ${JSON.stringify(waText)}`
-      : `href=${waHref}; text=${JSON.stringify(waText)}`,
-    waGlued ? 'finding' : 'error');
+    Boolean(waHref) && waHref.startsWith('https://wa.me/') && waHasNewline && !waGlued,
+    `href=${waHref}; hasNewline=${waHasNewline}; text=${JSON.stringify(waText)}`);
 
   // Wishlist toggle on single -> syncs pk_sync_favorite & localStorage
   const syncFavPromise = page.waitForResponse(
@@ -349,7 +346,7 @@ try {
     favListRes.status() === 200 && favListJson?.success === true && favCardsCount >= 1,
     `http=${favListRes.status()}; cards=${favCardsCount}; countText=${favCountFr}`);
 
-  // Remove favorite from /fr/favoris/ -> test /en/favoris/ empty state & hardcoded FR check
+  // Remove favorite from /fr/favoris/ -> test /en/favoris/ empty state & localized count
   await page.locator('#pk-favorites-grid .pk-card-wishlist').first().click();
   await page.waitForTimeout(200);
   await page.goto(fixture.pages.favorisEn, { waitUntil: 'domcontentloaded', timeout: 30000 });
@@ -358,11 +355,8 @@ try {
   const favEnCountText = (await page.locator('#pk-fav-count').textContent())?.trim() || '';
   const favEnHardcodedFr = /Aucune annonce enregistrée/i.test(favEnCountText);
   record('E2E-FAVORIS-EMPTY-I18N-001', 'favorites',
-    favEnEmptyVisible && !favEnHardcodedFr,
-    favEnHardcodedFr
-      ? `DEFECT: /en/favoris/ #pk-fav-count overwritten with hardcoded French "${favEnCountText}" by main.js:676`
-      : `emptyVisible=${favEnEmptyVisible}; text=${favEnCountText}`,
-    favEnHardcodedFr ? 'finding' : 'error');
+    favEnEmptyVisible && !favEnHardcodedFr && /No saved listings/i.test(favEnCountText),
+    `emptyVisible=${favEnEmptyVisible}; text=${favEnCountText}`);
 
   // =========================================================================
   // 5. Contact Form (/fr/contact/ real POST + wp_mail + /ar/contact/ inspection)
@@ -408,20 +402,19 @@ try {
     formLang: document.querySelector('.pk-contact-form')?.getAttribute('lang') || '',
     submitText: document.querySelector('.pk-contact-form button[type="submit"]')?.textContent?.trim() || '',
     consentText: document.querySelector('label[for="pk-contact-consent"]')?.textContent?.trim() || '',
+    msgLabel: document.querySelector('label[for="pk-contact-message"]')?.textContent?.trim() || '',
   }));
   const arFallbackFr = arContactInfo.submitText === 'Envoyer' || /J’accepte/.test(arContactInfo.consentText);
   record('E2E-CONTACT-AR-I18N-001', 'contact',
-    !arFallbackFr,
-    arFallbackFr
-      ? `DEFECT: /ar/contact/ falls back to French (${JSON.stringify(arContactInfo)})`
-      : JSON.stringify(arContactInfo),
-    arFallbackFr ? 'finding' : 'error');
+    !arFallbackFr && arContactInfo.formLang === 'ar' && arContactInfo.submitText === 'إرسال' && /أوافق/.test(arContactInfo.consentText),
+    JSON.stringify(arContactInfo));
 
   // =========================================================================
-  // 6. Deposit /deposer/ Step 1->3 Prototype UI + Real pk_submit_listing AJAX
+  // 6. Deposit /deposer/ Step 1->3 UI + Validation + Real pk_submit_listing AJAX
   // =========================================================================
   await page.goto(fixture.pages.deposerFr, { waitUntil: 'domcontentloaded', timeout: 30000 });
   let deposerAjaxRequests = 0;
+  let deposerAjaxOk = false;
   page.on('request', (req) => {
     if (req.url().includes('admin-ajax.php') && req.postData()?.includes('pk_submit_listing')) {
       deposerAjaxRequests++;
@@ -453,19 +446,30 @@ try {
   await page.locator('#next').click();
   const step3Visible = await page.locator('#page-3').evaluate((el) => !el.hidden);
 
-  // Step 3 (#next sets disabled = true without calling pk_submit_listing!)
+  // Step 3: missing phone triggers client error without submitting; valid phone triggers real pk_submit_listing
   const step3Title = await page.locator('#annonce-titre').inputValue();
+  await page.fill('#annonce-titre', `${step3Title} E2E-TUNNEL-UI`);
   await page.fill('#annonce-nom', 'Proprietaire E2E');
   await page.locator('#next').click();
-  await page.waitForTimeout(400);
-  const nextDisabledAfterClick = await page.locator('#next').isDisabled();
-  const deposerDeadEnd = step2Visible && step3Visible && nextDisabledAfterClick && deposerAjaxRequests === 0;
+  const phoneErrText = (await page.locator('#err').textContent())?.trim() || '';
+  const phoneRequiredBlocked = phoneErrText.includes('numéro de téléphone') && deposerAjaxRequests === 0;
+
+  await page.fill('#annonce-telephone', '0699887755');
+  const tunnelSubmitPromise = page.waitForResponse(
+    (res) => res.url().includes('admin-ajax.php') && res.request().postData()?.includes('pk_submit_listing'),
+    { timeout: 20000 }
+  );
+  await page.locator('#next').click();
+  const tunnelSubmitRes = await tunnelSubmitPromise;
+  const tunnelSubmitJson = await tunnelSubmitRes.json().catch(() => null);
+  deposerAjaxOk = tunnelSubmitRes.status() === 200 && tunnelSubmitJson?.success === true && tunnelSubmitJson?.data?.status === 'pending_whatsapp';
+  await page.locator('.pk-whatsapp-verification').waitFor({ state: 'visible', timeout: 10000 });
+  const waPanelCode = (await page.locator('.pk-whatsapp-code').textContent())?.trim() || '';
+  const waPanelHref = await page.locator('.pk-whatsapp-verification a[href^="https://wa.me/"]').getAttribute('href') || '';
+
   record('E2E-DEPOSER-TUNNEL-UI-001', 'deposit',
-    step2Visible && step3Visible && !deposerDeadEnd,
-    deposerDeadEnd
-      ? `DEFECT: /deposer/ Step 1->2->3 UI works (title="${step3Title}"), but Step 3 #next sets disabled=true with 0 pk_submit_listing AJAX calls`
-      : `step2=${step2Visible}; step3=${step3Visible}; nextDisabled=${nextDisabledAfterClick}; ajaxCalls=${deposerAjaxRequests}`,
-    deposerDeadEnd ? 'finding' : 'error');
+    step2Visible && step3Visible && phoneRequiredBlocked && deposerAjaxRequests === 1 && deposerAjaxOk && Boolean(waPanelCode) && waPanelHref.startsWith('https://wa.me/'),
+    `step2=${step2Visible}; step3=${step3Visible}; phoneErr="${phoneErrText}"; ajaxCalls=${deposerAjaxRequests}; http=${tunnelSubmitRes.status()}; code="${waPanelCode}"; waHref=${waPanelHref}`);
 
   // Real unmocked pk_submit_listing backend check via pkConfig.submitNonce on /fr/
   await page.goto(fixture.pages.homeFr, { waitUntil: 'domcontentloaded', timeout: 30000 });
@@ -597,8 +601,7 @@ try {
   const hashLinks = await page.locator('footer a[href="#"]').count();
   record('E2E-FOOTER-HASH-LINKS-001', 'chrome',
     hashLinks === 0,
-    hashLinks > 0 ? `DEFECT: footer has ${hashLinks} placeholder a[href="#"] links` : '0 placeholder links',
-    hashLinks > 0 ? 'finding' : 'error');
+    `footer a[href="#"] count=${hashLinks}`);
 
   await deskCtx.close();
 

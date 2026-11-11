@@ -62,10 +62,12 @@ if ($mode === 'cleanup') {
     foreach (get_users(['meta_key' => $mark]) as $u) {
         wp_delete_user((int) $u->ID, $reassign);
     }
-    $phoneSubmitUsers = get_users(['search' => '*212699887766*', 'search_columns' => ['user_login', 'user_email', 'display_name']]);
-    foreach ($phoneSubmitUsers as $u) {
-        if (!user_can((int) $u->ID, 'manage_options')) {
-            wp_delete_user((int) $u->ID, $reassign);
+    foreach (['*212699887766*', '*212699887755*', '*0699887755*'] as $searchPat) {
+        $phoneSubmitUsers = get_users(['search' => $searchPat, 'search_columns' => ['user_login', 'user_email', 'display_name']]);
+        foreach ($phoneSubmitUsers as $u) {
+            if (!user_can((int) $u->ID, 'manage_options')) {
+                wp_delete_user((int) $u->ID, $reassign);
+            }
         }
     }
 

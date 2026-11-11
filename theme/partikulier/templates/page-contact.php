@@ -41,6 +41,7 @@ get_header();
 				<form class="pk-contact-form" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" lang="<?php echo esc_attr( $pk_contact_lang ); ?>">
 					<?php wp_nonce_field( Partikulier_Contact::ACTION, 'pk_contact_nonce' ); ?>
 					<input type="hidden" name="action" value="<?php echo esc_attr( Partikulier_Contact::ACTION ); ?>">
+					<input type="hidden" name="pk_language" value="<?php echo esc_attr( $pk_contact_lang ); ?>">
 					<p class="pk-hp" aria-hidden="true">
 						<label for="pk-company">&#8203;</label>
 						<input type="text" name="pk_company" id="pk-company" tabindex="-1" autocomplete="off" value="">
@@ -54,14 +55,14 @@ get_header();
 						<input class="pk-input" type="email" name="pk_email" id="pk-contact-email" required maxlength="180" value="<?php echo esc_attr( $pk_email ); ?>" autocomplete="email">
 					</p>
 					<p class="pk-field">
-						<label class="pk-label" for="pk-contact-message"<?php echo 'ar' === $pk_contact_lang ? ' lang="fr"' : ''; ?>>Message <span class="pk-req">*</span></label>
+						<label class="pk-label" for="pk-contact-message"><?php echo esc_html( Partikulier_Contact::message_label() ); ?> <span class="pk-req">*</span></label>
 						<textarea class="pk-input" name="pk_message" id="pk-contact-message" required maxlength="4000" rows="7"><?php echo esc_textarea( $pk_message ); ?></textarea>
 					</p>
 					<p class="pk-contact-consent">
 						<input type="checkbox" name="pk_consent" id="pk-contact-consent" value="1" required<?php echo in_array( $pk_contact_error, array( 'case', 'envoi' ), true ) ? ' aria-invalid="true"' : ''; ?>>
 						<label for="pk-contact-consent" lang="<?php echo esc_attr( Partikulier_Contact::consent_lang() ); ?>"><?php echo esc_html( Partikulier_Contact::consent_sentence() ); ?> <span class="pk-req">*</span></label>
 					</p>
-					<button type="submit" class="pk-btn pk-btn-primary" lang="<?php echo esc_attr( $pk_ui_lang ); ?>"><?php echo 'en' === $pk_ui_lang ? 'Send' : 'Envoyer'; ?></button>
+					<button type="submit" class="pk-btn pk-btn-primary" lang="<?php echo esc_attr( $pk_ui_lang ); ?>"><?php echo esc_html( Partikulier_Contact::submit_label() ); ?></button>
 				</form>
 			<?php endif; ?>
 		</article>

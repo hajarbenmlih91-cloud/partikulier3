@@ -297,6 +297,61 @@ try {
         && str_contains($searchFormCode, 'id="pk-find-type-current"'),
         'pk-lang-toggle aria-label includes lang code and pk-find-type-btn aria-labelledby includes pk-find-type-current'
     );
+
+    // 9. FIX-WA-NEWLINE-10 : esc_wa_url() conserve %0A dans ?text= et single.php le rend intact.
+    $waEscaped = Partikulier_Buyer_Qualification::esc_wa_url($urlSet);
+    update_option('pk_theme_options', $optsWithNum);
+    $GLOBALS['post'] = get_post($props[0]);
+    $GLOBALS['wp_query']->queried_object = $GLOBALS['post'];
+    $GLOBALS['wp_query']->queried_object_id = $props[0];
+    $GLOBALS['wp_query']->is_single = true;
+    $GLOBALS['wp_query']->is_singular = true;
+    setup_postdata($GLOBALS['post']);
+    ob_start();
+    if (is_file($pk_single_file)) {
+        include $pk_single_file;
+    }
+    $htmlSet = (string) ob_get_clean();
+    wp_reset_postdata();
+    $GLOBALS['wp_query']->queried_object = $origQueriedObj;
+    $GLOBALS['wp_query']->queried_object_id = $origQueriedObjId;
+    $GLOBALS['wp_query']->is_single = $origIsSingle;
+    $GLOBALS['wp_query']->is_singular = $origIsSingular;
+
+    $assert(
+        'FIX-WA-NEWLINE-10',
+        str_contains($waEscaped, '%0A') && str_contains($htmlSet, '%0A'),
+        sprintf('waEscapedHas0A=%s singleHtmlHas0A=%s', str_contains($waEscaped, '%0A') ? 'yes' : 'no', str_contains($htmlSet, '%0A') ? 'yes' : 'no')
+    );
+
+    // 10. FIX-FOOTER-11 : footer.php ne contient plus aucun lien mort href="#".
+    $footerCode = (string) file_get_contents($themeRoot . '/templates/footer.php');
+    $assert(
+        'FIX-FOOTER-11',
+        !str_contains($footerCode, 'href="#"'),
+        str_contains($footerCode, 'href="#"') ? 'footer.php still has href="#"' : '0 placeholder href="#" in footer.php'
+    );
+
+    // 11. FIX-CONTACT-AR-12 : Partikulier_Contact expose des libellés arabes (consent, submit, ui_lang).
+    $contactCode = (string) file_get_contents($themeRoot . '/inc/class-contact.php');
+    $assert(
+        'FIX-CONTACT-AR-12',
+        str_contains($contactCode, 'CONSENT_AR')
+        && str_contains($contactCode, "'ar' === \$lang")
+        && method_exists('Partikulier_Contact', 'submit_label')
+        && method_exists('Partikulier_Contact', 'message_label'),
+        'Partikulier_Contact supports fr/en/ar across consent, submit, message, errors and ui_lang'
+    );
+
+    // 12. FIX-DEMO-FACTS-13 : cli/demo-facts.php porte es_property_price et status_slug a-vendre sur les 4 exemples.
+    $demoFactsCode = (string) file_get_contents($themeRoot . '/cli/demo-facts.php');
+    $assert(
+        'FIX-DEMO-FACTS-13',
+        substr_count($demoFactsCode, "'es_property_price'") >= 4
+        && substr_count($demoFactsCode, "'status_slug' => 'a-vendre'") >= 4
+        && str_contains($demoFactsCode, 'pk_demo_status_term_id'),
+        'demo-facts.php assigns sale prices and a-vendre status terms to all 4 examples'
+    );
 } catch (Throwable $e) {
     $assert('FIX-UNEXPECTED', false, $e->getMessage());
 } finally {

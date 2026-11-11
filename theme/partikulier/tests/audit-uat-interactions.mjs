@@ -393,9 +393,8 @@ try {
       await uatPage.waitForTimeout(200);
       const after = await postSwapHeart.getAttribute('aria-pressed');
       const ok = before !== after;
-      record('finding', 'UAT Wishlist stays bound after archive AJAX swap', ok,
-        ok ? `toggled ${before} -> ${after}` : `aria-pressed stayed ${before} after AJAX swap (pkBindWishlist not re-called)`,
-        'warning');
+      record('interaction', 'UAT Wishlist stays bound after archive AJAX swap', ok,
+        ok ? `toggled ${before} -> ${after}` : `aria-pressed stayed ${before} after AJAX swap`);
       if (ok) await postSwapHeart.click();
     }
   } catch (err) {
@@ -405,23 +404,24 @@ try {
   // Card consistency + footer links check on live /fr/annonces/ & /ar/annonces/
   await uatPage.goto(`${BASE}/fr/annonces/?pk_audit=219`, { waitUntil: 'domcontentloaded', timeout: 30000 });
   const frArchiveAudit = await uatPage.evaluate(() => {
-    const cards = Array.from(document.querySelectorAll('.pk-card')).slice(0, 10).map(c => ({
+    const cards = Array.from(document.querySelectorAll('.pk-card')).slice(0, 12).map(c => ({
       title: c.querySelector('.pk-card-title')?.textContent?.trim() || '',
       badge: c.querySelector('.pk-card-badge, .pk-badge')?.textContent?.trim() || '',
       price: c.querySelector('.pk-card-price')?.textContent?.trim() || '',
       href: c.querySelector('a[href]')?.getAttribute('href') || '',
     }));
     const mismatched = cards.filter(c => /à vendre/i.test(c.title) && /à louer/i.test(c.badge));
+    const missingPrices = cards.filter(c => /Prix sur demande/i.test(c.price));
     const hashLinks = document.querySelectorAll('footer a[href="#"]').length;
-    return { cardsCount: cards.length, mismatched, hashLinks, firstFiveHrefs: cards.slice(0, 5).map(c => c.href) };
+    return { cardsCount: cards.length, mismatched, missingPrices, hashLinks, firstFiveHrefs: cards.slice(0, 5).map(c => c.href) };
   });
-  record('finding', 'UAT FR archive card badges match sale titles', frArchiveAudit.mismatched.length === 0,
-    frArchiveAudit.mismatched.length === 0
-      ? '0 mismatched badges'
-      : `${frArchiveAudit.mismatched.length} card(s) have "à vendre" title with "À louer" badge: ${frArchiveAudit.mismatched.map(m => `${m.title} (${m.price})`).join('; ')}`,
-    'warning');
-  record('finding', 'UAT Footer has no placeholder href="#" links', frArchiveAudit.hashLinks === 0,
-    `footer a[href="#"] count=${frArchiveAudit.hashLinks}`, 'warning');
+  record('interaction', 'UAT FR archive card badges and prices match sale listings',
+    frArchiveAudit.mismatched.length === 0 && frArchiveAudit.missingPrices.length === 0,
+    frArchiveAudit.mismatched.length === 0 && frArchiveAudit.missingPrices.length === 0
+      ? `0 mismatched badges, 0 missing prices across ${frArchiveAudit.cardsCount} cards`
+      : `mismatched=${JSON.stringify(frArchiveAudit.mismatched)}; missingPrices=${JSON.stringify(frArchiveAudit.missingPrices)}`);
+  record('interaction', 'UAT Footer has no placeholder href="#" links', frArchiveAudit.hashLinks === 0,
+    `footer a[href="#"] count=${frArchiveAudit.hashLinks}`);
 
   // 3. Live Single Listing: Gallery + Lightbox + Share + WhatsApp href check across FR/EN/AR + Favorites round-trip
   try {
@@ -483,8 +483,8 @@ try {
       await uatPage.waitForTimeout(400);
       const enFavText = (await uatPage.locator('#pk-fav-count').textContent().catch(() => ''))?.trim() || '';
       const enFavHardcodedFr = /Aucune annonce enregistrée/i.test(enFavText);
-      record('finding', 'UAT /en/favoris/ empty text is localized', !enFavHardcodedFr,
-        `#pk-fav-count="${enFavText}"`, 'warning');
+      record('interaction', 'UAT /en/favoris/ empty text is localized', !enFavHardcodedFr && /No saved listings/i.test(enFavText),
+        `#pk-fav-count="${enFavText}"`);
 
       // Inspect live wa.me links across FR, EN, AR single pages
       for (const locale of ['fr', 'en', 'ar']) {
@@ -494,8 +494,8 @@ try {
             Array.from(document.querySelectorAll('.pk-card-badge, .pk-badge')).slice(0, 6).map(el => el.textContent?.trim() || '')
           );
           const hasFallbackBadge = arBadges.some(t => /À louer|À vendre|For Rent|For Sale/i.test(t));
-          record('finding', 'UAT AR archive badges localized', arBadges.length > 0 && !hasFallbackBadge,
-            `ar sample badges=${JSON.stringify(arBadges)}`, 'warning');
+          record('interaction', 'UAT AR archive badges localized', arBadges.length > 0 && !hasFallbackBadge,
+            `ar sample badges=${JSON.stringify(arBadges)}`);
         }
         const firstCardUrl = await uatPage.locator('.pk-card a[href]').first().getAttribute('href');
         if (firstCardUrl) {
@@ -503,9 +503,9 @@ try {
           const waHref = await uatPage.locator('a.pk-btn-whatsapp[href]').first().getAttribute('href').catch(() => '');
           const waText = waHref ? (new URL(waHref).searchParams.get('text') || '') : '';
           const glued = /PK-[A-Z0-9-]+\.(?:Lien|Link|الرابط)/i.test(waText);
-          record('finding', `UAT ${locale.toUpperCase()} wa.me link includes newline separator`,
-            Boolean(waHref) && !glued,
-            `url=${firstCardUrl}; text=${JSON.stringify(waText)}`, 'warning');
+          record('interaction', `UAT ${locale.toUpperCase()} wa.me link includes newline separator`,
+            Boolean(waHref) && waText.includes('\n') && !glued,
+            `url=${firstCardUrl}; hasNewline=${waText.includes('\n')}; text=${JSON.stringify(waText)}`);
         }
       }
     }
@@ -522,8 +522,9 @@ try {
       consentText: document.querySelector('label[for="pk-contact-consent"]')?.textContent?.trim() || '',
     }));
     const contactFrFallback = arContact.submitText === 'Envoyer' || /J’accepte/.test(arContact.consentText);
-    record('finding', 'UAT /ar/contact/ localized instead of FR fallback', !contactFrFallback,
-      JSON.stringify(arContact), 'warning');
+    record('interaction', 'UAT /ar/contact/ localized instead of FR fallback',
+      !contactFrFallback && arContact.formLang === 'ar' && arContact.submitText === 'إرسال',
+      JSON.stringify(arContact));
 
     await uatPage.goto(`${BASE}/fr/connexion/?auth_item=login-form&pk_audit=219`, { waitUntil: 'domcontentloaded', timeout: 30000 });
     await clearUatModals(uatPage);
@@ -539,13 +540,24 @@ try {
     }
     record('interaction', 'UAT /fr/connexion/ auth screen toggles work', authToggleOk, `authToggleOk=${authToggleOk}`);
 
-    // Safety belt on /fr/deposer/: explicitly block any hypothetical pk_submit_listing POST on live UAT
+    // Safety belt on /fr/deposer/: intercept pk_submit_listing without persisting a row to live UAT DB
     let deposerSubmitPosts = 0;
     await uatPage.route('**/admin-ajax.php', async (route) => {
       const postData = route.request().postData() || '';
       if (postData.includes('pk_submit_listing')) {
         deposerSubmitPosts++;
-        await route.abort();
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            success: true,
+            data: {
+              status: 'pending_whatsapp',
+              verification_code: 'PK-UAT-DRYRUN',
+              whatsapp_url: 'https://wa.me/212612345678?text=PK-UAT-DRYRUN',
+            },
+          }),
+        });
         return;
       }
       await route.continue();
@@ -577,12 +589,15 @@ try {
     const s3Title = await uatPage.locator('#annonce-titre').inputValue();
     await uatPage.fill('#annonce-nom', 'Audit UAT Lecture Seule');
     await uatPage.locator('#next').click();
-    await uatPage.waitForTimeout(300);
-    const s3Disabled = await uatPage.locator('#next').isDisabled();
-    record('interaction', 'UAT /fr/deposer/ Steps 1 to 3 UI progression works', s2 && s3,
-      `step2=${s2}; step3=${s3}; generatedTitle="${s3Title}"`);
-    record('finding', 'UAT /fr/deposer/ Step 3 #next submits pk_submit_listing', !(s3Disabled && deposerSubmitPosts === 0),
-      `nextDisabled=${s3Disabled}; submitPostsAttempted=${deposerSubmitPosts} (prototype dead-end in apercu-tunnel.html)`, 'warning');
+    const phoneErrText = (await uatPage.locator('#err').textContent())?.trim() || '';
+    await uatPage.fill('#annonce-telephone', '0699887755');
+    await uatPage.locator('#next').click();
+    await uatPage.locator('.pk-whatsapp-verification').waitFor({ state: 'visible', timeout: 5000 });
+    const waPanelCode = (await uatPage.locator('.pk-whatsapp-code').textContent())?.trim() || '';
+    record('interaction', 'UAT /fr/deposer/ Steps 1 to 3 UI progression works', s2 && s3 && phoneErrText.includes('numéro de téléphone'),
+      `step2=${s2}; step3=${s3}; phoneErr="${phoneErrText}"; generatedTitle="${s3Title}"`);
+    record('interaction', 'UAT /fr/deposer/ Step 3 #next submits pk_submit_listing', deposerSubmitPosts === 1 && waPanelCode.includes('PK-UAT-DRYRUN'),
+      `submitPostsAttempted=${deposerSubmitPosts}; waPanelCode="${waPanelCode}"`);
   } catch (err) {
     record('interaction', 'UAT Contact / Connexion / Deposer checks', false, err.message);
   }

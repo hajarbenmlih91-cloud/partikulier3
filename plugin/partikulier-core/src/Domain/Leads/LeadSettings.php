@@ -127,12 +127,20 @@ final class LeadSettings
             $reference = (string) get_post_meta($post_id, '_pk_buyer_reference', true);
             if ('' === $reference) $reference = 'PK-' . $post_id;
         }
+        $ville    = (string) get_post_meta($post_id, '_pk_ville', true);
+        if ('' === $ville) {
+            $ville = (string) get_post_meta($post_id, '_pk_city_name', true);
+        }
+        $quartier = (string) get_post_meta($post_id, '_pk_quartier', true);
+        if ('' === $quartier) {
+            $quartier = (string) get_post_meta($post_id, '_pk_district_name', true);
+        }
         $replacements = [
             '{reference}' => $reference,
             '{lien}'      => (string) get_permalink($post_id),
             '{titre}'     => (string) get_the_title($post_id),
-            '{ville}'     => (string) get_post_meta($post_id, '_pk_ville', true),
-            '{quartier}'  => (string) get_post_meta($post_id, '_pk_quartier', true),
+            '{ville}'     => $ville,
+            '{quartier}'  => $quartier,
             '{prix}'      => (string) get_post_meta($post_id, 'es_property_price', true),
         ];
         return strtr($tpl, $replacements);
