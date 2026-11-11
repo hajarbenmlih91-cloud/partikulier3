@@ -162,16 +162,19 @@ try {
     $healthResp = rest_do_request(new WP_REST_Request('GET', '/partikulier/v1/health'));
     remove_action('litespeed_control_set_nocache', $hookListener);
     $healthHeaders = array_change_key_case($healthResp->get_headers(), CASE_LOWER);
+    $healthData = (array) $healthResp->get_data();
     $ccHeader = (string) ($healthHeaders['cache-control'] ?? '');
     $lsHeader = (string) ($healthHeaders['x-litespeed-cache-control'] ?? '');
     $assert(
         'FIX-HEALTH-03',
-        $healthResp->get_status() === 200
+        in_array($healthResp->get_status(), [200, 503], true)
+        && isset($healthData['status'], $healthData['database'])
+        && !isset($healthData['domains'])
         && $litespeedFired
         && str_contains($ccHeader, 'no-store')
         && str_contains($ccHeader, 'no-cache')
         && $lsHeader === 'no-cache',
-        sprintf('status=%d ls_action=%s Cache-Control=%s X-LiteSpeed-Cache-Control=%s', $healthResp->get_status(), $litespeedFired ? 'yes' : 'no', $ccHeader, $lsHeader)
+        sprintf('status=%d payload=%s ls_action=%s Cache-Control=%s X-LiteSpeed-Cache-Control=%s', $healthResp->get_status(), (string) ($healthData['status'] ?? '?'), $litespeedFired ? 'yes' : 'no', $ccHeader, $lsHeader)
     );
 
     // 3. FIX-CACHE-04 : contact(/fr/contact/, /en/contact/, /ar/contact/, /contact-en/) exclu du cache.
