@@ -798,6 +798,47 @@ jobs:
             echo "::error title=Oracle 457/457::$detail"
             exit "$oracle_status"
           fi
+      - name: E2E complet sans mocks (recherche, archive AJAX, galerie, favoris, contact, dépôt, propriétaire)
+        run: |
+          set -euo pipefail
+          mkdir -p preuves-run/integration
+          SRV=''
+          report_e2e_error() {
+            status=$?
+            echo "Diagnostic e2e-full (exit $status):"
+            if [[ -f /tmp/e2e-full.stderr.log ]]; then
+              tail -n 60 /tmp/e2e-full.stderr.log
+            fi
+            if [[ -f /tmp/wp-e2e-full.log ]]; then
+              echo 'Serveur PHP:'
+              tail -n 30 /tmp/wp-e2e-full.log
+            fi
+            exit "$status"
+          }
+          trap report_e2e_error ERR
+          cleanup_e2e() {
+            PK_WP_DIR=$PWD/wp php theme/partikulier/tests/e2e-full-fixture.php cleanup || true
+            if [[ -n "${SRV:-}" ]]; then kill "$SRV" 2>/dev/null || true; fi
+          }
+          trap cleanup_e2e EXIT
+          PK_WP_DIR=$PWD/wp php theme/partikulier/tests/e2e-full-fixture.php setup > preuves-run/integration/e2e-full-fixture.json
+          php -S 127.0.0.1:8099 -t wp theme/partikulier/tests/router-ci.php > /tmp/wp-e2e-full.log 2>&1 &
+          SRV=$!
+          sain=false
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8099/fr/ || true)
+            if [ "$code" = "200" ]; then sain=true; break; fi
+            sleep 0.5
+          done
+          if [ "$sain" != true ]; then
+            echo "FAIL  e2e-full (sonde HTTP : pas de 200 sur /fr/, code=$code)" | tee -a preuves-run/journal.txt
+            exit 1
+          fi
+          PK_BASE=http://127.0.0.1:8099 \
+          PK_E2E_FIXTURE=$PWD/preuves-run/integration/e2e-full-fixture.json \
+          PK_E2E_OUT=$PWD/preuves-run/integration/e2e-full.json \
+            node theme/partikulier/tests/e2e-full-interactions.mjs 2> /tmp/e2e-full.stderr.log
+          echo "PASS  e2e-full" | tee -a preuves-run/journal.txt
       - name: Publier les résultats
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

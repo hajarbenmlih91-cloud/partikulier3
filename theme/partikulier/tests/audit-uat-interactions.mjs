@@ -251,6 +251,339 @@ try {
     record('interaction', 'Search type selector visible', false, 'No visible .pk-find-type-btn on mobile home');
   }
 
+  // =========================================================================
+  // Safe non-destructive live UAT E2E checks (desktop + mobile interactions)
+  // =========================================================================
+  const uatCtx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  await uatCtx.addInitScript(() => {
+    if (!navigator.clipboard) {
+      Object.defineProperty(navigator, 'clipboard', {
+        value: { writeText: async (txt) => { window.__pkUatCopied = txt; } },
+        configurable: true,
+      });
+    } else {
+      const orig = navigator.clipboard.writeText?.bind(navigator.clipboard);
+      navigator.clipboard.writeText = async (txt) => {
+        window.__pkUatCopied = txt;
+        if (orig) return orig(txt).catch(() => {});
+      };
+    }
+  });
+  const uatPage = await uatCtx.newPage();
+  openPages.push({ context: uatCtx, page: uatPage, label: 'uat-desktop-e2e' });
+  uatPage.on('pageerror', error => pageErrors.push(`uat-desktop-e2e: ${error.message}`));
+
+  const clearUatModals = async (pg) => {
+    const g = pg.locator('[data-pk-lang-gate]');
+    if (await g.isVisible().catch(() => false)) {
+      await g.locator('[data-pk-lang-dismiss]').click({ timeout: 5000 }).catch(() => {});
+      await g.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
+    }
+    const c = pg.locator('[data-pk-cookie] [data-no]');
+    if (await c.isVisible().catch(() => false)) {
+      await c.click({ timeout: 5000 }).catch(() => {});
+      await pg.locator('[data-pk-cookie]').waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
+    }
+  };
+
+  // 1. Live Hero Search: pk_find_count + pk_places_search autocomplete + submit to /fr/annonces/
+  await uatPage.goto(`${BASE}/fr/?pk_audit=219`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await clearUatModals(uatPage);
+  try {
+    const fcPromise = uatPage.waitForResponse(
+      r => r.url().includes('/admin-ajax.php') && r.request().postData()?.includes('action=pk_find_count'),
+      { timeout: 15000 }
+    );
+    await uatPage.locator('.pk-find-tab[for="pk-find-rent"]').click();
+    const fcRes = await fcPromise;
+    const fcJson = await fcRes.json().catch(() => null);
+    record('interaction', 'UAT Hero tab click opens popup and runs live pk_find_count',
+      fcRes.status() === 200 && fcJson?.success === true && typeof fcJson?.data?.count === 'number',
+      `http=${fcRes.status()}; count=${fcJson?.data?.count}`);
+
+    const psPromise = uatPage.waitForResponse(
+      r => r.url().includes('action=pk_places_search') && r.url().includes('Casa'),
+      { timeout: 15000 }
+    );
+    await uatPage.locator('#pk-s-city-input').fill('Casa');
+    const psRes = await psPromise;
+    const psJson = await psRes.json().catch(() => null);
+    const firstCitySuggest = uatPage.locator('#pk-s-city-suggestions .pk-suggest-item').first();
+    await firstCitySuggest.waitFor({ state: 'visible', timeout: 8000 });
+    await firstCitySuggest.dispatchEvent('mousedown');
+    const selectedCitySlug = await uatPage.locator('#pk-s-city-value').inputValue();
+    record('interaction', 'UAT Autocomplete pk_places_search resolves city slug',
+      psRes.status() === 200 && psJson?.success === true && selectedCitySlug.length > 0,
+      `http=${psRes.status()}; results=${psJson?.data?.results?.length ?? 0}; es_city=${selectedCitySlug}`);
+
+    await uatPage.locator('.pk-find-tx-btn[data-pk-intent="a-vendre"]').click();
+    await Promise.all([
+      uatPage.waitForURL(u => u.pathname.includes('/annonces'), { timeout: 15000 }),
+      uatPage.locator('.pk-find-results').click(),
+    ]);
+    const landedArchiveCards = await uatPage.locator('.pk-archive-content .pk-card').count();
+    record('interaction', 'UAT Search submit lands on filtered archive',
+      uatPage.url().includes('/annonces') && landedArchiveCards >= 1,
+      `url=${uatPage.url()}; cards=${landedArchiveCards}`);
+  } catch (err) {
+    record('interaction', 'UAT Hero search and autocomplete', false, err.message);
+  }
+
+  // 2. Live Archive AJAX Swaps (Sort, Places modal, Chip removal, Post-swap wishlist) & Card/Footer audit
+  await uatPage.goto(`${BASE}/fr/annonces/?pk_audit=219`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await clearUatModals(uatPage);
+  try {
+    await uatPage.evaluate(() => { window.__pkUatAlive = 'yes'; });
+    await uatPage.locator('[data-pk-open-sort]:visible').first().click();
+    const sortOpen = await uatPage.locator('[data-pk-sort]').evaluate(el => !el.hidden);
+    const sortReq = uatPage.waitForResponse(
+      r => r.url().includes('pk_order=price-asc') && r.request().headers()['x-requested-with'] === 'pk-results',
+      { timeout: 15000 }
+    );
+    await uatPage.locator('.pk-sort-list a[href*="pk_order=price-asc"]').first().click();
+    const sortRes = await sortReq;
+    await uatPage.waitForFunction(() => location.search.includes('pk_order=price-asc'), { timeout: 10000 });
+    const aliveSort = await uatPage.evaluate(() => window.__pkUatAlive === 'yes');
+    record('interaction', 'UAT Archive sort modal performs AJAX swap without reload',
+      sortOpen && sortRes.status() === 200 && aliveSort,
+      `sortOpen=${sortOpen}; http=${sortRes.status()}; noReload=${aliveSort}`);
+
+    if (await uatPage.locator('[data-pk-open-places]:visible').count()) {
+      await uatPage.locator('[data-pk-open-places]:visible').first().click();
+      const placesOpen = await uatPage.locator('[data-pk-places]').evaluate(el => !el.hidden);
+      const firstPlace = uatPage.locator('[data-pk-places] .pk-places-list a[href]').first();
+      if (await firstPlace.count()) {
+        const placeReq = uatPage.waitForResponse(
+          r => r.request().headers()['x-requested-with'] === 'pk-results',
+          { timeout: 15000 }
+        );
+        await firstPlace.click();
+        const placeRes = await placeReq;
+        await uatPage.waitForTimeout(300);
+        const chipsAfterPlace = await uatPage.locator('.pk-chosen-chip').count();
+        record('interaction', 'UAT Archive places modal filters via AJAX swap',
+          placesOpen && placeRes.status() === 200 && chipsAfterPlace >= 1,
+          `placesOpen=${placesOpen}; http=${placeRes.status()}; chips=${chipsAfterPlace}`);
+      } else {
+        await uatPage.locator('[data-pk-places-close]').first().click().catch(() => {});
+      }
+    }
+
+    const chipRm = uatPage.locator('.pk-chosen-chip[href], .pk-chosen-chip a[href]').first();
+    if (await chipRm.count()) {
+      const beforeChips = await uatPage.locator('.pk-chosen-chip').count();
+      const rmReq = uatPage.waitForResponse(
+        r => r.request().headers()['x-requested-with'] === 'pk-results',
+        { timeout: 15000 }
+      );
+      await chipRm.click();
+      const rmRes = await rmReq;
+      await uatPage.waitForTimeout(300);
+      const afterChips = await uatPage.locator('.pk-chosen-chip').count();
+      record('interaction', 'UAT Archive filter chip removal performs AJAX swap',
+        rmRes.status() === 200 && afterChips < beforeChips,
+        `http=${rmRes.status()}; chips=${beforeChips} -> ${afterChips}`);
+    }
+
+    const postSwapHeart = uatPage.locator('.pk-archive-content .pk-card-wishlist').first();
+    if (await postSwapHeart.count()) {
+      const before = await postSwapHeart.getAttribute('aria-pressed');
+      await postSwapHeart.click();
+      await uatPage.waitForTimeout(200);
+      const after = await postSwapHeart.getAttribute('aria-pressed');
+      const ok = before !== after;
+      record('finding', 'UAT Wishlist stays bound after archive AJAX swap', ok,
+        ok ? `toggled ${before} -> ${after}` : `aria-pressed stayed ${before} after AJAX swap (pkBindWishlist not re-called)`,
+        'warning');
+      if (ok) await postSwapHeart.click();
+    }
+  } catch (err) {
+    record('interaction', 'UAT Archive AJAX swaps', false, err.message);
+  }
+
+  // Card consistency + footer links check on live /fr/annonces/ & /ar/annonces/
+  await uatPage.goto(`${BASE}/fr/annonces/?pk_audit=219`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  const frArchiveAudit = await uatPage.evaluate(() => {
+    const cards = Array.from(document.querySelectorAll('.pk-card')).slice(0, 10).map(c => ({
+      title: c.querySelector('.pk-card-title')?.textContent?.trim() || '',
+      badge: c.querySelector('.pk-card-badge, .pk-badge')?.textContent?.trim() || '',
+      price: c.querySelector('.pk-card-price')?.textContent?.trim() || '',
+      href: c.querySelector('a[href]')?.getAttribute('href') || '',
+    }));
+    const mismatched = cards.filter(c => /à vendre/i.test(c.title) && /à louer/i.test(c.badge));
+    const hashLinks = document.querySelectorAll('footer a[href="#"]').length;
+    return { cardsCount: cards.length, mismatched, hashLinks, firstFiveHrefs: cards.slice(0, 5).map(c => c.href) };
+  });
+  record('finding', 'UAT FR archive card badges match sale titles', frArchiveAudit.mismatched.length === 0,
+    frArchiveAudit.mismatched.length === 0
+      ? '0 mismatched badges'
+      : `${frArchiveAudit.mismatched.length} card(s) have "à vendre" title with "À louer" badge: ${frArchiveAudit.mismatched.map(m => `${m.title} (${m.price})`).join('; ')}`,
+    'warning');
+  record('finding', 'UAT Footer has no placeholder href="#" links', frArchiveAudit.hashLinks === 0,
+    `footer a[href="#"] count=${frArchiveAudit.hashLinks}`, 'warning');
+
+  // 3. Live Single Listing: Gallery + Lightbox + Share + WhatsApp href check across FR/EN/AR + Favorites round-trip
+  try {
+    let singleUrl = frArchiveAudit.firstFiveHrefs.find(Boolean);
+    for (const candidate of frArchiveAudit.firstFiveHrefs) {
+      if (!candidate) continue;
+      await uatPage.goto(candidate, { waitUntil: 'domcontentloaded', timeout: 30000 });
+      const slideCount = await uatPage.locator('.pk-carousel-slide').count();
+      if (slideCount >= 2) {
+        singleUrl = candidate;
+        break;
+      }
+    }
+    if (singleUrl) {
+      await clearUatModals(uatPage);
+      const countStart = (await uatPage.locator('.pk-carousel-count').textContent().catch(() => ''))?.trim() || '';
+      if (await uatPage.locator('.pk-carousel-next').count()) {
+        await uatPage.locator('.pk-carousel-next').click();
+      }
+      const countNext = (await uatPage.locator('.pk-carousel-count').textContent().catch(() => ''))?.trim() || '';
+      await uatPage.locator('.pk-carousel-slide.is-active').click();
+      const lbVisible = await uatPage.locator('.pk-gallery-lightbox').evaluate(el => !el.hidden);
+      await uatPage.keyboard.press('Escape');
+      const lbHidden = await uatPage.locator('.pk-gallery-lightbox').evaluate(el => el.hidden);
+      record('interaction', 'UAT Single listing gallery carousel and lightbox',
+        Boolean(countStart) && countStart !== countNext && lbVisible && lbHidden,
+        `url=${singleUrl}; count=${countStart} -> ${countNext}; lbVisible=${lbVisible}; lbClosedEsc=${lbHidden}`);
+
+      const shareBtn = uatPage.locator('.pk-single-share');
+      await shareBtn.click();
+      await uatPage.waitForTimeout(200);
+      const copied = await uatPage.evaluate(() => window.__pkUatCopied || '');
+      record('interaction', 'UAT Single listing share button',
+        copied.includes('http'),
+        `copied=${copied}`);
+
+      // Toggle wishlist on single -> verify on /fr/favoris/ -> remove cleanly -> inspect /en/favoris/
+      const heartBtn = uatPage.locator('.pk-single-actions .pk-card-wishlist');
+      const favId = await heartBtn.getAttribute('data-post-id');
+      await heartBtn.click();
+      await uatPage.waitForTimeout(400);
+      const favReq = uatPage.waitForResponse(
+        r => r.url().includes('/admin-ajax.php') && r.request().postData()?.includes('action=pk_favorites_list'),
+        { timeout: 15000 }
+      );
+      await uatPage.goto(`${BASE}/fr/favoris/?pk_audit=219`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+      const favRes = await favReq;
+      const favCards = await uatPage.locator('#pk-favorites-grid .pk-card').count();
+      record('interaction', 'UAT Wishlist + /fr/favoris/ live pk_favorites_list',
+        favRes.status() === 200 && favCards >= 1,
+        `postId=${favId}; http=${favRes.status()}; cards=${favCards}`);
+
+      // Remove favorite cleanly so UAT server counter returns to baseline
+      if (await uatPage.locator('#pk-favorites-grid .pk-card-wishlist').count()) {
+        await uatPage.locator('#pk-favorites-grid .pk-card-wishlist').first().click();
+        await uatPage.waitForTimeout(400);
+      }
+      await uatPage.goto(`${BASE}/en/favoris/?pk_audit=219`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+      await uatPage.waitForTimeout(400);
+      const enFavText = (await uatPage.locator('#pk-fav-count').textContent().catch(() => ''))?.trim() || '';
+      const enFavHardcodedFr = /Aucune annonce enregistrée/i.test(enFavText);
+      record('finding', 'UAT /en/favoris/ empty text is localized', !enFavHardcodedFr,
+        `#pk-fav-count="${enFavText}"`, 'warning');
+
+      // Inspect live wa.me links across FR, EN, AR single pages
+      for (const locale of ['fr', 'en', 'ar']) {
+        await uatPage.goto(`${BASE}/${locale}/annonces/?pk_audit=219`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+        if (locale === 'ar') {
+          const arBadges = await uatPage.evaluate(() =>
+            Array.from(document.querySelectorAll('.pk-card-badge, .pk-badge')).slice(0, 6).map(el => el.textContent?.trim() || '')
+          );
+          const hasMissingAr = arBadges.some(t => /للإيجار|للبيع/.test(t));
+          record('finding', 'UAT AR archive badges inspected', !hasMissingAr,
+            `ar sample badges=${JSON.stringify(arBadges)}`, 'warning');
+        }
+        const firstCardUrl = await uatPage.locator('.pk-card a[href]').first().getAttribute('href');
+        if (firstCardUrl) {
+          await uatPage.goto(firstCardUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+          const waHref = await uatPage.locator('a.pk-btn-whatsapp[href]').first().getAttribute('href').catch(() => '');
+          const waText = waHref ? (new URL(waHref).searchParams.get('text') || '') : '';
+          const glued = /PK-[A-Z0-9-]+\.(?:Lien|Link|الرابط)/i.test(waText);
+          record('finding', `UAT ${locale.toUpperCase()} wa.me link includes newline separator`,
+            Boolean(waHref) && !glued,
+            `url=${firstCardUrl}; text=${JSON.stringify(waText)}`, 'warning');
+        }
+      }
+    }
+  } catch (err) {
+    record('interaction', 'UAT Single & Favorites flows', false, err.message);
+  }
+
+  // 4. Safe non-submitting checks: /ar/contact/, /fr/connexion/ toggles, /fr/deposer/ Step 1->3 UI
+  try {
+    await uatPage.goto(`${BASE}/ar/contact/?pk_audit=219`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    const arContact = await uatPage.evaluate(() => ({
+      formLang: document.querySelector('.pk-contact-form')?.getAttribute('lang') || '',
+      submitText: document.querySelector('.pk-contact-form button[type="submit"]')?.textContent?.trim() || '',
+      consentText: document.querySelector('label[for="pk-contact-consent"]')?.textContent?.trim() || '',
+    }));
+    const contactFrFallback = arContact.submitText === 'Envoyer' || /J’accepte/.test(arContact.consentText);
+    record('finding', 'UAT /ar/contact/ localized instead of FR fallback', !contactFrFallback,
+      JSON.stringify(arContact), 'warning');
+
+    await uatPage.goto(`${BASE}/fr/connexion/?auth_item=login-form&pk_audit=219`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await clearUatModals(uatPage);
+    let authToggleOk = false;
+    const rstLink = uatPage.locator('.pk-auth-card [data-auth-item="reset-form"]').first();
+    if (await rstLink.count()) {
+      await rstLink.click();
+      const rstOn = await uatPage.locator('.es-auth__reset-form').evaluate(el => !el.classList.contains('es-auth__item--hidden'));
+      await uatPage.locator('.pk-auth-card [data-auth-item="login-form"]').first().click();
+      const loginOn = await uatPage.locator('.es-auth__login-form').evaluate(el => !el.classList.contains('es-auth__item--hidden'));
+      authToggleOk = rstOn && loginOn;
+    }
+    record('interaction', 'UAT /fr/connexion/ auth screen toggles work', authToggleOk, `authToggleOk=${authToggleOk}`);
+
+    // Safety belt on /fr/deposer/: explicitly block any hypothetical pk_submit_listing POST on live UAT
+    let deposerSubmitPosts = 0;
+    await uatPage.route('**/admin-ajax.php', async (route) => {
+      const postData = route.request().postData() || '';
+      if (postData.includes('pk_submit_listing')) {
+        deposerSubmitPosts++;
+        await route.abort();
+        return;
+      }
+      await route.continue();
+    });
+    await uatPage.goto(`${BASE}/fr/deposer/?pk_audit=219`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await uatPage.locator('#role [data-val="proprietaire"]').click();
+    await uatPage.locator('#transaction [data-val="vente"]').click();
+    await uatPage.locator('#famille [data-val="bureau"]').click();
+    await uatPage.fill('#ville', 'Casablanca');
+    await uatPage.locator('#ville-list li').first().waitFor({ state: 'visible', timeout: 5000 });
+    await uatPage.locator('#ville-list li').first().dispatchEvent('mousedown');
+    await uatPage.fill('#quartier', 'Maarif');
+    await uatPage.locator('#quartier-list li').first().waitFor({ state: 'visible', timeout: 5000 });
+    await uatPage.locator('#quartier-list li').first().dispatchEvent('mousedown');
+    await uatPage.locator('#next').click();
+    const s2 = await uatPage.locator('#page-2').evaluate(el => !el.hidden);
+
+    await uatPage.locator('#bu-type [data-val="plateau"]').click();
+    await uatPage.fill('#bu-surface', '120');
+    await uatPage.locator('#bu-etage [data-val="rdc"]').click();
+    await uatPage.locator('#bu-places [data-dir="1"]').click();
+    await uatPage.locator('#bu-amenagement [data-val="ouvert"]').click();
+    await uatPage.fill('#bu-prix', '2400000');
+    await uatPage.setInputFiles('#photos-input', path.resolve('assets/img/pep-logo.png'));
+    await uatPage.locator('#photos-liste > *').first().waitFor({ state: 'visible', timeout: 10000 });
+    await uatPage.locator('#next').click();
+    const s3 = await uatPage.locator('#page-3').evaluate(el => !el.hidden);
+    const s3Title = await uatPage.locator('#annonce-titre').inputValue();
+    await uatPage.fill('#annonce-nom', 'Audit UAT Lecture Seule');
+    await uatPage.locator('#next').click();
+    await uatPage.waitForTimeout(300);
+    const s3Disabled = await uatPage.locator('#next').isDisabled();
+    record('interaction', 'UAT /fr/deposer/ Steps 1 to 3 UI progression works', s2 && s3,
+      `step2=${s2}; step3=${s3}; generatedTitle="${s3Title}"`);
+    record('finding', 'UAT /fr/deposer/ Step 3 #next submits pk_submit_listing', !(s3Disabled && deposerSubmitPosts === 0),
+      `nextDisabled=${s3Disabled}; submitPostsAttempted=${deposerSubmitPosts} (prototype dead-end in apercu-tunnel.html)`, 'warning');
+  } catch (err) {
+    record('interaction', 'UAT Contact / Connexion / Deposer checks', false, err.message);
+  }
+
   await homeFr.page.waitForTimeout(250);
   await archiveFr.page.waitForTimeout(250);
   const eventGroups = [];
@@ -318,6 +651,10 @@ const md = [
   '## Interactions',
   '',
   ...checks.filter(item => item.category === 'interaction').map(item => `- ${item.status} — ${item.check}: ${item.detail}`),
+  '',
+  '## Constats (non bloquants / défauts préexistants confirmés)',
+  '',
+  ...checks.filter(item => item.category === 'finding').map(item => `- ${item.status} — ${item.check}: ${item.detail}`),
   '',
 ].join('\n');
 await writeFile(path.join(OUT, 'interaction-web-vitals.md'), md);
