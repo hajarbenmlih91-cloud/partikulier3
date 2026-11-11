@@ -26,15 +26,6 @@ const record = (testId, category, ok, detail, severity = 'error') => {
 
 const clearGates = async (page) => {
   await page.waitForLoadState('load').catch(() => {});
-  const gate = page.locator('[data-pk-lang-gate]');
-  await gate.waitFor({ state: 'visible', timeout: 1000 }).catch(() => {});
-  if (await gate.isVisible().catch(() => false)) {
-    const closeBtn = gate.locator('[data-pk-lang-dismiss]');
-    if (await closeBtn.count()) {
-      await closeBtn.click({ timeout: 5000 }).catch(() => {});
-      await gate.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
-    }
-  }
   const cookieBar = page.locator('[data-pk-cookie]');
   await cookieBar.waitFor({ state: 'visible', timeout: 1000 }).catch(() => {});
   if (await cookieBar.isVisible().catch(() => false)) {
@@ -42,6 +33,15 @@ const clearGates = async (page) => {
     if (await refuseBtn.count()) {
       await refuseBtn.click({ timeout: 5000 }).catch(() => {});
       await cookieBar.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
+    }
+  }
+  const gate = page.locator('[data-pk-lang-gate]');
+  await gate.waitFor({ state: 'visible', timeout: 1000 }).catch(() => {});
+  if (await gate.isVisible().catch(() => false)) {
+    const closeBtn = gate.locator('[data-pk-lang-dismiss]');
+    if (await closeBtn.count()) {
+      await closeBtn.click({ timeout: 5000 }).catch(() => {});
+      await gate.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {});
     }
   }
 };
