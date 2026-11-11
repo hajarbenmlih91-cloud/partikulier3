@@ -19,6 +19,8 @@ class Partikulier_Site_Hygiene {
 	public static function init() {
 		add_action( 'init', array( __CLASS__, 'remove_readme' ), 1 );
 		add_action( 'init', array( __CLASS__, 'close_uat_robots' ), 1 );
+		add_action( 'init', array( __CLASS__, 'retire_default_hello_world' ), 1 );
+		add_filter( 'wp_robots', array( __CLASS__, 'noindex_default_hello_world' ) );
 		add_action( 'init', array( __CLASS__, 'replace_known_brand_sentences' ), 1 );
 		add_action( 'init', array( __CLASS__, 'disable_browser_detection' ), 1 );
 		add_action( 'init', array( __CLASS__, 'ensure_htaccess' ), 2 );
@@ -35,8 +37,50 @@ class Partikulier_Site_Hygiene {
 	}
 
 	/**
+	 * L'article d'exemple WordPress n'est pas une annonce. Sur la recette,
+	 * on le retire de la publication s'il a encore son titre d'origine.
+	 */
+	public static function retire_default_hello_world() {
+		if ( ! self::is_uat_host() || get_transient( 'pk_hello_world_retired' ) ) {
+			return;
+		}
+		$post = get_page_by_path( 'hello-world', OBJECT, 'post' );
+		if ( $post instanceof WP_Post && 'Hello world!' === $post->post_title && 'publish' === $post->post_status ) {
+			wp_update_post(
+				array(
+					'ID'          => $post->ID,
+					'post_status' => 'draft',
+				)
+			);
+			delete_transient( 'pk_sitemap_xml_v2' );
+		}
+		set_transient( 'pk_hello_world_retired', 1, DAY_IN_SECONDS );
+	}
+
+	/**
+	 * Si l'article d'exemple est encore public, il ne doit pas être indexé.
+	 *
+	 * @param array<string, bool|string> $robots Directives.
+	 * @return array<string, bool|string>
+	 */
+	public static function noindex_default_hello_world( $robots ) {
+		if ( ! is_singular( 'post' ) ) {
+			return $robots;
+		}
+		$post = get_queried_object();
+		if ( $post instanceof WP_Post && 'hello-world' === $post->post_name ) {
+			$robots['noindex']  = true;
+			$robots['nofollow'] = true;
+		}
+		return $robots;
+	}
+
+	/**
 	 * Le fichier physique gagne sur le filtre WordPress. Sur la recette, il
 	 * doit bloquer tout le monde. Ce n'est pas le mot de passe.
+	 *
+	 * HCDN remplace la réponse publique sur *.hostingersite.com. Réécrire
+	 * le fichier d'origine ne change pas cette réponse.
 	 */
 	public static function close_uat_robots() {
 		if ( ! self::is_uat_host() ) {

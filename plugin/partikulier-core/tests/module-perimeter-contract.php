@@ -16,7 +16,7 @@
  * Assertions DA-001 à DA-011 :
  *  - DA-001 : métrique CA-4 côté plugin — zéro fichier PHP >400 lignes dans
  *    src/ (runtime, hors tests) ;
- *  - DA-002 : modules du lot D (4 shells + 11 traits) ≤300 lignes chacun ;
+ *  - DA-002 : modules du lot D (4 shells + 15 traits) ≤300 lignes chacun ;
  *  - DA-003..006 : les quatre shells composent leurs traits et portent leur
  *    API publique intégrale (aucune méthode perdue au découpage) ;
  *  - DA-007 : VERBATIM — chaque méthode déplacée résout vers SON fichier de
@@ -83,10 +83,13 @@ foreach ($pluginFiles as $file) {
 $assert('DA-001', $oversizedPlugin === [],
     $oversizedPlugin === [] ? 'plugin src/ : zéro fichier PHP >400 lignes (métrique CA-4 satisfaite côté plugin)' : 'fichiers >400 l. : ' . implode(', ', $oversizedPlugin));
 
-/* DA-002 — modules du lot D + SE-016 : 4 shells + 12 traits, chacun ≤300 lignes. */
+/* DA-002 — modules du lot D + SE-016 : 4 shells + 15 traits, chacun ≤300 lignes. */
 $lotDModules = [
     'src/Domain/Leads/LeadService.php',
     'src/Domain/Leads/LeadsContactTrait.php',
+    'src/Domain/Leads/LeadsContactAuthorizationTrait.php',
+    'src/Domain/Leads/LeadsQualificationTrait.php',
+    'src/Domain/Leads/LeadsIdempotencyTrait.php',
     'src/Domain/Leads/LeadsRestTrait.php',
     'src/Domain/Leads/LeadsPrivacyTrait.php',
     'src/Domain/Leads/LeadsAdminTrait.php',
@@ -104,23 +107,21 @@ $lotDModules = [
 ];
 $moduleReport = [];
 $modulesOk = true;
-$lotDMax = ['LeadsContactTrait.php' => 450]; // R3 retry + qualification, split prévu
 foreach ($lotDModules as $rel) {
     $n = $lineCount($pluginRoot . '/' . $rel);
     $moduleReport[] = basename($rel) . '=' . $n;
-    $max = $lotDMax[basename($rel)] ?? 300;
-    if ($n > $max) { $modulesOk = false; }
+    if ($n > 300) { $modulesOk = false; }
 }
 $assert('DA-002', $modulesOk, 'modules lot D ≤300 l. : ' . implode(', ', $moduleReport));
 
 /* DA-003..006 — shells : traits composés + API publique intégrale. */
 $apiMatrix = [
-    ['DA-003', LeadService::class, ['LeadsContactTrait', 'LeadsRestTrait', 'LeadsPrivacyTrait', 'LeadsAdminTrait', 'LeadsEraseGuardTrait'],
-        ['table', 'leads_table', 'daily_limit', 'reference_for', 'authorize_contact', 'register_api_lead', 'rest_contact_authorization', 'rest_preferences', 'rest_consent', 'rest_opt_out', 'rest_erase_request', 'handle_stop', 'retention_days', 'maybe_schedule_retention', 'lead_id_for_phone', 'erase_lead', 'purge_expired', 'has_active_consent', 'admin_summary', 'admin_rows', 'followup_status_values', 'update_followup', 'lead_id_for_wa_id', 'decrypt_phone_for_admin', 'check_erase_secret']],
+    ['DA-003', LeadService::class, ['LeadsContactTrait', 'LeadsContactAuthorizationTrait', 'LeadsQualificationTrait', 'LeadsIdempotencyTrait', 'LeadsRestTrait', 'LeadsPrivacyTrait', 'LeadsAdminTrait', 'LeadsEraseGuardTrait'],
+        ['table', 'leads_table', 'daily_limit', 'reference_for', 'authorize_contact', 'register_api_lead', 'rest_contact_authorization', 'set_qualification', 'rest_set_qualification', 'rest_preferences', 'rest_consent', 'rest_opt_out', 'rest_erase_request', 'handle_stop', 'retention_days', 'maybe_schedule_retention', 'lead_id_for_phone', 'erase_lead', 'purge_expired', 'has_active_consent', 'admin_summary', 'admin_rows', 'followup_status_values', 'update_followup', 'lead_id_for_wa_id', 'decrypt_phone_for_admin', 'check_erase_secret']],
     ['DA-004', PaymentService::class, ['PaymentsOrdersTrait', 'PaymentsSubscriptionsTrait'],
         ['orders_table', 'subscriptions_table', 'is_gateway_enabled', 'create_order', 'record_order', 'get_order', 'update_order', 'mark_order_failed', 'mark_order_paid', 'delete_order', 'create_subscription', 'get_subscription', 'update_subscription', 'activate_subscription', 'revoke_subscription', 'delete_subscription']],
     ['DA-005', AutomationService::class, ['AutomationPolicyTrait', 'AutomationHmacTrait'],
-        ['events_table', 'audit_table', 'env_secret', 'env_webhook', 'settings', 'get', 'secret_keys', 'maybe_migrate', 'save_admin_settings', 'outgoing_headers', 'check_automation_secret', 'audit_failure', 'receive_event', 'rest_receive_event', 'is_strong_secret', 'is_https_url']],
+        ['events_table', 'audit_table', 'env_secret', 'env_key_id', 'env_webhook', 'settings', 'get', 'secret_keys', 'maybe_migrate', 'save_admin_settings', 'outgoing_headers', 'check_automation_secret', 'audit_failure', 'receive_event', 'rest_receive_event', 'is_strong_secret', 'is_https_url', 'max_hmac_body_bytes']],
     ['DA-006', ListingSynchronizer::class, ['SynchronizerHooksTrait', 'SynchronizerProjectionTrait', 'SynchronizerMaintenanceTrait'],
         ['register', 'onSavePost', 'onTransitionStatus', 'onDeletePost', 'onMetaChange', 'flush', 'project', 'upsertProjected', 'rebuild', 'reconcile', 'stats', 'unscheduleLegacyCron']],
 ];
@@ -137,7 +138,10 @@ foreach ($apiMatrix as [$id, $class, $traits, $methods]) {
 /* DA-007 — VERBATIM : chaque méthode déplacée résout vers SON fichier de trait. */
 $movedMap = [
     LeadService::class => [
-        'LeadsContactTrait.php' => ['authorize_contact', 'register_api_lead', 'seed_followup'],
+        'LeadsContactTrait.php' => ['register_api_lead', 'seed_followup'],
+        'LeadsContactAuthorizationTrait.php' => ['authorize_contact'],
+        'LeadsQualificationTrait.php' => ['set_qualification', 'rest_set_qualification'],
+        'LeadsIdempotencyTrait.php' => ['provider_message_id', 'claim_provider_message'],
         'LeadsRestTrait.php' => ['rest_contact_authorization', 'rest_preferences', 'rest_consent', 'rest_opt_out', 'rest_erase_request', 'handle_stop'],
         'LeadsPrivacyTrait.php' => ['retention_days', 'maybe_schedule_retention', 'lead_id_for_phone', 'erase_lead', 'purge_expired', 'has_active_consent', 'lead_id_for_wa_id', 'normalize_phone', 'encrypt_phone', 'decrypt_phone_for_admin'],
         'LeadsAdminTrait.php' => ['admin_summary', 'admin_rows', 'followup_status_values', 'update_followup'],
@@ -148,8 +152,8 @@ $movedMap = [
         'PaymentsSubscriptionsTrait.php' => ['create_subscription', 'get_subscription', 'update_subscription', 'activate_subscription', 'revoke_subscription', 'delete_subscription'],
     ],
     AutomationService::class => [
-        'AutomationPolicyTrait.php' => ['events_table', 'audit_table', 'env_secret', 'env_webhook', 'settings', 'get', 'secret_keys', 'maybe_migrate', 'save_admin_settings'],
-        'AutomationHmacTrait.php' => ['outgoing_headers', 'check_automation_secret', 'audit_failure', 'hmac_key', 'is_strong_secret', 'is_https_url', 'get_normalized_header'],
+        'AutomationPolicyTrait.php' => ['events_table', 'audit_table', 'max_hmac_body_bytes', 'env_secret', 'env_key_id', 'env_webhook', 'settings', 'get', 'secret_keys', 'maybe_migrate', 'save_admin_settings'],
+        'AutomationHmacTrait.php' => ['outgoing_headers', 'check_automation_secret', 'audit_failure', 'limit_hmac_failures', 'hmac_key', 'is_strong_secret', 'is_https_url', 'get_normalized_header'],
     ],
     ListingSynchronizer::class => [
         'SynchronizerHooksTrait.php' => ['register', 'onSavePost', 'onTransitionStatus', 'onDeletePost', 'onMetaChange', 'enqueueUpsert', 'enqueueDelete'],
@@ -185,6 +189,9 @@ $orderPairs = [
     ['PaymentsOrdersTrait.php', 'PaymentService.php'],
     ['PaymentsSubscriptionsTrait.php', 'PaymentService.php'],
     ['LeadsContactTrait.php', 'LeadService.php'],
+    ['LeadsContactAuthorizationTrait.php', 'LeadService.php'],
+    ['LeadsQualificationTrait.php', 'LeadService.php'],
+    ['LeadsIdempotencyTrait.php', 'LeadService.php'],
     ['LeadsRestTrait.php', 'LeadService.php'],
     ['LeadsPrivacyTrait.php', 'LeadService.php'],
     ['LeadsAdminTrait.php', 'LeadService.php'],
@@ -201,7 +208,7 @@ foreach ($orderPairs as [$traitFile, $classFile]) {
     }
 }
 $assert('DA-008', $orderErrors === [],
-    $orderErrors === [] ? 'bootstrap : les 12 require_once de traits précèdent leurs 4 classes shells' : 'ordre incorrect : ' . implode(' ; ', $orderErrors));
+    $orderErrors === [] ? 'bootstrap : les 15 require_once de traits précèdent leurs 4 classes shells' : 'ordre incorrect : ' . implode(' ; ', $orderErrors));
 
 /* DA-009 — baseline gelée, actualisée pour le module démo explicite en 6.20.9 :
 exactement 19 fichiers, après réintégration de quatre fichiers historiques omis ;

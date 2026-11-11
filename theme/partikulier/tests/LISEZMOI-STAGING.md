@@ -29,8 +29,10 @@ verdict :
 - **TENU** — 0 erreur notable et p95 ≤ 800 ms : le site encaisse.
 - **TENU-DÉGRADÉ** — il répond, mais la latence s'envole (cache froid ? page
   non cachée ?) : regarder quel chemin ralentit.
-- **TOMBÉ** — 5xx ou requêtes sans réponse : noter le seuil qui tient
-  (relancer avec la moitié du rps).
+- **ÉCHEC/INCONCLUSIF** — toute réponse 4xx (dont 429/WAF), 5xx, erreur réseau,
+  créneau sauté ou lot incomplet invalide la mesure; ne jamais conclure que le site
+  « tient » si la protection refuse la charge. Identifier la cause avant de réduire
+  ou réessayer.
 
 Chemins testés par défaut : `/annonces/`, `/`, filtre ville. On peut les
 changer en arguments supplémentaires. Lecture importante : ce test frappe le
@@ -59,9 +61,12 @@ relancer, sinon vous ne verrez jamais le MISS.
 PK_SECRET='<le secret n8n>' php tests/staging-securite.php https://MON-STAGING
 ```
 
-Vérifie en lecture seule : POST automation sans signature = **401**, avec le
-secret seul = **401** (l'ancien trou), replay de signature = **401**, HMAC
-valide = 200 (métier inchangé) ; sonde absente du front anonyme ; outils de
+Vérifie les refus en lecture seule : POST automation sans signature = **401**,
+secret seul = **401** (l'ancien trou), signature expirée = **401**, HMAC valide =
+200 (traitement métier désactivé). Le dernier test crée volontairement **un seul
+événement synthétique unique et une ligne d'audit**, avec son identifiant affiché;
+il ne crée ni annonce ni notification. Le secret ne quitte pas la machine. La sonde
+absente du front anonyme ; outils de
 test inoffensifs par HTTP ; pas d'énumération d'utilisateurs REST ; wp-config,
 `.env`, debug.log inaccessibles ; en-têtes de sécurité présents ; santé du
 plugin Core. Le secret ne quitte pas la machine qui lance le test. Sans

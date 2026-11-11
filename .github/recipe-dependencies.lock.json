@@ -1,0 +1,16 @@
+{
+  "lock_version": 1,
+  "captured_at": "2026-11-07",
+  "wordpress_core": {
+    "version": "6.6.2",
+    "archive_url": "https://downloads.wordpress.org/release/wordpress-6.6.2.zip",
+    "archive_sha256": "f37fcc6b6875ad6e6162125b3bbe6a91d65b0aebf6c4fa3b6af3582b38d1418e",
+    "file_checksums": "verified with wp core verify-checksums"
+  },
+  "estatik": {
+    "slug": "estatik",
+    "version": "4.3.6",
+    "download_source": "WordPress.org plugin information API exact-version archive",
+    "archive_sha256": "1c4acbb5f300aa0a6f4a4ebf9b7183b6a0189e04a1c5af5138d41f5c14c166d0"
+  }
+}

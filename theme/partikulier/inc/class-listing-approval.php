@@ -541,11 +541,18 @@ class Partikulier_Listing_Approval {
 			return false;
 		}
 		update_post_meta( $post_id, '_pk_n8n_attempted_at', current_time( 'mysql', true ) );
-		$response = wp_remote_post( $url, array(
-			'timeout'  => 8,
-			'blocking' => true,
-			'headers'  => $headers,
-			'body'     => $body,
+		// Credentials (including a first-use password) are sent in this body.
+		// Use WordPress' safe HTTP API so an HTTPS URL cannot target localhost,
+		// private networks, or other unsafe addresses; never follow redirects,
+		// which could forward the sensitive payload to an unvalidated host.
+		$response = wp_safe_remote_post( $url, array(
+			'timeout'            => 8,
+			'blocking'           => true,
+			'redirection'        => 0,
+			'reject_unsafe_urls' => true,
+			'sslverify'          => true,
+			'headers'            => $headers,
+			'body'               => $body,
 		) );
 
 		if ( is_wp_error( $response ) ) {
@@ -707,7 +714,9 @@ class Partikulier_Listing_Approval {
 			);
 		}
 
-		return new WP_REST_Response( array( 'count' => count( $out ), 'listings' => $out ), 200 );
+		$response = new WP_REST_Response( array( 'count' => count( $out ), 'listings' => $out ), 200 );
+		$response->header( 'Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0' );
+		return $response;
 	}
 }
 

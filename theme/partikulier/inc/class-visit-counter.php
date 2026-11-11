@@ -2,10 +2,9 @@
 /**
  * Compteur de visites, seulement après un oui.
  *
- * Le bandeau vient après le choix de langue. Un bouton, Accepter. Pas de Non.
- * Sur mobile, la même demande devient une fenêtre : il faut accepter
- * avant de continuer. Le lien « Cliquez ici » ouvre la page cookies,
- * qui reste lisible, sans autre navigation.
+ * Le bandeau vient après le choix de langue et propose un vrai choix :
+ * accepter le comptage agrégé des visites ou continuer sans mesure.
+ * Le refus ne déclenche aucun comptage ni appel réseau.
  *
  * Accepter ajoute 1 au total du jour. Pas de nom, pas de profil,
  * pas d'adresse, pas d'outil extérieur.
@@ -54,16 +53,25 @@ class Partikulier_Visit_Counter {
 		}
 		$lang = class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::current_language() : 'fr';
 		if ( 'en' === $lang ) {
-			$before = 'We use our own cookies and third-party cookies for analytics and to show you personalized ads based on a profile of your browsing habits (for example, the pages you visit). ';
-			$link   = 'Click here';
-			$after  = ' for more information.';
-			$yes    = 'Accept';
+			$before = 'We can count visits in aggregate, without names or profiles. This measurement starts only with your consent. ';
+			$link   = 'Learn more';
+			$after  = '.';
+			$yes    = 'Allow visit counting';
+			$no     = 'Continue without measurement';
 			$html_lang = 'en';
+		} elseif ( 'ar' === $lang ) {
+			$before = 'يمكن للموقع إحصاء الزيارات بشكل إجمالي، دون أسماء أو ملفات تعريف. لا يبدأ هذا القياس إلا بموافقتك. ';
+			$link   = 'اعرف المزيد';
+			$after  = '.';
+			$yes    = 'أوافق على إحصاء الزيارات';
+			$no     = 'المتابعة دون قياس';
+			$html_lang = 'ar';
 		} else {
-			$before = 'Nous utilisons nos propres cookies et ceux de tiers à des fins d’analyse et pour vous montrer des publicités personnalisées en fonction d’un profil basé sur vos habitudes de navigation (par exemple, les pages visitées). ';
-			$link   = 'Cliquez ici';
-			$after  = ' pour plus d’informations.';
-			$yes    = 'Accepter';
+			$before = 'Le site peut compter les visites de manière agrégée, sans nom ni profil. Cette mesure ne démarre qu’avec votre accord. ';
+			$link   = 'En savoir plus';
+			$after  = '.';
+			$yes    = 'Accepter la mesure';
+			$no     = 'Continuer sans mesure';
 			$html_lang = 'fr';
 		}
 		$ajax = admin_url( 'admin-ajax.php' );
@@ -97,13 +105,14 @@ class Partikulier_Visit_Counter {
 				</p>
 				<div class="pk-cookie-actions">
 					<button type="button" data-yes><?php echo esc_html( $yes ); ?></button>
+					<button type="button" data-no><?php echo esc_html( $no ); ?></button>
 				</div>
 			</div>
 		</div>
 		<style>
 			.pk-cookie-bar[hidden] { display: none !important; }
 			.pk-cookie-bar {
-				position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+				position: fixed; left: 0; right: 0; bottom: 0; z-index: 6000;
 			}
 			.pk-cookie-card {
 				display: flex; gap: 16px; align-items: center; justify-content: space-between;
@@ -112,18 +121,21 @@ class Partikulier_Visit_Counter {
 			}
 			.pk-cookie-bar p { margin: 0; font-size: 14px; line-height: 1.4; }
 			.pk-cookie-bar a { color: #111; text-decoration: underline; }
-			.pk-cookie-actions { display: flex; gap: 8px; flex: 0 0 auto; }
+			.pk-cookie-actions { display: flex; flex-wrap: wrap; gap: 8px; flex: 0 0 auto; }
 			.pk-cookie-actions button {
-				min-width: 120px; height: 40px; padding: 0 16px; border: 1px solid #323232;
+				flex: 1 1 140px; min-width: 120px; min-height: 40px; height: auto; padding: 8px 12px; border: 1px solid #323232;
 				background: #fff; color: #323232; font: inherit; font-weight: 650; cursor: pointer;
 			}
 			.pk-cookie-actions button[data-yes] { background: #C8242B; color: #fff; border-color: #C8242B; }
+			.pk-cookie-actions button[data-no] { background: #fff; color: #323232; border-color: #323232; }
 			.pk-cookie-actions button[data-yes]:hover,
 			.pk-cookie-actions button[data-yes]:active { background: #9A1B21; border-color: #9A1B21; color: #fff; }
+			.pk-cookie-actions button[data-no]:hover,
+			.pk-cookie-actions button[data-no]:active { background: #f5f5f0; border-color: #161715; color: #161715; }
 			body.pk-cookie-open { padding-bottom: 84px; }
 			@media (max-width: 767px) {
 				.pk-cookie-bar {
-					inset: 0; z-index: 5000;
+					inset: 0; z-index: 6000;
 					display: grid; place-items: center;
 					background: rgba(16, 18, 16, .48);
 					padding: 1rem;
@@ -146,6 +158,30 @@ class Partikulier_Visit_Counter {
 					overflow: auto;
 					padding-bottom: 68px;
 				}
+			}
+			/* Le refus reste cliquable au-dessus du choix de langue.
+			   Les rouges signalés par l'audit passent AA : texte blanc sur #C8242B,
+			   lien annonce #C8242B sur blanc. */
+			html body.home .pk-editorial-places a.pk-btn.pk-btn-dark,
+			html body.home a.pk-btn.pk-btn-dark {
+				background: #C8242B !important;
+				background-color: #C8242B !important;
+				border-color: #C8242B !important;
+				color: #fff !important;
+			}
+			html body.home .pk-card-foot a.pk-card-cta,
+			html body.home .pk-card-foot a.pk-card-cta:link,
+			html body.home .pk-card-foot a.pk-card-cta:visited,
+			html body.home .pk-card-foot a.pk-card-cta span {
+				color: #C8242B !important;
+				background-color: #fff !important;
+			}
+			html body.home .pk-cookie-actions button[data-yes],
+			html body .pk-cookie-actions button[data-yes] {
+				background: #C8242B !important;
+				background-color: #C8242B !important;
+				border-color: #C8242B !important;
+				color: #fff !important;
 			}
 		</style>
 		<script>
@@ -184,7 +220,7 @@ class Partikulier_Visit_Counter {
 				} catch (err) { /* ignore */ }
 			}
 			function show() {
-				if (read() || gateOpen()) return;
+				if (read()) return;
 				markInfo();
 				bar.hidden = false;
 				document.body.classList.add("pk-cookie-open");
@@ -223,11 +259,13 @@ class Partikulier_Visit_Counter {
 					try { if (window.sessionStorage) sessionStorage.setItem(key, "1"); } catch (err) { /* ignore */ }
 				}).catch(function () { /* ignore */ });
 			}
-			bar.querySelector("[data-yes]").addEventListener("click", function () {
-				write("yes");
+			function choose(value) {
+				write(value);
 				hide();
-				count();
-			});
+				if (value === "yes") count();
+			}
+			bar.querySelector("[data-yes]").addEventListener("click", function () { choose("yes"); });
+			bar.querySelector("[data-no]").addEventListener("click", function () { choose("no"); });
 			document.addEventListener("click", function (event) {
 				if (bar.hidden || !mobileCookie() || !bar.classList.contains("pk-cookie-info")) return;
 				if (event.target.closest(".pk-cookie-card")) return;
@@ -254,7 +292,7 @@ class Partikulier_Visit_Counter {
 			if (read() === "yes") count();
 			show();
 			window.addEventListener("resize", function () {
-				if (read() || gateOpen()) return;
+				if (read()) return;
 				show();
 			});
 			var gate = document.querySelector("[data-pk-lang-gate]");

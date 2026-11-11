@@ -118,8 +118,33 @@ if ( $ls_observable ) {
 }
 v( $n1 > 0, "1er GET : $n1 carte(s) annonce(s) dans le HTML" );
 v( $n2 > 0 && $n2 === $n1, "2ᵉ GET (HIT) : $n2 cartes — pas le catalogue vide du bug 6.17.24" );
-if ( $k1 !== null || $k2 !== null ) {
-        v( stripos( (string) $k2, 'hit' ) !== false, "cache thème : x-partikulier-cache = " . ( $k2 ?? 'absent' ) . " au 2ᵉ GET" );
+// Le cache du thème n'est lisible que dans une réponse RENDUE PAR PHP. Quand LiteSpeed
+// sert la réponse (x-litespeed-cache: hit), l'en-tête x-partikulier-cache est rejoué tel
+// qu'il a été stocké : il décrit l'état du cache à l'instant du stockage, pas maintenant.
+// C'est la doctrine du dépôt (pk-diagnostic.php : « les en-têtes X-Partikulier-Cache ne
+// prouvent plus rien pour un visiteur ») ; le workflow mesure donc ce cache côté serveur.
+// Quatre cas seulement, et deux d'entre eux ne concluent pas.
+//   1. aucun en-tête LiteSpeed sur les deux réponses : rien ne prouve que PHP a servi la
+//      page (proxy qui retire l'en-tête, réponse en cache, hébergement sans LSCache) ;
+//   2. en-tête présent au 1er GET, absent au 2ᵉ : ambigu ;
+//   3. servi par LiteSpeed (HIT) : en-tête du thème rejoué, non probant ;
+//   4. sinon seulement, PHP a rendu la page et l'en-tête du thème fait foi. C'est le seul
+//      cas où l'on juge, parce que c'est le seul où la preuve existe réellement.
+$ls_aucun = ( $c1 === null && $c2 === null );
+$ambigu   = ( $c1 !== null && $c2 === null );
+$rejoue   = ( $c2 !== null && stripos( (string) $c2, 'hit' ) !== false );
+$php2     = ( ! $ls_aucun && ! $ambigu && ! $rejoue );
+if ( $ls_aucun && ( $k1 !== null || $k2 !== null ) ) {
+        v( false, "cache thème : échantillon NON VÉRIFIÉ — aucune des deux réponses ne porte x-litespeed-cache : impossible de savoir si PHP a servi la page (proxy, réponse en cache ou en-tête retiré)", true );
+} elseif ( $ambigu ) {
+        v( false, "cache thème : échantillon NON VÉRIFIÉ — x-litespeed-cache présent au 1er GET (" . ( $c1 ?? 'absent' ) . ") mais absent au 2ᵉ : impossible de savoir si PHP a rendu la page", true );
+} elseif ( $php2 ) {
+        // Deux réponses rendues par PHP : le réchauffement du cache est réellement observable.
+        if ( $k1 !== null || $k2 !== null ) {
+                v( stripos( (string) $k2, 'hit' ) !== false, "cache thème : x-partikulier-cache = " . ( $k2 ?? 'absent' ) . " au 2ᵉ GET (deux réponses rendues par PHP)" );
+        }
+} elseif ( $k1 !== null || $k2 !== null ) {
+        v( false, "cache thème : x-partikulier-cache = " . ( $k2 ?? 'absent' ) . " sur la réponse rejouée par LiteSpeed — NON PROBANT (PHP n a pas tourné) ; mesuré séparément côté serveur", true );
 }
 
 // --- 2) Une fiche détail ----------------------------------------------------

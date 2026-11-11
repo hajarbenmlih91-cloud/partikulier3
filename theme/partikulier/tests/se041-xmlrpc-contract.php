@@ -28,14 +28,14 @@
  *  - E41-002 : apply_filters('xmlrpc_methods', …) renvoie un tableau VIDE ;
  *  - E41-003 : non-régression — xmlrpc_enabled renvoie false (ligne du
  *              train antérieur conservée, défense en profondeur) ;
- *  - E41-004 : HTTP réel — POST system.listMethods → 200 et tableau XML
- *              valide contenant EXACTEMENT system.getCapabilities,
- *              system.listMethods, system.multicall (sans doublon ni
- *              aucune méthode applicative) ;
- *  - E41-005 : HTTP réel — POST demo.sayHello → fault -32601, aucun
+ *  - E41-004 : HTTP réel — POST system.listMethods → 403 ou 405.
+ *              Le corps ne liste aucune méthode applicative.
+ *              pep.ma n'est pas visé par ce refus : la production n'est
+ *              pas modifiée par ce contrat.
+ *  - E41-005 : HTTP réel — POST demo.sayHello → 403 ou 405, aucun
  *              « Hello! » dans le corps ;
  *  - E41-006 : HTTP réel — POST pingback.ping (2 URL de recette
- *              .invalid, aucun tiers) → fault -32601.
+ *              .invalid, aucun tiers) → 403 ou 405, pas d'exécution.
  *
  * Les noms de méthodes sont encodés dans <string> (pas <name>) : la liste
  * est décodée structurellement (DOM), jamais par grep de balise.
@@ -139,49 +139,35 @@ try {
             ? 'apply_filters(xmlrpc_enabled, true) renvoie false (défense en profondeur conservée)'
             : 'xmlrpc_enabled ne renvoie plus false : régression de la ligne du train antérieur');
 
-    /* ── E41-004 : HTTP réel — system.listMethods → exactement 3 system.*. ── */
+    /* ── E41-004 : HTTP réel — refus, aucune méthode applicative listée. ── */
     $rList = $call('<methodCall><methodName>system.listMethods</methodName></methodCall>');
-    $methods = $rList['error'] === '' ? $decodeList($rList['body']) : null;
-    $expected = ['system.getCapabilities', 'system.listMethods', 'system.multicall'];
-    /* L'ordre d'émission des méthodes par IXR n'est pas contractuel : la
-     * comparaison est ensembliste (triées), l'exigence E-4101 porte sur le
-     * contenu exact, sans doublon ni méthode applicative. */
-    $sortedMethods = is_array($methods) ? $methods : [];
-    sort($sortedMethods);
-    $sortedExpected = $expected;
-    sort($sortedExpected);
-    $listOk = $rList['status'] === 200 && is_array($methods)
-        && count($methods) === 3
-        && count(array_unique($methods)) === 3
-        && $sortedMethods === $sortedExpected;
-    $applicatives = is_array($methods)
-        ? array_values(array_filter($methods, static fn(string $m): bool => strpos($m, 'system.') !== 0))
+    $refused = in_array($rList['status'], [403, 405], true);
+    $listed = $rList['error'] === '' ? $decodeList($rList['body']) : null;
+    $applicatives = is_array($listed)
+        ? array_values(array_filter($listed, static fn(string $m): bool => strpos($m, 'system.') !== 0))
         : [];
-    $assert('E41-004', $listOk,
-        sprintf('POST system.listMethods → HTTP %d, liste décodée : %s (attendu exactement %s, sans doublon ni méthode applicative)%s',
+    $bodyLeaks = strpos($rList['body'], 'pingback.ping') !== false || strpos($rList['body'], 'demo.sayHello') !== false;
+    $assert('E41-004', $refused && $applicatives === [] && !$bodyLeaks,
+        sprintf('POST system.listMethods → HTTP %d (attendu 403 ou 405), méthodes applicatives %s',
             $rList['status'],
-            is_array($methods) ? implode(', ', $methods) : 'indécodable',
-            implode(', ', $expected),
-            $applicatives !== [] ? ' — méthodes applicatives encore exposées : ' . implode(', ', array_slice($applicatives, 0, 5)) . '…' : ''));
+            ($applicatives === [] && !$bodyLeaks) ? 'absentes du corps' : 'ENCORE PRÉSENTES'));
 
-    /* ── E41-005 : HTTP réel — demo.sayHello → fault -32601, aucun Hello!. ── */
+    /* ── E41-005 : HTTP réel — demo.sayHello refusé, aucun Hello!. ── */
     $rHello = $call('<methodCall><methodName>demo.sayHello</methodName></methodCall>');
-    $helloFault = $rHello['error'] === '' ? $decodeFault($rHello['body']) : null;
     $assert('E41-005',
-        $rHello['status'] === 200 && $helloFault === -32601 && strpos($rHello['body'], 'Hello!') === false,
-        sprintf('POST demo.sayHello → HTTP %d, faultCode %s, « Hello! » %s',
+        in_array($rHello['status'], [403, 405], true) && strpos($rHello['body'], 'Hello!') === false,
+        sprintf('POST demo.sayHello → HTTP %d (attendu 403 ou 405), « Hello! » %s',
             $rHello['status'],
-            $helloFault === null ? 'indécodable' : (string) $helloFault,
             strpos($rHello['body'], 'Hello!') === false ? 'absent du corps' : 'ENCORE EXÉCUTÉ'));
 
-    /* ── E41-006 : HTTP réel — pingback.ping → fault -32601. ── */
+    /* ── E41-006 : HTTP réel — pingback.ping refusé, pas d'exécution. ── */
     $rPing = $call('<methodCall><methodName>pingback.ping</methodName><params><param><value><string>http://source.invalid/</string></value></param><param><value><string>http://cible.invalid/</string></value></param></params></methodCall>');
-    $pingFault = $rPing['error'] === '' ? $decodeFault($rPing['body']) : null;
+    $pingExecuted = $rPing['error'] === '' && $decodeFault($rPing['body']) === null && strpos($rPing['body'], '<methodResponse>') !== false;
     $assert('E41-006',
-        $rPing['status'] === 200 && $pingFault === -32601,
-        sprintf('POST pingback.ping (2 URL .invalid de recette) → HTTP %d, faultCode %s (attendu -32601)',
+        in_array($rPing['status'], [403, 405], true) && !$pingExecuted,
+        sprintf('POST pingback.ping (2 URL .invalid de recette) → HTTP %d (attendu 403 ou 405), exécution %s',
             $rPing['status'],
-            $pingFault === null ? 'indécodable' : (string) $pingFault));
+            $pingExecuted ? 'ENCORE POSSIBLE' : 'absente'));
 } catch (Throwable $error) {
     $assert('E41-EXCEPTION', false, $error->getMessage());
 }

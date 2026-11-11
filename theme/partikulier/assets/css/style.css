@@ -9246,3 +9246,117 @@ html body .pk-archive-content[aria-busy="true"] {
 	.pk-wa-sticky { display: none !important; }
 }
 
+/* 6.20.207 — UAT: contraste WCAG AA sur les liens et choix rouges. */
+html body.home .pk-card-foot .pk-card-cta,
+html body.home .pk-card-foot .pk-card-cta:link,
+html body.home .pk-card-foot .pk-card-cta:visited,
+html body.home .pk-card-foot .pk-card-cta span {
+	color: #C8242B !important;
+}
+html body.home .pk-card-foot .pk-card-cta:hover,
+html body.home .pk-card-foot .pk-card-cta:hover span,
+html body.home .pk-card-foot .pk-card-cta:active,
+html body.home .pk-card-foot .pk-card-cta:active span,
+html body.home .pk-card-foot .pk-card-cta:focus-visible,
+html body.home .pk-card-foot .pk-card-cta:focus-visible span {
+	color: #9A1B21 !important;
+}
+html body.home .pk-find-submit,
+html body.home .pk-find-results,
+html body.home .pk-btn-search,
+html body.home .pk-filter-apply,
+html body.home .pk-scroll-actions .pk-btn,
+html body.home .pk-header-search .pk-search-bar button,
+html body.home .pk-cookie-actions button[data-yes],
+html body .pk-find-submit,
+html body .pk-editorial-places .pk-btn {
+	background: #C8242B !important;
+	background-color: #C8242B !important;
+	border-color: #C8242B !important;
+	color: #fff !important;
+}
+html body.home .pk-find-submit:hover,
+html body.home .pk-find-submit:active,
+html body.home .pk-find-submit:focus-visible,
+html body.home .pk-find-results:hover,
+html body.home .pk-find-results:active,
+html body.home .pk-btn-search:hover,
+html body.home .pk-btn-search:active,
+html body.home .pk-filter-apply:hover,
+html body.home .pk-scroll-actions .pk-btn:hover,
+html body.home .pk-scroll-actions .pk-btn:active,
+html body.home .pk-header-search .pk-search-bar button:hover,
+html body.home .pk-header-search .pk-search-bar button:active,
+html body.home .pk-cookie-actions button[data-yes]:hover,
+html body.home .pk-cookie-actions button[data-yes]:active,
+html body .pk-find-submit:hover,
+html body .pk-find-submit:active,
+html body .pk-find-submit:focus-visible,
+html body .pk-editorial-places .pk-btn:hover,
+html body .pk-editorial-places .pk-btn:active {
+	background: #9A1B21 !important;
+	background-color: #9A1B21 !important;
+	border-color: #9A1B21 !important;
+	color: #fff !important;
+}
+html body.home .pk-req { color: #C8242B !important; }
+html body .pk-lang-code,
+html body .pk-submit-back,
+html body .pk-submit-subtitle {
+	color: #323232 !important;
+}
+html body .pk-submit-back:hover,
+html body .pk-submit-back:focus-visible {
+	color: #161715 !important;
+}
+html body .pk-form .pk-choice.is-active,
+html body .pk-submit .choice[aria-pressed="true"],
+html body .pk-form .pk-toggle-btn.is-on,
+html body .pk-form .pk-toggle-btn.is-on:hover,
+html body .pk-form .pk-toggle-btn.is-on:active,
+html body .pk-submit .pill[aria-pressed="true"],
+html body .pk-submit .chip[aria-pressed="true"] {
+	background: #C8242B !important;
+	background-color: #C8242B !important;
+	border-color: #C8242B !important;
+	color: #fff !important;
+}
+html body .pk-form .pk-choice.is-active strong,
+html body .pk-form .pk-choice.is-active span,
+html body .pk-form .pk-choice.is-active b,
+html body .pk-form .pk-choice.is-active small,
+html body .pk-submit .choice[aria-pressed="true"] b,
+html body .pk-submit .choice[aria-pressed="true"] small {
+	color: #fff !important;
+}
+html body .pk-form .pk-choice.is-active::after,
+html body .pk-submit .choice[aria-pressed="true"]::after {
+	background: #fff !important;
+	color: #C8242B !important;
+}
+
+
+/* pk-audit-contrast-209 — les règles #C8242B déjà présentes ne gagnaient pas
+   sur les nœuds signalés. Spécificité plus haute, sans toucher au rouge
+   du signe, de Publier ni de Recherche. */
+html body.home .pk-editorial-places a.pk-btn.pk-btn-dark,
+html body.home a.pk-btn.pk-btn-dark {
+	background: #C8242B !important;
+	background-color: #C8242B !important;
+	border-color: #C8242B !important;
+	color: #fff !important;
+}
+html body.home .pk-card-foot a.pk-card-cta,
+html body.home .pk-card-foot a.pk-card-cta:link,
+html body.home .pk-card-foot a.pk-card-cta:visited,
+html body.home .pk-card-foot a.pk-card-cta span {
+	color: #C8242B !important;
+	background-color: #fff !important;
+}
+html body.home .pk-cookie-actions button[data-yes],
+html body .pk-cookie-actions button[data-yes] {
+	background: #C8242B !important;
+	background-color: #C8242B !important;
+	border-color: #C8242B !important;
+	color: #fff !important;
+}

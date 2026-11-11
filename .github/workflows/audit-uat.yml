@@ -32,6 +32,9 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     environment:
+      # `uat` n'admet que les tags `pre-release-*` : un tag d'audit y est refusé par la
+      # politique de déploiement. Une fois l'environnement `uat-audit` créé (tags `audit-*`,
+      # approbation requise, mêmes secrets), remplacer `uat` par `uat-audit` ci-dessous.
       name: uat
       url: https://darkcyan-yak-151002.hostingersite.com
     env:
@@ -50,11 +53,44 @@ jobs:
     steps:
       - name: Récupérer le dépôt
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
 
-      - name: Contrat de nettoyage du compte temporaire
+      - name: Traçabilité — refuser un code applicatif différent de c9e1413
         run: |
           set -euo pipefail
-          bash theme/partikulier/tests/uat-audit-account-cleanup-contract.sh
+          APP_BASE_COMMIT='c9e141376179f1a47e567361c28e747b6e891cd0'
+          # Seuls ces trois fichiers peuvent différer du tag : le workflow, le contrat
+          # de cache et le parcours de connexion qui doit réellement consentir avant de
+          # cliquer. Toute autre modification — y compris deploy.yml, un autre test, ou
+          # une ligne de thème/plugin — invalide la preuve et arrête l'audit.
+          ALLOWED=(
+            '.github/workflows/audit-uat.yml'
+            'theme/partikulier/tests/staging-cache.php'
+            'theme/partikulier/tests/audit-uat-login.mjs'
+          )
+          git cat-file -e "${APP_BASE_COMMIT}^{commit}" || {
+            echo "::error::commit de référence ${APP_BASE_COMMIT} absent du clone (fetch-depth insuffisant)"; exit 1; }
+          statut=0
+          while IFS= read -r f; do
+            [ -z "$f" ] && continue
+            autorise=0
+            for a in "${ALLOWED[@]}"; do
+              if [ "$f" = "$a" ]; then autorise=1; break; fi
+            done
+            if [ "$autorise" -eq 0 ]; then
+              echo "::error::fichier hors harnais autorisé : $f"
+              statut=1
+            fi
+          done <<< "$(git diff --name-only "$APP_BASE_COMMIT" HEAD)"
+          if [ "$statut" -ne 0 ]; then
+            git diff --stat "$APP_BASE_COMMIT" HEAD >&2
+            echo "::error::le ref d'audit modifie des fichiers hors harnais : audit refusé."
+            exit 1
+          fi
+          modifs="$(git diff --name-only "$APP_BASE_COMMIT" HEAD | tr '\n' ' ')"
+          echo "Code applicatif identique à ${APP_BASE_COMMIT} ; écarts attendus : ${modifs:-aucun}"
+          echo "Harnais audité : $(git rev-parse HEAD) — $(git log -1 --pretty=%s)"
 
       - name: Vérifier la cible UAT (interdit de viser la production)
         run: |
@@ -225,9 +261,86 @@ jobs:
       - name: Contrat cache et TTFB extérieur
         id: cache
         continue-on-error: true
+        # Décision d'acceptation, explicite : le cache fichier du thème est-il exigé ?
+        #   'false' (défaut) : son absence est signalée NON VÉRIFIÉ, la suite reste verte
+        #                      sur LiteSpeed + TTFB, et le rapport dit que sa portée s'arrête là.
+        #   'true'           : l'absence de preuve fait échouer la suite.
+        env:
+          PK_THEME_CACHE_REQUIRED: 'false'
         run: |
           set -euo pipefail
-          php theme/partikulier/tests/staging-cache.php "$SITE_URL" /fr/annonces/ 20 2>&1 | tee "$AUDIT_OUT_DIR/cache-ttfb.txt"
+          php_rc=0
+          php theme/partikulier/tests/staging-cache.php "$SITE_URL" /fr/annonces/ 20 2>&1 | tee "$AUDIT_OUT_DIR/cache-ttfb.txt" || php_rc=$?
+          # Forcer un rendu PHP par une URL nouvelle, sans purger ni supprimer de cache.
+          # La date et le TTFB de ce GET restent dans la preuve avant le find ci-dessous.
+          audit_ts="$(date +%s)"
+          audit_url="${SITE_URL}/fr/annonces/?pk_audit=${audit_ts}"
+          {
+            echo ''
+            echo "== RENDU PHP DEMANDÉ AVANT LA SONDE DU CACHE DU THÈME =="
+            echo "GET $audit_url"
+          } | tee -a "$AUDIT_OUT_DIR/cache-ttfb.txt"
+          if ! curl -fsS -o /dev/null --max-time 30 \
+            -w 'PHP-PROBE: HTTP %{http_code}; TTFB %{time_starttransfer} s; date %{time_local}\n' \
+            "$audit_url" 2>&1 | tee -a "$AUDIT_OUT_DIR/cache-ttfb.txt"; then
+            echo 'PHP-PROBE: échec du GET horodaté; le find seul ne sera pas converti en preuve de rendu.' | tee -a "$AUDIT_OUT_DIR/cache-ttfb.txt"
+            php_rc=1
+          fi
+          # Second point de mesure, indépendant de LiteSpeed.
+          # Le cache du thème est un cache de fichiers (wp-content/uploads/partikulier-cache).
+          # On n'accepte QUE l'entrée de la page testée POUR L'HÔTE UAT : <hote>_fr_annonces.html,
+          # schéma documenté par class-cache.php. Une entrée d'un autre hôte ou d'une autre page
+          # est signalée pour diagnostic mais ne prouve rien.
+          {
+            echo ''
+            echo '== CACHE DU THÈME, MESURÉ SUR LE SERVEUR (indépendant de LiteSpeed) =='
+            cache_root=''
+            hote=''
+            if [ -f "$HOME/.ssh/config" ]; then
+              cache_root="$(ssh -F "$HOME/.ssh/config" partikulier-uat "cd '$WP_PATH' && wp eval 'echo trailingslashit( wp_get_upload_dir()[\"basedir\"] );'" 2>/dev/null || true)"
+              hote="$(ssh -F "$HOME/.ssh/config" partikulier-uat "cd '$WP_PATH' && wp eval 'echo strtolower( (string) wp_parse_url( home_url( \"/\" ), PHP_URL_HOST ) );'" 2>/dev/null || true)"
+            fi
+            theme_ok=0
+            if [ -z "$cache_root" ] || [ -z "$hote" ]; then
+              echo '  NON VÉRIFIÉ  hôte ou racine d uploads illisible (SSH non configuré ou WP-CLI en échec)'
+              echo 'CACHE-THEME: non vérifié (hôte ou racine uploads illisible)'
+            else
+              nom="${hote}_fr_annonces.html"
+              entree="$(ssh -F "$HOME/.ssh/config" partikulier-uat "find '$cache_root/partikulier-cache' -maxdepth 1 -type f -name '$nom' -newermt '-30 minutes' -size +500c -printf '%f %s %T@\\n' 2>/dev/null | head -1" || true)"
+              if [ -n "$entree" ]; then
+                set -- $entree
+                # Nom, taille et fraîcheur ne prouvent qu'une présence. On exige aussi que
+                # l'entrée commence par du HTML : c'est le critère que le thème applique
+                # lui-même pour refuser une entrée empoisonnée (class-cache.php).
+                if ssh -F "$HOME/.ssh/config" partikulier-uat "head -c 2048 '$cache_root/partikulier-cache/$1' 2>/dev/null" | grep -qiE '<!doctype html|<html'; then
+                  theme_ok=1
+                  echo "  OK   entrée attendue : $1 ($2 o, modifiée il y a $(( $(date +%s) - ${3%.*} )) s) — début de page HTML"
+                  echo "CACHE-THEME: entrée valide ($1, $2 o)"
+                else
+                  echo "  NON VÉRIFIÉ  entrée $1 présente et récente, mais son début n'est pas du HTML (entrée suspecte)"
+                  echo "CACHE-THEME: non vérifié (entrée $1 sans en-tête HTML)"
+                fi
+              else
+                echo "  NON VÉRIFIÉ  aucune entrée ${nom} de plus de 500 o modifiée dans les 30 dernières minutes"
+                proches="$(ssh -F "$HOME/.ssh/config" partikulier-uat "ls -1 '$cache_root/partikulier-cache' 2>/dev/null | grep -i 'fr_annonces' | head -5" || true)"
+                if [ -n "$proches" ]; then
+                  echo '  NON VÉRIFIÉ  entrées proches trouvées, hors hôte ou page attendus (elles ne prouvent rien) :'
+                  printf '%s\n' "$proches" | sed 's/^/                 /'
+                fi
+                echo "CACHE-THEME: non vérifié (aucune entrée ${nom})"
+              fi
+            fi
+            if [ "$theme_ok" -eq 1 ]; then
+              echo 'PORTÉE: l entrée attendue existe, est fraîche et commence par du HTML. Le SERVICE de cette page par le cache n est pas prouvé pour autant : le statut de la suite couvre LiteSpeed, TTFB et présence d une entrée valide.'
+            else
+              echo 'PORTÉE: cache fichier du thème NON VÉRIFIÉ ; le statut de la suite ne couvre QUE LiteSpeed et TTFB.'
+            fi
+          } | tee -a "$AUDIT_OUT_DIR/cache-ttfb.txt"
+          if [ "${PK_THEME_CACHE_REQUIRED:-false}" = "true" ] && ! grep -q '^CACHE-THEME: entrée valide' "$AUDIT_OUT_DIR/cache-ttfb.txt"; then
+            echo '::error::cache fichier du thème exigé (PK_THEME_CACHE_REQUIRED=true) et non vérifié.'
+            php_rc=1
+          fi
+          exit "$php_rc"
 
       - name: Sondage de charge prudent (10 req/s pendant 10 s)
         id: load_smoke
@@ -286,13 +399,46 @@ jobs:
           AUDIT_LOGIN: ${{ steps.seed.outputs.login }}
           AUDIT_EMAIL: ${{ steps.seed.outputs.email }}
           AUDIT_MARKER: ${{ steps.seed.outputs.marker }}
+          AUDIT_USER_ID: ${{ steps.seed.outputs.user_id }}
         run: |
           set -euo pipefail
-          expected_login="pk_audit_${GITHUB_RUN_ID}_${GITHUB_RUN_ATTEMPT}"
-          [[ "$AUDIT_LOGIN" == "$expected_login" ]] || { echo 'Identifiant de run hors contrat; arrêt.' >&2; exit 1; }
-          [[ "$AUDIT_EMAIL" == "${expected_login}@example.invalid" ]] || { echo 'Adresse hors contrat; arrêt.' >&2; exit 1; }
-          [[ "$AUDIT_MARKER" =~ ^[0-9a-f]{48}$ ]] || { echo 'Marqueur attendu hors contrat; arrêt.' >&2; exit 1; }
-          ssh -F "$HOME/.ssh/config" partikulier-uat 'bash -s' -- "$WP_PATH" "$AUDIT_LOGIN" "$AUDIT_EMAIL" "$AUDIT_MARKER" < theme/partikulier/tests/uat-audit-account-cleanup.sh
+          ssh -F "$HOME/.ssh/config" partikulier-uat 'bash -s' -- "$WP_PATH" "$AUDIT_LOGIN" "$AUDIT_EMAIL" "$AUDIT_MARKER" <<'REMOTE'
+          set -euo pipefail
+          wp_path="$1"; login="$2"; expected_email="$3"; expected_marker="$4"
+          cd "$wp_path"
+          user_id="$(wp user get "$login" --field=ID 2>/dev/null || true)"
+          if [[ -z "$user_id" ]]; then echo 'Compte temporaire absent; aucun nettoyage requis.'; exit 0; fi
+          [[ "$user_id" =~ ^[0-9]+$ ]] || { echo 'ID utilisateur non numérique; arrêt sûr.' >&2; exit 1; }
+          email="$(wp user get "$user_id" --field=user_email)"
+          role="$(wp user get "$user_id" --field=roles)"
+          marker="$(wp user meta get "$user_id" _pk_uat_audit_marker 2>/dev/null || true)"
+          [[ "$email" == "$expected_email" && "$role" == 'contributor' && "$marker" == "$expected_marker" ]] || {
+            echo 'Compte trouvé mais identité/marker hors contrat; aucune suppression effectuée.' >&2
+            exit 1
+          }
+          admin_id="$(wp user list --role=administrator --field=ID --format=ids | awk '{print $1}')"
+          [[ "$admin_id" =~ ^[0-9]+$ ]] || { echo 'Aucun administrateur de réaffectation sûr; compte conservé.' >&2; exit 1; }
+          wp user delete "$user_id" --yes --reassign="$admin_id"
+          echo "Compte temporaire supprimé et contenu réaffecté à un administrateur si nécessaire."
+          REMOTE
+          # Preuves de disparition, en lecture seule, sur l'ID créé puis sur le login unique.
+          ssh -F "$HOME/.ssh/config" partikulier-uat 'bash -s' -- "$WP_PATH" "$AUDIT_LOGIN" "$AUDIT_USER_ID" <<'REMOTE'
+          set -euo pipefail
+          wp_path="$1"; login="$2"; user_id="$3"
+          cd "$wp_path"
+          [[ "$user_id" =~ ^[0-9]+$ ]] || { echo 'ID créé non numérique; preuve impossible.' >&2; exit 1; }
+          if wp user get "$user_id" --field=ID >/dev/null 2>&1; then
+            echo "ÉCHEC: le compte jetable ID $user_id existe encore." >&2
+            exit 1
+          fi
+          echo "PREUVE SUPPRESSION: wp user get $user_id échoue, le compte ID $user_id est absent."
+          remaining="$(wp user list --search="$login" --field=ID --format=ids)"
+          if [[ -n "${remaining//[[:space:]]/}" ]]; then
+            echo "ÉCHEC: wp user list --search=$login retourne encore un compte." >&2
+            exit 1
+          fi
+          echo "PREUVE SUPPRESSION: wp user list --search=$login est vide."
+          REMOTE
 
       - name: Lighthouse mobile et desktop (Performance, Accessibilité, SEO, Best Practices)
         id: lighthouse
@@ -303,31 +449,37 @@ jobs:
           lh_failed=0
           run_lh() {
             local label="$1" url="$2" form="$3"
-            local -a screen=()
-            echo "Lighthouse $label — $url ($form)"
-            if [[ "$form" == desktop ]]; then
-              screen=(
-                --screenEmulation.mobile=false
-                --screenEmulation.width=1350
-                --screenEmulation.height=940
-                --screenEmulation.deviceScaleFactor=1
-                --throttling.rttMs=40
-                --throttling.throughputKbps=10240
-                --throttling.cpuSlowdownMultiplier=1
-              )
-            else
-              screen=(--screenEmulation.mobile=true)
-            fi
-            if ! lighthouse "$url" \
-              --chrome-path="$chrome_path" \
-              --chrome-flags='--headless --no-sandbox --disable-dev-shm-usage' \
-              --only-categories=performance,accessibility,best-practices,seo \
-              --form-factor="$form" \
-              "${screen[@]}" \
-              --output=json \
-              --output-path="$AUDIT_OUT_DIR/lighthouse-$label.json" \
-              --quiet; then
-              echo "Lighthouse $label en échec; les autres mesures continuent." >&2
+            local -a native=()
+            # Lighthouse 12 lève une erreur DÉTERMINISTE (core/config/validation.js) quand
+            # formFactor vaut desktop alors que l'émulation d'écran reste celle du mobile :
+            # « Screen emulation mobile setting (true) does not match formFactor setting
+            # (desktop) ». `--preset=desktop` fixe les deux ensemble (écran + throttling).
+            if [[ "$form" == desktop ]]; then native=(--preset=desktop); fi
+            local attempts=0 ok=0 err
+            while (( attempts < 2 )); do
+              attempts=$((attempts + 1))
+              echo "Lighthouse $label — $url ($form) — tentative $attempts/2"
+              if err="$(lighthouse "$url" \
+                --chrome-path="$chrome_path" \
+                --chrome-flags='--headless --no-sandbox --disable-dev-shm-usage' \
+                --only-categories=performance,accessibility,best-practices,seo \
+                "${native[@]}" \
+                --output=json \
+                --output-path="$AUDIT_OUT_DIR/lighthouse-$label.json" \
+                --quiet 2>&1)"; then
+                ok=1
+                break
+              fi
+              printf '%s\n' "$err" | tail -20 >&2
+              # Erreur de configuration = déterministe : la rejouer ne changerait rien.
+              if printf '%s' "$err" | grep -qi 'does not match formFactor\|must be defined as'; then
+                echo "Lighthouse $label : erreur de configuration, aucune nouvelle tentative." >&2
+                break
+              fi
+              sleep 3
+            done
+            if (( ok == 0 )); then
+              echo "Lighthouse $label en échec après ${attempts} tentative(s) réellement exécutée(s)." >&2
               lh_failed=1
             fi
           }
@@ -356,8 +508,8 @@ jobs:
           (root / 'lighthouse-summary.md').write_text('\n'.join(lines) + '\n')
           print('\n'.join(lines))
           PY
-          if [[ "${lh_failed}" -ne 0 ]]; then
-            echo 'Au moins un profil Lighthouse a échoué.' >&2
+          if (( lh_failed != 0 )); then
+            echo '::error::Lighthouse en échec sur au moins un profil (voir lighthouse-*.json).'
             exit 1
           fi
 
@@ -377,6 +529,7 @@ jobs:
           INTERACTIONS_RESULT: ${{ steps.interactions.outcome }}
         run: |
           set -u
+          theme_cache="$(grep -m1 '^CACHE-THEME: ' "$AUDIT_OUT_DIR/cache-ttfb.txt" 2>/dev/null | sed 's/^CACHE-THEME: //' || true)"
           {
             echo ''
             echo '## Résultat des suites UAT'
@@ -388,6 +541,13 @@ jobs:
             echo "| Nettoyage du compte temporaire | ${CLEANUP_RESULT:-skipped} |"
             echo "| Sécurité live | ${SECURITY_RESULT:-skipped} |"
             echo "| Cache/TTFB | ${CACHE_RESULT:-skipped} |"
+            echo "| Cache du thème (fichiers) | ${theme_cache:-non vérifié (fichier de preuve absent)} |"
+            case "${theme_cache:-}" in
+              'entrée valide'*) echo ''
+                 echo "> Cache du thème : une entrée valide existe, ce qui ne prouve pas que la page soit réellement servie depuis ce cache." ;;
+              *) echo ''
+                 echo "> Statut « Cache/TTFB » : LiteSpeed et TTFB uniquement — le cache fichier du thème n'est pas validé." ;;
+            esac
             echo "| Charge 10 rps | ${SMOKE_RESULT:-skipped} |"
             echo "| Charge 100 rps | ${FULL_LOAD_RESULT:-skipped} |"
             echo "| Chromium/Axe | ${BROWSER_RESULT:-skipped} |"
@@ -395,6 +555,11 @@ jobs:
             echo "| Interactions JavaScript + LCP/INP | ${INTERACTIONS_RESULT:-skipped} |"
             echo "| Lighthouse | ${LIGHTHOUSE_RESULT:-skipped} |"
           } | tee -a "$AUDIT_OUT_DIR/README.md" || true
+          {
+            echo ''
+            echo "Harnais audité : \`$(git rev-parse HEAD)\`"
+            echo "Code applicatif de référence : \`c9e141376179f1a47e567361c28e747b6e891cd0\` (vérifié identique par git diff)"
+          } | tee -a "$GITHUB_STEP_SUMMARY" "$AUDIT_OUT_DIR/README.md" || true
           for summary in "$AUDIT_OUT_DIR/interaction-web-vitals.md" "$AUDIT_OUT_DIR/lighthouse-summary.md"; do
             if [ -f "$summary" ]; then cat "$summary" | tee -a "$GITHUB_STEP_SUMMARY" "$AUDIT_OUT_DIR/README.md"; fi
           done

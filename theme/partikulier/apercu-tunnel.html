@@ -10,7 +10,7 @@
     --pk-primary-dark: #161715;
     --pk-ink: #161715;
     --pk-text: #3d403b;
-    --pk-muted: #8a877f;
+    --pk-muted: #5d615a;
     --pk-line: #e8e0e0;
     --pk-white: #ffffff;
     --pk-wash: #fdf2f2;
@@ -39,7 +39,7 @@
     border-radius: 28px;
     box-shadow: 0 24px 60px -36px rgba(22, 23, 21, .28);
   }
-  .pk-submit-back { color: var(--pk-muted); text-decoration: none; font-size: .82rem; }
+  .pk-submit-back { color: #323232; text-decoration: none; font-size: .82rem; }
   .pk-editorial-kicker {
     margin: 1.6rem 0 .55rem;
     font-size: .68rem;
@@ -56,7 +56,7 @@
     line-height: 1.02;
   }
   .pk-hero-accent { display: block; color: #161715; font-weight: 500; }
-  .pk-submit-subtitle { margin: .9rem 0 0; color: var(--pk-muted); max-width: 34rem; font-size: 1.02rem; }
+  .pk-submit-subtitle { margin: .9rem 0 0; color: #323232; max-width: 34rem; font-size: 1.02rem; }
   .pk-stepper { margin: 2.1rem 0 1.8rem; }
   .pk-stepper-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin: 0; padding: 0; list-style: none; }
   .pk-stepper-item {
@@ -92,7 +92,7 @@
     border: 1px solid var(--pk-line);
     border-radius: 50%;
     background: #fff;
-    color: var(--pk-muted);
+    color: #323232;
     font-size: .75rem;
   }
   .pk-stepper-item.is-current { color: var(--pk-ink); }
@@ -415,8 +415,8 @@
   .pk-stepper-item.is-current::after,
   .pk-stepper-item.is-complete::after { background: #FF5757; }
   .pk-stepper-item.is-current .pk-stepper-number {
-    background: #FF5757;
-    border-color: #FF5757;
+    background: #C8242B;
+    border-color: #C8242B;
     color: #fff;
   }
   .pk-stepper-item.is-complete .pk-stepper-number {
@@ -433,8 +433,8 @@
     border-color: #FF5757;
     box-shadow: 0 0 0 4px rgba(255, 87, 87, .18);
   }
-  .go { background: #FF5757; color: #fff; }
-  .go:hover, .go:active { background: #E04D4D; color: #fff; }
+  .go { background: #C8242B; color: #fff; }
+  .go:hover, .go:active { background: #9A1B21; color: #fff; }
 
   .pk-lang-bar {
     position: sticky; top: 0; z-index: 80;
@@ -485,7 +485,7 @@
   html[dir="rtl"] .pk-stepper-item { text-align: right; }
 
   /* 6.20.179 — barre du haut et barre du quartier : rouge du logo, plus le noir. */
-  .pk-lang-bar { background: #FF5757; }
+  .pk-lang-bar { background: #C8242B; }
   #lieu-proposition { border-color: #FF5757; }
   #lieu-proposition summary,
   #lieu-proposition[open] summary {
@@ -807,7 +807,7 @@
               <button class="pill" type="button" id="im-caution-plus" data-fr="Plus">Plus</button>
             </div>
             <div class="field" id="im-caution-suite" hidden>
-              <span class="lbl" data-fr="Montant">Montant</span>
+              <label class="lbl" for="im-caution-montant" data-fr="Montant">Montant</label>
               <div class="suffix"><input id="im-caution-montant" type="number" min="1" inputmode="decimal" placeholder="Ex. 15000"><span data-fr="DH">DH</span></div>
             </div>
           </div>
@@ -895,7 +895,7 @@
               <button class="pill" type="button" id="en-caution-plus" data-fr="Plus">Plus</button>
             </div>
             <div class="field" id="en-caution-suite" hidden>
-              <span class="lbl" data-fr="Montant">Montant</span>
+              <label class="lbl" for="en-caution-montant" data-fr="Montant">Montant</label>
               <div class="suffix"><input id="en-caution-montant" type="number" min="1" inputmode="decimal" placeholder="Ex. 45000"><span data-fr="DH">DH</span></div>
             </div>
           </div>
@@ -973,7 +973,7 @@
               <button class="pill" type="button" id="bi-caution-plus" data-fr="Plus">Plus</button>
             </div>
             <div class="field" id="bi-caution-suite" hidden>
-              <span class="lbl" data-fr="Montant">Montant</span>
+              <label class="lbl" for="bi-caution-montant" data-fr="Montant">Montant</label>
               <div class="suffix"><input id="bi-caution-montant" type="number" min="1" inputmode="decimal" placeholder="Ex. 120000"><span data-fr="DH">DH</span></div>
             </div>
           </div>
@@ -1898,7 +1898,7 @@
             <button class="pill" type="button" id="ap-caution-plus" data-fr="Plus">Plus</button>
           </div>
           <div class="field" id="ap-caution-suite" hidden>
-            <span class="lbl" data-fr="Montant">Montant</span>
+            <label class="lbl" for="ap-caution-montant" data-fr="Montant">Montant</label>
             <div class="suffix"><input id="ap-caution-montant" type="number" min="1" placeholder="Ex. 15000"><span data-fr="DH">DH</span></div>
           </div>
         </div>
@@ -2032,7 +2032,7 @@
           <button class="pill" type="button" data-court="supplement" id="ap-syndic-plus" data-fr="En supplément">En supplément</button>
         </div>
         <div class="field" id="ap-syndic-suite" hidden>
-          <span class="lbl" data-fr="Montant en supplément">Montant en supplément</span>
+          <label class="lbl" for="ap-syndic" data-fr="Montant en supplément">Montant en supplément</label>
           <div class="suffix"><input id="ap-syndic" type="number" min="0" placeholder="Ex. 350"><span data-fr="DH / mois">DH / mois</span></div>
         </div>
         </div>
@@ -2235,7 +2235,7 @@
             <button class="pill" type="button" id="ma-caution-plus" data-fr="Plus">Plus</button>
           </div>
           <div class="field" id="ma-caution-suite" hidden>
-            <span class="lbl" data-fr="Montant">Montant</span>
+            <label class="lbl" for="ma-caution-montant" data-fr="Montant">Montant</label>
             <div class="suffix"><input id="ma-caution-montant" type="number" min="1" placeholder="Ex. 15000"><span data-fr="DH">DH</span></div>
           </div>
         </div>
@@ -2346,7 +2346,7 @@
             <button class="pill" type="button" id="vi-caution-plus" data-fr="Plus">Plus</button>
           </div>
           <div class="field" id="vi-caution-suite" hidden>
-            <span class="lbl" data-fr="Montant">Montant</span>
+            <label class="lbl" for="vi-caution-montant" data-fr="Montant">Montant</label>
             <div class="suffix"><input id="vi-caution-montant" type="number" min="1" placeholder="Ex. 15000"><span data-fr="DH">DH</span></div>
           </div>
         </div>
@@ -2570,7 +2570,7 @@
           <button class="pill" type="button" id="caution-plus" data-fr="Plus">Plus</button>
         </div>
         <div class="field" id="caution-suite" hidden>
-          <span class="lbl" data-fr="Montant">Montant</span>
+          <label class="lbl" for="caution-montant" data-fr="Montant">Montant</label>
           <div class="suffix"><input id="caution-montant" type="number" min="1" inputmode="decimal" placeholder="Ex. 15000" aria-label="Montant de la caution"><span data-fr="DH">DH</span></div>
         </div>
         <p class="lbl" data-fr="Frais de syndic">Frais de syndic <span class="optional">facultatif</span></p>
@@ -2614,7 +2614,7 @@
           <p class="lbl" data-fr="Activité acceptée">Activité acceptée</p>
           <div class="pills" data-max="1" id="acceptee"></div>
         </div>
-        <input id="autre" hidden>
+        <input id="autre" type="hidden" hidden>
       </div>
     </details>
     <div id="local-photos-slot"></div>
@@ -2698,7 +2698,7 @@
             <button class="pill" type="button" id="ri-caution-plus" data-fr="Plus">Plus</button>
           </div>
           <div class="field" id="ri-caution-suite" hidden>
-            <span class="lbl" data-fr="Montant">Montant</span>
+            <label class="lbl" for="ri-caution-montant" data-fr="Montant">Montant</label>
             <div class="suffix"><input id="ri-caution-montant" type="number" min="1" placeholder="Ex. 15000"><span data-fr="DH">DH</span></div>
           </div>
         </div>
@@ -2845,7 +2845,7 @@
             <button class="pill" type="button" id="bu-caution-plus" data-fr="Plus">Plus</button>
           </div>
           <div class="field" id="bu-caution-suite" hidden>
-            <span class="lbl" data-fr="Montant">Montant</span>
+            <label class="lbl" for="bu-caution-montant" data-fr="Montant">Montant</label>
             <div class="suffix"><input id="bu-caution-montant" type="number" min="1" placeholder="Ex. 15000"><span data-fr="DH">DH</span></div>
           </div>
         </div>
@@ -2884,7 +2884,7 @@
         <button class="pill" type="button" id="hx-caution-plus" data-fr="Plus">Plus</button>
       </div>
       <div class="field" id="hx-caution-suite" hidden>
-        <span class="lbl" data-fr="Montant">Montant</span>
+        <label class="lbl" for="hx-caution-montant" data-fr="Montant">Montant</label>
         <div class="suffix"><input id="hx-caution-montant" type="number" min="1" placeholder="Ex. 15000"><span data-fr="DH">DH</span></div>
       </div>
     </section>
@@ -8454,7 +8454,7 @@ function pkFr(el) {
     PK_LANG = code;
     document.documentElement.lang = code;
     document.documentElement.dir = code === "ar" ? "rtl" : "ltr";
-    var titles = { fr: "Déposer une annonce", en: "Post a listing", ar: "نشر إعلان" };
+    var titles = { fr: "Déposer une annonce", en: "Post a listing", ar: "إضافة إعلان عقاري" };
     document.title = titles[code];
     var box = document.querySelector("[data-pk-lang]");
     if (box) {
