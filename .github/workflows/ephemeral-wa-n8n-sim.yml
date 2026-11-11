@@ -1,0 +1,535 @@
+name: Simulation éphémère n8n et WhatsApp
+
+on:
+  push:
+    branches:
+      - audit/ephemeral-wa-n8n-sim
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  simulate-wa-n8n:
+    name: MariaDB + WordPress c9e1413 + n8n 2.46.6 (parcours WhatsApp simulés)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MARIADB_ROOT_PASSWORD: ci-only-root-password
+          MARIADB_DATABASE: partikulier
+          MARIADB_USER: partikulier
+          MARIADB_PASSWORD: ci-only-wordpress-password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+      wordpress:
+        image: wordpress:6.6-php8.3-apache
+        env:
+          WORDPRESS_DB_HOST: mariadb:3306
+          WORDPRESS_DB_NAME: partikulier
+          WORDPRESS_DB_USER: partikulier
+          WORDPRESS_DB_PASSWORD: ci-only-wordpress-password
+          WORDPRESS_CONFIG_EXTRA: |
+            define('WP_HOME', 'http://wordpress');
+            define('WP_SITEURL', 'http://wordpress');
+            define('DISALLOW_FILE_EDIT', true);
+            define('WP_ENVIRONMENT_TYPE', 'local');
+        ports:
+          - 8080:80
+        volumes:
+          - ${{ github.workspace }}:/repo:ro
+      n8n:
+        image: n8nio/n8n:2.46.6
+        env:
+          N8N_DIAGNOSTICS_ENABLED: "false"
+          N8N_PERSONALIZATION_ENABLED: "false"
+          N8N_VERSION_NOTIFICATIONS_ENABLED: "false"
+          N8N_TEMPLATES_ENABLED: "false"
+          N8N_SECURE_COOKIE: "false"
+          N8N_DISABLED_MODULES: mcp-registry
+          N8N_LOG_LEVEL: warn
+        ports:
+          - 5678:5678
+
+    steps:
+      - name: Checkout tested baseline
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Run full ephemeral n8n WhatsApp simulation
+        id: sim
+        env:
+          WP_CONTAINER: ${{ job.services.wordpress.id }}
+          N8N_CONTAINER: ${{ job.services.n8n.id }}
+          OUT_DIR: ${{ github.workspace }}/ephemeral-wa-sim-artifacts
+        run: |
+          set -euo pipefail
+          mkdir -p "$OUT_DIR"
+          WP_BASE='http://127.0.0.1:8080'
+          N8N_BASE='http://127.0.0.1:5678'
+          WP_CONTAINER_IP="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$WP_CONTAINER")"
+          N8N_CONTAINER_IP="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$N8N_CONTAINER")"
+          test -n "$WP_CONTAINER_IP" && test -n "$N8N_CONTAINER_IP"
+
+          # Network egress isolation: n8n container may ONLY talk to this disposable WordPress container on TCP/80.
+          sudo iptables -nL DOCKER-USER >/dev/null 2>&1
+          sudo iptables -w -I DOCKER-USER 1 -m conntrack --ctstate ESTABLISHED,RELATED -j RETURN
+          sudo iptables -w -I DOCKER-USER 2 -s "$N8N_CONTAINER_IP" -d "$WP_CONTAINER_IP" -p tcp --dport 80 -j ACCEPT
+          sudo iptables -w -I DOCKER-USER 3 -s "$N8N_CONTAINER_IP" -j DROP
+
+          # Wait for WordPress
+          for _ in $(seq 1 90); do
+            code="$(curl -s -H 'Host: wordpress' -o /dev/null -w '%{http_code}' "$WP_BASE/wp-login.php" || true)"
+            if [ "$code" = 200 ] || [ "$code" = 302 ]; then break; fi
+            sleep 2
+          done
+
+          # Install baseline plugin & theme into disposable WordPress
+          docker exec "$WP_CONTAINER" mkdir -p /var/www/html/wp-content/plugins/partikulier-core /var/www/html/wp-content/themes/partikulier /var/www/html/wp-content/uploads/partikulier-cache
+          docker cp plugin/partikulier-core/. "$WP_CONTAINER:/var/www/html/wp-content/plugins/partikulier-core/"
+          docker cp theme/partikulier/. "$WP_CONTAINER:/var/www/html/wp-content/themes/partikulier/"
+
+          EPHEMERAL_SECRET="$(openssl rand -base64 48 | tr -d '\n')"
+          ERASE_SECRET="$(openssl rand -base64 48 | tr -d '\n')"
+          echo "::add-mask::$EPHEMERAL_SECRET"
+          echo "::add-mask::$ERASE_SECRET"
+
+          # Bootstrap WordPress, tables, HMAC secret, erase secret, 3 owners & 3 approved synthetic properties
+          SEED_JSON="$(docker exec -e PK_EPHEMERAL_SECRET="$EPHEMERAL_SECRET" -e PK_ERASE_SECRET="$ERASE_SECRET" -i "$WP_CONTAINER" php <<'PHP'
+          <?php
+          define('WP_INSTALLING', true);
+          require '/var/www/html/wp-load.php';
+          require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+          require_once ABSPATH . 'wp-admin/includes/plugin.php';
+          add_filter('pre_wp_mail', static fn() => true);
+          if (!is_blog_installed()) {
+              $password = bin2hex(random_bytes(24));
+              wp_install('Partikulier Sim CI', 'ci-admin', 'ci-admin@example.invalid', false, '', $password);
+          }
+          $act = activate_plugin('partikulier-core/partikulier-core.php');
+          if (is_wp_error($act)) { fwrite(STDERR, $act->get_error_message() . "\n"); exit(1); }
+          switch_theme('partikulier');
+
+          update_option('pk_n8n_settings', [
+              'automation_api_secret' => getenv('PK_EPHEMERAL_SECRET'),
+              'active_key_id' => 'N',
+              'hmac_mode' => 'enforce',
+          ], false);
+          update_option('lead_erase_api_secret', getenv('PK_ERASE_SECRET'), false);
+
+          $props = [];
+          for ($i = 1; $i <= 3; $i++) {
+              $uid = wp_insert_user([
+                  'user_login' => "sim_owner_{$i}",
+                  'user_pass'  => bin2hex(random_bytes(16)),
+                  'user_email' => "sim_owner_{$i}@example.invalid",
+                  'role'       => 'contributor',
+                  'display_name' => "Propriétaire Sim {$i}",
+              ]);
+              if (is_wp_error($uid)) { fwrite(STDERR, $uid->get_error_message() . "\n"); exit(1); }
+              $pid = wp_insert_post([
+                  'post_type'   => 'properties',
+                  'post_status' => 'publish',
+                  'post_title'  => "Bien Simulé {$i} Casablanca",
+                  'post_author' => (int) $uid,
+              ]);
+              if (is_wp_error($pid) || !$pid) { fwrite(STDERR, "Post insert failed\n"); exit(1); }
+              $phoneRaw = "+21261111000{$i}";
+              $phoneVal = class_exists('Partikulier_Crypto') ? Partikulier_Crypto::protect_phone($phoneRaw) : $phoneRaw;
+              update_post_meta($pid, '_pk_owner_name', "Propriétaire Sim {$i}");
+              update_post_meta($pid, '_pk_owner_phone', $phoneVal);
+              update_post_meta($pid, '_pk_approved_at', gmdate('Y-m-d H:i:s', time() - 3600));
+              update_post_meta($pid, '_pk_n8n_sent', '1');
+              $ref = \Partikulier\Core\Domain\Leads\LeadService::reference_for((int) $pid);
+              $props[] = ['id' => (int) $pid, 'ref' => $ref, 'owner_id' => (int) $uid];
+          }
+          echo json_encode($props);
+          PHP
+          )"
+          echo "Seeded properties: $SEED_JSON"
+
+          # Wait for n8n REST API to finish migrations and serve JSON /rest/settings
+          n8n_ready=0
+          for _ in $(seq 1 90); do
+            ncode="$(curl -s -H 'Accept: application/json' -o "$RUNNER_TEMP/n8n-settings.json" -w '%{http_code}' "$N8N_BASE/rest/settings" || true)"
+            if [ "$ncode" = 200 ] && python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); assert isinstance(d, dict) and "data" in d' "$RUNNER_TEMP/n8n-settings.json" 2>/dev/null; then
+              n8n_ready=1
+              break
+            fi
+            sleep 2
+          done
+          if [ "$n8n_ready" -ne 1 ]; then
+            echo "n8n /rest/settings not ready (HTTP ${ncode:-000}):"
+            head -c 300 "$RUNNER_TEMP/n8n-settings.json" || true
+            docker logs "$N8N_CONTAINER" 2>&1 | tail -n 30 || true
+            exit 1
+          fi
+
+          N8N_OWNER_PASSWORD="Ci-$(openssl rand -hex 24)!9A"
+          echo "::add-mask::$N8N_OWNER_PASSWORD"
+
+          # Build, setup owner, login, import/create workflow, execute and verify inside Python
+          PK_EPHEMERAL_SECRET="$EPHEMERAL_SECRET" WP_SERVICE_IP="$WP_CONTAINER_IP" SEED_JSON="$SEED_JSON" GITHUB_RUN_ID="$GITHUB_RUN_ID" N8N_BASE="$N8N_BASE" N8N_OWNER_PASSWORD="$N8N_OWNER_PASSWORD" N8N_CONTAINER="$N8N_CONTAINER" OUT_DIR="$OUT_DIR" python3 - <<'PY'
+          import base64, hashlib, hmac, http.cookiejar, json, os, pathlib, subprocess, time, urllib.error, urllib.parse, urllib.request, uuid
+
+          secret = os.environ['PK_EPHEMERAL_SECRET']
+          key = base64.b64decode(secret, validate=True)
+          wp_ip = os.environ['WP_SERVICE_IP']
+          props = json.loads(os.environ['SEED_JSON'])
+          run_id = os.environ['GITHUB_RUN_ID']
+          n8n_base = os.environ['N8N_BASE'].rstrip('/')
+          password = os.environ['N8N_OWNER_PASSWORD']
+          n8n_container = os.environ['N8N_CONTAINER']
+          out_dir = pathlib.Path(os.environ['OUT_DIR'])
+          ts = str(int(time.time()))
+
+          buyer_a = '212699000001'
+          buyer_b = '212699000002'
+          buyer_c = '212699000003'
+
+          def signed_headers(method, route, body_str):
+              canonical = f'{method}\n{route}\n{ts}\n{body_str}'.encode()
+              sig = 'sha256=' + hmac.new(key, canonical, hashlib.sha256).hexdigest()
+              return [
+                  {"name": "Content-Type", "value": "application/json"},
+                  {"name": "Host", "value": "wordpress"},
+                  {"name": "X-Partikulier-Automation", "value": secret},
+                  {"name": "X-Partikulier-Timestamp", "value": ts},
+                  {"name": "X-Partikulier-Key-Id", "value": "N"},
+                  {"name": "X-Partikulier-Signature", "value": sig},
+              ]
+
+          def make_http_node(name, method, route, payload, x):
+              body_str = '' if method == 'GET' else json.dumps(payload, separators=(',', ':'), ensure_ascii=False)
+              rest_route_q = urllib.parse.quote(route, safe='')
+              params = {
+                  "method": method,
+                  "url": f'http://{wp_ip}/?rest_route={rest_route_q}',
+                  "sendHeaders": True,
+                  "headerParameters": {"parameters": signed_headers(method, route, body_str)},
+                  "options": {"response": {"response": {"fullResponse": True, "neverError": True, "responseFormat": "json"}}},
+              }
+              if method != 'GET':
+                  params["sendBody"] = True
+                  params["contentType"] = "raw"
+                  params["rawContentType"] = "application/json"
+                  params["body"] = body_str
+              return {
+                  "id": str(uuid.uuid4()),
+                  "name": name,
+                  "type": "n8n-nodes-base.httpRequest",
+                  "typeVersion": 4.2,
+                  "position": [x, 300],
+                  "parameters": params,
+              }
+
+          steps = [
+              ("S01_approved_listings", "GET", "/partikulier/v1/approved-listings", None),
+              ("S02_auth_need_qual", "POST", "/partikulier/v1/contact-authorization", {"wa_id": buyer_a, "reference": props[0]["ref"], "provider_message_id": f"wamid-{run_id}-1", "text": f"Bonjour intéressé par {props[0]['ref']}"}),
+              ("S03_qual_particulier", "POST", "/partikulier/v1/qualification", {"wa_id": buyer_a, "is_particulier": "particulier", "provider_message_id": f"wamid-{run_id}-2"}),
+              ("S04_auth_owner1_ok", "POST", "/partikulier/v1/contact-authorization", {"wa_id": buyer_a, "reference": props[0]["ref"], "provider_message_id": f"wamid-{run_id}-3", "text": f"OK {props[0]['ref']}"}),
+              ("S05_auth_msg_replay", "POST", "/partikulier/v1/contact-authorization", {"wa_id": buyer_a, "reference": props[0]["ref"], "provider_message_id": f"wamid-{run_id}-3", "text": f"OK {props[0]['ref']}"}),
+              ("S06_preferences", "POST", "/partikulier/v1/preferences", {"wa_id": buyer_a, "budget_max": 1500000, "areas": ["Casablanca", "Maarif"], "layout": "3 chambres", "transaction": "achat", "provider_message_id": f"wamid-{run_id}-4"}),
+              ("S07_consent", "POST", "/partikulier/v1/consent", {"wa_id": buyer_a, "scope": "similar_listings", "granted": True, "provider_message_id": f"wamid-{run_id}-5"}),
+              ("S08_auth_owner2_ok", "POST", "/partikulier/v1/contact-authorization", {"wa_id": buyer_a, "reference": props[1]["ref"], "provider_message_id": f"wamid-{run_id}-6", "text": f"Intéressé {props[1]['ref']}"}),
+              ("S09_auth_3rd_manual", "POST", "/partikulier/v1/contact-authorization", {"wa_id": buyer_a, "reference": props[2]["ref"], "provider_message_id": f"wamid-{run_id}-7", "text": f"Intéressé {props[2]['ref']}"}),
+              ("S10_opt_out_stop", "POST", "/partikulier/v1/opt-out", {"wa_id": buyer_a, "provider_message_id": f"wamid-{run_id}-8"}),
+              ("S11_auth_after_stop", "POST", "/partikulier/v1/contact-authorization", {"wa_id": buyer_a, "reference": props[0]["ref"], "provider_message_id": f"wamid-{run_id}-9", "text": "Encore moi"}),
+              ("S12_buyerB_init", "POST", "/partikulier/v1/contact-authorization", {"wa_id": buyer_b, "reference": props[0]["ref"], "provider_message_id": f"wamid-{run_id}-b1", "text": "Bonjour"}),
+              ("S13_buyerB_interm", "POST", "/partikulier/v1/qualification", {"wa_id": buyer_b, "is_particulier": "intermediaire", "provider_message_id": f"wamid-{run_id}-b2"}),
+              ("S14_buyerB_refused", "POST", "/partikulier/v1/contact-authorization", {"wa_id": buyer_b, "reference": props[0]["ref"], "provider_message_id": f"wamid-{run_id}-b3", "text": "Rebonjour"}),
+              ("S15_buyerB_flip_409", "POST", "/partikulier/v1/qualification", {"wa_id": buyer_b, "is_particulier": "particulier", "provider_message_id": f"wamid-{run_id}-b4"}),
+              ("S15b_buyerC_unknown_404", "POST", "/partikulier/v1/qualification", {"wa_id": buyer_c, "is_particulier": "particulier", "provider_message_id": f"wamid-{run_id}-c0"}),
+              ("S16_buyerC_init", "POST", "/partikulier/v1/contact-authorization", {"wa_id": buyer_c, "reference": props[0]["ref"], "provider_message_id": f"wamid-{run_id}-c1", "text": "Bonjour"}),
+              ("S16b_buyerC_pending", "POST", "/partikulier/v1/contact-authorization", {"wa_id": buyer_c, "reference": props[0]["ref"], "provider_message_id": f"wamid-{run_id}-c1b", "text": "Allo"}),
+              ("S16c_buyerC_qual", "POST", "/partikulier/v1/qualification", {"wa_id": buyer_c, "is_particulier": "particulier", "provider_message_id": f"wamid-{run_id}-c2"}),
+              ("S17_buyerC_owner1_ok", "POST", "/partikulier/v1/contact-authorization", {"wa_id": buyer_c, "reference": props[0]["ref"], "provider_message_id": f"wamid-{run_id}-c3", "text": f"OK {props[0]['ref']}"}),
+              ("S18_buyerC_discl_replay", "POST", "/partikulier/v1/contact-authorization", {"wa_id": buyer_c, "reference": props[0]["ref"], "provider_message_id": f"wamid-{run_id}-c4", "text": f"Encore {props[0]['ref']}"}),
+              ("S19_auto_event_first", "POST", "/partikulier/v1/automation-event", {"event_id": f"n8n-sim-ev-{run_id}", "event_type": "whatsapp_status", "source": "n8n", "payload": {"status": "sent"}}),
+              ("S20_auto_event_replay", "POST", "/partikulier/v1/automation-event", {"event_id": f"n8n-sim-ev-{run_id}", "event_type": "whatsapp_status", "source": "n8n", "payload": {"status": "sent"}}),
+          ]
+
+          nodes = [{"id": str(uuid.uuid4()), "name": "Manual Trigger", "type": "n8n-nodes-base.manualTrigger", "typeVersion": 1, "position": [200, 300], "parameters": {}}]
+          connections = {}
+          prev = "Manual Trigger"
+          for idx, (name, method, route, payload) in enumerate(steps, start=1):
+              nodes.append(make_http_node(name, method, route, payload, 200 + idx * 220))
+              connections[prev] = {"main": [[{"node": name, "type": "main", "index": 0}]]}
+              prev = name
+
+          wf_id = str(uuid.uuid4())
+          workflow = {
+              "id": wf_id,
+              "name": "Simulation parcours WhatsApp WordPress",
+              "active": False,
+              "nodes": nodes,
+              "connections": connections,
+              "settings": {"executionOrder": "v1"},
+              "staticData": None,
+              "pinData": {},
+              "tags": [],
+          }
+          wf_path = pathlib.Path(os.environ['RUNNER_TEMP']) / 'wa-sim-workflow.json'
+          wf_path.write_text(json.dumps(workflow, separators=(',', ':')), encoding='utf-8')
+          wf_path.chmod(0o600)
+
+          jar = http.cookiejar.CookieJar()
+          client = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar))
+
+          def call(method, path, payload=None):
+              data = None if payload is None else json.dumps(payload).encode()
+              req = urllib.request.Request(n8n_base + path, data=data, method=method, headers={'Content-Type': 'application/json', 'Accept': 'application/json'})
+              try:
+                  with client.open(req, timeout=30) as resp:
+                      raw = resp.read().decode('utf-8', 'replace')
+                      try:
+                          return resp.status, json.loads(raw) if raw else {}
+                      except Exception:
+                          print(f"Non-JSON {resp.status} on {method} {path}: {raw[:300]}")
+                          return resp.status, {'raw': raw[:200]}
+              except urllib.error.HTTPError as err:
+                  raw = err.read().decode('utf-8', 'replace')
+                  print(f"HTTP {err.code} on {method} {path}: {raw[:300]}")
+                  try: parsed = json.loads(raw)
+                  except Exception: parsed = {'raw': raw[:200]}
+                  return err.code, parsed
+
+          def unflatten(value):
+              if not isinstance(value, list) or not value:
+                  return value
+              first = value[0]
+              if not isinstance(first, (dict, list)) and not (isinstance(first, str) and first[:1] in ('{', '[')):
+                  return value
+              cache = {}
+              def deref(idx, active):
+                  if idx in cache: return cache[idx]
+                  if idx in active or idx < 0 or idx >= len(value): return None
+                  raw_val = value[idx]
+                  try: dec = json.loads(raw_val) if isinstance(raw_val, str) and raw_val[:1] in ('{', '[') else raw_val
+                  except Exception: dec = raw_val
+                  res = expand(dec, active | {idx})
+                  cache[idx] = res
+                  return res
+              def expand(item, active):
+                  if isinstance(item, dict): return {k: expand(v, active) for k, v in item.items()}
+                  if isinstance(item, list): return [expand(v, active) for v in item]
+                  if isinstance(item, str) and item.isdigit() and int(item) < len(value):
+                      return deref(int(item), active)
+                  return item
+              return deref(0, set())
+
+          def find(value, key):
+              if isinstance(value, dict):
+                  if key in value: return value[key]
+                  for v in value.values():
+                      r = find(v, key)
+                      if r is not None: return r
+              elif isinstance(value, list):
+                  for v in value:
+                      r = find(v, key)
+                      if r is not None: return r
+              elif isinstance(value, str) and value[:1] in ('{', '['):
+                  try: return find(unflatten(json.loads(value)), key)
+                  except Exception: pass
+              return None
+
+          # Owner setup + login BEFORE CLI workflow import (same sequence as ephemeral-n8n-boundary.yml)
+          st_owner, _ = call('POST', '/rest/owner/setup', {'email': 'ci-owner@example.invalid', 'firstName': 'CI', 'lastName': 'Sim', 'password': password})
+          print(f"n8n owner setup HTTP: {st_owner}")
+          assert st_owner in (200, 201), f"owner setup failed: {st_owner}"
+
+          st_login, _ = call('POST', '/rest/login', {'emailOrLdapLoginId': 'ci-owner@example.invalid', 'password': password})
+          print(f"n8n login HTTP: {st_login}")
+          assert st_login == 200, f"login failed: {st_login}"
+
+          # Import workflow via CLI, and fallback to REST POST /rest/workflows if ID not visible
+          subprocess.run(['docker', 'cp', str(wf_path), f'{n8n_container}:/tmp/wa-sim-workflow.json'], check=True)
+          subprocess.run(['docker', 'exec', '-u', '0:0', n8n_container, 'chown', 'node:node', '/tmp/wa-sim-workflow.json'], check=True)
+          subprocess.run(['docker', 'exec', '-u', 'node', '-e', 'N8N_DISABLED_MODULES=mcp-registry', n8n_container, 'n8n', 'import:workflow', '--input=/tmp/wa-sim-workflow.json'], check=True)
+
+          st_get, _ = call('GET', f'/rest/workflows/{wf_id}')
+          print(f"n8n GET imported workflow HTTP: {st_get}")
+          if st_get != 200:
+              st_post, created = call('POST', '/rest/workflows', {
+                  "name": workflow["name"],
+                  "nodes": workflow["nodes"],
+                  "connections": workflow["connections"],
+                  "settings": workflow["settings"],
+              })
+              print(f"n8n POST /rest/workflows fallback HTTP: {st_post}")
+              assert st_post in (200, 201), f"create workflow failed: {st_post}"
+              wf_id = find(created, 'id')
+              assert wf_id, "missing created workflow id"
+
+          st_run, started = call('POST', f'/rest/workflows/{wf_id}/run', {'triggerToStartFrom': {'name': 'Manual Trigger'}})
+          print(f"n8n workflow run start HTTP: {st_run}")
+          assert st_run == 200, f"n8n run start failed: {st_run}"
+          exec_id = find(started, 'executionId')
+          assert exec_id, 'missing executionId'
+
+          execution = {}
+          for _ in range(90):
+              st_ex, execution = call('GET', f'/rest/executions/{exec_id}?includeData=true')
+              if st_ex == 200:
+                  finished = find(execution, 'finished')
+                  status = find(execution, 'status')
+                  if finished is True or status in ('success', 'error', 'crashed', 'canceled'):
+                      break
+              time.sleep(1)
+
+          run_data = find(execution, 'runData')
+          assert isinstance(run_data, dict), f'missing runData; keys={list(execution.keys()) if isinstance(execution, dict) else type(execution)}'
+
+          def extract(name):
+              for run in run_data.get(name, []):
+                  for grp in run.get('data', {}).get('main', []):
+                      for item in grp:
+                          j = item.get('json', {})
+                          if isinstance(j, dict):
+                              sc = int(j.get('statusCode', j.get('status', 0)) or 0)
+                              body = j.get('body', j)
+                              if isinstance(body, str):
+                                  try: body = json.loads(body)
+                                  except Exception: pass
+                              return sc, body
+              return 0, {}
+
+          checks = []
+          def expect(node, fn, desc):
+              sc, body = extract(node)
+              ok = False
+              try:
+                  ok = bool(fn(sc, body))
+              except Exception:
+                  ok = False
+              safe_keys = {}
+              if isinstance(body, dict):
+                  for k in ('count', 'allowed', 'reason', 'replayed', 'qualified', 'updated', 'consent', 'processed', 'known_lead', 'accepted', 'duplicate', 'limit', 'code'):
+                      if k in body:
+                          safe_keys[k] = body[k]
+                  if 'owner' in body and isinstance(body['owner'], dict):
+                      safe_keys['owner_disclosed'] = bool(body['owner'].get('phone'))
+                  if 'question' in body:
+                      safe_keys['question_present'] = bool(body['question'])
+              checks.append({'step': node, 'desc': desc, 'http': sc, 'pass': ok, 'summary': safe_keys})
+
+          expect('S01_approved_listings', lambda sc, b: sc == 200 and b.get('count') == 3, 'GET /approved-listings retourne 3 annonces')
+          expect('S02_auth_need_qual', lambda sc, b: sc == 200 and b.get('allowed') is False and b.get('reason') == 'need_qualification' and b.get('question'), '1er message inconnu -> demande qualification')
+          expect('S03_qual_particulier', lambda sc, b: sc == 200 and b.get('qualified') == 'particulier' and b.get('replayed') is False, 'Qualification particulier enregistrée')
+          expect('S04_auth_owner1_ok', lambda sc, b: sc == 200 and b.get('allowed') is True and b.get('replayed') is False and b.get('owner', {}).get('phone'), 'Contact proprio 1 autorisé (1/2) + contact retourné')
+          expect('S05_auth_msg_replay', lambda sc, b: sc == 200 and b.get('allowed') is False and b.get('reason') == 'duplicate_message', 'Rejeu exact même message_id bloqué')
+          expect('S06_preferences', lambda sc, b: sc == 200 and b.get('updated') is True and b.get('replayed') is False, 'Préférences acheteur enregistrées')
+          expect('S07_consent', lambda sc, b: sc == 200 and b.get('consent') == 'granted' and b.get('replayed') is False, 'Consentement annonces similaires enregistré')
+          expect('S08_auth_owner2_ok', lambda sc, b: sc == 200 and b.get('allowed') is True and b.get('replayed') is False and b.get('owner', {}).get('phone'), 'Contact proprio 2 autorisé (2/2)')
+          expect('S09_auth_3rd_manual', lambda sc, b: sc == 200 and b.get('allowed') is False and b.get('reason') == 'manual_review' and b.get('limit') == '24h_3contacts', '3e contact en 24h basculé en manual_review')
+          expect('S10_opt_out_stop', lambda sc, b: sc == 200 and b.get('processed') is True and b.get('known_lead') is True and b.get('replayed') is False, 'Opt-out STOP enregistré')
+          expect('S11_auth_after_stop', lambda sc, b: sc == 200 and b.get('allowed') is False and b.get('reason') == 'opted_out', 'Blocage après STOP effectif')
+          expect('S12_buyerB_init', lambda sc, b: sc == 200 and b.get('reason') == 'need_qualification', 'Acheteur B demande qualification')
+          expect('S13_buyerB_interm', lambda sc, b: sc == 200 and b.get('qualified') == 'intermediaire', 'Qualification intermédiaire enregistrée')
+          expect('S14_buyerB_refused', lambda sc, b: sc == 200 and b.get('allowed') is False and b.get('reason') == 'intermediary_refused', 'Intermédiaire refusé')
+          expect('S15_buyerB_flip_409', lambda sc, b: sc == 409 and b.get('code') == 'pk_qualification_already_set', 'Changement qualification bloqué en 409')
+          expect('S15b_buyerC_unknown_404', lambda sc, b: sc == 404 and b.get('code') == 'pk_unknown_lead', 'Qualification avant contact-authorization rejetée 404 pk_unknown_lead')
+          expect('S16_buyerC_init', lambda sc, b: sc == 200 and b.get('allowed') is False and b.get('reason') == 'need_qualification', 'Acheteur C créé -> need_qualification')
+          expect('S16b_buyerC_pending', lambda sc, b: sc == 200 and b.get('allowed') is False and b.get('reason') == 'need_qualification_pending', 'Relance avant réponse -> need_qualification_pending')
+          expect('S16c_buyerC_qual', lambda sc, b: sc == 200 and b.get('qualified') == 'particulier', 'Acheteur C qualifié particulier')
+          expect('S17_buyerC_owner1_ok', lambda sc, b: sc == 200 and b.get('allowed') is True and b.get('replayed') is False and b.get('owner', {}).get('phone'), 'Acheteur C autorisé proprio 1')
+          expect('S18_buyerC_discl_replay', lambda sc, b: sc == 200 and b.get('allowed') is True and b.get('replayed') is True and b.get('owner', {}).get('phone'), 'Acheteur C redemande même annonce (nouveau message_id) -> replayed=true')
+          expect('S19_auto_event_first', lambda sc, b: sc == 200 and b.get('accepted') is True and b.get('duplicate') is False, 'automation-event accepté')
+          expect('S20_auto_event_replay', lambda sc, b: sc == 200 and b.get('accepted') is True and b.get('duplicate') is True, 'automation-event rejeu idempotent')
+
+          (out_dir / 'n8n-wa-steps.json').write_text(json.dumps(checks, ensure_ascii=False, indent=2))
+          PY
+
+          # Verify SQL tables BEFORE erase-lead, then call signed /erase-lead for buyer A and verify 0 rows left!
+          DB_COUNTS_BEFORE="$(docker exec -i "$WP_CONTAINER" php <<'PHP'
+          <?php
+          require '/var/www/html/wp-load.php';
+          global $wpdb;
+          $tables = ['pk_buyer_leads','pk_interest_events','pk_contact_disclosures','pk_contact_limits','pk_buyer_preferences','pk_whatsapp_consents','pk_whatsapp_messages','pk_automation_events','pk_audit_log'];
+          $out = [];
+          foreach ($tables as $t) {
+              $out[$t] = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}{$t}");
+          }
+          echo json_encode($out);
+          PHP
+          )"
+
+          GUARD_HTTP="$(curl -s -o /tmp/erase-guard.json -w '%{http_code}' -X POST 'http://127.0.0.1:8080/?rest_route=%2Fpartikulier%2Fv1%2Ferase-lead' -H 'Host: wordpress' -H 'Content-Type: application/json' -H "X-Partikulier-Automation: $EPHEMERAL_SECRET" --data '{"wa_id":"212699000001"}')"
+          ERASE_HTTP="$(curl -s -o /tmp/erase-resp.json -w '%{http_code}' -X POST 'http://127.0.0.1:8080/?rest_route=%2Fpartikulier%2Fv1%2Ferase-lead' -H 'Host: wordpress' -H 'Content-Type: application/json' -H "X-Partikulier-Lead-Erase: $ERASE_SECRET" --data '{"wa_id":"212699000001"}')"
+
+          DB_COUNTS_AFTER="$(docker exec -i "$WP_CONTAINER" php <<'PHP'
+          <?php
+          require '/var/www/html/wp-load.php';
+          global $wpdb;
+          $tables = ['pk_buyer_leads','pk_interest_events','pk_contact_disclosures','pk_contact_limits','pk_buyer_preferences','pk_whatsapp_consents','pk_whatsapp_messages','pk_automation_events','pk_audit_log'];
+          $out = [];
+          foreach ($tables as $t) {
+              $out[$t] = (int) $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}{$t}");
+          }
+          $h1 = hash_hmac('sha256', '+212699000001', wp_salt('auth'));
+          $h2 = hash_hmac('sha256', '212699000001', wp_salt('auth'));
+          $out['buyerA_leads_left'] = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$wpdb->prefix}pk_buyer_leads WHERE phone_hash IN (%s, %s)", $h1, $h2));
+          echo json_encode($out);
+          PHP
+          )"
+
+          DB_COUNTS_BEFORE="$DB_COUNTS_BEFORE" DB_COUNTS_AFTER="$DB_COUNTS_AFTER" GUARD_HTTP="$GUARD_HTTP" ERASE_HTTP="$ERASE_HTTP" OUT_DIR="$OUT_DIR" python3 - <<'PY'
+          import json, os, pathlib
+          out_dir = pathlib.Path(os.environ['OUT_DIR'])
+          steps = json.loads((out_dir / 'n8n-wa-steps.json').read_text())
+          before = json.loads(os.environ['DB_COUNTS_BEFORE'])
+          after = json.loads(os.environ['DB_COUNTS_AFTER'])
+          guard_http = int(os.environ['GUARD_HTTP'])
+          erase_http = int(os.environ['ERASE_HTTP'])
+          erase_body = json.loads(pathlib.Path('/tmp/erase-resp.json').read_text())
+          guard_ok = (guard_http == 401)
+          erase_ok = (
+              erase_http == 200
+              and erase_body.get('erased') is True
+              and before['pk_buyer_leads'] == 3 and after['pk_buyer_leads'] == 2
+              and after['buyerA_leads_left'] == 0
+              and after['pk_contact_disclosures'] == 1
+              and after['pk_contact_limits'] == 1
+              and after['pk_interest_events'] == 2
+              and after['pk_buyer_preferences'] == 0
+              and after['pk_whatsapp_consents'] == 0
+              and after['pk_automation_events'] == 1
+          )
+          lines = [
+              '# Simulation éphémère n8n + parcours WhatsApp WordPress (`c9e1413`)',
+              '',
+              '- Portée : Docker jetable GitHub Actions (`MariaDB 10.11` + `WordPress 6.6` + `n8n 2.46.6`), egress bloqué par `iptables` hors IP WordPress, 0 secret UAT/prod, 0 appel Meta/Google Sheets réel.',
+              '',
+              '| Étape | Scénario | HTTP | Statut | Résumé |',
+              '|---|---|---:|---|---|',
+          ]
+          all_ok = guard_ok and erase_ok
+          for s in steps:
+              status = 'PASS' if s['pass'] else 'FAIL'
+              if not s['pass']:
+                  all_ok = False
+              lines.append(f"| `{s['step']}` | {s['desc']} | {s['http']} | **{status}** | `{json.dumps(s['summary'], ensure_ascii=False)}` |")
+          lines.append(f"| `S21a_erase_guard_401` | Rejet /erase-lead sans secret dédié `lead_erase_api_secret` | {guard_http} | **{'PASS' if guard_ok else 'FAIL'}** | `guard_http={guard_http}` |")
+          lines.append(f"| `S21b_erase_lead_ok` | Effacement RGPD acheteur A (`X-Partikulier-Lead-Erase`) + maintien B et C | {erase_http} | **{'PASS' if erase_ok else 'FAIL'}** | `before={json.dumps(before)} after={json.dumps(after)}` |")
+          lines.append('')
+          lines.append('Observation métier relevée : une redemande idempotente sur la même annonce avec nouveau `provider_message_id` (`replayed=true`, sans incrémenter `pk_contact_limits`) insère néanmoins une ligne dans `pk_interest_events`, décomptée du plafond 24 h (`max_24h=2`) dans `LeadsContactAuthorizationTrait`.')
+          (out_dir / 'summary.md').write_text('\n'.join(lines) + '\n')
+          (out_dir / 'db-counts.json').write_text(json.dumps({'before_erase': before, 'after_erase': after, 'guard_http': guard_http, 'erase_http': erase_http, 'erase_response': erase_body}, indent=2) + '\n')
+          print('\n'.join(lines))
+          if not all_ok:
+              raise SystemExit(1)
+          PY
+
+      - name: Upload simulation artifacts
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ephemeral-wa-n8n-sim-report
+          path: ${{ github.workspace }}/ephemeral-wa-sim-artifacts
+          retention-days: 14
