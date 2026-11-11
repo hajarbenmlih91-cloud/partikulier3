@@ -110,7 +110,9 @@ final class LeadService
 	private static function contact_response( int $property_id, bool $replayed ): array
 	{
 		$raw_phone = (string) get_post_meta($property_id, '_pk_owner_phone', true);
-		$phone     = class_exists('\\Partikulier_Crypto') ? \Partikulier_Crypto::read_phone($raw_phone) : $raw_phone;
+		$phone     = class_exists('\\Partikulier_Crypto')
+			? \Partikulier_Crypto::read_phone($raw_phone)
+			: (0 === strpos(trim($raw_phone), 'gcm:v1:') ? self::decrypt_payload($raw_phone) : $raw_phone);
 		return [
 			'allowed'  => true,
 			'replayed' => $replayed,

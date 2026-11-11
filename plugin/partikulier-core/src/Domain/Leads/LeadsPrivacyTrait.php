@@ -203,7 +203,15 @@ trait LeadsPrivacyTrait
 	 */
 	public static function decrypt_phone_for_admin( string $encrypted_phone ): string
 	{
-		if ( ! current_user_can('manage_options') || ! function_exists('openssl_decrypt') ) {
+		if ( ! current_user_can('manage_options') ) {
+			return '';
+		}
+		return self::decrypt_payload($encrypted_phone);
+	}
+
+	private static function decrypt_payload( string $encrypted_phone ): string
+	{
+		if ( ! function_exists('openssl_decrypt') ) {
 			return '';
 		}
 		$encrypted_phone = trim($encrypted_phone);

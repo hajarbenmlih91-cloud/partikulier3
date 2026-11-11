@@ -539,7 +539,7 @@ jobs:
                   safe_keys["meta_messages_count"] = len(body["messages"])
               checks.append({"step": node, "desc": desc, "http": sc, "pass": ok, "summary": safe_keys})
 
-          expect("S01_approved_listings", lambda sc, b: sc == 200 and b.get("count") == 3, "GET /approved-listings retourne 3 annonces")
+          expect("S01_approved_listings", lambda sc, b: sc == 200 and b.get("count") == 3 and all(str(r.get("owner_phone", "")).startswith("+212") for r in b.get("listings", [])), "GET /approved-listings retourne 3 annonces avec owner_phone déchiffré")
           expect("S02_auth_need_qual", lambda sc, b: sc == 200 and b.get("allowed") is False and b.get("reason") == "need_qualification" and b.get("question"), "1er message inconnu -> demande qualification")
           expect("S03_qual_particulier", lambda sc, b: sc == 200 and b.get("qualified") == "particulier" and b.get("replayed") is False, "Qualification particulier enregistrée")
           expect("S04_auth_owner1_ok", lambda sc, b: sc == 200 and b.get("allowed") is True and b.get("replayed") is False and b.get("owner", {}).get("phone"), "Contact proprio 1 autorisé (1/2)")

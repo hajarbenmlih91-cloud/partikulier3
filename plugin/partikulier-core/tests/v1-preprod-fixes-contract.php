@@ -124,14 +124,16 @@ try {
     $assert(
         'FIX-REPLAY-01',
         !empty($d1['allowed']) && ($d1['replayed'] ?? null) === false
+        && !empty($d1['owner']['phone']) && str_starts_with((string) $d1['owner']['phone'], '+212')
         && !empty($dReplay1['allowed']) && ($dReplay1['replayed'] ?? null) === true
         && !empty($d2['allowed']) && ($d2['replayed'] ?? null) === false
         && empty($d3['allowed']) && ($d3['reason'] ?? '') === 'manual_review'
         && !empty($dReplayAfterCap['allowed']) && ($dReplayAfterCap['replayed'] ?? null) === true,
         sprintf(
-            'r1=%s/%s replay1=%s/%s r2=%s/%s r3=%s replay_after_cap=%s/%s',
+            'r1=%s/%s phoneOk=%s replay1=%s/%s r2=%s/%s r3=%s replay_after_cap=%s/%s',
             var_export($d1['allowed'] ?? null, true),
             var_export($d1['replayed'] ?? null, true),
+            !empty($d1['owner']['phone']) && str_starts_with((string) $d1['owner']['phone'], '+212') ? 'yes' : 'no',
             var_export($dReplay1['allowed'] ?? null, true),
             var_export($dReplay1['replayed'] ?? null, true),
             var_export($d2['allowed'] ?? null, true),
@@ -254,7 +256,17 @@ try {
         'Bannière cookies EN utilise Read the cookie policy et pll_get_post'
     );
 
-    // 6. FIX-FAVICON-07 : favicon.svg, favicon.ico, header link, site hygiene handler, style.min.css.
+    $assert(
+        'FIX-CRYPTO-08',
+        Partikulier_Crypto::decrypt_phone($encTest = Partikulier_Crypto::encrypt_phone('+212611223344')) === ''
+        && LeadService::decrypt_phone_for_admin($encTest) === ''
+        && Partikulier_Crypto::read_phone($encTest) === '+212611223344'
+        && Partikulier_Crypto::read_phone(substr($encTest, 0, -1) . (substr($encTest, -1) === 'A' ? 'B' : 'A')) === ''
+        && Partikulier_Crypto::read_phone('+212611223344') === '+212611223344',
+        'decrypt_phone/decrypt_phone_for_admin=manage_options only; read_phone decrypts GCM & rejects tampered GCM'
+    );
+
+    // 7. FIX-FAVICON-07 : favicon.svg, favicon.ico, header link, site hygiene handler, style.min.css.
     $headerCode = (string) file_get_contents($themeRoot . '/templates/header.php');
     $rawCss = $themeRoot . '/assets/css/style.css';
     $minCss = $themeRoot . '/assets/css/style.min.css';
@@ -287,7 +299,10 @@ try {
         update_option(LeadSettings::OPTION, $origLeadSettings, false);
     }
     foreach ($createdPhones as $ph) {
-        LeadService::erase_lead($ph);
+        $lid = LeadService::lead_id_for_phone($ph);
+        if ($lid > 0) {
+            LeadService::erase_lead($lid);
+        }
     }
     foreach ($createdPosts as $pid) {
         wp_delete_post($pid, true);
