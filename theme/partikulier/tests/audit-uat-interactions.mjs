@@ -543,8 +543,13 @@ try {
     // Safety belt on /fr/deposer/: intercept pk_submit_listing without persisting a row to live UAT DB
     let deposerSubmitPosts = 0;
     await uatPage.route('**/admin-ajax.php', async (route) => {
-      const postData = route.request().postData() || '';
-      if (postData.includes('pk_submit_listing')) {
+      const req = route.request();
+      const postData = req.postData();
+      const bufStr = typeof postData === 'string' ? postData : (req.postDataBuffer()?.toString('latin1') || '');
+      const ct = req.headers()['content-type'] || '';
+      const isSubmit = bufStr.includes('pk_submit_listing')
+        || (req.method() === 'POST' && ct.includes('multipart/form-data') && req.frame()?.url()?.includes('/deposer'));
+      if (isSubmit) {
         deposerSubmitPosts++;
         await route.fulfill({
           status: 200,

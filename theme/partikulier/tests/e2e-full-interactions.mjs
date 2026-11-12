@@ -413,13 +413,23 @@ try {
   // 6. Deposit /deposer/ Step 1->3 UI + Validation + Real pk_submit_listing AJAX
   // =========================================================================
   await page.goto(fixture.pages.deposerFr, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  const isTunnelSubmitReq = (req) => {
+    if (!req.url().includes('admin-ajax.php') || req.method() !== 'POST') return false;
+    const postText = req.postData();
+    if (typeof postText === 'string') return postText.includes('pk_submit_listing');
+    const buf = req.postDataBuffer();
+    if (buf && buf.toString('latin1').includes('pk_submit_listing')) return true;
+    const ct = req.headers()['content-type'] || '';
+    return ct.includes('multipart/form-data');
+  };
   let deposerAjaxRequests = 0;
   let deposerAjaxOk = false;
-  page.on('request', (req) => {
-    if (req.url().includes('admin-ajax.php') && req.postData()?.includes('pk_submit_listing')) {
+  const onDeposerReq = (req) => {
+    if (isTunnelSubmitReq(req)) {
       deposerAjaxRequests++;
     }
-  });
+  };
+  page.on('request', onDeposerReq);
 
   // Step 1
   await page.locator('#role [data-val="proprietaire"]').click();
@@ -455,21 +465,36 @@ try {
   const phoneRequiredBlocked = phoneErrText.includes('numéro de téléphone') && deposerAjaxRequests === 0;
 
   await page.fill('#annonce-telephone', '0699887755');
-  const tunnelSubmitPromise = page.waitForResponse(
-    (res) => res.url().includes('admin-ajax.php') && res.request().postData()?.includes('pk_submit_listing'),
-    { timeout: 20000 }
-  );
-  await page.locator('#next').click();
-  const tunnelSubmitRes = await tunnelSubmitPromise;
-  const tunnelSubmitJson = await tunnelSubmitRes.json().catch(() => null);
-  deposerAjaxOk = tunnelSubmitRes.status() === 200 && tunnelSubmitJson?.success === true && tunnelSubmitJson?.data?.status === 'pending_whatsapp';
-  await page.locator('.pk-whatsapp-verification').waitFor({ state: 'visible', timeout: 10000 });
-  const waPanelCode = (await page.locator('.pk-whatsapp-code').textContent())?.trim() || '';
-  const waPanelHref = await page.locator('.pk-whatsapp-verification a[href^="https://wa.me/"]').getAttribute('href') || '';
+  try {
+    const tunnelSubmitPromise = page.waitForResponse(
+      (res) => isTunnelSubmitReq(res.request()),
+      { timeout: 20000 }
+    );
+    await page.locator('#next').click();
+    const tunnelSubmitRes = await tunnelSubmitPromise;
+    const tunnelSubmitJson = await tunnelSubmitRes.json().catch(() => null);
+    deposerAjaxOk = tunnelSubmitRes.status() === 200 && tunnelSubmitJson?.success === true && tunnelSubmitJson?.data?.status === 'pending_whatsapp';
+    await page.locator('.pk-whatsapp-verification').waitFor({ state: 'visible', timeout: 10000 });
+    const waPanelCode = (await page.locator('.pk-whatsapp-code').textContent())?.trim() || '';
+    const waPanelHref = await page.locator('.pk-whatsapp-verification a[href^="https://wa.me/"]').getAttribute('href') || '';
 
-  record('E2E-DEPOSER-TUNNEL-UI-001', 'deposit',
-    step2Visible && step3Visible && phoneRequiredBlocked && deposerAjaxRequests === 1 && deposerAjaxOk && Boolean(waPanelCode) && waPanelHref.startsWith('https://wa.me/'),
-    `step2=${step2Visible}; step3=${step3Visible}; phoneErr="${phoneErrText}"; ajaxCalls=${deposerAjaxRequests}; http=${tunnelSubmitRes.status()}; code="${waPanelCode}"; waHref=${waPanelHref}`);
+    record('E2E-DEPOSER-TUNNEL-UI-001', 'deposit',
+      step2Visible && step3Visible && phoneRequiredBlocked && deposerAjaxRequests === 1 && deposerAjaxOk && Boolean(waPanelCode) && waPanelHref.startsWith('https://wa.me/'),
+      `step2=${step2Visible}; step3=${step3Visible}; phoneErr="${phoneErrText}"; ajaxCalls=${deposerAjaxRequests}; http=${tunnelSubmitRes.status()}; code="${waPanelCode}"; waHref=${waPanelHref}`);
+  } catch (err) {
+    const diag = await page.evaluate(() => ({
+      errHidden: document.querySelector('#err')?.hidden,
+      errText: document.querySelector('#err')?.textContent?.trim() || '',
+      nextText: document.querySelector('#next')?.textContent?.trim() || '',
+      nextDisabled: document.querySelector('#next')?.disabled,
+      hasAjaxUrl: Boolean(window.pkConfig?.ajaxUrl),
+      hasNonce: Boolean(window.pkConfig?.submitNonce),
+    })).catch(() => ({}));
+    record('E2E-DEPOSER-TUNNEL-UI-001', 'deposit', false,
+      `step2=${step2Visible}; step3=${step3Visible}; phoneErr="${phoneErrText}"; ajaxCalls=${deposerAjaxRequests}; err=${err.message}; diag=${JSON.stringify(diag)}`);
+  } finally {
+    page.off('request', onDeposerReq);
+  }
 
   // Real unmocked pk_submit_listing backend check via pkConfig.submitNonce on /fr/
   await page.goto(fixture.pages.homeFr, { waitUntil: 'domcontentloaded', timeout: 30000 });
