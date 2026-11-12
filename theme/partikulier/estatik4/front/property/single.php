@@ -529,6 +529,7 @@ endif;
 				credentials: "same-origin"
 			}).then(function (response) {
 				if (!response.ok) { throw new Error("HTTP " + response.status); }
+				return response.text();
 			}).catch(function (error) {
 				console.warn("[Partikulier] View counter request failed:", error);
 			});

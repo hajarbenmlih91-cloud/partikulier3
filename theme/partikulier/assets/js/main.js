@@ -197,7 +197,11 @@ function pkLimitTitle(value) {
 				visitor_id: visitor,
 				state: active ? "save" : "remove"
 			});
-			window.fetch(pkConfig.ajaxUrl, { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" }, body: body.toString() }).catch(function () {
+			window.fetch(pkConfig.ajaxUrl, { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" }, body: body.toString() }).then(function (response) {
+				if (response && typeof response.text === "function") {
+					return response.text();
+				}
+			}).catch(function () {
 				// Le favori local demeure disponible si le compteur serveur est indisponible.
 			});
 		}
