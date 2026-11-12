@@ -42,7 +42,7 @@ et teste en CI (SE-025, E-2501→E-2504) :
 
 | Réglage | Valeur de référence |
 |---|---|
-| Extension | Polylang **3.8.7** (wordpress.org — version épinglée en CI) |
+| Extension | Polylang **3.9.2** (wordpress.org — version épinglée avec SHA-256 dans `.github/recipe-dependencies.lock.json`) |
 | Langues | `fr` (locale `fr_FR`, défaut, drapeau fr) · `en` (locale `en_US`, drapeau us) · `ar` (locale `ar`, **RTL**, drapeau ma) |
 | URL des langues | `force_lang = 1` — préfixe répertoire : `/fr/`, `/en/`, `/ar/` |
 | Langue par défaut | `fr` — créée en premier (la première langue devient le défaut) et `default_lang = fr` |

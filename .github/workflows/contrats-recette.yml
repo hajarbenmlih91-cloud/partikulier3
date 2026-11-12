@@ -51,17 +51,22 @@ jobs:
               ('WP_CORE_SHA256', lock['wordpress_core']['archive_sha256'], r'[0-9a-f]{64}'),
               ('ESTATIK_VERSION', lock['estatik']['version'], r'[0-9A-Za-z.+_-]+'),
               ('ESTATIK_SHA256', lock['estatik']['archive_sha256'], r'[0-9a-f]{64}'),
+              ('POLYLANG_VERSION', lock['polylang']['version'], r'\d+\.\d+\.\d+'),
+              ('POLYLANG_ARCHIVE_URL', lock['polylang']['archive_url'], r'https://downloads\.wordpress\.org/plugin/polylang\.[0-9.]+\.zip'),
+              ('POLYLANG_SHA256', lock['polylang']['archive_sha256'], r'[0-9a-f]{64}'),
           ]
           if lock['wordpress_core']['archive_url'] != 'https://downloads.wordpress.org/release/wordpress-' + lock['wordpress_core']['version'] + '.zip':
               raise SystemExit('WordPress archive URL does not match the pinned version')
           if lock['estatik']['slug'] != 'estatik' or lock['estatik']['download_source'] != 'WordPress.org plugin information API exact-version archive':
               raise SystemExit('Estatik lock must use the WordPress.org exact-version archive source')
+          if lock['polylang']['slug'] != 'polylang' or lock['polylang']['archive_url'] != 'https://downloads.wordpress.org/plugin/polylang.' + lock['polylang']['version'] + '.zip':
+              raise SystemExit('Polylang lock URL does not match the pinned version')
           with env_path.open('a') as out:
               for key, value, pattern in rows:
                   if not re.fullmatch(pattern, str(value)):
                       raise SystemExit('Invalid lock value: ' + key)
                   out.write(f'{key}={value}\n')
-          print('Loaded pinned WordPress and Estatik versions/checksums.')
+          print('Loaded pinned WordPress, Estatik, and Polylang versions/checksums.')
           PY
       - name: Installer WP-CLI
         run: |
@@ -417,10 +422,20 @@ jobs:
           kill "$SRV" 2>/dev/null || true
       - name: Installer Polylang et créer fr/en/ar (SE-025, E-2501)
         run: |
-          # Version épinglée = celle de la config de référence (E-2503,
+          # Version épinglée dans .github/recipe-dependencies.lock.json (E-2503,
           # docs/INSTALLATION.md) : la montée de version de Polylang est un
-          # acte délibéré, jamais une dérive silencieuse du runner.
-          wp plugin install polylang --version=3.8.7 --activate --path=wp
+          # acte délibéré avec vérification SHA-256, jamais une dérive silencieuse.
+          pll_archive="$RUNNER_TEMP/recipe-setup-polylang.zip"
+          bash .github/scripts/recipe-setup-command.sh polylang-archive-download -- \
+            curl --fail --location --silent --show-error --retry 3 --retry-all-errors \
+              --retry-delay 2 --retry-max-time 120 --connect-timeout 10 --max-time 240 \
+              "$POLYLANG_ARCHIVE_URL" --output "$pll_archive"
+          printf '%s  %s\n' "$POLYLANG_SHA256" "$pll_archive" > "$RUNNER_TEMP/polylang.sha256"
+          bash .github/scripts/recipe-setup-command.sh polylang-archive-sha256 -- \
+            sha256sum --check "$RUNNER_TEMP/polylang.sha256"
+          bash .github/scripts/recipe-setup-command.sh polylang-archive-integrity -- unzip -tq "$pll_archive"
+          wp plugin install "$pll_archive" --activate --path=wp
+          php -r 'require "wp/wp-load.php"; $h = get_file_data("wp/wp-content/plugins/polylang/polylang.php", ["Version" => "Version"]); $v = (string) ($h["Version"] ?? ""); if ($v !== getenv("POLYLANG_VERSION")) { fwrite(STDERR, "Installed Polylang version mismatch: $v\n"); exit(1); } echo "Polylang version matches lock: $v\n";'
           # Phase 1 (contexte WP-CLI, recette validée E-2501) : les trois
           # langues + les réglages de référence. Le contexte CLI est
           # exigé : sans langues définies, Polylang n'instancie aucun

@@ -12,5 +12,11 @@
     "version": "4.3.7",
     "download_source": "WordPress.org plugin information API exact-version archive",
     "archive_sha256": "6643ccca83f683715c95c37264f5d01fa0a19992c1828180285bf21c7ddad8bd"
+  },
+  "polylang": {
+    "slug": "polylang",
+    "version": "3.9.2",
+    "archive_url": "https://downloads.wordpress.org/plugin/polylang.3.9.2.zip",
+    "archive_sha256": "90d695711f642efd942d9b7ce25698827b7332a7b26222dfd21719c300e5f9cb"
   }
 }

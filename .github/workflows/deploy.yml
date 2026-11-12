@@ -147,12 +147,43 @@ jobs:
           unzip -q dist/partikulier-theme-*.zip -d build/deploy-artifacts
           test -d build/deploy-artifacts/partikulier-core
           test -d build/deploy-artifacts/partikulier
-          # Polylang 3.8.7 (docs/INSTALLATION.md, SE-025) : UAT n'avait pas
-          # l'extension → /fr/ /en/ /ar/ 404, sélecteur mort. On le pose
-          # depuis le runner, pas depuis Hostinger (wordpress.org).
-          curl -fsSL -o build/polylang.zip "https://downloads.wordpress.org/plugin/polylang.3.8.7.zip"
+          # Polylang épinglé dans .github/recipe-dependencies.lock.json (SE-025) :
+          # version et SHA-256 vérifiés depuis le runner avant synchronisation,
+          # alignés avec UAT/recette (sans dépendre d'un téléchargement côté Hostinger).
+          python3 - .github/recipe-dependencies.lock.json build/polylang.env <<'PY'
+          import json, pathlib, re, shlex, sys
+          lock = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding='utf-8'))
+          pll = lock['polylang']
+          if pll.get('slug') != 'polylang':
+              raise SystemExit('Polylang lock slug mismatch')
+          ver = str(pll.get('version', ''))
+          url = str(pll.get('archive_url', ''))
+          sha = str(pll.get('archive_sha256', ''))
+          if not re.fullmatch(r'\d+\.\d+\.\d+', ver):
+              raise SystemExit(f'Invalid Polylang version: {ver}')
+          expected_url = f'https://downloads.wordpress.org/plugin/polylang.{ver}.zip'
+          if url != expected_url:
+              raise SystemExit(f'Polylang archive URL mismatch: {url}')
+          if not re.fullmatch(r'[0-9a-f]{64}', sha):
+              raise SystemExit(f'Invalid Polylang SHA-256: {sha}')
+          pathlib.Path(sys.argv[2]).write_text(
+              f'POLYLANG_VERSION={shlex.quote(ver)}\n'
+              f'POLYLANG_ARCHIVE_URL={shlex.quote(url)}\n'
+              f'POLYLANG_SHA256={shlex.quote(sha)}\n',
+              encoding='utf-8',
+          )
+          print(f'Resolved locked Polylang {ver} ({sha})')
+          PY
+          # shellcheck source=/dev/null
+          source build/polylang.env
+          curl --fail --location --silent --show-error --retry 3 --retry-all-errors \
+            --retry-delay 2 --retry-max-time 90 --connect-timeout 10 --max-time 180 \
+            -o build/polylang.zip "$POLYLANG_ARCHIVE_URL"
+          printf '%s  %s\n' "$POLYLANG_SHA256" "build/polylang.zip" | sha256sum --check -
+          unzip -tq build/polylang.zip >/dev/null
           unzip -q build/polylang.zip -d build/deploy-artifacts
           test -d build/deploy-artifacts/polylang
+          grep -Eq "^[[:space:]]*\*?[[:space:]]*Version:[[:space:]]*${POLYLANG_VERSION}[[:space:]]*$" build/deploy-artifacts/polylang/polylang.php
 
       - name: Configurer SSH strict
         env:
