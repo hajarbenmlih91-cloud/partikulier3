@@ -33,6 +33,14 @@ $rateOne = $rateLimiter->guard($rateRequestOne, $rateBucket, true, 2, 60);
 $rateTwo = $rateLimiter->guard($rateRequestTwo, $rateBucket, true, 2, 60);
 $rateThree = $rateLimiter->guard($rateRequestThree, $rateBucket, true, 2, 60);
 $assert('CORE-RATE-001', $rateOne === true && $rateTwo === true && is_wp_error($rateThree) && $rateThree->get_error_code() === 'pk_rate_limited' && $rateThree->get_error_data()['status'] === 429, 'rate limiter allows two calls then returns 429');
+$retryResponse = new WP_REST_Response([
+    'code' => 'pk_rate_limited',
+    'message' => 'Trop de requêtes; réessayez plus tard.',
+    'data' => ['status' => 429, 'retry_after' => 17],
+], 429);
+$retryResponse = \Partikulier\Core\RateLimiter::attach_retry_after_header($retryResponse);
+$retryHeaders = array_change_key_case($retryResponse->get_headers(), CASE_LOWER);
+$assert('CORE-RATE-HEADER-001', ($retryHeaders['retry-after'] ?? '') === '17', '429 carries standard Retry-After header');
 
 $request = new WP_REST_Request('GET', '/partikulier/v1/listings');
 $request->set_param('locale', 'fr');

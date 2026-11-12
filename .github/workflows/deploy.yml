@@ -32,7 +32,7 @@ permissions:
 jobs:
   resolve:
     name: Résoudre l'environnement cible
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       environment: ${{ steps.target.outputs.environment }}
       version: ${{ steps.target.outputs.version }}
@@ -84,7 +84,7 @@ jobs:
 
   deploy:
     name: Déployer vers ${{ needs.resolve.outputs.environment }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [resolve, ci]
     concurrency:
       group: deploy-${{ needs.resolve.outputs.environment }}
@@ -97,12 +97,6 @@ jobs:
     env:
       DEPLOY_ENVIRONMENT: ${{ needs.resolve.outputs.environment }}
       DEPLOY_VERSION: ${{ needs.resolve.outputs.version }}
-      SSH_HOST: ${{ secrets.SSH_HOST }}
-      SSH_PORT: ${{ secrets.SSH_PORT }}
-      SSH_USER: ${{ secrets.SSH_USER }}
-      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-      SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
-      WP_PATH: ${{ secrets.WP_PATH }}
       SITE_URL: ${{ vars.SITE_URL }}
     defaults:
       run:
@@ -110,7 +104,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: URL du site cible
         id: site
@@ -124,6 +118,23 @@ jobs:
           echo "url=$site" >> "$GITHUB_OUTPUT"
           echo "Déploiement $DEPLOY_ENVIRONMENT${DEPLOY_VERSION:+ v$DEPLOY_VERSION} vers $site (ref $GITHUB_REF_NAME, commit ${GITHUB_SHA:0:12})"
 
+      - name: Attestation GO production liée au SHA
+        if: ${{ env.DEPLOY_ENVIRONMENT == 'prd' }}
+        env:
+          ATTESTED_SHA: ${{ vars.PRD_READINESS_ATTESTATION_SHA }}
+          EVIDENCE_URL: ${{ vars.PRD_READINESS_EVIDENCE_URL }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$ATTESTED_SHA" =~ ^[0-9a-f]{40}$ ]] || [ "$ATTESTED_SHA" != "$GITHUB_SHA" ]; then
+            echo "Production readiness gate failed: PRD_READINESS_ATTESTATION_SHA must equal this release commit."
+            exit 1
+          fi
+          if [[ ! "$EVIDENCE_URL" =~ ^https://[^[:space:]?#@]+$ ]]; then
+            echo "Production readiness gate failed: provide an HTTPS evidence reference without credentials, query, or fragment."
+            exit 1
+          fi
+          echo "Production readiness attestation: PASS (release SHA matches; evidence reference present; evidence content not fetched)."
+
       - name: Construire et préparer les artefacts
         run: |
           set -euo pipefail
@@ -136,14 +147,52 @@ jobs:
           unzip -q dist/partikulier-theme-*.zip -d build/deploy-artifacts
           test -d build/deploy-artifacts/partikulier-core
           test -d build/deploy-artifacts/partikulier
-          # Polylang 3.8.7 (docs/INSTALLATION.md, SE-025) : UAT n'avait pas
-          # l'extension → /fr/ /en/ /ar/ 404, sélecteur mort. On le pose
-          # depuis le runner, pas depuis Hostinger (wordpress.org).
-          curl -fsSL -o build/polylang.zip "https://downloads.wordpress.org/plugin/polylang.3.8.7.zip"
+          # Polylang épinglé dans .github/recipe-dependencies.lock.json (SE-025) :
+          # version et SHA-256 vérifiés depuis le runner avant synchronisation,
+          # alignés avec UAT/recette (sans dépendre d'un téléchargement côté Hostinger).
+          python3 - .github/recipe-dependencies.lock.json build/polylang.env <<'PY'
+          import json, pathlib, re, shlex, sys
+          lock = json.loads(pathlib.Path(sys.argv[1]).read_text(encoding='utf-8'))
+          pll = lock['polylang']
+          if pll.get('slug') != 'polylang':
+              raise SystemExit('Polylang lock slug mismatch')
+          ver = str(pll.get('version', ''))
+          url = str(pll.get('archive_url', ''))
+          sha = str(pll.get('archive_sha256', ''))
+          if not re.fullmatch(r'\d+\.\d+\.\d+', ver):
+              raise SystemExit(f'Invalid Polylang version: {ver}')
+          expected_url = f'https://downloads.wordpress.org/plugin/polylang.{ver}.zip'
+          if url != expected_url:
+              raise SystemExit(f'Polylang archive URL mismatch: {url}')
+          if not re.fullmatch(r'[0-9a-f]{64}', sha):
+              raise SystemExit(f'Invalid Polylang SHA-256: {sha}')
+          pathlib.Path(sys.argv[2]).write_text(
+              f'POLYLANG_VERSION={shlex.quote(ver)}\n'
+              f'POLYLANG_ARCHIVE_URL={shlex.quote(url)}\n'
+              f'POLYLANG_SHA256={shlex.quote(sha)}\n',
+              encoding='utf-8',
+          )
+          print(f'Resolved locked Polylang {ver} ({sha})')
+          PY
+          # shellcheck source=/dev/null
+          source build/polylang.env
+          curl --fail --location --silent --show-error --retry 3 --retry-all-errors \
+            --retry-delay 2 --retry-max-time 90 --connect-timeout 10 --max-time 180 \
+            -o build/polylang.zip "$POLYLANG_ARCHIVE_URL"
+          printf '%s  %s\n' "$POLYLANG_SHA256" "build/polylang.zip" | sha256sum --check -
+          unzip -tq build/polylang.zip >/dev/null
           unzip -q build/polylang.zip -d build/deploy-artifacts
           test -d build/deploy-artifacts/polylang
+          grep -Eq "^[[:space:]]*\*?[[:space:]]*Version:[[:space:]]*${POLYLANG_VERSION}[[:space:]]*$" build/deploy-artifacts/polylang/polylang.php
 
       - name: Configurer SSH strict
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+          WP_PATH: ${{ secrets.WP_PATH }}
         run: |
           set -euo pipefail
           : "${SSH_HOST:?secret SSH_HOST manquant}"
@@ -177,7 +226,38 @@ jobs:
           } > "$HOME/.ssh/config"
           chmod 600 "$HOME/.ssh/config"
 
+      - name: Prévalidation HMAC production en lecture seule
+        env:
+          WP_PATH: ${{ secrets.WP_PATH }}
+        run: |
+          set -euo pipefail
+          ssh partikulier-hostinger 'bash -s' -- "$WP_PATH" "$DEPLOY_ENVIRONMENT" <<'REMOTE'
+          set -euo pipefail
+          WP_PATH="$1"
+          DEPLOY_ENV="$2"
+          if [ "$DEPLOY_ENV" != "prd" ]; then
+            echo "HMAC production preflight: skipped for non-production target"
+            exit 0
+          fi
+          command -v wp >/dev/null 2>&1 || { echo "Production HMAC preflight failed: wp-cli unavailable"; exit 1; }
+          cd "$WP_PATH"
+          wp plugin is-active partikulier-core >/dev/null || { echo "Production HMAC preflight failed: Partikulier Core is not active"; exit 1; }
+          PK_DEPLOY_ENV="$DEPLOY_ENV" wp eval '
+          $settings = \Partikulier\Core\Domain\Automation\AutomationService::settings();
+          $secret = (string) \Partikulier\Core\Domain\Automation\AutomationService::get("automation_api_secret", "");
+          $mode = (string) ($settings["hmac_mode"] ?? "off");
+          $wpEnvironment = function_exists("wp_get_environment_type") ? wp_get_environment_type() : "production";
+          if (getenv("PK_DEPLOY_ENV") === "prd" && ($wpEnvironment !== "production" || $mode !== "enforce" || !\Partikulier\Core\Domain\Automation\AutomationService::is_strong_secret($secret))) {
+              fwrite(STDERR, "Production HMAC preflight failed; require WP environment=production, stored mode=enforce, and a strong active key. Secret value suppressed." . PHP_EOL);
+              exit(1);
+          }
+          echo "Production HMAC preflight: PASS; environment=production; mode=enforce; active key=strong. Secret value suppressed." . PHP_EOL;
+          '
+          REMOTE
+
       - name: Sauvegarde pré-déploiement
+        env:
+          WP_PATH: ${{ secrets.WP_PATH }}
         run: |
           set -euo pipefail
           ssh partikulier-hostinger 'bash -s' -- "$WP_PATH" "$GITHUB_SHA" "5" <<'REMOTE'
@@ -220,6 +300,8 @@ jobs:
           REMOTE
 
       - name: Activer le mode maintenance
+        env:
+          WP_PATH: ${{ secrets.WP_PATH }}
         run: |
           set -euo pipefail
           ssh partikulier-hostinger 'bash -s' -- "$WP_PATH" <<'REMOTE'
@@ -232,6 +314,8 @@ jobs:
           REMOTE
 
       - name: Synchroniser plugin et thème
+        env:
+          WP_PATH: ${{ secrets.WP_PATH }}
         run: |
           set -euo pipefail
           ssh partikulier-hostinger 'bash -s' -- "$WP_PATH" <<'REMOTE'
@@ -249,10 +333,23 @@ jobs:
           rsync -az --delete -e "ssh -F $HOME/.ssh/config" \
             build/deploy-artifacts/polylang/ \
             "partikulier-hostinger:$WP_PATH/wp-content/plugins/polylang/"
+          rsync -az -e "ssh -F $HOME/.ssh/config" \
+            build/deploy-artifacts/partikulier/assets/img/favicon.ico \
+            "partikulier-hostinger:$WP_PATH/favicon.ico"
 
       - name: Vérifications WordPress post-déploiement
+        env:
+          WP_PATH: ${{ secrets.WP_PATH }}
+          PK_TEST_WA_NUMBER: ${{ secrets.PK_TEST_WA_NUMBER }}
         run: |
           set -euo pipefail
+          wa_digits=""
+          if [ "$DEPLOY_ENVIRONMENT" = "uat" ] && [ -n "${PK_TEST_WA_NUMBER:-}" ]; then
+            echo "::add-mask::$PK_TEST_WA_NUMBER"
+            wa_digits="${PK_TEST_WA_NUMBER//[^0-9]/}"
+            echo "::add-mask::$wa_digits"
+            [[ "$wa_digits" =~ ^[0-9]{8,15}$ ]] || { echo "PK_TEST_WA_NUMBER invalide (8-15 chiffres requis)" >&2; exit 1; }
+          fi
           ssh partikulier-hostinger 'bash -s' -- "$WP_PATH" "$DEPLOY_ENVIRONMENT" <<'REMOTE'
           set -euo pipefail
           WP_PATH="$1"
@@ -268,7 +365,6 @@ jobs:
           wp eval 'if ( "devpartikulier" === (string) get_option( "blogname" ) ) { update_option( "blogname", "Partikulier" ); }'
           if [ "$DEPLOY_ENV" = "uat" ]; then
             wp eval-file wp-content/themes/partikulier/cli/demo-seed.php
-            wp eval-file wp-content/themes/partikulier/cli/uat-whatsapp.php
             wp eval-file wp-content/themes/partikulier/cli/uat-editorial.php
             printf 'User-agent: *\nDisallow: /\n' > "$WP_PATH/robots.txt"
             echo "ORIGIN robots.txt:"
@@ -278,9 +374,14 @@ jobs:
           wp eval 'if ( class_exists( "Partikulier_Cache" ) ) { Partikulier_Cache::purge_all(); }' || true
           wp rewrite flush || true
           REMOTE
+          if [ "$DEPLOY_ENVIRONMENT" = "uat" ] && [ -n "$wa_digits" ]; then
+            ssh partikulier-hostinger "cd $(printf '%q' "$WP_PATH") && PK_TEST_WA_NUMBER=$(printf '%q' "$wa_digits") wp eval-file wp-content/themes/partikulier/cli/uat-whatsapp.php"
+          fi
 
       - name: Désactiver le mode maintenance
         if: always()
+        env:
+          WP_PATH: ${{ secrets.WP_PATH }}
         run: |
           set -euo pipefail
           ssh partikulier-hostinger 'bash -s' -- "$WP_PATH" <<'REMOTE' || true

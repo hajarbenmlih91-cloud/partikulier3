@@ -1,0 +1,680 @@
+name: Simulation éphémère Meta WA + n8n + WordPress
+
+on:
+  push:
+    branches:
+      - fix/v1-preprod-corrections
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  simulate-wa-n8n:
+    name: MariaDB + WordPress + n8n 2.46.6 + Meta Cloud API Simulator
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MARIADB_ROOT_PASSWORD: ci-only-root-password
+          MARIADB_DATABASE: partikulier
+          MARIADB_USER: partikulier
+          MARIADB_PASSWORD: ci-only-wordpress-password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+      wordpress:
+        image: wordpress:6.6-php8.3-apache
+        env:
+          WORDPRESS_DB_HOST: mariadb:3306
+          WORDPRESS_DB_NAME: partikulier
+          WORDPRESS_DB_USER: partikulier
+          WORDPRESS_DB_PASSWORD: ci-only-wordpress-password
+          WORDPRESS_CONFIG_EXTRA: |
+            define('WP_HOME', 'http://wordpress');
+            define('WP_SITEURL', 'http://wordpress');
+            define('DISALLOW_FILE_EDIT', true);
+            define('WP_ENVIRONMENT_TYPE', 'local');
+        ports:
+          - 8080:80
+        volumes:
+          - ${{ github.workspace }}:/repo:ro
+      n8n:
+        image: n8nio/n8n:2.46.6
+        env:
+          N8N_DIAGNOSTICS_ENABLED: "false"
+          N8N_PERSONALIZATION_ENABLED: "false"
+          N8N_VERSION_NOTIFICATIONS_ENABLED: "false"
+          N8N_TEMPLATES_ENABLED: "false"
+          N8N_SECURE_COOKIE: "false"
+          N8N_DISABLED_MODULES: mcp-registry
+          N8N_LOG_LEVEL: warn
+        ports:
+          - 5678:5678
+
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Run full ephemeral Meta Cloud API + n8n + WordPress simulation
+        id: sim
+        env:
+          WP_CONTAINER: ${{ job.services.wordpress.id }}
+          N8N_CONTAINER: ${{ job.services.n8n.id }}
+          OUT_DIR: ${{ github.workspace }}/ephemeral-wa-sim-artifacts
+          PK_TEST_WA_NUMBER: ${{ secrets.PK_TEST_WA_NUMBER }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$OUT_DIR"
+          WP_BASE='http://127.0.0.1:8080'
+          N8N_BASE='http://127.0.0.1:5678'
+
+          WA_SECRET_USED=false
+          TEST_WA_DIGITS="212600000999"
+          if [ -n "${PK_TEST_WA_NUMBER:-}" ]; then
+            echo "::add-mask::$PK_TEST_WA_NUMBER"
+            CLEAN_WA="${PK_TEST_WA_NUMBER//[^0-9]/}"
+            echo "::add-mask::$CLEAN_WA"
+            if [[ "$CLEAN_WA" =~ ^[0-9]{8,15}$ ]]; then
+              TEST_WA_DIGITS="$CLEAN_WA"
+              WA_SECRET_USED=true
+            fi
+          fi
+
+          WP_CONTAINER_IP="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$WP_CONTAINER")"
+          N8N_CONTAINER_IP="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' "$N8N_CONTAINER")"
+          test -n "$WP_CONTAINER_IP" && test -n "$N8N_CONTAINER_IP"
+
+          # Strict network isolation: n8n container may ONLY talk to disposable WordPress (TCP/80)
+          # and the local Meta Cloud API Simulator (TCP/18080 on WP_CONTAINER_IP); zero external egress.
+          sudo iptables -nL DOCKER-USER >/dev/null 2>&1
+          sudo iptables -w -I DOCKER-USER 1 -m conntrack --ctstate ESTABLISHED,RELATED -j RETURN
+          sudo iptables -w -I DOCKER-USER 2 -s "$N8N_CONTAINER_IP" -d "$WP_CONTAINER_IP" -p tcp --dport 80 -j ACCEPT
+          sudo iptables -w -I DOCKER-USER 3 -s "$N8N_CONTAINER_IP" -d "$WP_CONTAINER_IP" -p tcp --dport 18080 -j ACCEPT
+          sudo iptables -w -I DOCKER-USER 4 -s "$N8N_CONTAINER_IP" -j DROP
+
+          for _ in $(seq 1 90); do
+            code="$(curl -s -H 'Host: wordpress' -o /dev/null -w '%{http_code}' "$WP_BASE/wp-login.php" || true)"
+            if [ "$code" = 200 ] || [ "$code" = 302 ]; then break; fi
+            sleep 2
+          done
+
+          # Install plugin & theme from checkout into disposable WordPress
+          docker exec "$WP_CONTAINER" mkdir -p /var/www/html/wp-content/plugins/partikulier-core /var/www/html/wp-content/themes/partikulier /var/www/html/wp-content/mu-plugins /var/www/html/wp-content/uploads/partikulier-cache
+          docker cp plugin/partikulier-core/. "$WP_CONTAINER:/var/www/html/wp-content/plugins/partikulier-core/"
+          docker cp theme/partikulier/. "$WP_CONTAINER:/var/www/html/wp-content/themes/partikulier/"
+          docker exec -i "$WP_CONTAINER" sh -c 'cat > /var/www/html/wp-content/mu-plugins/ci-properties-cpt.php' <<'PHP'
+          <?php
+          add_action('init', static function () {
+              if (!post_type_exists('properties')) {
+                  register_post_type('properties', [
+                      'public' => true,
+                      'has_archive' => 'annonces',
+                      'rewrite' => ['slug' => 'properties'],
+                      'supports' => ['title', 'editor', 'author'],
+                  ]);
+              }
+              foreach (['es_type', 'es_status', 'es_category', 'es_location'] as $tax) {
+                  if (!taxonomy_exists($tax)) {
+                      register_taxonomy($tax, 'properties', ['public' => true]);
+                  }
+              }
+          }, 0);
+          PHP
+
+          # Start ephemeral Meta WhatsApp Business Cloud API HTTP Simulator on TCP/18080 inside container
+          docker exec -i "$WP_CONTAINER" sh -c 'cat > /tmp/meta-wa-mock.php' <<'PHP'
+          <?php
+          $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+          $uri    = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+          $inbox  = '/tmp/meta-wa-inbox.jsonl';
+          if ($method === 'GET' && $uri === '/health') {
+              header('Content-Type: application/json');
+              echo json_encode(['status' => 'ok', 'service' => 'meta-cloud-api-mock']);
+              exit;
+          }
+          if ($method === 'POST' && preg_match('#^/v21\.0/([0-9]+)/messages$#', (string) $uri, $m)) {
+              $auth = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+              if ($auth !== 'Bearer ci-meta-sim-token') {
+                  http_response_code(401);
+                  header('Content-Type: application/json');
+                  echo json_encode(['error' => ['message' => 'Invalid simulator token', 'code' => 190]]);
+                  exit;
+              }
+              $raw = file_get_contents('php://input');
+              $data = json_decode((string) $raw, true);
+              if (!is_array($data) || ($data['messaging_product'] ?? '') !== 'whatsapp' || empty($data['to'])) {
+                  http_response_code(400);
+                  header('Content-Type: application/json');
+                  echo json_encode(['error' => ['message' => 'Invalid WhatsApp payload']]);
+                  exit;
+              }
+              $to = preg_replace('/\D+/', '', (string) $data['to']);
+              $wamid = 'wamid.mock.' . bin2hex(random_bytes(8));
+              $entry = [
+                  'phone_number_id' => $m[1],
+                  'to_masked' => strlen($to) >= 4 ? '***' . substr($to, -2) : '***',
+                  'type' => (string) ($data['type'] ?? 'text'),
+                  'text_len' => strlen((string) ($data['text']['body'] ?? '')),
+                  'message_id' => $wamid,
+              ];
+              file_put_contents($inbox, json_encode($entry) . "\n", FILE_APPEND | LOCK_EX);
+              header('Content-Type: application/json');
+              echo json_encode([
+                  'messaging_product' => 'whatsapp',
+                  'contacts' => [['input' => $entry['to_masked'], 'wa_id' => $entry['to_masked']]],
+                  'messages' => [['id' => $wamid]],
+              ]);
+              exit;
+          }
+          http_response_code(404);
+          echo json_encode(['error' => 'not_found']);
+          PHP
+          docker exec -d "$WP_CONTAINER" php -S 0.0.0.0:18080 /tmp/meta-wa-mock.php
+          for _ in $(seq 1 30); do
+            if docker exec "$WP_CONTAINER" curl -sf http://127.0.0.1:18080/health >/dev/null 2>&1; then break; fi
+            sleep 1
+          done
+
+          EPHEMERAL_SECRET="$(openssl rand -base64 48 | tr -d '\n')"
+          ERASE_SECRET="$(openssl rand -base64 48 | tr -d '\n')"
+          echo "::add-mask::$EPHEMERAL_SECRET"
+          echo "::add-mask::$ERASE_SECRET"
+
+          docker exec -i "$WP_CONTAINER" php <<'PHP'
+          <?php
+          define('WP_INSTALLING', true);
+          require '/var/www/html/wp-load.php';
+          require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+          require_once ABSPATH . 'wp-admin/includes/plugin.php';
+          add_filter('pre_wp_mail', static fn() => true);
+          if (!is_blog_installed()) {
+              $password = bin2hex(random_bytes(24));
+              wp_install('Partikulier Sim CI', 'ci-admin', 'ci-admin@example.invalid', false, '', $password);
+          }
+          $act = activate_plugin('partikulier-core/partikulier-core.php');
+          if (is_wp_error($act)) { fwrite(STDERR, $act->get_error_message() . "\n"); exit(1); }
+          switch_theme('partikulier');
+          if (!is_file(ABSPATH . '.htaccess')) {
+              file_put_contents(ABSPATH . '.htaccess', "# BEGIN WordPress\n<IfModule mod_rewrite.c>\nRewriteEngine On\nRewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]\nRewriteBase /\nRewriteRule ^index\\.php$ - [L]\nRewriteCond %{REQUEST_FILENAME} !-f\nRewriteCond %{REQUEST_FILENAME} !-d\nRewriteRule . /index.php [L]\n</IfModule>\n# END WordPress\n");
+          }
+          update_option('permalink_structure', '/%postname%/');
+          PHP
+
+          SEED_JSON="$(docker exec -e PK_EPHEMERAL_SECRET="$EPHEMERAL_SECRET" -e PK_ERASE_SECRET="$ERASE_SECRET" -i "$WP_CONTAINER" php <<'PHP'
+          <?php
+          require '/var/www/html/wp-load.php';
+          flush_rewrite_rules(false);
+
+          update_option('pk_n8n_settings', [
+              'automation_api_secret' => getenv('PK_EPHEMERAL_SECRET'),
+              'active_key_id' => 'N',
+              'hmac_mode' => 'enforce',
+          ], false);
+          update_option('lead_erase_api_secret', getenv('PK_ERASE_SECRET'), false);
+          update_option('pk_theme_options', ['buyer_whatsapp_number' => ''], false);
+
+          // Create Contact page so /contact/ cache headers can be verified via live Apache
+          $contact_id = wp_insert_post([
+              'post_type' => 'page',
+              'post_status' => 'publish',
+              'post_title' => 'Contact',
+              'post_name' => 'contact',
+              'post_content' => 'Contact page CI',
+          ]);
+
+          $props = [];
+          for ($i = 1; $i <= 3; $i++) {
+              $uid = wp_insert_user([
+                  'user_login' => "sim_owner_{$i}",
+                  'user_pass'  => bin2hex(random_bytes(16)),
+                  'user_email' => "sim_owner_{$i}@example.invalid",
+                  'role'       => 'contributor',
+                  'display_name' => "Propriétaire Sim {$i}",
+              ]);
+              if (is_wp_error($uid)) { fwrite(STDERR, $uid->get_error_message() . "\n"); exit(1); }
+              $pid = wp_insert_post([
+                  'post_type'   => 'properties',
+                  'post_status' => 'publish',
+                  'post_title'  => "Bien Simulé {$i} Casablanca",
+                  'post_author' => (int) $uid,
+              ]);
+              if (is_wp_error($pid) || !$pid) { fwrite(STDERR, "Post insert failed\n"); exit(1); }
+              $phoneRaw = "+21261111000{$i}";
+              $phoneVal = class_exists('Partikulier_Crypto') ? Partikulier_Crypto::encrypt_phone($phoneRaw) : $phoneRaw;
+              update_post_meta($pid, '_pk_owner_name', "Propriétaire Sim {$i}");
+              update_post_meta($pid, '_pk_owner_phone', $phoneVal);
+              update_post_meta($pid, '_pk_approved_at', gmdate('Y-m-d H:i:s', time() - 3600));
+              update_post_meta($pid, '_pk_n8n_sent', '1');
+              $ref = \Partikulier\Core\Domain\Leads\LeadService::reference_for((int) $pid);
+              $props[] = ['id' => (int) $pid, 'ref' => $ref, 'owner_id' => (int) $uid, 'url' => (string) get_permalink((int) $pid)];
+          }
+          echo json_encode(['props' => $props, 'contact_url' => (string) get_permalink((int) $contact_id)]);
+          PHP
+          )"
+          echo "Seeded sandbox metadata ready."
+
+          n8n_ready=0
+          for _ in $(seq 1 90); do
+            ncode="$(curl -s -H 'Accept: application/json' -o "$RUNNER_TEMP/n8n-settings.json" -w '%{http_code}' "$N8N_BASE/rest/settings" || true)"
+            if [ "$ncode" = 200 ] && python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); assert isinstance(d, dict) and "data" in d' "$RUNNER_TEMP/n8n-settings.json" 2>/dev/null; then
+              n8n_ready=1
+              break
+            fi
+            sleep 2
+          done
+          test "$n8n_ready" -eq 1
+
+          N8N_OWNER_PASSWORD="Ci-$(openssl rand -hex 24)!9A"
+          echo "::add-mask::$N8N_OWNER_PASSWORD"
+
+          PK_EPHEMERAL_SECRET="$EPHEMERAL_SECRET" WP_SERVICE_IP="$WP_CONTAINER_IP" SEED_JSON="$SEED_JSON" GITHUB_RUN_ID="$GITHUB_RUN_ID" N8N_BASE="$N8N_BASE" N8N_OWNER_PASSWORD="$N8N_OWNER_PASSWORD" N8N_CONTAINER="$N8N_CONTAINER" OUT_DIR="$OUT_DIR" python3 - <<'PY'
+          import base64, hashlib, hmac, http.cookiejar, json, os, pathlib, subprocess, time, urllib.error, urllib.parse, urllib.request, uuid
+
+          secret = os.environ['PK_EPHEMERAL_SECRET']
+          key = base64.b64decode(secret, validate=True)
+          wp_ip = os.environ['WP_SERVICE_IP']
+          seed = json.loads(os.environ['SEED_JSON'])
+          props = seed['props']
+          run_id = os.environ['GITHUB_RUN_ID']
+          n8n_base = os.environ['N8N_BASE'].rstrip('/')
+          password = os.environ['N8N_OWNER_PASSWORD']
+          n8n_container = os.environ['N8N_CONTAINER']
+          out_dir = pathlib.Path(os.environ['OUT_DIR'])
+          ts = str(int(time.time()))
+
+          buyer_a = '212699000001'
+          buyer_b = '212699000002'
+          buyer_c = '212699000003'
+
+          def signed_headers(method, route, body_str):
+              canonical = f'{method}\n{route}\n{ts}\n{body_str}'.encode()
+              sig = 'sha256=' + hmac.new(key, canonical, hashlib.sha256).hexdigest()
+              return [
+                  {"name": "Content-Type", "value": "application/json"},
+                  {"name": "Host", "value": "wordpress"},
+                  {"name": "X-Partikulier-Automation", "value": secret},
+                  {"name": "X-Partikulier-Timestamp", "value": ts},
+                  {"name": "X-Partikulier-Key-Id", "value": "N"},
+                  {"name": "X-Partikulier-Signature", "value": sig},
+              ]
+
+          def make_http_node(name, method, route, payload, x):
+              body_str = '' if method == 'GET' else json.dumps(payload, separators=(',', ':'), ensure_ascii=False)
+              rest_route_q = urllib.parse.quote(route, safe='')
+              params = {
+                  "method": method,
+                  "url": f'http://{wp_ip}/?rest_route={rest_route_q}',
+                  "sendHeaders": True,
+                  "headerParameters": {"parameters": signed_headers(method, route, body_str)},
+                  "options": {"response": {"response": {"fullResponse": True, "neverError": True, "responseFormat": "json"}}},
+              }
+              if method != 'GET':
+                  params["sendBody"] = True
+                  params["contentType"] = "raw"
+                  params["rawContentType"] = "application/json"
+                  params["body"] = body_str
+              return {
+                  "id": str(uuid.uuid4()),
+                  "name": name,
+                  "type": "n8n-nodes-base.httpRequest",
+                  "typeVersion": 4.2,
+                  "position": [x, 300],
+                  "parameters": params,
+              }
+
+          def make_meta_node(name, to_wa, body_text, x):
+              body_str = json.dumps({
+                  "messaging_product": "whatsapp",
+                  "to": to_wa,
+                  "type": "text",
+                  "text": {"body": body_text},
+              }, separators=(',', ':'), ensure_ascii=False)
+              return {
+                  "id": str(uuid.uuid4()),
+                  "name": name,
+                  "type": "n8n-nodes-base.httpRequest",
+                  "typeVersion": 4.2,
+                  "position": [x, 300],
+                  "parameters": {
+                      "method": "POST",
+                      "url": f'http://{wp_ip}:18080/v21.0/100000000001/messages',
+                      "sendHeaders": True,
+                      "headerParameters": {"parameters": [
+                          {"name": "Content-Type", "value": "application/json"},
+                          {"name": "Authorization", "value": "Bearer ci-meta-sim-token"},
+                      ]},
+                      "sendBody": True,
+                      "contentType": "raw",
+                      "rawContentType": "application/json",
+                      "body": body_str,
+                      "options": {"response": {"response": {"fullResponse": True, "neverError": True, "responseFormat": "json"}}},
+                  },
+              }
+
+          steps = [
+              ("S01_approved_listings", "GET", "/partikulier/v1/approved-listings", None),
+              ("S02_auth_need_qual", "POST", "/partikulier/v1/contact-authorization", {"wa_id": buyer_a, "reference": props[0]["ref"], "provider_message_id": f"wamid-{run_id}-1", "text": f"Bonjour intéressé par {props[0]['ref']}"}),
+              ("S03_qual_particulier", "POST", "/partikulier/v1/qualification", {"wa_id": buyer_a, "is_particulier": "particulier", "provider_message_id": f"wamid-{run_id}-2"}),
+              ("S04_auth_owner1_ok", "POST", "/partikulier/v1/contact-authorization", {"wa_id": buyer_a, "reference": props[0]["ref"], "provider_message_id": f"wamid-{run_id}-3", "text": f"OK {props[0]['ref']}"}),
+              ("S05_auth_msg_replay", "POST", "/partikulier/v1/contact-authorization", {"wa_id": buyer_a, "reference": props[0]["ref"], "provider_message_id": f"wamid-{run_id}-3", "text": f"OK {props[0]['ref']}"}),
+              ("S06_preferences", "POST", "/partikulier/v1/preferences", {"wa_id": buyer_a, "budget_max": 1500000, "areas": ["Casablanca", "Maarif"], "layout": "3 chambres", "transaction": "achat", "provider_message_id": f"wamid-{run_id}-4"}),
+              ("S07_consent", "POST", "/partikulier/v1/consent", {"wa_id": buyer_a, "scope": "similar_listings", "granted": True, "provider_message_id": f"wamid-{run_id}-5"}),
+              ("S08_auth_owner2_ok", "POST", "/partikulier/v1/contact-authorization", {"wa_id": buyer_a, "reference": props[1]["ref"], "provider_message_id": f"wamid-{run_id}-6", "text": f"Intéressé {props[1]['ref']}"}),
+              ("S09_auth_3rd_manual", "POST", "/partikulier/v1/contact-authorization", {"wa_id": buyer_a, "reference": props[2]["ref"], "provider_message_id": f"wamid-{run_id}-7", "text": f"Intéressé {props[2]['ref']}"}),
+              ("S10_opt_out_stop", "POST", "/partikulier/v1/opt-out", {"wa_id": buyer_a, "provider_message_id": f"wamid-{run_id}-8"}),
+              ("S11_auth_after_stop", "POST", "/partikulier/v1/contact-authorization", {"wa_id": buyer_a, "reference": props[0]["ref"], "provider_message_id": f"wamid-{run_id}-9", "text": "Encore moi"}),
+              ("S12_buyerB_init", "POST", "/partikulier/v1/contact-authorization", {"wa_id": buyer_b, "reference": props[0]["ref"], "provider_message_id": f"wamid-{run_id}-b1", "text": "Bonjour"}),
+              ("S13_buyerB_interm", "POST", "/partikulier/v1/qualification", {"wa_id": buyer_b, "is_particulier": "intermediaire", "provider_message_id": f"wamid-{run_id}-b2"}),
+              ("S14_buyerB_refused", "POST", "/partikulier/v1/contact-authorization", {"wa_id": buyer_b, "reference": props[0]["ref"], "provider_message_id": f"wamid-{run_id}-b3", "text": "Rebonjour"}),
+              ("S15_buyerB_flip_409", "POST", "/partikulier/v1/qualification", {"wa_id": buyer_b, "is_particulier": "particulier", "provider_message_id": f"wamid-{run_id}-b4"}),
+              ("S15b_buyerC_unknown_404", "POST", "/partikulier/v1/qualification", {"wa_id": buyer_c, "is_particulier": "particulier", "provider_message_id": f"wamid-{run_id}-c0"}),
+              ("S16_buyerC_init", "POST", "/partikulier/v1/contact-authorization", {"wa_id": buyer_c, "reference": props[0]["ref"], "provider_message_id": f"wamid-{run_id}-c1", "text": "Bonjour"}),
+              ("S16b_buyerC_pending", "POST", "/partikulier/v1/contact-authorization", {"wa_id": buyer_c, "reference": props[0]["ref"], "provider_message_id": f"wamid-{run_id}-c1b", "text": "Allo"}),
+              ("S16c_buyerC_qual", "POST", "/partikulier/v1/qualification", {"wa_id": buyer_c, "is_particulier": "particulier", "provider_message_id": f"wamid-{run_id}-c2"}),
+              ("S17_buyerC_owner1_ok", "POST", "/partikulier/v1/contact-authorization", {"wa_id": buyer_c, "reference": props[0]["ref"], "provider_message_id": f"wamid-{run_id}-c3", "text": f"OK {props[0]['ref']}"}),
+              ("S18_buyerC_discl_replay", "POST", "/partikulier/v1/contact-authorization", {"wa_id": buyer_c, "reference": props[0]["ref"], "provider_message_id": f"wamid-{run_id}-c4", "text": f"Encore {props[0]['ref']}"}),
+              ("S18b_buyerC_owner2_after_replay", "POST", "/partikulier/v1/contact-authorization", {"wa_id": buyer_c, "reference": props[1]["ref"], "provider_message_id": f"wamid-{run_id}-c5", "text": f"Autre bien {props[1]['ref']}"}),
+              ("S18c_buyerC_3rd_manual", "POST", "/partikulier/v1/contact-authorization", {"wa_id": buyer_c, "reference": props[2]["ref"], "provider_message_id": f"wamid-{run_id}-c6", "text": f"3e bien {props[2]['ref']}"}),
+              ("S18d_buyerC_replay_after_cap", "POST", "/partikulier/v1/contact-authorization", {"wa_id": buyer_c, "reference": props[0]["ref"], "provider_message_id": f"wamid-{run_id}-c7", "text": f"Revoir {props[0]['ref']}"}),
+              ("S19_auto_event_first", "POST", "/partikulier/v1/automation-event", {"event_id": f"n8n-sim-ev-{run_id}", "event_type": "whatsapp_status", "source": "n8n", "payload": {"status": "sent"}}),
+              ("S20_auto_event_replay", "POST", "/partikulier/v1/automation-event", {"event_id": f"n8n-sim-ev-{run_id}", "event_type": "whatsapp_status", "source": "n8n", "payload": {"status": "sent"}}),
+          ]
+
+          meta_steps = [
+              ("S22_meta_reply_qual", buyer_a, "Vous êtes particulier ou intermédiaire ?"),
+              ("S23_meta_reply_owner", buyer_a, "Voici les coordonnées du propriétaire (simulé)."),
+              ("S24_meta_reply_manual", buyer_c, "Transmission manuelle en cours par notre équipe."),
+          ]
+
+          nodes = [{"id": str(uuid.uuid4()), "name": "Manual Trigger", "type": "n8n-nodes-base.manualTrigger", "typeVersion": 1, "position": [200, 300], "parameters": {}}]
+          connections = {}
+          prev = "Manual Trigger"
+          col = 1
+          for name, method, route, payload in steps:
+              nodes.append(make_http_node(name, method, route, payload, 200 + col * 220))
+              connections[prev] = {"main": [[{"node": name, "type": "main", "index": 0}]]}
+              prev = name
+              col += 1
+          for name, to_wa, body_text in meta_steps:
+              nodes.append(make_meta_node(name, to_wa, body_text, 200 + col * 220))
+              connections[prev] = {"main": [[{"node": name, "type": "main", "index": 0}]]}
+              prev = name
+              col += 1
+
+          wf_id = str(uuid.uuid4())
+          workflow = {
+              "id": wf_id,
+              "name": "Simulation Meta WA + WP",
+              "active": False,
+              "nodes": nodes,
+              "connections": connections,
+              "settings": {"executionOrder": "v1"},
+              "staticData": None,
+              "pinData": {},
+              "tags": [],
+          }
+          wf_path = pathlib.Path(os.environ['RUNNER_TEMP']) / 'wa-sim-workflow.json'
+          wf_path.write_text(json.dumps(workflow, separators=(',', ':')), encoding='utf-8')
+          wf_path.chmod(0o600)
+
+          cj = http.cookiejar.CookieJar()
+          opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(jar := cj))
+
+          def api(method, path, body=None):
+              data = None if body is None else json.dumps(body).encode()
+              req = urllib.request.Request(n8n_base + path, data=data, method=method, headers={"Content-Type": "application/json", "Accept": "application/json"})
+              try:
+                  with opener.open(req, timeout=60) as resp:
+                      raw = resp.read().decode('utf-8', 'replace')
+                      return resp.status, (json.loads(raw) if raw else {})
+              except urllib.error.HTTPError as e:
+                  raw = e.read().decode('utf-8', 'replace')
+                  print(f"HTTP {e.code} on {method} {path}: {raw[:300]}")
+                  try:
+                      return e.code, json.loads(raw or '{}')
+                  except Exception:
+                      return e.code, {'raw': raw[:200]}
+
+          def unflatten(value):
+              if not isinstance(value, list) or not value:
+                  return value
+              first = value[0]
+              if not isinstance(first, (dict, list)) and not (isinstance(first, str) and first[:1] in ('{', '[')):
+                  return value
+              cache = {}
+              def deref(idx, active):
+                  if idx in cache: return cache[idx]
+                  if idx in active or idx < 0 or idx >= len(value): return None
+                  raw_val = value[idx]
+                  try: dec = json.loads(raw_val) if isinstance(raw_val, str) and raw_val[:1] in ('{', '[') else raw_val
+                  except Exception: dec = raw_val
+                  res = expand(dec, active | {idx})
+                  cache[idx] = res
+                  return res
+              def expand(item, active):
+                  if isinstance(item, dict): return {k: expand(v, active) for k, v in item.items()}
+                  if isinstance(item, list): return [expand(v, active) for v in item]
+                  if isinstance(item, str) and item.isdigit() and int(item) < len(value):
+                      return deref(int(item), active)
+                  return item
+              return deref(0, set())
+
+          def find(value, key):
+              if isinstance(value, dict):
+                  if key in value: return value[key]
+                  for v in value.values():
+                      r = find(v, key)
+                      if r is not None: return r
+              elif isinstance(value, list):
+                  for v in value:
+                      r = find(v, key)
+                      if r is not None: return r
+              elif isinstance(value, str) and value[:1] in ('{', '['):
+                  try: return find(unflatten(json.loads(value)), key)
+                  except Exception: pass
+              return None
+
+          st_setup, _ = api("POST", "/rest/owner/setup", {"email": "ci-n8n@example.invalid", "firstName": "CI", "lastName": "Sim", "password": password})
+          assert st_setup in (200, 400, 403), f"Owner setup failed: {st_setup}"
+          st_login, _ = api("POST", "/rest/login", {"emailOrLdapLoginId": "ci-n8n@example.invalid", "password": password})
+          assert st_login == 200, f"Login failed: {st_login}"
+
+          subprocess.run(['docker', 'cp', str(wf_path), f'{n8n_container}:/tmp/wa-sim-workflow.json'], check=True)
+          subprocess.run(['docker', 'exec', '-u', '0:0', n8n_container, 'chown', 'node:node', '/tmp/wa-sim-workflow.json'], check=True)
+          subprocess.run(['docker', 'exec', '-u', 'node', '-e', 'N8N_DISABLED_MODULES=mcp-registry', n8n_container, 'n8n', 'import:workflow', '--input=/tmp/wa-sim-workflow.json'], check=True)
+
+          st_get, _ = api("GET", f"/rest/workflows/{wf_id}")
+          if st_get != 200:
+              st_wf, created = api("POST", "/rest/workflows", {
+                  "name": workflow["name"],
+                  "nodes": workflow["nodes"],
+                  "connections": workflow["connections"],
+                  "settings": workflow["settings"],
+              })
+              assert st_wf in (200, 201), f"Workflow create failed: {st_wf}"
+              wf_id = find(created, 'id')
+              assert wf_id, "missing created workflow id"
+
+          st_run, run_resp = api("POST", f"/rest/workflows/{wf_id}/run", {"triggerToStartFrom": {"name": "Manual Trigger"}})
+          assert st_run in (200, 201), f"Workflow run failed: {st_run}"
+          exec_id = find(run_resp, 'executionId')
+          assert exec_id, "missing executionId"
+
+          execution = {}
+          for _ in range(90):
+              st_ex, execution = api("GET", f"/rest/executions/{exec_id}?includeData=true")
+              if st_ex == 200:
+                  finished = find(execution, 'finished')
+                  status = find(execution, 'status')
+                  if finished is True or status in ('success', 'error', 'crashed', 'canceled'):
+                      break
+              time.sleep(1)
+
+          run_data = find(execution, 'runData')
+          assert isinstance(run_data, dict), f"Unable to extract n8n runData; status={find(execution, 'status')}"
+
+          def get_node_result(node_name):
+              entries = run_data.get(node_name, [])
+              assert entries, f"Missing runData for {node_name}"
+              item = entries[0]["data"]["main"][0][0]["json"]
+              sc = item.get("statusCode", 200)
+              body = item.get("body", item)
+              if isinstance(body, str):
+                  body = json.loads(body)
+              return sc, body
+
+          checks = []
+          def expect(node, fn, desc):
+              sc, body = get_node_result(node)
+              ok = bool(fn(sc, body))
+              safe_keys = {k: body.get(k) for k in ("allowed", "replayed", "reason", "limit", "qualified", "updated", "consent", "processed", "known_lead", "accepted", "duplicate", "count", "code", "messaging_product") if isinstance(body, dict) and k in body}
+              if isinstance(body, dict) and "messages" in body:
+                  safe_keys["meta_messages_count"] = len(body["messages"])
+              checks.append({"step": node, "desc": desc, "http": sc, "pass": ok, "summary": safe_keys})
+
+          expect("S01_approved_listings", lambda sc, b: sc == 200 and b.get("count") == 3 and all(str(r.get("owner_phone", "")).startswith("+212") for r in b.get("listings", [])), "GET /approved-listings retourne 3 annonces avec owner_phone déchiffré")
+          expect("S02_auth_need_qual", lambda sc, b: sc == 200 and b.get("allowed") is False and b.get("reason") == "need_qualification" and b.get("question"), "1er message inconnu -> demande qualification")
+          expect("S03_qual_particulier", lambda sc, b: sc == 200 and b.get("qualified") == "particulier" and b.get("replayed") is False, "Qualification particulier enregistrée")
+          expect("S04_auth_owner1_ok", lambda sc, b: sc == 200 and b.get("allowed") is True and b.get("replayed") is False and b.get("owner", {}).get("phone"), "Contact proprio 1 autorisé (1/2)")
+          expect("S05_auth_msg_replay", lambda sc, b: sc == 200 and b.get("allowed") is False and b.get("reason") == "duplicate_message", "Rejeu exact même message_id bloqué")
+          expect("S06_preferences", lambda sc, b: sc == 200 and b.get("updated") is True and b.get("replayed") is False, "Préférences enregistrées")
+          expect("S07_consent", lambda sc, b: sc == 200 and b.get("consent") == "granted" and b.get("replayed") is False, "Consentement enregistré")
+          expect("S08_auth_owner2_ok", lambda sc, b: sc == 200 and b.get("allowed") is True and b.get("replayed") is False and b.get("owner", {}).get("phone"), "Contact proprio 2 autorisé (2/2)")
+          expect("S09_auth_3rd_manual", lambda sc, b: sc == 200 and b.get("allowed") is False and b.get("reason") == "manual_review" and b.get("limit") == "24h_3contacts", "3e contact en 24h -> manual_review")
+          expect("S10_opt_out_stop", lambda sc, b: sc == 200 and b.get("processed") is True and b.get("known_lead") is True and b.get("replayed") is False, "Opt-out STOP enregistré")
+          expect("S11_auth_after_stop", lambda sc, b: sc == 200 and b.get("allowed") is False and b.get("reason") == "opted_out", "Blocage après STOP effectif")
+          expect("S12_buyerB_init", lambda sc, b: sc == 200 and b.get("reason") == "need_qualification", "Acheteur B demande qualification")
+          expect("S13_buyerB_interm", lambda sc, b: sc == 200 and b.get("qualified") == "intermediaire", "Qualification intermédiaire")
+          expect("S14_buyerB_refused", lambda sc, b: sc == 200 and b.get("allowed") is False and b.get("reason") == "intermediary_refused", "Intermédiaire refusé")
+          expect("S15_buyerB_flip_409", lambda sc, b: sc == 409 and b.get("code") == "pk_qualification_already_set", "Changement qualification bloqué 409")
+          expect("S15b_buyerC_unknown_404", lambda sc, b: sc == 404 and b.get("code") == "pk_unknown_lead", "Qualification inconnue 404")
+          expect("S16_buyerC_init", lambda sc, b: sc == 200 and b.get("allowed") is False and b.get("reason") == "need_qualification", "Acheteur C -> need_qualification")
+          expect("S16b_buyerC_pending", lambda sc, b: sc == 200 and b.get("allowed") is False and b.get("reason") == "need_qualification_pending", "Relance -> pending")
+          expect("S16c_buyerC_qual", lambda sc, b: sc == 200 and b.get("qualified") == "particulier", "Acheteur C qualifié particulier")
+          expect("S17_buyerC_owner1_ok", lambda sc, b: sc == 200 and b.get("allowed") is True and b.get("replayed") is False and b.get("owner", {}).get("phone"), "Acheteur C autorisé proprio 1")
+          expect("S18_buyerC_discl_replay", lambda sc, b: sc == 200 and b.get("allowed") is True and b.get("replayed") is True and b.get("owner", {}).get("phone"), "Acheteur C redemande P1 -> replayed=true")
+          expect("S18b_buyerC_owner2_after_replay", lambda sc, b: sc == 200 and b.get("allowed") is True and b.get("replayed") is False and b.get("owner", {}).get("phone"), "CORRECTIF QUOTA : P2 autorisé (replayed=true n'a pas consommé max_24h=2)")
+          expect("S18c_buyerC_3rd_manual", lambda sc, b: sc == 200 and b.get("allowed") is False and b.get("reason") == "manual_review" and b.get("limit") == "24h_3contacts", "3e bien P3 -> manual_review")
+          expect("S18d_buyerC_replay_after_cap", lambda sc, b: sc == 200 and b.get("allowed") is True and b.get("replayed") is True and b.get("owner", {}).get("phone"), "CORRECTIF QUOTA : redemande P1 déjà divulguée toujours rejouée après plafond")
+          expect("S19_auto_event_first", lambda sc, b: sc == 200 and b.get("accepted") is True and b.get("duplicate") is False, "automation-event accepté")
+          expect("S20_auto_event_replay", lambda sc, b: sc == 200 and b.get("accepted") is True and b.get("duplicate") is True, "automation-event rejeu idempotent")
+          expect("S22_meta_reply_qual", lambda sc, b: sc == 200 and b.get("messaging_product") == "whatsapp" and len(b.get("messages", [])) == 1, "Meta Cloud API Mock : envoi question qualification via n8n")
+          expect("S23_meta_reply_owner", lambda sc, b: sc == 200 and b.get("messaging_product") == "whatsapp" and len(b.get("messages", [])) == 1, "Meta Cloud API Mock : envoi contact propriétaire via n8n")
+          expect("S24_meta_reply_manual", lambda sc, b: sc == 200 and b.get("messaging_product") == "whatsapp" and len(b.get("messages", [])) == 1, "Meta Cloud API Mock : envoi notice manuelle via n8n")
+
+          (out_dir / 'n8n-wa-steps.json').write_text(json.dumps(checks, ensure_ascii=False, indent=2))
+          PY
+
+          # Verify Meta Mock Inbox captured 3 messages
+          META_INBOX="$(docker exec "$WP_CONTAINER" cat /tmp/meta-wa-inbox.jsonl)"
+          echo "Meta Cloud API Mock inbox lines: $(printf '%s\n' "$META_INBOX" | wc -l)"
+
+          # Verify erase-lead guard (401) & GDPR erase (200)
+          GUARD_HTTP="$(curl -s -o /tmp/erase-guard.json -w '%{http_code}' -X POST 'http://127.0.0.1:8080/?rest_route=%2Fpartikulier%2Fv1%2Ferase-lead' -H 'Host: wordpress' -H 'Content-Type: application/json' -H "X-Partikulier-Automation: $EPHEMERAL_SECRET" --data '{"wa_id":"212699000001"}')"
+          ERASE_HTTP="$(curl -s -o /tmp/erase-resp.json -w '%{http_code}' -X POST 'http://127.0.0.1:8080/?rest_route=%2Fpartikulier%2Fv1%2Ferase-lead' -H 'Host: wordpress' -H 'Content-Type: application/json' -H "X-Partikulier-Lead-Erase: $ERASE_SECRET" --data '{"wa_id":"212699000001"}')"
+
+          # Live WordPress HTTP verification for P0->P2 fixes
+          FIRST_PROP_PATH="$(python3 -c 'import json,sys,urllib.parse; d=json.loads(sys.argv[1]); print(urllib.parse.urlparse(d["props"][0]["url"]).path or ("/?p=" + str(d["props"][0]["id"])))' "$SEED_JSON")"
+
+          curl -sS -D /tmp/hdr-health.txt -o /tmp/body-health.json -H 'Host: wordpress' "$WP_BASE/?rest_route=%2Fpartikulier%2Fv1%2Fhealth"
+          curl -sS -D /tmp/hdr-contact.txt -o /dev/null -H 'Host: wordpress' "$WP_BASE/contact/"
+          curl -sS -D /tmp/hdr-favicon.txt -o /tmp/favicon.bin -H 'Host: wordpress' "$WP_BASE/favicon.ico"
+          curl -sS -D /tmp/hdr-home.txt -H 'Host: wordpress' "$WP_BASE/" -o /tmp/home.html
+          curl -sS -D /tmp/hdr-single-unset.txt -H 'Host: wordpress' "$WP_BASE$FIRST_PROP_PATH" -o /tmp/single-unset.html
+
+          # Configure masked PK_TEST_WA_NUMBER (or synthetic CI fallback) ONLY in-memory in WordPress option and verify rendered link without leaking digits
+          docker exec -e PK_CI_WA="$TEST_WA_DIGITS" -i "$WP_CONTAINER" php <<'PHP'
+          <?php
+          require '/var/www/html/wp-load.php';
+          $opts = get_option('pk_theme_options', []);
+          $opts = is_array($opts) ? $opts : [];
+          $opts['buyer_whatsapp_number'] = (string) getenv('PK_CI_WA');
+          update_option('pk_theme_options', $opts);
+          if (class_exists('Partikulier_Cache')) {
+              Partikulier_Cache::purge_all();
+          }
+          PHP
+          curl -sS -D /tmp/hdr-single-set.txt -H 'Host: wordpress' "$WP_BASE$FIRST_PROP_PATH" -o /tmp/single-set.html
+
+          # Render EN cookie banner via WordPress runtime
+          COOKIE_EN_HTML="$(docker exec -i "$WP_CONTAINER" php <<'PHP'
+          <?php
+          require '/var/www/html/wp-load.php';
+          add_filter('locale', static fn() => 'en_US');
+          ob_start();
+          Partikulier_Visit_Counter::render_bar();
+          echo ob_get_clean();
+          PHP
+          )"
+
+          GUARD_HTTP="$GUARD_HTTP" ERASE_HTTP="$ERASE_HTTP" META_INBOX="$META_INBOX" TEST_WA_DIGITS="$TEST_WA_DIGITS" WA_SECRET_USED="$WA_SECRET_USED" COOKIE_EN_HTML="$COOKIE_EN_HTML" OUT_DIR="$OUT_DIR" python3 - <<'PY'
+          import json, os, pathlib, re
+
+          out_dir = pathlib.Path(os.environ['OUT_DIR'])
+          steps = json.loads((out_dir / 'n8n-wa-steps.json').read_text())
+          meta_lines = [json.loads(line) for line in os.environ['META_INBOX'].strip().splitlines() if line.strip()]
+          test_wa = os.environ['TEST_WA_DIGITS']
+          wa_secret_used = os.environ['WA_SECRET_USED'] == 'true'
+          guard_http = int(os.environ['GUARD_HTTP'])
+          erase_http = int(os.environ['ERASE_HTTP'])
+          erase_body = json.loads(pathlib.Path('/tmp/erase-resp.json').read_text())
+
+          hdr_health = pathlib.Path('/tmp/hdr-health.txt').read_text().lower()
+          hdr_contact = pathlib.Path('/tmp/hdr-contact.txt').read_text().lower()
+          hdr_favicon = pathlib.Path('/tmp/hdr-favicon.txt').read_text().lower()
+          hdr_home = pathlib.Path('/tmp/hdr-home.txt').read_text().lower()
+          hdr_single_unset = pathlib.Path('/tmp/hdr-single-unset.txt').read_text().lower()
+          hdr_single_set = pathlib.Path('/tmp/hdr-single-set.txt').read_text().lower()
+          home_html = pathlib.Path('/tmp/home.html').read_text()
+          single_unset = pathlib.Path('/tmp/single-unset.html').read_text()
+          single_set = pathlib.Path('/tmp/single-set.html').read_text()
+          cookie_en = os.environ['COOKIE_EN_HTML']
+
+          extra = [
+              ("S21a_erase_guard_401", "Rejet /erase-lead sans secret dédié", guard_http == 401, f"http={guard_http}"),
+              ("S21b_erase_lead_ok", "Effacement RGPD acheteur A", erase_http == 200 and erase_body.get("erased") is True, f"http={erase_http}"),
+              ("S25_meta_inbox_count", "Meta Cloud API Mock a capturé les 3 messages sortants (masqués)", len(meta_lines) == 3, f"captured={len(meta_lines)}"),
+              ("S26_health_nocache", "/health émet Cache-Control: no-store + X-LiteSpeed-Cache-Control: no-cache", ("no-store" in hdr_health and "x-litespeed-cache-control: no-cache" in hdr_health), "headers verified"),
+              ("S27_contact_nocache", "/contact/ émet Cache-Control: private, no-store + X-LiteSpeed-Cache-Control: no-cache", ("private" in hdr_contact and "no-store" in hdr_contact and "x-litespeed-cache-control: no-cache" in hdr_contact), "headers verified"),
+              ("S28_favicon_200", "/favicon.ico répond HTTP 200 image/x-icon + <link rel=\"icon\">", (" 200" in hdr_favicon.splitlines()[0] and "image/x-icon" in hdr_favicon and " 200" in hdr_home.splitlines()[0] and "favicon.svg" in home_html), f"bytes={pathlib.Path('/tmp/favicon.bin').stat().st_size} home={hdr_home.splitlines()[0].strip()}"),
+              ("S29_style_min", "style.min.css référencé dans le HTML public", (" 200" in hdr_home.splitlines()[0] and "style.min.css" in home_html), f"home_len={len(home_html)}"),
+              ("S30_single_unset_no_bare_wa", "Sans numéro configuré : 0 lien wa.me/?text= et notice affichée", (" 200" in hdr_single_unset.splitlines()[0] and "wa.me/?text=" not in single_unset and "pk-single-contact-unavailable" in single_unset), f"single={hdr_single_unset.splitlines()[0].strip()} len={len(single_unset)}"),
+              ("S31_single_set_numeric_wa", f"Avec numéro configuré ({'secret masqué' if wa_secret_used else 'numéro CI synthétique'}) : lien numérique wa.me rendu sans exposition", (" 200" in hdr_single_set.splitlines()[0] and f"https://wa.me/{test_wa}?text=" in single_set and "wa.me/?text=" not in single_set), "masked=" + ("[SECRET]" if wa_secret_used else "synthetic") + f" single={hdr_single_set.splitlines()[0].strip()}"),
+              ("S32_cookies_en_link", "Bannière cookies EN sans 'Learn more' (libellé descriptif)", ("Learn more" not in cookie_en and "Read the cookie policy" in cookie_en), f"len={len(cookie_en)}"),
+          ]
+
+          all_ok = all(s['pass'] for s in steps) and all(ok for _, _, ok, _ in extra)
+          lines = [
+              '# Simulation éphémère Meta Cloud API + n8n + WordPress (`fix/v1-preprod-corrections`)',
+              '',
+              '- Egress `n8n` isolé par `iptables` vers le seul WordPress jetable (`:80`) et le simulateur Meta Cloud API local (`:18080`).',
+              f"- Numéro WhatsApp de test utilisé pour le rendu fiche : {'`[MASKED_SECRET]` (`PK_TEST_WA_NUMBER`)' if wa_secret_used else '`synthetic-ci-fallback` (secret absent)'}",
+              '',
+              '| Étape | Scénario | Statut | Détail |',
+              '|---|---|---|---|',
+          ]
+          for s in steps:
+              lines.append(f"| `{s['step']}` | {s['desc']} | **{'PASS' if s['pass'] else 'FAIL'}** | `HTTP {s['http']} {json.dumps(s['summary'], ensure_ascii=False)}` |")
+          for sid, desc, ok, detail in extra:
+              lines.append(f"| `{sid}` | {desc} | **{'PASS' if ok else 'FAIL'}** | `{detail}` |")
+
+          (out_dir / 'summary.md').write_text('\n'.join(lines) + '\n')
+          print('\n'.join(lines))
+          if not all_ok:
+              raise SystemExit(1)
+          PY
+
+      - name: Upload simulation artifacts
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: ephemeral-wa-n8n-sim-report
+          path: ${{ github.workspace }}/ephemeral-wa-sim-artifacts
+          retention-days: 14

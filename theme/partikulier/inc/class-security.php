@@ -1,14 +1,6 @@
 <?php
 /**
- * Module : protections HTTP, sécurité de l'authentification et réduction de l’exposition WordPress.
- *
- * Implémente :
- *   1. Protection anti-énumération utilisateurs (REST /wp/v2/users, archives auteurs et erreurs de login unifiées).
- *   2. Rate Limiter anti-brute-force conforme CGNAT (clé composite IP + compte visé).
- *   3. Authentification transparente par numéro de téléphone portable marocain (+212, 06, 07).
- *   4. Masquage de wp-login.php et wp-admin pour le public avec passerelle secrète d'administration.
- *   5. En-têtes HTTP défensifs (CSP, HSTS, X-Frame-Options, Permissions-Policy).
- *
+ * Protections HTTP, sécurité d'authentification et réduction de l'exposition WordPress.
  * @package Partikulier
  */
 
@@ -18,15 +10,47 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class Partikulier_Security {
 
-	public const DEFAULT_ADMIN_KEY = 'direction2026';
+	/** Ferme XML-RPC hors production (pep.ma conserve le filtre actuel). */
+	public static function refuse_xmlrpc_outside_production() {
+		if ( ! defined( 'XMLRPC_REQUEST' ) || ! XMLRPC_REQUEST || self::is_production_xmlrpc_host() ) {
+			return;
+		}
+		if ( ! headers_sent() ) {
+			status_header( 403 );
+			header( 'Content-Type: text/plain; charset=UTF-8' );
+			header( 'X-Robots-Tag: noindex, nofollow' );
+		}
+		exit;
+	}
+
+	private static function is_production_xmlrpc_host() {
+		$hosts = array();
+		if ( isset( $_SERVER['HTTP_HOST'] ) ) {
+			$hosts[] = strtolower( (string) wp_unslash( $_SERVER['HTTP_HOST'] ) );
+		}
+		$home = wp_parse_url( home_url( '/' ), PHP_URL_HOST );
+		if ( is_string( $home ) && '' !== $home ) {
+			$hosts[] = strtolower( $home );
+		}
+		foreach ( $hosts as $host ) {
+			$host = (string) preg_replace( '/:\d+$/', '', $host );
+			if ( in_array( $host, array( 'pep.ma', 'www.pep.ma' ), true ) ) {
+				return true;
+			}
+		}
+		return false;
+	}
 
 	public static function init() {
 		add_filter( 'rest_endpoints', array( __CLASS__, 'restrict_user_enumeration' ) );
 		add_filter( 'rest_pre_dispatch', array( __CLASS__, 'close_public_media_list' ), 10, 3 );
 		add_action( 'template_redirect', array( __CLASS__, 'block_public_author_enumeration' ), 0 );
+		add_action( 'init', array( __CLASS__, 'send_public_headers' ), 0 );
 		add_action( 'send_headers', array( __CLASS__, 'send_public_headers' ) );
+		add_filter( 'wp_redirect', array( __CLASS__, 'keep_public_headers_on_redirect' ), 0, 2 );
 		add_filter( 'xmlrpc_enabled', '__return_false' );
 		add_filter( 'xmlrpc_methods', '__return_empty_array' );
+		add_action( 'init', array( __CLASS__, 'refuse_xmlrpc_outside_production' ), 0 );
 
 		// --- Sécurité de l'authentification (OWASP ASVS / WSTG) ---
 		// 1. Unification des erreurs de connexion (Anti-Énumération WSTG-INFO-04)
@@ -42,7 +66,7 @@ class Partikulier_Security {
 		// 3. Authentification par numéro de téléphone portable (+212, 06, 07)
 		add_filter( 'authenticate', array( __CLASS__, 'resolve_phone_login' ), 15, 3 );
 
-		// 4. Masquage de wp-login.php et wp-admin pour le public (URL secrète d'administration)
+		// 4. Masquage facultatif de wp-login.php (wp-admin conserve les contrôles WordPress)
 		add_action( 'login_init', array( __CLASS__, 'protect_admin_gateway' ) );
 	}
 
@@ -54,13 +78,12 @@ class Partikulier_Security {
 		if ( defined( 'PK_ADMIN_SECRET_KEY' ) && PK_ADMIN_SECRET_KEY ) {
 			return (string) PK_ADMIN_SECRET_KEY;
 		}
-		$stored = (string) get_option( 'pk_admin_secret_key', '' );
-		return $stored !== '' ? $stored : self::DEFAULT_ADMIN_KEY;
+		return (string) get_option( 'pk_admin_secret_key', '' );
 	}
 
 	/**
-	 * Masque wp-login.php et wp-admin pour les visiteurs et robots externes.
-	 * Seuls les utilisateurs munis du jeton secret ou disposant d'une session admin active peuvent y accéder.
+	 * Masque facultativement wp-login.php derrière une clé secrète; WordPress protège wp-admin par ses contrôles habituels.
+	 * Une clé vide désactive cette couche sans altérer l'authentification native.
 	 */
 	public static function protect_admin_gateway() {
 		if ( ( defined( 'WP_CLI' ) && WP_CLI ) || ( defined( 'DOING_CRON' ) && DOING_CRON ) ) {
@@ -274,14 +297,7 @@ class Partikulier_Security {
 		exit;
 	}
 
-	/**
-	 * /wp/v2/media n'est pas une vitrine. Un visiteur non connecté reçoit 401.
-	 *
-	 * @param mixed           $result  Réponse déjà décidée.
-	 * @param WP_REST_Server  $server  Serveur REST.
-	 * @param WP_REST_Request $request Requête.
-	 * @return mixed
-	 */
+	/** /wp/v2/media n'est pas une vitrine. Un visiteur non connecté reçoit 401. */
 	public static function close_public_media_list( $result, $server, $request ) {
 		unset( $server );
 		if ( is_user_logged_in() || ! $request instanceof WP_REST_Request ) {
@@ -291,20 +307,26 @@ class Partikulier_Security {
 		if ( ! preg_match( '#^/wp/v2/media(?:/|$)#', $route ) ) {
 			return $result;
 		}
-		return new WP_Error(
-			'rest_not_logged_in',
-			__( 'Authentification requise.', 'partikulier' ),
-			array( 'status' => 401 )
-		);
+		return new WP_Error( 'rest_not_logged_in', __( 'Authentification requise.', 'partikulier' ), array( 'status' => 401 ) );
 	}
 
-	/**
-	 * En-têtes défensifs compatibles avec les ressources actuelles du thème.
-	 */
+	/** Pose les en-têtes défensifs avant Location sur redirection de langue. */
+	public static function keep_public_headers_on_redirect( $location, $status = 302 ) {
+		unset( $status );
+		self::send_public_headers();
+		if ( ! headers_sent() ) {
+			header_remove( 'X-Powered-By' );
+			header_remove( 'X-Generator' );
+		}
+		return $location;
+	}
+
 	public static function send_public_headers() {
 		if ( is_admin() ) {
 			return;
 		}
+		header_remove( 'X-Powered-By' );
+		header_remove( 'X-Generator' );
 		$path    = isset( $_SERVER['REQUEST_URI'] ) ? wp_parse_url( wp_unslash( $_SERVER['REQUEST_URI'] ), PHP_URL_PATH ) : '';
 		$is_root = '/' === trailingslashit( (string) $path );
 		if ( $is_root ) {

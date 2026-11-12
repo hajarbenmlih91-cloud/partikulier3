@@ -144,7 +144,7 @@ add_action(
 		$bot  = '' !== $ua && (bool) preg_match( '/bot|crawler|spider|slurp|bingpreview|facebookexternalhit|linkedinbot|whatsapp/i', $ua );
 		$host = isset( $_SERVER['HTTP_HOST'] ) ? strtolower( (string) wp_unslash( $_SERVER['HTTP_HOST'] ) ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
 		$ci   = ( false !== strpos( $host, '127.0.0.1' ) || 0 === strpos( $host, 'localhost' ) );
-		if ( '/' === trailingslashit( $path ) && ! $ci ) {
+		if ( '/' === trailingslashit( $path ) && ! $ci && function_exists( 'pll_home_url' ) ) {
 			$lang = 'fr';
 			if ( ! $bot && ! empty( $_COOKIE['pll_language'] ) ) { // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
 				$cookie_lang = sanitize_key( wp_unslash( $_COOKIE['pll_language'] ) ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput
@@ -314,6 +314,7 @@ $partikulier_modules = array(
 		'/inc/class-payment-foundation.php',
 		'/inc/class-page-templates.php',
 		'/inc/class-tunnel-preview.php',
+		'/inc/class-buyer-profile-preview.php',
 		'/inc/class-required-page-translations.php',
 		'/inc/class-required-pages.php',
 		'/inc/class-morocco-places.php',

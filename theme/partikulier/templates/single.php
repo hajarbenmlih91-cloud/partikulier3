@@ -235,6 +235,19 @@ while ( have_posts() ) :
 							<h2 class="pk-contact-title"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Intéressé par ce bien ?', 'Intéressé par ce bien ?', 'partikulier' ) ); ?></h2>
 							<p class="pk-contact-note"><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Envoyez cette annonce sur WhatsApp. Après vérification de votre demande, nous vous transmettons les coordonnées du propriétaire.', 'Envoyez cette annonce sur WhatsApp. Après vérification de votre demande, nous vous transmettons les coordonnées du propriétaire.', 'partikulier' ) ); ?></p>
 						<?php
+						$pk_closed_status = class_exists( 'Partikulier_Listing_Closure' ) ? Partikulier_Listing_Closure::closure_status( get_the_ID() ) : '';
+						$pk_is_closed     = '' !== $pk_closed_status;
+						$pk_wa_href       = ! $pk_is_closed && class_exists( 'Partikulier_Buyer_Qualification' ) ? Partikulier_Buyer_Qualification::contact_url( get_the_ID() ) : '';
+						$pk_buyer_ref     = class_exists( 'Partikulier_Buyer_Qualification' ) ? Partikulier_Buyer_Qualification::reference_for( get_the_ID() ) : '';
+						?>
+						<?php if ( $pk_is_closed ) : ?>
+							<div class="pk-contact-sold">
+								<strong><?php echo esc_html( Partikulier_Listing_Closure::closure_label( get_the_ID() ) ); ?></strong>
+								<span><?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Cette annonce ne reçoit plus de contacts.', 'Cette annonce ne reçoit plus de contacts.', 'partikulier' ) ); ?></span>
+							</div>
+							<?php echo Partikulier_Listing_Closure::similar_block_html( get_post() ); // phpcs:ignore WordPress.Security.EscapeOutput -- rendu échappé en interne ?>
+						<?php endif; ?>
+						<?php
 						$author       = get_userdata( get_the_author_meta( 'ID' ) );
 						$pk_role      = get_post_meta( get_the_ID(), '_pk_owner_role', true );
 						$pk_role_name = Partikulier_Localization::translate_polylang_string( 'Propriétaire', 'Propriétaire', 'partikulier' );
@@ -249,13 +262,27 @@ while ( have_posts() ) :
 							</div>
 						<?php endif; ?>
 						<div class="pk-contact-actions">
-							<?php
-							$pk_wa_text = rawurlencode( sprintf( __( 'Bonjour, je suis intéressé par « %1$s » — %2$s', 'partikulier' ), get_the_title(), get_permalink() ) );
-							?>
-							<a class="pk-btn pk-btn-primary pk-btn-block pk-btn-whatsapp" href="https://wa.me/?text=<?php echo esc_attr( $pk_wa_text ); ?>" target="_blank" rel="noopener nofollow">
-								<svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor" aria-hidden="true"><path d="M12.04 2a9.9 9.9 0 0 0-8.5 14.95L2 22l5.2-1.5A9.9 9.9 0 1 0 12.04 2zm0 1.8a8.1 8.1 0 1 1-4.13 15.06l-.3-.18-3.08.89.9-3-.2-.31A8.1 8.1 0 0 1 12.04 3.8zm4.6 10.2c-.25-.13-1.46-.72-1.69-.8-.22-.09-.39-.13-.55.12s-.63.8-.77.96c-.14.17-.28.19-.53.06a6.6 6.6 0 0 1-3.3-2.88c-.25-.43.25-.4.71-1.33.08-.17.04-.31-.02-.44s-.55-1.33-.76-1.82c-.2-.48-.4-.41-.55-.42h-.47a.9.9 0 0 0-.65.3 2.75 2.75 0 0 0-.86 2.05c0 1.2.88 2.37 1 2.53.12.17 1.72 2.63 4.17 3.69 1.55.67 2.16.73 2.94.61.47-.07 1.46-.6 1.67-1.18.2-.58.2-1.07.14-1.18-.06-.1-.23-.17-.48-.29z"/></svg>
-								<?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Demander sur WhatsApp', 'Demander sur WhatsApp', 'partikulier' ) ); ?>
-							</a>
+							<?php if ( ! empty( $pk_wa_href ) ) : ?>
+								<a class="pk-btn pk-btn-primary pk-btn-block pk-btn-whatsapp" href="<?php echo class_exists( 'Partikulier_Buyer_Qualification' ) ? Partikulier_Buyer_Qualification::esc_wa_url( $pk_wa_href ) : esc_url( $pk_wa_href ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- échappé via esc_wa_url() ?>" target="_blank" rel="noopener">
+									<svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor" aria-hidden="true"><path d="M12.04 2a9.9 9.9 0 0 0-8.5 14.95L2 22l5.2-1.5A9.9 9.9 0 1 0 12.04 2zm0 1.8a8.1 8.1 0 1 1-4.13 15.06l-.3-.18-3.08.89.9-3-.2-.31A8.1 8.1 0 0 1 12.04 3.8zm4.6 10.2c-.25-.13-1.46-.72-1.69-.8-.22-.09-.39-.13-.55.12s-.63.8-.77.96c-.14.17-.28.19-.53.06a6.6 6.6 0 0 1-3.3-2.88c-.25-.43.25-.4.71-1.33.08-.17.04-.31-.02-.44s-.55-1.33-.76-1.82c-.2-.48-.4-.41-.55-.42h-.47a.9.9 0 0 0-.65.3 2.75 2.75 0 0 0-.86 2.05c0 1.2.88 2.37 1 2.53.12.17 1.72 2.63 4.17 3.69 1.55.67 2.16.73 2.94.61.47-.07 1.46-.6 1.67-1.18.2-.58.2-1.07.14-1.18-.06-.1-.23-.17-.48-.29z"/></svg>
+									<?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Demander sur WhatsApp', 'Demander sur WhatsApp', 'partikulier' ) ); ?>
+								</a>
+								<?php if ( '' !== $pk_buyer_ref ) : ?>
+									<small><?php printf( esc_html__( 'Référence de la demande : %s', 'partikulier' ), esc_html( $pk_buyer_ref ) ); ?></small>
+								<?php endif; ?>
+							<?php elseif ( ! $pk_is_closed ) : ?>
+								<?php
+								$pk_wa_lang        = class_exists( 'Partikulier_Settings' ) ? Partikulier_Settings::current_language() : ( class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::current_language() : 'fr' );
+								$pk_wa_unavailable = 'en' === $pk_wa_lang
+									? 'WhatsApp contact is currently unavailable for this listing.'
+									: ( 'ar' === $pk_wa_lang
+										? 'التواصل عبر واتساب غير متاح حالياً لهذا الإعلان.'
+										: 'Le contact WhatsApp est momentanément indisponible pour cette annonce.' );
+								?>
+								<div class="pk-single-contact-unavailable" role="status">
+									<p class="pk-contact-note"><?php echo esc_html( $pk_wa_unavailable ); ?></p>
+								</div>
+							<?php endif; ?>
 						</div>
 <p class="pk-contact-legal">
 								<?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Vos critères sont enregistrés pour vérifier la demande. Les annonces similaires ne sont envoyées qu’avec votre accord explicite.', 'Vos critères sont enregistrés pour vérifier la demande. Les annonces similaires ne sont envoyées qu’avec votre accord explicite.', 'partikulier' ) ); ?>
@@ -272,9 +299,10 @@ while ( have_posts() ) :
 				</aside>
 			</div>
 		</div>
-		<?php if ( ! empty( $pk_wa_text ) ) : ?>
+		<?php if ( ! empty( $pk_wa_href ) ) : ?>
 			<div class="pk-wa-sticky" data-pk-wa-sticky>
-				<a class="pk-btn pk-btn-primary pk-btn-block pk-btn-whatsapp" href="https://wa.me/?text=<?php echo esc_attr( $pk_wa_text ); ?>" target="_blank" rel="noopener nofollow">
+				<a class="pk-btn pk-btn-primary pk-btn-block pk-btn-whatsapp" href="<?php echo class_exists( 'Partikulier_Buyer_Qualification' ) ? Partikulier_Buyer_Qualification::esc_wa_url( $pk_wa_href ) : esc_url( $pk_wa_href ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- échappé via esc_wa_url() ?>" target="_blank" rel="noopener">
+					<svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor" aria-hidden="true"><path d="M12.04 2a9.9 9.9 0 0 0-8.5 14.95L2 22l5.2-1.5A9.9 9.9 0 1 0 12.04 2zm0 1.8a8.1 8.1 0 1 1-4.13 15.06l-.3-.18-3.08.89.9-3-.2-.31A8.1 8.1 0 0 1 12.04 3.8zm4.6 10.2c-.25-.13-1.46-.72-1.69-.8-.22-.09-.39-.13-.55.12s-.63.8-.77.96c-.14.17-.28.19-.53.06a6.6 6.6 0 0 1-3.3-2.88c-.25-.43.25-.4.71-1.33.08-.17.04-.31-.02-.44s-.55-1.33-.76-1.82c-.2-.48-.4-.41-.55-.42h-.47a.9.9 0 0 0-.65.3 2.75 2.75 0 0 0-.86 2.05c0 1.2.88 2.37 1 2.53.12.17 1.72 2.63 4.17 3.69 1.55.67 2.16.73 2.94.61.47-.07 1.46-.6 1.67-1.18.2-.58.2-1.07.14-1.18-.06-.1-.23-.17-.48-.29z"/></svg>
 					<?php echo esc_html( Partikulier_Localization::translate_polylang_string( 'Demander sur WhatsApp', 'Demander sur WhatsApp', 'partikulier' ) ); ?>
 				</a>
 			</div>

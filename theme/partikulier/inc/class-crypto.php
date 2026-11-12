@@ -52,7 +52,20 @@ class Partikulier_Crypto {
 		if ( class_exists( '\Partikulier\Core\Domain\Leads\LeadService' ) ) {
 			return \Partikulier\Core\Domain\Leads\LeadService::decrypt_phone_for_admin( (string) $encrypted_phone );
 		}
-		if ( ! current_user_can( 'manage_options' ) || ! function_exists( 'openssl_decrypt' ) ) {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return '';
+		}
+		return self::decrypt_payload( $encrypted_phone );
+	}
+
+	/**
+	 * Déchiffre une enveloppe GCM v1 ou legacy CBC pour usage interne/automatisation.
+	 *
+	 * @param string $encrypted_phone Chaîne chiffrée.
+	 * @return string Numéro en clair ou chaîne vide si invalide/altéré.
+	 */
+	private static function decrypt_payload( $encrypted_phone ) {
+		if ( ! function_exists( 'openssl_decrypt' ) ) {
 			return '';
 		}
 		$encrypted_phone = trim( (string) $encrypted_phone );
@@ -76,7 +89,7 @@ class Partikulier_Crypto {
 
 		// Repli legacy CBC
 		$payload = base64_decode( $encrypted_phone, true );
-		if ( false === $payload || strlen( $payload) <= 16 ) {
+		if ( false === $payload || strlen( $payload ) <= 16 ) {
 			return '';
 		}
 		$iv         = substr( $payload, 0, 16 );
@@ -87,6 +100,7 @@ class Partikulier_Crypto {
 
 	/**
 	 * Lit un numéro qui peut être stocké sous forme chiffrée ou en clair (zéro migration).
+	 * Utilisé par les flux serveur-à-serveur (n8n HMAC, approbation) sans session admin WP.
 	 *
 	 * @param string $raw_phone Valeur brute issue de la BDD.
 	 * @return string Numéro exploitable en clair.
@@ -97,7 +111,10 @@ class Partikulier_Crypto {
 			return '';
 		}
 		if ( str_starts_with( $raw_phone, 'gcm:v1:' ) ) {
-			return self::decrypt_phone( $raw_phone );
+			return self::decrypt_payload( $raw_phone );
+		}
+		if ( ! preg_match( '/^\+?[0-9\s().-]{6,25}$/', $raw_phone ) ) {
+			return self::decrypt_payload( $raw_phone );
 		}
 		return $raw_phone;
 	}

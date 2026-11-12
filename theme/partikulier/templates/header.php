@@ -20,6 +20,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 <meta charset="<?php bloginfo( 'charset' ); ?>">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#111111">
+<?php if ( ! function_exists( 'has_site_icon' ) || ! has_site_icon() ) : ?>
+<link rel="icon" href="<?php echo esc_url( PARTIKULIER_URI . '/assets/img/favicon.svg' ); ?>" type="image/svg+xml">
+<link rel="icon" href="<?php echo esc_url( PARTIKULIER_URI . '/assets/img/favicon.ico' ); ?>" sizes="32x32">
+<?php endif; ?>
 <link rel="profile" href="https://gmpg.org/xfn/11">
 <?php wp_head(); ?>
 <style id="pk-desktop-nav-red">
@@ -173,7 +177,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 						);
 						?>
 						<div class="pk-lang" data-pk-lang>
-								<button type="button" class="pk-lang-toggle" aria-expanded="false" aria-haspopup="true" aria-label="<?php esc_attr_e( 'Choisir la langue', 'partikulier' ); ?>">
+								<button type="button" class="pk-lang-toggle" aria-expanded="false" aria-haspopup="true" aria-label="<?php echo esc_attr( __( 'Choisir la langue', 'partikulier' ) . ' — ' . strtoupper( $pk_current_lang ) ); ?>">
 										<?php echo $pk_flag_svg( $pk_current_lang ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 										<span class="pk-lang-code"><?php echo esc_html( strtoupper( $pk_current_lang ) ); ?></span>
 								</button>

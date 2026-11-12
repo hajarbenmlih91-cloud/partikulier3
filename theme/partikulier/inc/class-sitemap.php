@@ -156,7 +156,7 @@ class Partikulier_Sitemap {
 		);
 		foreach ( $articles as $article ) {
 			$loc = get_permalink( $article );
-			if ( ! $loc ) {
+			if ( ! $loc || false !== strpos( (string) $loc, '/hello-world/' ) ) {
 				continue;
 			}
 			$urls[] = array(

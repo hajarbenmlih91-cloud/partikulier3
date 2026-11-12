@@ -28,9 +28,24 @@ final class AuditLogger
 
 	private function removeSecrets( array $metadata ): array
 	{
+		return $this->removeSecretsRecursively($metadata);
+	}
+
+	/** Remove sensitive fields at every nesting depth before JSON encoding. */
+	private function removeSecretsRecursively( array $metadata ): array
+	{
 		foreach ( array_keys($metadata) as $key ) {
-			if ( preg_match('/secret|token|signature|authorization|password|nonce/i', (string) $key) ) {
+			if ( preg_match('/secret|token|signature|authorization|password|passwd|passphrase|nonce|credential|cookie|api.?key|private.?key/i', (string) $key) ) {
 				unset($metadata[ $key ]);
+				continue;
+			}
+
+			$value = $metadata[ $key ];
+			if ( is_object($value) ) {
+				$value = (array) $value;
+			}
+			if ( is_array($value) ) {
+				$metadata[ $key ] = $this->removeSecretsRecursively($value);
 			}
 		}
 		return $metadata;

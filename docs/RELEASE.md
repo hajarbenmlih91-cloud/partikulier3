@@ -34,7 +34,7 @@ Les checksums ci-dessus correspondent aux archives reçues et sont conservés da
 
 Les tests d’intégration WordPress et les tests visuels ne sont pas simulés par la CI statique : ils doivent être rejoués sur un WordPress de staging avec Estatik et, si activé, Polylang.
 
-Pour publier les archives sur Hostinger via GitHub Actions, suivre le playbook [`DEPLOIEMENT.md`](DEPLOIEMENT.md). La production doit être protégée par l’approbation de l’environnement GitHub `prd`.
+Pour publier les archives sur Hostinger via GitHub Actions, suivre le playbook [`DEPLOIEMENT.md`](DEPLOIEMENT.md). La production doit être protégée par l’approbation de l’environnement GitHub `prd`. Pour le pont WordPress/n8n, l'approbation ne remplace pas le gate opérateur **GO/NO-GO** de [`GO-NO-GO-WORDPRESS-N8N.md`](GO-NO-GO-WORDPRESS-N8N.md) : l'UAT et les contrôles d'edge doivent être prouvés en staging avant le tag; le préflight en lecture seule sur la cible `prd` et son approbation restent obligatoires avant toute mutation.
 
 ## Politique de versionnement
 

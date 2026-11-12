@@ -42,7 +42,7 @@ et teste en CI (SE-025, E-2501→E-2504) :
 
 | Réglage | Valeur de référence |
 |---|---|
-| Extension | Polylang **3.8.7** (wordpress.org — version épinglée en CI) |
+| Extension | Polylang **3.9.2** (wordpress.org — version épinglée avec SHA-256 dans `.github/recipe-dependencies.lock.json`) |
 | Langues | `fr` (locale `fr_FR`, défaut, drapeau fr) · `en` (locale `en_US`, drapeau us) · `ar` (locale `ar`, **RTL**, drapeau ma) |
 | URL des langues | `force_lang = 1` — préfixe répertoire : `/fr/`, `/en/`, `/ar/` |
 | Langue par défaut | `fr` — créée en premier (la première langue devient le défaut) et `default_lang = fr` |
@@ -87,6 +87,8 @@ Ne jamais committer de secrets. Les secrets d’automatisation doivent être inj
 **Règle d’ingénierie (interdiction).** Ne jamais lire `X-Forwarded-For` / `X-Real-IP` ni installer un résolveur d’IP de confiance sans chaîne de confiance vérifiée : un en-tête arbitraire laissé au contrôle du client permettrait à n’importe quel visiteur de choisir son identité de quota (usurpation).
 
 **Critère de décision.** IP réelle restaurée et non usurpable → conserver `REMOTE_ADDR` et le documenter. IP de proxy commune → correction côté hébergeur en priorité, sinon résolveur commun avec chaîne de confiance documentée. Identité usurpable ou chaîne inconnue → ne pas valider la protection « quota par visiteur ».
+
+Le protocole opérateur, la demande prête à transmettre à Hostinger et le gate de mise en production sont documentés dans [`GO-NO-GO-WORDPRESS-N8N.md`](GO-NO-GO-WORDPRESS-N8N.md). Tant que DP-4 n'est pas prouvé, ne pas modifier le parseur d'IP et ne pas déclarer le quota par visiteur validé.
 
 **Périmètre applicatif concerné à l’identique :** `RateLimiter.php`, `LeadsEraseGuardTrait.php`, `class-security.php`.
 

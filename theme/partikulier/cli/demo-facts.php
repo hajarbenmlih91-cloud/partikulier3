@@ -167,60 +167,31 @@ if ( ! function_exists( 'pk_demo_ensure_examples' ) ) {
 	function pk_demo_ensure_examples( $cpt ) {
 		$examples = array(
 			array(
-				'key'      => 'bureau-tanger',
-				'type'     => 'Bureau',
-				'slug'     => 'bureau',
-				'city'     => 'Tanger',
-				'city_slug'=> 'tanger',
-				'district' => 'Marshan',
-				'surface'  => 100,
-				'title'    => 'Bureau de 100 m² à vendre à Marshan, Tanger',
-				'meta'     => array(
-					'es_property_area'       => 100,
-					'_pk_bureaux_fermes'     => '3',
-					'es_property_bathrooms'  => 1,
-					'_pk_bathrooms_label'    => '1',
-					'_pk_amenagement'        => 'cloisonne',
+				'key' => 'bureau-tanger', 'type' => 'Bureau', 'slug' => 'bureau', 'status_slug' => 'a-vendre',
+				'city' => 'Tanger', 'city_slug' => 'tanger', 'district' => 'Marshan', 'surface' => 100,
+				'title' => 'Bureau de 100 m² à vendre à Marshan, Tanger',
+				'meta' => array(
+					'es_property_price' => 1450000, 'es_property_area' => 100, '_pk_bureaux_fermes' => '3',
+					'es_property_bathrooms' => 1, '_pk_bathrooms_label' => '1', '_pk_amenagement' => 'cloisonne',
 				),
 			),
 			array(
-				'key'      => 'depot-casablanca',
-				'type'     => 'Dépôt',
-				'slug'     => 'depot',
-				'city'     => 'Casablanca',
-				'city_slug'=> 'casablanca',
-				'district' => 'Ain Sebaa',
-				'surface'  => 404,
-				'title'    => 'Dépôt de 404 m² à vendre à Ain Sebaa, Casablanca',
-				'meta'     => array(
-					'es_property_area' => 404,
-				),
+				'key' => 'depot-casablanca', 'type' => 'Dépôt', 'slug' => 'depot', 'status_slug' => 'a-vendre',
+				'city' => 'Casablanca', 'city_slug' => 'casablanca', 'district' => 'Ain Sebaa', 'surface' => 404,
+				'title' => 'Dépôt de 404 m² à vendre à Ain Sebaa, Casablanca',
+				'meta' => array( 'es_property_price' => 3200000, 'es_property_area' => 404 ),
 			),
 			array(
-				'key'      => 'hangar-rabat',
-				'type'     => 'Hangar',
-				'slug'     => 'hangar',
-				'city'     => 'Rabat',
-				'city_slug'=> 'rabat',
-				'district' => 'Hay Riad',
-				'surface'  => 1000,
-				'title'    => 'Hangar de 1 000 m² à vendre à Hay Riad, Rabat',
-				'meta'     => array(
-					'es_property_area' => 1000,
-				),
+				'key' => 'hangar-rabat', 'type' => 'Hangar', 'slug' => 'hangar', 'status_slug' => 'a-vendre',
+				'city' => 'Rabat', 'city_slug' => 'rabat', 'district' => 'Hay Riad', 'surface' => 1000,
+				'title' => 'Hangar de 1 000 m² à vendre à Hay Riad, Rabat',
+				'meta' => array( 'es_property_price' => 6500000, 'es_property_area' => 1000 ),
 			),
 			array(
-				'key'      => 'usine-settat',
-				'type'     => 'Usine',
-				'slug'     => 'usine',
-				'city'     => 'Settat',
-				'city_slug'=> 'settat',
-				'district' => 'Centre-ville',
-				'surface'  => 1200,
-				'title'    => 'Usine de 1 200 m² à vendre à Centre-ville, Settat',
-				'meta'     => array(
-					'es_property_area' => 1200,
-				),
+				'key' => 'usine-settat', 'type' => 'Usine', 'slug' => 'usine', 'status_slug' => 'a-vendre',
+				'city' => 'Settat', 'city_slug' => 'settat', 'district' => 'Centre-ville', 'surface' => 1200,
+				'title' => 'Usine de 1 200 m² à vendre à Centre-ville, Settat',
+				'meta' => array( 'es_property_price' => 5800000, 'es_property_area' => 1200 ),
 			),
 		);
 		foreach ( $examples as $example ) {
@@ -282,6 +253,30 @@ if ( ! function_exists( 'pk_demo_term' ) ) {
 	}
 }
 
+if ( ! function_exists( 'pk_demo_status_term_id' ) ) {
+	/**
+	 * @param string $slug Slug statut attendu (a-vendre|a-louer).
+	 * @return int
+	 */
+	function pk_demo_status_term_id( $slug = 'a-vendre' ) {
+		$taxonomy   = PARTIKULIER_ESTATIK_STATUS_TAXONOMY;
+		$candidates = ( 'a-louer' === $slug ) ? array( 'a-louer', 'louer', 'for-rent', 'rent' ) : array( 'a-vendre', 'vendre', 'for-sale', 'sale' );
+		foreach ( $candidates as $cand ) {
+			$terms = get_terms( array( 'taxonomy' => $taxonomy, 'slug' => $cand, 'hide_empty' => false, 'lang' => 'all' ) );
+			if ( ! is_wp_error( $terms ) && ! empty( $terms ) ) {
+				foreach ( $terms as $term ) {
+					$tl = function_exists( 'pll_get_term_language' ) ? (string) pll_get_term_language( (int) $term->term_id, 'slug' ) : '';
+					if ( 'fr' === $tl || '' === $tl ) {
+						return (int) $term->term_id;
+					}
+				}
+				return (int) $terms[0]->term_id;
+			}
+		}
+		return pk_demo_term( $taxonomy, ( 'a-louer' === $slug ) ? 'À louer' : 'À vendre', $slug );
+	}
+}
+
 if ( ! function_exists( 'pk_demo_ensure_one' ) ) {
 	/**
 	 * @param string $cpt     Type.
@@ -289,9 +284,18 @@ if ( ! function_exists( 'pk_demo_ensure_one' ) ) {
 	 * @return void
 	 */
 	function pk_demo_ensure_one( $cpt, $example ) {
-		$existing = pk_demo_find_by_key( $cpt, $example['key'] );
+		$status_slug = isset( $example['status_slug'] ) ? (string) $example['status_slug'] : 'a-vendre';
+		$status_id   = pk_demo_status_term_id( $status_slug );
+		$existing    = pk_demo_find_by_key( $cpt, $example['key'] );
 		if ( $existing ) {
 			pk_demo_write_meta( $existing, $example['meta'] );
+			if ( $status_id ) {
+				foreach ( pk_demo_family_ids( $existing ) as $fam_id ) {
+					$fam_lang   = function_exists( 'pll_get_post_language' ) ? (string) pll_get_post_language( $fam_id, 'slug' ) : 'fr';
+					$fam_status = ( $fam_lang && function_exists( 'pll_get_term' ) ) ? (int) pll_get_term( $status_id, $fam_lang ) : 0;
+					wp_set_object_terms( $fam_id, $fam_status ? $fam_status : $status_id, PARTIKULIER_ESTATIK_STATUS_TAXONOMY );
+				}
+			}
 			return;
 		}
 		$template_ids = get_posts(
@@ -313,8 +317,10 @@ if ( ! function_exists( 'pk_demo_ensure_one' ) ) {
 		}
 		$type_id = pk_demo_term( PARTIKULIER_ESTATIK_TYPE_TAXONOMY, $example['type'], $example['slug'] );
 		$city_id = pk_demo_term( PARTIKULIER_ESTATIK_LOCATION_TAXONOMY, $example['city'], $example['city_slug'] );
-		$status  = $template ? get_the_terms( $template, PARTIKULIER_ESTATIK_STATUS_TAXONOMY ) : array();
-		$status_id = ( $status && ! is_wp_error( $status ) ) ? (int) $status[0]->term_id : 0;
+		if ( ! $status_id ) {
+			$status    = $template ? get_the_terms( $template, PARTIKULIER_ESTATIK_STATUS_TAXONOMY ) : array();
+			$status_id = ( $status && ! is_wp_error( $status ) ) ? (int) $status[0]->term_id : 0;
+		}
 		$author  = $template ? (int) get_post_field( 'post_author', $template ) : 1;
 		$post_id = wp_insert_post(
 			array(

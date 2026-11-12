@@ -63,6 +63,20 @@ Ajouter aussi une variable d’environnement GitHub, non secrète :
 | Nom | Type | Exemple | Rôle |
 |---|---|---|---|
 | `SITE_URL` | Variable | `https://uat.example.com` | Smoke check HTTP + URL affichée dans les logs |
+| `PRD_READINESS_ATTESTATION_SHA` | Variable, `prd` uniquement | SHA Git complet du tag de release approuvé | Empêche la réutilisation d'une attestation pour un autre commit |
+| `PRD_READINESS_EVIDENCE_URL` | Variable, `prd` uniquement | Référence HTTPS vers le dossier expurgé de preuves | Le workflow vérifie la présence/forme, pas le contenu; le reviewer `prd` doit le lire |
+
+Avant tout build ou accès SSH en cible `prd`, `deploy.yml` exige que le SHA attesté égale exactement `GITHUB_SHA` et que la référence soit HTTPS sans credentials/query/fragment. Ces valeurs ne sont pas des secrets et ne doivent contenir aucune donnée confidentielle. Utiliser le gate [`GO-NO-GO-WORDPRESS-N8N.md`](GO-NO-GO-WORDPRESS-N8N.md); le reviewer humain doit vérifier que les preuves P0 sont réellement PASS. La vérification automatique n'inspecte ni Hostinger, ni n8n, ni le contenu du lien.
+
+### État observé des environnements GitHub (lecture seule, 2026-11-08)
+
+La configuration ci-dessous est partiellement conforme, d'après une relecture API en lecture seule le 2026-11-08 :
+
+- `prd` retourne maintenant le motif de tag ASCII `release-*`, compatible avec les tags `release-<version>`. Lors de l'inspection précédente, il valait `U+00A0release-`; la relecture confirme que ce défaut a été corrigé depuis.
+- `uat` a `pre-release-*`, mais aucune règle `required_reviewers` n'est retournée. La ligne « oui » ci-dessous est la configuration requise, pas l'état observé.
+- `prd` retourne une règle `required_reviewers`; l'identité de l'approbateur n'est pas lisible avec l'accès disponible. La lecture des variables et métadonnées de secrets de `prd` reçoit HTTP 403; leur présence n'est donc pas confirmée.
+
+Un administrateur GitHub doit désigner l'approbateur `uat`, confirmer l'approbateur `prd`, puis vérifier/configurer les deux variables de readiness uniquement après constitution et revue des preuves. Après modification, relire les paramètres dans Settings → Environments. Ne pas élargir les branches de déploiement ni contourner les approbations pour débloquer le workflow.
 
 ### Protection des environnements (Settings → Environments)
 

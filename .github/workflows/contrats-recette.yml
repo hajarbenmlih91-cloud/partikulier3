@@ -2,7 +2,7 @@ name: Contrats de recette (WordPress)
 
 on:
   push:
-    branches: [main]
+    branches: [main, fix/v1-preprod-corrections]
   pull_request:
   workflow_dispatch:
 
@@ -15,7 +15,8 @@ permissions:
 jobs:
   contrats:
     name: contrats WordPress / PHP 8.3
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
     services:
       mysql:
         image: mysql:8.0
@@ -30,35 +31,178 @@ jobs:
           --health-timeout=5s
           --health-retries=20
     steps:
-      - uses: actions/checkout@v4
-      - uses: shivammathur/setup-php@v2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
         with:
           php-version: '8.3'
           extensions: mbstring, mysqli, sqlite3, curl, apcu
+      - name: Préparer l'évidence de setup non sensible
+        run: mkdir -p "$RUNNER_TEMP/recipe-setup-evidence"
+      - name: Charger et valider le verrou des dépendances recette
+        run: |
+          set -euo pipefail
+          python3 - .github/recipe-dependencies.lock.json "$GITHUB_ENV" <<'PY'
+          import json, pathlib, re, sys
+          lock_path, env_path = map(pathlib.Path, sys.argv[1:])
+          lock = json.loads(lock_path.read_text())
+          if lock.get('lock_version') != 1:
+              raise SystemExit('Unsupported recipe dependency lock version')
+          rows = [
+              ('WP_CORE_VERSION', lock['wordpress_core']['version'], r'\d+\.\d+\.\d+'),
+              ('WP_CORE_SHA256', lock['wordpress_core']['archive_sha256'], r'[0-9a-f]{64}'),
+              ('ESTATIK_VERSION', lock['estatik']['version'], r'[0-9A-Za-z.+_-]+'),
+              ('ESTATIK_SHA256', lock['estatik']['archive_sha256'], r'[0-9a-f]{64}'),
+              ('POLYLANG_VERSION', lock['polylang']['version'], r'\d+\.\d+\.\d+'),
+              ('POLYLANG_ARCHIVE_URL', lock['polylang']['archive_url'], r'https://downloads\.wordpress\.org/plugin/polylang\.[0-9.]+\.zip'),
+              ('POLYLANG_SHA256', lock['polylang']['archive_sha256'], r'[0-9a-f]{64}'),
+          ]
+          if lock['wordpress_core']['archive_url'] != 'https://downloads.wordpress.org/release/wordpress-' + lock['wordpress_core']['version'] + '.zip':
+              raise SystemExit('WordPress archive URL does not match the pinned version')
+          if lock['estatik']['slug'] != 'estatik' or lock['estatik']['download_source'] != 'WordPress.org plugin information API exact-version archive':
+              raise SystemExit('Estatik lock must use the WordPress.org exact-version archive source')
+          if lock['polylang']['slug'] != 'polylang' or lock['polylang']['archive_url'] != 'https://downloads.wordpress.org/plugin/polylang.' + lock['polylang']['version'] + '.zip':
+              raise SystemExit('Polylang lock URL does not match the pinned version')
+          with env_path.open('a') as out:
+              for key, value, pattern in rows:
+                  if not re.fullmatch(pattern, str(value)):
+                      raise SystemExit('Invalid lock value: ' + key)
+                  out.write(f'{key}={value}\n')
+          print('Loaded pinned WordPress, Estatik, and Polylang versions/checksums.')
+          PY
       - name: Installer WP-CLI
         run: |
-          curl -fsSL https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar -o /usr/local/bin/wp
+          set -euo pipefail
+          bash .github/scripts/recipe-setup-command.sh wp-cli-download -- \
+            curl --fail --location --silent --show-error --retry 3 --retry-all-errors \
+              --retry-delay 2 --retry-max-time 90 --connect-timeout 10 --max-time 180 \
+              https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar \
+              --output /usr/local/bin/wp
           chmod +x /usr/local/bin/wp
-          wp --info
-      - name: Installer WordPress et les livrables
+          bash .github/scripts/recipe-setup-command.sh wp-cli-version -- wp --info
+      - name: Télécharger WordPress (version et SHA-256 du verrou)
         run: |
-          wp core download --version=6.6 --path=wp
-          wp config create --path=wp --dbname=partikulier --dbuser=root --dbpass=root --dbhost=127.0.0.1:3306 --skip-check
-          # Identité du site = origine réellement attaquée par le contrat
-          # front-assets (échec du run 34760865434) : « partikulier.local » est
-          # un hôte fictif SANS port. redirect_canonical (canonical.php :613-616
-          # et :726-738) conservait alors l'hôte de la requête mais supprimait
-          # son port 8099 → 301 vers http://127.0.0.1/ (port 80, rien n'y
-          # écoute) → Node échouait en « fetch failed » (6/7). Même philosophie
-          # que le banc de qualification : home == l'origine servie, port inclus.
-          wp core install --path=wp --url=http://127.0.0.1:8099 --title=Partikulier \
-            --admin_user=admin --admin_password=admin --admin_email=admin@example.com --skip-email
-          wp plugin install estatik --activate --path=wp
-          rsync -a --delete --exclude='.git' --exclude='.github' plugin/partikulier-core/ wp/wp-content/plugins/partikulier-core/
-          rsync -a --delete --exclude='.git' --exclude='.github' --exclude='node_modules' theme/partikulier/ wp/wp-content/themes/partikulier/
-          wp plugin activate partikulier-core --path=wp
-          wp theme activate partikulier --path=wp
-          mkdir -p wp/wp-content/uploads/partikulier-cache
+          set -euo pipefail
+          archive="$RUNNER_TEMP/wordpress-${WP_CORE_VERSION}.zip"
+          bash .github/scripts/recipe-setup-command.sh wordpress-core-download -- \
+            curl --fail --location --silent --show-error --retry 3 --retry-all-errors \
+              --retry-delay 2 --retry-max-time 120 --connect-timeout 10 --max-time 240 \
+              "https://downloads.wordpress.org/release/wordpress-${WP_CORE_VERSION}.zip" \
+              --output "$archive"
+          printf '%s  %s\n' "$WP_CORE_SHA256" "$archive" > "$RUNNER_TEMP/wordpress-core.sha256"
+          bash .github/scripts/recipe-setup-command.sh wordpress-core-archive-sha256 -- \
+            sha256sum --check "$RUNNER_TEMP/wordpress-core.sha256"
+          python3 - "$RUNNER_TEMP/recipe-setup-evidence/wordpress-core-lock.json" \
+            "$WP_CORE_VERSION" "$WP_CORE_SHA256" <<'PY'
+          import json, pathlib, sys
+          path, version, sha = sys.argv[1:]
+          pathlib.Path(path).write_text(json.dumps({
+              'version': version, 'archive_sha256': sha, 'verified': True,
+              'verification': 'pinned SHA-256 plus wp core verify-checksums',
+          }, indent=2) + '\n')
+          PY
+      - name: Extraire et vérifier les checksums officiels WordPress
+        run: |
+          set -euo pipefail
+          archive="$RUNNER_TEMP/wordpress-${WP_CORE_VERSION}.zip"
+          unpack="$RUNNER_TEMP/wordpress-core-unpack"
+          mkdir -p "$unpack" wp
+          bash .github/scripts/recipe-setup-command.sh wordpress-core-unpack -- \
+            unzip -q -o "$archive" -d "$unpack"
+          bash .github/scripts/recipe-setup-command.sh wordpress-core-copy -- \
+            rsync -a --delete "$unpack/wordpress/" wp/
+          bash .github/scripts/recipe-setup-command.sh wordpress-core-checksum -- \
+            wp core verify-checksums --version="$WP_CORE_VERSION" --locale=en_US --path=wp
+      - name: Créer wp-config.php pour la base jetable
+        env:
+          WP_DB_NAME: partikulier
+          WP_DB_USER: root
+          WP_DB_PASSWORD: root
+          WP_DB_HOST: 127.0.0.1:3306
+        run: |
+          set -euo pipefail
+          bash .github/scripts/recipe-setup-command.sh wordpress-config -- \
+            wp config create --path=wp --dbname="$WP_DB_NAME" --dbuser="$WP_DB_USER" \
+              --dbpass="$WP_DB_PASSWORD" --dbhost="$WP_DB_HOST" --skip-check
+          bash .github/scripts/recipe-setup-command.sh wordpress-config-env -- \
+            wp config set WP_ENVIRONMENT_TYPE local --path=wp
+      - name: Installer WordPress sur la base jetable
+        run: |
+          set -euo pipefail
+          bash .github/scripts/recipe-setup-command.sh wordpress-core-install -- \
+            wp core install --path=wp --url=http://127.0.0.1:8099 --title=Partikulier \
+              --admin_user=admin --admin_password=admin --admin_email=admin@example.com --skip-email
+      - name: Résoudre puis vérifier l'archive exacte d'Estatik
+        run: |
+          set -euo pipefail
+          meta="$RUNNER_TEMP/estatik-plugin-info.json"
+          archive="$RUNNER_TEMP/recipe-setup-estatik.zip"
+          url_file="$RUNNER_TEMP/estatik-download-url"
+          bash .github/scripts/recipe-setup-command.sh estatik-metadata-download -- \
+            curl --fail --location --silent --show-error --retry 3 --retry-all-errors \
+              --retry-delay 2 --retry-max-time 90 --connect-timeout 10 --max-time 180 \
+              --get 'https://api.wordpress.org/plugins/info/1.2/' \
+              --data-urlencode 'action=plugin_information' \
+              --data-urlencode 'request[slug]=estatik' \
+              --data-urlencode 'request[fields][versions]=true' \
+              --output "$meta"
+          bash .github/scripts/recipe-setup-command.sh estatik-release-resolve -- \
+            python3 .github/scripts/resolve-estatik-download.py "$meta" "$ESTATIK_VERSION" "$url_file"
+          ESTATIK_DOWNLOAD_URL="$(cat "$url_file")"
+          echo "::notice title=Estatik pin::version=$ESTATIK_VERSION sha256=$ESTATIK_SHA256"
+          bash .github/scripts/recipe-setup-command.sh estatik-archive-download -- \
+            curl --fail --location --silent --show-error --retry 3 --retry-all-errors \
+              --retry-delay 2 --retry-max-time 120 --connect-timeout 10 --max-time 240 \
+              "$ESTATIK_DOWNLOAD_URL" --output "$archive"
+          printf '%s  %s\n' "$ESTATIK_SHA256" "$archive" > "$RUNNER_TEMP/estatik.sha256"
+          bash .github/scripts/recipe-setup-command.sh estatik-archive-sha256 -- \
+            sha256sum --check "$RUNNER_TEMP/estatik.sha256"
+          bash .github/scripts/recipe-setup-command.sh estatik-archive-integrity -- unzip -tq "$archive"
+          python3 - "$RUNNER_TEMP/recipe-setup-evidence/estatik-lock-verified.json" \
+            "$ESTATIK_VERSION" "$ESTATIK_SHA256" <<'PY'
+          import json, pathlib, sys
+          path, version, sha = sys.argv[1:]
+          pathlib.Path(path).write_text(json.dumps({
+              'slug': 'estatik', 'version': version, 'archive_sha256': sha,
+              'verified': True, 'source': 'WordPress.org API exact-version archive',
+          }, indent=2) + '\n')
+          PY
+          echo "::notice title=Estatik locked archive verified::version=$ESTATIK_VERSION sha256=$ESTATIK_SHA256"
+      - name: Installer Estatik depuis l'archive locale vérifiée
+        run: |
+          set -euo pipefail
+          bash .github/scripts/recipe-setup-command.sh estatik-local-install -- \
+            wp plugin install "$RUNNER_TEMP/recipe-setup-estatik.zip" --path=wp
+      - name: Vérifier l'identité d'Estatik installé
+        run: |
+          set -euo pipefail
+          bash .github/scripts/recipe-setup-command.sh estatik-installed-version -- \
+            php -r 'require "wp/wp-load.php"; $h = get_file_data("wp/wp-content/plugins/estatik/estatik.php", ["Version" => "Version"]); $v = (string) ($h["Version"] ?? ""); if ($v !== getenv("ESTATIK_VERSION")) { fwrite(STDERR, "Installed Estatik version does not match the resolved archive.\n"); exit(1); } echo "Estatik version matches resolved archive: $v\n";'
+      - name: Activer Estatik
+        run: |
+          set -euo pipefail
+          bash .github/scripts/recipe-setup-command.sh estatik-activate -- \
+            wp plugin activate estatik --path=wp
+      - name: Copier le plugin Partikulier Core
+        run: |
+          set -euo pipefail
+          bash .github/scripts/recipe-setup-command.sh copy-core-plugin -- \
+            rsync -a --delete --exclude='.git' --exclude='.github' \
+              plugin/partikulier-core/ wp/wp-content/plugins/partikulier-core/
+      - name: Activer Partikulier Core
+        run: |
+          set -euo pipefail
+          bash .github/scripts/recipe-setup-command.sh activate-core-plugin -- \
+            wp plugin activate partikulier-core --path=wp
+      - name: Copier et activer le thème Partikulier
+        run: |
+          set -euo pipefail
+          bash .github/scripts/recipe-setup-command.sh copy-theme -- \
+            rsync -a --delete --exclude='.git' --exclude='.github' --exclude='node_modules' \
+              theme/partikulier/ wp/wp-content/themes/partikulier/
+          bash .github/scripts/recipe-setup-command.sh activate-theme -- \
+            wp theme activate partikulier --path=wp
+      - name: Créer le répertoire de cache jetable
+        run: mkdir -p wp/wp-content/uploads/partikulier-cache
       - name: Vérifier la santé du plugin
         run: |
           php -r 'require "wp/wp-load.php"; $response = rest_do_request(new WP_REST_Request("GET", "/partikulier/v1/health")); $d = $response->get_data(); if (($d["status"] ?? "") !== "ok") { fwrite(STDERR, json_encode($d)."\n"); exit(1); } echo "health ok — core ".($d["core_version"] ?? "?")." / schema ".($d["schema_version"] ?? "?")."\n";'
@@ -68,7 +212,26 @@ jobs:
       - name: Amorcer les invariants historiques des contrats B2 à B5
         run: |
           php -r 'require "wp/wp-load.php"; global $wpdb; $now = gmdate("Y-m-d H:i:s"); update_option("pk_n8n_settings", ["automation_api_secret" => "ci-contract-secret", "active_key_id" => "N", "hmac_mode" => "off"], false); $leads = $wpdb->prefix . "pk_buyer_leads"; $existing = (int) $wpdb->get_var("SELECT COUNT(*) FROM $leads"); for ($i = $existing; $i < 10; $i++) { $seed = "ci-historical-lead-$i"; $wpdb->insert($leads, ["phone_hash" => hash_hmac("sha256", $seed, wp_salt("auth")), "phone_encrypted" => base64_encode($seed), "first_seen_at" => $now, "last_seen_at" => $now], ["%s", "%s", "%s", "%s"]); } $audit = new \Partikulier\Core\AuditLogger(); $adoptions = (array) $wpdb->get_results("SELECT metadata_json FROM {$wpdb->prefix}pk_audit_log"); foreach ([["B2", "leads"], ["B3", "alerts"], ["B4", "automation"], ["B5", "owner_stats"], ["B6", "translation_variants"]] as [$lot, $domain]) { $found = false; foreach ($adoptions as $row) { $meta = json_decode((string) $row->metadata_json, true); if (($meta["lot"] ?? "") === $lot && ($meta["domain"] ?? "") === $domain) { $found = true; break; } } if (!$found) { $audit->record("domain_adopted", "schema", null, ["lot" => $lot, "domain" => $domain]); } } $events = $wpdb->prefix . "pk_automation_events"; for ($i = 1; $i <= 2; $i++) { $wpdb->insert($events, ["event_id" => "ci-historical-event-$i", "event_type" => "fixture", "source" => "ci", "payload_hash" => hash("sha256", "fixture-$i"), "status" => "received", "received_at" => $now], ["%s", "%s", "%s", "%s", "%s", "%s"]); } $saves = $wpdb->prefix . "pk_property_saves"; for ($i = 1; $i <= 4; $i++) { $wpdb->insert($saves, ["property_id" => $i, "visitor_hash" => hash("sha256", "ci-visitor-$i"), "created_at" => $now, "updated_at" => $now], ["%d", "%s", "%s", "%s"]); } echo "historical fixtures ready: leads=".(int) $wpdb->get_var("SELECT COUNT(*) FROM $leads")." events=".(int) $wpdb->get_var("SELECT COUNT(*) FROM $events")." saves=".(int) $wpdb->get_var("SELECT COUNT(*) FROM $saves")."\n";'
-      - name: Exécuter les 32 suites dynamiques (20 + SE-016/017/018/020 + SE-022 + SE-026 + Schéma 2.7.0/E-4303 + SE-024 + SE-048-U + SE-035 + SE-036 + SE-037 + SE-054)
+      - name: Exécuter DA-002 / périmètre avant les suites dynamiques
+        env:
+          PK_WP_DIR: ${{ github.workspace }}/wp
+          PK_COMMIT: ${{ github.sha }}
+          PK_REPO_DIR: ${{ github.workspace }}
+          PK_THEME_DIR: ${{ github.workspace }}/theme/partikulier
+        run: |
+          set -euo pipefail
+          mkdir -p preuves-run/contrats
+          cd wp
+          output=../preuves-run/contrats/module-perimeter-contract.json
+          error=../preuves-run/contrats/module-perimeter-contract.err
+          if php wp-content/plugins/partikulier-core/tests/module-perimeter-contract.php > "$output" 2> "$error"; then
+            cat "$output"
+          else
+            cat "$output" 2>/dev/null || true
+            cat "$error" 2>/dev/null || true
+            exit 1
+          fi
+      - name: Exécuter les 31 suites dynamiques après le contrat de périmètre (20 + SE-016/017/018/020 + SE-022 + SE-026 + Schéma 2.7.0/E-4303 + SE-024 + SE-048-U + SE-035 + SE-036 + SE-037 + SE-054)
         env:
           PK_WP_DIR: ${{ github.workspace }}/wp
           PK_COMMIT: ${{ github.sha }}
@@ -86,7 +249,7 @@ jobs:
                        owner-stats-domain-contract \
                        translation-variants-domain-contract i18n-chrome-domain-contract \
                        i18n-content-domain-contract i18n-unified-mechanism-contract \
-                       module-perimeter-contract avif-security-contract \
+                       avif-security-contract \
                        vestige-extinction-contract artifact-hygiene-contract \
                        options-sanitizer-contract se022-idempotence-contract \
                        se026-hmac-mode-contract \
@@ -103,11 +266,31 @@ jobs:
               echo "PASS  $suite" | tee -a ../preuves-run/journal.txt
             else
               echo "FAIL  $suite" | tee -a ../preuves-run/journal.txt
+              python3 - "$suite" "../preuves-run/contrats/$suite.json" <<'PY'
+          import json, pathlib, re, sys
+          suite, path = sys.argv[1:]
+          try:
+              data = json.loads(pathlib.Path(path).read_text())
+              failures = [str(row.get('test_id', '?')) for row in data.get('results', []) if row.get('status') != 'PASS']
+              failures = [re.sub(r'[^A-Za-z0-9._-]', '?', item)[:80] for item in failures]
+              summary = ','.join(failures) if failures else 'invalid-or-empty-report'
+          except Exception:
+              summary = 'invalid-or-missing-report'
+          print(f'::error title=PHP contract failed::{suite}: {summary}')
+          PY
               exit 1
             fi
           done
       - name: Dépendances Playwright Chromium, Firefox et WebKit
         run: |
+          if ! getent ahostsv4 azure.archive.ubuntu.com >/dev/null 2>&1; then
+            printf 'Acquire::ForceIPv4 "true";\nAcquire::http::Timeout "15";\nAcquire::https::Timeout "15";\n' | sudo tee /etc/apt/apt.conf.d/99runner-net >/dev/null
+            if getent ahostsv4 archive.ubuntu.com >/dev/null 2>&1; then
+              sudo sed -i 's|http://azure\.archive\.ubuntu\.com/ubuntu|http://archive.ubuntu.com/ubuntu|g' /etc/apt/apt-mirrors.txt /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null || true
+            elif getent ahostsv4 mirrors.edge.kernel.org >/dev/null 2>&1; then
+              sudo sed -i 's|http://azure\.archive\.ubuntu\.com/ubuntu|https://mirrors.edge.kernel.org/ubuntu|g' /etc/apt/apt-mirrors.txt /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null || true
+            fi
+          fi
           npm --prefix theme/partikulier ci --no-audit --no-fund
           cd theme/partikulier && npx playwright install --with-deps chromium firefox webkit
       - name: Contrat front-assets HTTP (SE-018)
@@ -240,10 +423,20 @@ jobs:
           kill "$SRV" 2>/dev/null || true
       - name: Installer Polylang et créer fr/en/ar (SE-025, E-2501)
         run: |
-          # Version épinglée = celle de la config de référence (E-2503,
+          # Version épinglée dans .github/recipe-dependencies.lock.json (E-2503,
           # docs/INSTALLATION.md) : la montée de version de Polylang est un
-          # acte délibéré, jamais une dérive silencieuse du runner.
-          wp plugin install polylang --version=3.8.7 --activate --path=wp
+          # acte délibéré avec vérification SHA-256, jamais une dérive silencieuse.
+          pll_archive="$RUNNER_TEMP/recipe-setup-polylang.zip"
+          bash .github/scripts/recipe-setup-command.sh polylang-archive-download -- \
+            curl --fail --location --silent --show-error --retry 3 --retry-all-errors \
+              --retry-delay 2 --retry-max-time 120 --connect-timeout 10 --max-time 240 \
+              "$POLYLANG_ARCHIVE_URL" --output "$pll_archive"
+          printf '%s  %s\n' "$POLYLANG_SHA256" "$pll_archive" > "$RUNNER_TEMP/polylang.sha256"
+          bash .github/scripts/recipe-setup-command.sh polylang-archive-sha256 -- \
+            sha256sum --check "$RUNNER_TEMP/polylang.sha256"
+          bash .github/scripts/recipe-setup-command.sh polylang-archive-integrity -- unzip -tq "$pll_archive"
+          wp plugin install "$pll_archive" --activate --path=wp
+          php -r 'require "wp/wp-load.php"; $h = get_file_data("wp/wp-content/plugins/polylang/polylang.php", ["Version" => "Version"]); $v = (string) ($h["Version"] ?? ""); if ($v !== getenv("POLYLANG_VERSION")) { fwrite(STDERR, "Installed Polylang version mismatch: $v\n"); exit(1); } echo "Polylang version matches lock: $v\n";'
           # Phase 1 (contexte WP-CLI, recette validée E-2501) : les trois
           # langues + les réglages de référence. Le contexte CLI est
           # exigé : sans langues définies, Polylang n'instancie aucun
@@ -459,7 +652,21 @@ jobs:
           rm -f wp/wp-content/mu-plugins/dp9-injection-harness.php
       - name: Contrats de fusion et navigateurs FR/EN/AR
         run: |
+          set -euo pipefail
           mkdir -p preuves-run/integration
+          SRV=''
+          report_error() {
+            status=$?
+            echo "Diagnostic merge-browser (exit $status):"
+            if [[ -f /tmp/merge-browser.stderr.log ]]; then
+              tail -n 60 /tmp/merge-browser.stderr.log
+              detail=$(tail -n 30 /tmp/merge-browser.stderr.log | tr '\n' ' ' | cut -c 1-500)
+              echo "::error title=Browser merge diagnostic::$detail"
+            fi
+            if [[ -f /tmp/wp-merge-browser.log ]]; then echo 'Serveur PHP:'; tail -n 20 /tmp/wp-merge-browser.log; fi
+            exit "$status"
+          }
+          trap report_error ERR
           PK_WP_DIR=$PWD/wp PK_COMMIT=${{ github.sha }} PK_VERSION=2.10.10 \
             php plugin/partikulier-core/tests/merge-v3-contract.php > preuves-run/integration/merge-v3.json
           cleanup() {
@@ -472,15 +679,23 @@ jobs:
           SRV=$!
           curl --retry 5 --retry-connrefused --retry-delay 1 --fail --silent http://127.0.0.1:8099/fr/ > /dev/null
           PK_BASE=http://127.0.0.1:8099 PK_MERGE_FIXTURE=$PWD/preuves-run/integration/browser-fixture.json \
-            node theme/partikulier/tests/merge-v3.mjs > preuves-run/integration/merge-browser.json
-      - name: Vérifier l'oracle 454/454 (durci, 44 suites — schéma, cohérence, unicité, totaux épinglés, results exigé hors suites historiques ; reprise F3 + tests v3 §9.2)
+            node theme/partikulier/tests/merge-v3.mjs > preuves-run/integration/merge-browser.json 2> /tmp/merge-browser.stderr.log
+      - name: Contrat de non-régression V1 préproduction (P0 -> P2)
+        run: |
+          set -euo pipefail
+          mkdir -p preuves-run/integration
+          PK_WP_DIR=$PWD/wp PK_COMMIT=${{ github.sha }} \
+            php plugin/partikulier-core/tests/v1-preprod-fixes-contract.php \
+              > preuves-run/integration/v1-preprod-fixes-contract.json
+          cat preuves-run/integration/v1-preprod-fixes-contract.json
+      - name: Vérifier l'oracle 457/457 (durci, 44 suites — schéma, cohérence, unicité, totaux épinglés, results exigé hors suites historiques ; reprise F3 + tests v3 §9.2)
         run: |
           # Validateur durci (reprise du 20/09/2026 F3, durci le 21/09/2026
           # §9.2) : l'ancien validateur additionnait total/passed DECLARES et
           # acceptait un unique faux rapport auto-contradictoire. Le contrôle,
           # pour CHAQUE suite : JSON valide ; status === "PASS" ; total/passed/
           # failed entiers ; passed + failed === total ; failed === 0 ; total
-          # === LE total épingle de la suite (table ci-dessous, somme = 382) ;
+          # === LE total épingle de la suite (table ci-dessous, somme = 457, dont CORE-RATE-HEADER-001 de bf811aa) ;
           # la cle results est EXIGEE pour toute suite hors liste blanche
           # (v3 §9.2 : sa suppression de SE-041/SE-027 restait acceptee en
           # v2) ; SI results est fourni : total === count(results), passed ===
@@ -488,16 +703,17 @@ jobs:
           # test_id. Les 9 suites historiques sans results — core, services,
           # load, rest-lite, routes-collision, sync, payments, premium, leads —
           # sont les seules autorisees a s'en passer (search-arrays EMET
-          # results). Cardinalite et ensemble EXACT des 40 suites
-          # attendues ; aucun fichier en trop ou manquant ; total global 382/382.
-          php <<'ORACLE'
+          # results). Cardinalite et ensemble EXACT des 44 suites
+          # attendues ; aucun fichier en trop ou manquant ; total global 457/457.
+          set +e
+          php <<'ORACLE' 2>&1 | tee "$RUNNER_TEMP/oracle-validation.log"
           <?php
           $attendues = array(
                     "alerts-domain-contract.json" => 15,
           "artifact-hygiene-contract.json" => 3,
-          "automation-domain-contract.json" => 23,
+          "automation-domain-contract.json" => 24,
           "avif-security-contract.json" => 15,
-          "core-contract.json" => 8,
+          "core-contract.json" => 9,
           "dp9-availability-contract.json" => 20,
           "dp9-owner-journey-contract.json" => 25,
           "dp9-partial-failure-contract.json" => 12,
@@ -508,7 +724,7 @@ jobs:
           "i18n-unified-mechanism-contract.json" => 15,
           "lead-erase-security-contract.json" => 13,
           "leads-contract.json" => 7,
-          "leads-domain-contract.json" => 16,
+          "leads-domain-contract.json" => 17,
           "load-contract.json" => 7,
           "module-perimeter-contract.json" => 11,
           "options-sanitizer-contract.json" => 8,
@@ -588,13 +804,76 @@ jobs:
           }
           $tot += $d["total"]; $pas += $d["passed"];
           }
-          if ($tot !== 454 || $pas !== 454) { fwrite(STDERR, "oracle inattendu (attendu 454/454 — 44 suites : 382 reference + 5 extensions SE-044/DP-9 + 67 dp9)\n"); exit(1); }
+          if ($tot !== 457 || $pas !== 457) { fwrite(STDERR, "oracle inattendu (attendu 457/457 — 44 suites : 385 reference + 5 extensions SE-044/DP-9 + 67 dp9)\n"); exit(1); }
           echo "contrats dynamiques : $pas/$tot (" . count($bases) . " suites, schema, coherence, unicitte, totaux epingles, ensemble exact et results exig hors historiques verifies)\n";
           ORACLE
+          oracle_status=${PIPESTATUS[0]}
+          set -e
+          if (( oracle_status != 0 )); then
+            detail=$(tail -n 5 "$RUNNER_TEMP/oracle-validation.log" | tr '\n' ' ' | cut -c 1-500)
+            echo "::error title=Oracle 457/457::$detail"
+            exit "$oracle_status"
+          fi
+      - name: E2E complet sans mocks (recherche, archive AJAX, galerie, favoris, contact, dépôt, propriétaire)
+        run: |
+          set -euo pipefail
+          mkdir -p preuves-run/integration
+          SRV=''
+          report_e2e_error() {
+            status=$?
+            echo "Diagnostic e2e-full (exit $status):"
+            if [[ -f /tmp/e2e-full.stderr.log ]]; then
+              cp /tmp/e2e-full.stderr.log preuves-run/integration/e2e-full.stderr.log || true
+              tail -n 100 /tmp/e2e-full.stderr.log
+            fi
+            if [[ -f /tmp/wp-e2e-full.log ]]; then
+              cp /tmp/wp-e2e-full.log preuves-run/integration/wp-e2e-full.log || true
+              echo 'Serveur PHP:'
+              tail -n 60 /tmp/wp-e2e-full.log
+            fi
+            exit "$status"
+          }
+          trap report_e2e_error ERR
+          cleanup_e2e() {
+            if [[ ! -f preuves-run/integration/e2e-full.json ]]; then
+              [[ -f /tmp/e2e-full.stderr.log ]] && cp /tmp/e2e-full.stderr.log preuves-run/integration/e2e-full.stderr.log || true
+              [[ -f /tmp/wp-e2e-full.log ]] && cp /tmp/wp-e2e-full.log preuves-run/integration/wp-e2e-full.log || true
+            fi
+            PK_WP_DIR=$PWD/wp php theme/partikulier/tests/e2e-full-fixture.php cleanup || true
+            if [[ -n "${SRV:-}" ]]; then kill "$SRV" 2>/dev/null || true; fi
+          }
+          trap cleanup_e2e EXIT
+          PK_WP_DIR=$PWD/wp php theme/partikulier/tests/e2e-full-fixture.php setup > preuves-run/integration/e2e-full-fixture.json
+          php -S 127.0.0.1:8099 -t wp theme/partikulier/tests/router-ci.php > /tmp/wp-e2e-full.log 2>&1 &
+          SRV=$!
+          sain=false
+          for i in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8099/fr/ || true)
+            if [ "$code" = "200" ]; then sain=true; break; fi
+            sleep 0.5
+          done
+          if [ "$sain" != true ]; then
+            echo "FAIL  e2e-full (sonde HTTP : pas de 200 sur /fr/, code=$code)" | tee -a preuves-run/journal.txt
+            exit 1
+          fi
+          PK_BASE=http://127.0.0.1:8099 \
+          PK_E2E_FIXTURE=$PWD/preuves-run/integration/e2e-full-fixture.json \
+          PK_E2E_OUT=$PWD/preuves-run/integration/e2e-full.json \
+            timeout --signal=TERM --kill-after=10 180 \
+              node theme/partikulier/tests/e2e-full-interactions.mjs 2> /tmp/e2e-full.stderr.log
+          echo "PASS  e2e-full" | tee -a preuves-run/journal.txt
       - name: Publier les résultats
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: contrats-recette
           path: preuves-run/
           retention-days: 30
+      - name: Publier les journaux expurgés du setup
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: recette-setup-${{ github.run_id }}
+          path: ${{ runner.temp }}/recipe-setup-evidence/
+          if-no-files-found: ignore
+          retention-days: 14

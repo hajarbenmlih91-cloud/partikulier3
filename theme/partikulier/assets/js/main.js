@@ -157,117 +157,104 @@ function pkLimitTitle(value) {
 	}
 
 		/* ---------- Favoris (wishlist) en localStorage ---------- */
-		var wishlistButtons = document.querySelectorAll(".pk-card-wishlist");
-				// Expose le branchement pour les cartes chargees en AJAX (page Favoris).
-				window.pkBindWishlist = function () {
-						var saved = [];
-					try { saved = JSON.parse(window.localStorage.getItem("pk_wishlist") || "[]"); } catch (x) { saved = []; }
+		var WISH_KEY    = "pk_wishlist";
+		var VISITOR_KEY = "pk_favorite_visitor";
+		var wishLang    = ((typeof pkConfig !== "undefined" && pkConfig.language) || document.documentElement.lang || "fr").toLowerCase().slice(0, 2);
+		var wishLabels  = {
+			fr: { add: "Ajouter aux favoris", remove: "Retirer des favoris" },
+			en: { add: "Add to favorites", remove: "Remove from favorites" },
+			ar: { add: "إضافة إلى المفضلة", remove: "إزالة من المفضلة" }
+		};
+		var wishI18n    = wishLabels[wishLang] || wishLabels.fr;
 
-					document.querySelectorAll(".pk-card-wishlist").forEach(function (b) {
-								// Etat au chargement : un favori deja enregistre s'affiche rouge.
-								var currentId = b.getAttribute("data-post-id");
-						if (saved.indexOf(currentId) !== -1) {
-								b.classList.add("pk-wish-active");
-								b.setAttribute("aria-pressed", "true");
-								b.setAttribute("aria-label", "Retirer des favoris");
-						} else {
-								b.setAttribute("aria-pressed", "false");
-						}
-
-								if (b.dataset.pkBound) return;
-								b.dataset.pkBound = "1";
-								b.addEventListener("click", function (e) {
-										e.preventDefault();
-										e.stopPropagation();
-										var id   = b.getAttribute("data-post-id");
-										var list = [];
-									try { list = JSON.parse(window.localStorage.getItem("pk_wishlist") || "[]"); } catch (x) { list = []; }
-										var i = list.indexOf(id);
-									if (i === -1) {
-											list.push(id);
-											b.classList.add("pk-wish-active");
-											b.setAttribute("aria-pressed", "true");
-											b.setAttribute("aria-label", "Retirer des favoris");
-									} else {
-											list.splice(i, 1);
-											b.classList.remove("pk-wish-active");
-											b.setAttribute("aria-pressed", "false");
-											b.setAttribute("aria-label", "Ajouter aux favoris");
-									}
-									try { window.localStorage.setItem("pk_wishlist", JSON.stringify(list)); } catch (x) {}
-
-										// Compteur serveur anonyme, defini plus bas ; absent sur
-										// certaines pages, d'ou la verification.
-									if (typeof window.pkSyncFavorite === "function") {
-											window.pkSyncFavorite(id, i === -1);
-									}
-
-										// Confirmation visuelle du geste.
-										b.classList.remove("pk-wish-pop");
-										void b.offsetWidth;
-										b.classList.add("pk-wish-pop");
-								});
-					});
-				};
-				window.pkBindWishlist();
-	if (wishlistButtons.length) {
-			var WISH_KEY       = "pk_wishlist";
-			var VISITOR_KEY    = "pk_favorite_visitor";
-			var getWishlist    = function () {
-				try {
-								return JSON.parse(window.localStorage.getItem(WISH_KEY) || "[]");
-				} catch (e) {
-								return [];
+		function getWishlist() {
+			try {
+				return JSON.parse(window.localStorage.getItem(WISH_KEY) || "[]");
+			} catch (e) {
+				return [];
+			}
+		}
+		function getVisitorId() {
+			try {
+				var visitor = window.localStorage.getItem(VISITOR_KEY);
+				if ( ! visitor) {
+					visitor = window.crypto && window.crypto.randomUUID ? window.crypto.randomUUID().replace(/-/g, "") : ("pk" + Date.now() + Math.random().toString(36).slice(2));
+					window.localStorage.setItem(VISITOR_KEY, visitor);
 				}
-			};
-			var setWishlist    = function (list) {
-				try {
-					window.localStorage.setItem(WISH_KEY, JSON.stringify(list));
-				} catch (e) {
-					// Espace localStorage indisponible : rien de grave.
+				return visitor;
+			} catch (e) {
+				return "";
+			}
+		}
+		function syncFavorite(id, active) {
+			if ( ! id || typeof pkConfig === "undefined" || ! pkConfig || ! pkConfig.ajaxUrl || ! pkConfig.nonce) return;
+			var visitor = getVisitorId();
+			if ( ! visitor || ! window.fetch) return;
+			var body = new URLSearchParams({
+				action: "pk_sync_favorite",
+				nonce: pkConfig.nonce,
+				post_id: id,
+				visitor_id: visitor,
+				state: active ? "save" : "remove"
+			});
+			window.fetch(pkConfig.ajaxUrl, { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" }, body: body.toString() }).then(function (response) {
+				if (response && typeof response.text === "function") {
+					return response.text();
 				}
-			};
-			var getVisitorId   = function () {
-				try {
-					var visitor = window.localStorage.getItem(VISITOR_KEY);
-					if ( ! visitor) {
-												visitor = window.crypto && window.crypto.randomUUID ? window.crypto.randomUUID().replace(/-/g, "") : ("pk" + Date.now() + Math.random().toString(36).slice(2));
-												window.localStorage.setItem(VISITOR_KEY, visitor);
+			}).catch(function () {
+				// Le favori local demeure disponible si le compteur serveur est indisponible.
+			});
+		}
+		window.pkSyncFavorite = syncFavorite;
+
+		// Expose le branchement pour les cartes chargees en AJAX (page Favoris et archive).
+		window.pkBindWishlist = function () {
+			var saved = getWishlist();
+
+			document.querySelectorAll(".pk-card-wishlist").forEach(function (b) {
+				var currentId = b.getAttribute("data-post-id");
+				if (saved.indexOf(currentId) !== -1) {
+					b.classList.add("pk-wish-active");
+					b.setAttribute("aria-pressed", "true");
+					b.setAttribute("aria-label", wishI18n.remove);
+				} else {
+					b.classList.remove("pk-wish-active");
+					b.setAttribute("aria-pressed", "false");
+					b.setAttribute("aria-label", wishI18n.add);
+				}
+
+				if (b.dataset.pkBound) return;
+				b.dataset.pkBound = "1";
+				b.addEventListener("click", function (e) {
+					e.preventDefault();
+					e.stopPropagation();
+					var id   = b.getAttribute("data-post-id");
+					var list = getWishlist();
+					var i    = list.indexOf(id);
+					if (i === -1) {
+						list.push(id);
+						b.classList.add("pk-wish-active");
+						b.setAttribute("aria-pressed", "true");
+						b.setAttribute("aria-label", wishI18n.remove);
+					} else {
+						list.splice(i, 1);
+						b.classList.remove("pk-wish-active");
+						b.setAttribute("aria-pressed", "false");
+						b.setAttribute("aria-label", wishI18n.add);
 					}
-											return visitor;
-				} catch (e) {
-					return "";
-				}
-			};
-			var syncFavorite   = function (id, active) {
-										if ( ! id || ! pkConfig || ! pkConfig.ajaxUrl || ! pkConfig.nonce) return;
-										var visitor = getVisitorId();
-										if ( ! visitor || ! window.fetch) return;
-										var body = new URLSearchParams({
-											action: "pk_sync_favorite",
-											nonce: pkConfig.nonce,
-											post_id: id,
-											visitor_id: visitor,
-											state: active ? "save" : "remove"
-										});
-										window.fetch(pkConfig.ajaxUrl, { method: "POST", credentials: "same-origin", headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" }, body: body.toString() }).catch(function () {
-												// Le favori local demeure disponible si le compteur serveur est indisponible.
-										});
-			};
-			var syncWishlistUI = function () {
-								var list = getWishlist();
-						document.querySelectorAll(".pk-card-wishlist").forEach(function (btn) {
-								var active = list.indexOf(btn.getAttribute("data-post-id")) !== -1;
-								btn.classList.toggle("pk-wish-active", active);
-								btn.setAttribute("aria-pressed", active ? "true" : "false");
-						});
-			};
-					// Un seul gestionnaire de clic existe : window.pkBindWishlist plus haut.
-					// Ce bloc n'expose que le compteur serveur et l'etat initial ; ajouter
-					// ici un second addEventListener annulerait le premier basculement.
-					window.pkSyncFavorite = syncFavorite;
-					syncWishlistUI();
-	}
+					try { window.localStorage.setItem(WISH_KEY, JSON.stringify(list)); } catch (x) {}
+
+					if (typeof window.pkSyncFavorite === "function") {
+						window.pkSyncFavorite(id, i === -1);
+					}
+
+					b.classList.remove("pk-wish-pop");
+					void b.offsetWidth;
+					b.classList.add("pk-wish-pop");
+				});
+			});
+		};
+		window.pkBindWishlist();
 
 		/* ---------- Titre automatique d'annonce ---------- */
 		var titleInput                  = document.getElementById("pk-title");
@@ -664,12 +651,33 @@ function pkLimitTitle(value) {
 
 		var empty   = document.getElementById("pk-favorites-empty");
 		var countEl = document.getElementById("pk-fav-count");
+		var favLang = ((pkConfig && pkConfig.language) || document.documentElement.lang || "fr").toLowerCase().slice(0, 2);
+		var favDict = {
+			fr: {
+				empty: "Aucune annonce enregistrée pour l’instant.",
+				one: "%d bien enregistré depuis cet appareil.",
+				many: "%d biens enregistrés depuis cet appareil."
+			},
+			en: {
+				empty: "No saved listings yet.",
+				one: "%d property saved from this device.",
+				many: "%d properties saved from this device."
+			},
+			ar: {
+				empty: "لا توجد إعلانات محفوظة بعد.",
+				one: "تم حفظ عقار واحد (%d) من هذا الجهاز.",
+				many: "تم حفظ %d عقارات من هذا الجهاز."
+			}
+		};
+		var favT    = favDict[favLang] || favDict.fr;
 		var ids     = [];
 	try { ids = JSON.parse(window.localStorage.getItem("pk_wishlist") || "[]"); } catch (e) { ids = []; }
 
 	function showEmpty() {
-			if (empty) empty.hidden          = false;
-			if (countEl) countEl.textContent = "Aucune annonce enregistrée pour l’instant.";
+			if (empty) empty.hidden = false;
+			if (countEl) {
+				countEl.textContent = countEl.getAttribute("data-pk-empty-count") || favT.empty;
+			}
 	}
 
 	if ( ! ids.length) { showEmpty(); return; }
@@ -685,7 +693,11 @@ function pkLimitTitle(value) {
 					if ( ! data || ! data.success || ! data.data.count) { showEmpty(); return; }
 						grid.innerHTML = data.data.html;
 					if (countEl) {
-							countEl.textContent = data.data.count + (data.data.count > 1 ? " biens enregistrés" : " bien enregistré") + " depuis cet appareil.";
+							var n   = Number(data.data.count) || 0;
+							var tpl = n > 1
+								? (countEl.getAttribute("data-pk-count-many") || favT.many)
+								: (countEl.getAttribute("data-pk-count-one") || favT.one);
+							countEl.textContent = tpl.replace("%d", String(n));
 					}
 						// Les cartes viennent d'arriver : on rebranche les coeurs.
 						if (window.pkBindWishlist) window.pkBindWishlist();
@@ -1991,6 +2003,20 @@ function pkLimitTitle(value) {
 	}
 	var countTimer = 0;
 	var countSeq = 0;
+	var countController = null;
+	var pageUnloading = false;
+	function abortCount() {
+		pageUnloading = true;
+		window.clearTimeout(countTimer);
+		if (countController) {
+			try {
+				countController.abort();
+			} catch (e) {}
+			countController = null;
+		}
+	}
+	window.addEventListener("pagehide", abortCount);
+	window.addEventListener("beforeunload", abortCount);
 	function collectCountBody() {
 		syncHiddenIntent();
 		var body = new URLSearchParams();
@@ -2020,14 +2046,22 @@ function pkLimitTitle(value) {
 		return body;
 	}
 	function refreshCount() {
-		if (!window.fetch || typeof pkConfig === "undefined" || !pkConfig.ajaxUrl) return;
+		if (pageUnloading || !window.fetch || typeof pkConfig === "undefined" || !pkConfig.ajaxUrl) return;
 		var seq = ++countSeq;
-		fetch(pkConfig.ajaxUrl, {
+		if (countController) {
+			try {
+				countController.abort();
+			} catch (e) {}
+		}
+		countController = typeof AbortController !== "undefined" ? new AbortController() : null;
+		var opts = {
 			method: "POST",
 			credentials: "same-origin",
 			headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8" },
 			body: collectCountBody().toString()
-		}).then(function (res) {
+		};
+		if (countController) opts.signal = countController.signal;
+		fetch(pkConfig.ajaxUrl, opts).then(function (res) {
 			return res.json();
 		}).then(function (data) {
 			if (seq !== countSeq) return;
@@ -2035,6 +2069,7 @@ function pkLimitTitle(value) {
 		}).catch(function () {});
 	}
 	function scheduleCount() {
+		if (pageUnloading) return;
 		window.clearTimeout(countTimer);
 		countTimer = window.setTimeout(refreshCount, 220);
 	}
@@ -2044,7 +2079,6 @@ function pkLimitTitle(value) {
 		if (!target || !target.closest) return;
 		if (target.closest(".pk-find-tx-btn, .pk-find-type-card, .pk-suggest, .pk-place-suggestions, .pk-find-chip, .pk-find-room, .pk-find-check")) scheduleCount();
 	});
-	scheduleCount();
 }());
 
 /* Boutons dépôt / annonces : hors du hero, visibles seulement après la barre. */
@@ -2564,6 +2598,7 @@ function pkLimitTitle(value) {
 		if (push) history.pushState({ pkResults: 1 }, "", url);
 		if (window.pkBindQuartiers) window.pkBindQuartiers();
 		if (window.pkBindScrollHints) window.pkBindScrollHints();
+		if (window.pkBindWishlist) window.pkBindWishlist();
 		separateKicker();
 	}
 

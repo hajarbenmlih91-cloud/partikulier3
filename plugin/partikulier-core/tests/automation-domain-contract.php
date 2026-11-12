@@ -130,7 +130,38 @@ try {
     ));
     $assert('B4A-004', $duplicate instanceof WP_REST_Response && !empty($duplicateData['duplicate'])
         && $rowsSameId === 1 && $auditDuplicate === 1,
-        'idempotence : rejeu du même event_id → duplicate=true, une seule ligne, audit automation_event_duplicate');
+        'idempotence : rejeu exact du même event_id → duplicate=true, une seule ligne, audit automation_event_duplicate');
+
+    // 4b) Même identifiant mais payload/type altéré : conflit, jamais faux doublon.
+    $payloadConflict = AutomationService::receive_event($makeRequest([
+        'event_id' => $eventId,
+        'event_type' => 'whatsapp_status',
+        'source' => 'n8n',
+        'payload' => ['phone' => '212600000099', 'status' => 'read'],
+    ]));
+    $typeConflict = AutomationService::receive_event($makeRequest([
+        'event_id' => $eventId,
+        'event_type' => 'whatsapp_inbound',
+        'source' => 'n8n',
+        'payload' => $payload,
+    ]));
+    $rowsAfterConflict = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$prefix}pk_automation_events WHERE event_id = %s", $eventId));
+    $hashAfterConflict = (string) $wpdb->get_var($wpdb->prepare("SELECT payload_hash FROM {$prefix}pk_automation_events WHERE event_id = %s", $eventId));
+    $expectedHash = hash_hmac('sha256', (string) wp_json_encode($payload), wp_salt('auth'));
+    $conflictAudits = (int) $wpdb->get_var($wpdb->prepare(
+        "SELECT COUNT(*) FROM {$prefix}pk_audit_log WHERE action = %s AND metadata_json LIKE %s",
+        'automation_event_conflict',
+        '%' . $eventId . '%'
+    ));
+    $payloadConflictData = is_wp_error($payloadConflict) ? $payloadConflict->get_error_data() : [];
+    $typeConflictData = is_wp_error($typeConflict) ? $typeConflict->get_error_data() : [];
+    $assert('B4A-017', is_wp_error($payloadConflict) && $payloadConflict->get_error_code() === 'pk_automation_event_conflict'
+        && (int) ($payloadConflictData['status'] ?? 0) === 409
+        && is_wp_error($typeConflict) && $typeConflict->get_error_code() === 'pk_automation_event_conflict'
+        && (int) ($typeConflictData['status'] ?? 0) === 409
+        && $rowsSameId === 1 && $rowsAfterConflict === 1 && hash_equals($expectedHash, $hashAfterConflict)
+        && $conflictAudits === 2,
+        'event_id réutilisé avec payload ou type différent → HTTP 409, jamais accepté comme doublon; conflit audité');
 
     // 5) Gardes de payload (codes hérités du thème) : préfixe d'event_id
     //    incompatible, type inconnu, source inconnue → pk_automation_payload 400.
@@ -138,10 +169,12 @@ try {
     $g2 = AutomationService::receive_event($makeRequest(['event_id' => 'n8n-b4a-' . $run . '-x', 'event_type' => 'unknown_type', 'source' => 'n8n']));
     $g3 = AutomationService::receive_event($makeRequest(['event_id' => 'n8n-b4a-' . $run . '-y', 'event_type' => 'whatsapp_status', 'source' => 'unknown_source']));
     $g4 = AutomationService::receive_event($makeRequest(['event_id' => '', 'event_type' => 'whatsapp_status', 'source' => 'n8n']));
-    $assert('B4A-005', is_wp_error($g1) && is_wp_error($g2) && is_wp_error($g3) && is_wp_error($g4)
-        && $g1->get_error_code() === 'pk_automation_payload' && $g2->get_error_code() === 'pk_automation_payload'
-        && $g3->get_error_code() === 'pk_automation_payload' && $g4->get_error_code() === 'pk_automation_payload',
-        'gardes : préfixe, type, source et event_id vide → pk_automation_payload');
+    $g5 = AutomationService::receive_event($makeRequest(['event_id' => 'n8n-' . str_repeat('a', 192), 'event_type' => 'whatsapp_status', 'source' => 'n8n']));
+    $g6 = AutomationService::receive_event($makeRequest(['event_id' => ['n8n-not-a-string'], 'event_type' => 'whatsapp_status', 'source' => 'n8n']));
+    $g7 = AutomationService::receive_event($makeRequest(['event_id' => 'n8n-invalid?character', 'event_type' => 'whatsapp_status', 'source' => 'n8n']));
+    $guards = [$g1, $g2, $g3, $g4, $g5, $g6, $g7];
+    $assert('B4A-005', count(array_filter($guards, static fn($result): bool => is_wp_error($result) && $result->get_error_code() === 'pk_automation_payload')) === count($guards),
+        'gardes : préfixe, type/source inconnus, vide, trop long ou non-chaîne → pk_automation_payload');
 
     // 6) Authentification : sans secret fourni → pk_automation_auth 401.
     $noSecret = AutomationService::check_automation_secret($makeRequest(['event_id' => 'n8n-b4a-' . $run . '-2']));
@@ -448,7 +481,7 @@ try {
     foreach ($eventIds as $eid) {
         $wpdb->delete($prefix . 'pk_automation_events', ['event_id' => $eid], ['%s']);
         $wpdb->query($wpdb->prepare(
-            "DELETE FROM {$prefix}pk_audit_log WHERE action IN ('automation_event_received','automation_event_duplicate') AND metadata_json LIKE %s",
+            "DELETE FROM {$prefix}pk_audit_log WHERE action IN ('automation_event_received','automation_event_duplicate','automation_event_conflict') AND metadata_json LIKE %s",
             '%' . $eid . '%'
         ));
     }

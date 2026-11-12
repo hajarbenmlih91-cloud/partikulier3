@@ -163,7 +163,9 @@ foreach ( $codes as $c => $n ) {
         elseif ( $c < 500 ) { $n4xx += $n; }
         else { $n5xx += $n; }
 }
-$erreurs = $recues + $err_curl > 0 ? ( $n5xx + $err_curl ) / ( $recues + $err_curl ) : 1;
+// Toute réponse 4xx (notamment 429/WAF ou route invalide), 5xx, erreur
+// transport ou créneau non envoyé invalide le profil; aucun faux « TENU ».
+$echecs_http = $n4xx + $n5xx;
 
 printf( "Requêtes tirées     : %d\n", $tirées );
 printf( "  reçues (réponse)  : %d · 2xx=%d 3xx=%d 4xx=%d 5xx=%d erreurs réseau=%d\n", $recues, $n2xx, $n3xx, $n4xx, $n5xx, $err_curl );
@@ -185,8 +187,9 @@ if ( $n4xx ) {
 }
 
 echo "\n-- VERDICT --\n";
-if ( ! $recues || $erreurs >= 0.01 || ( $recues + $err_curl ) < $tirées * 0.5 ) {
-        echo "TOMBÉ : " . ( $n5xx + $err_curl ) . " requête(s) en échec sur " . ( $recues + $err_curl ) . " — le site ne tient pas ce rythme.\n";
+if ( ! $recues || $echecs_http > 0 || $err_curl > 0 || $saturées > 0 || ( $recues + $err_curl ) < $tirées * 0.95 ) {
+        printf("ÉCHEC/INCONCLUSIF : %d réponses 4xx, %d réponses 5xx, %d erreur(s) réseau, %d créneau(x) sauté(s), %d/%d requêtes terminées.\n",
+                $n4xx, $n5xx, $err_curl, $saturées, $recues + $err_curl, $tirées);
         exit( 4 );
 }
 $p95 = pct( $latences, 95 );

@@ -161,8 +161,14 @@ class Partikulier_Tunnel_Preview {
 			status_header( 500 );
 			exit;
 		}
-		$pk_logo = esc_url( get_theme_file_uri( 'assets/img/pep-logo-white.png' ) );
-		$pk_html = preg_replace(
+		$doc_lang = self::document_lang();
+		if ( in_array( $doc_lang, array( 'ar', 'en' ), true )
+			&& class_exists( '\Partikulier\Core\Domain\I18n\I18nDomainLoader' ) ) {
+			\Partikulier\Core\Domain\I18n\I18nDomainLoader::reload_for_slug( $doc_lang );
+		}
+		$home_url = function_exists( 'pk_localized_home_url' ) ? pk_localized_home_url( $doc_lang ) : home_url( '/' );
+		$pk_logo  = esc_url( get_theme_file_uri( 'assets/img/pep-logo-white.png' ) );
+		$pk_html  = preg_replace(
 			'#(<a class="pk-form-logo"[^>]*>\s*<img\s+src=")data:image/[^"]+(")#',
 			'$1' . $pk_logo . '$2',
 			$html,
@@ -171,7 +177,67 @@ class Partikulier_Tunnel_Preview {
 		if ( is_string( $pk_html ) ) {
 			$html = $pk_html;
 		}
-		$boot = '<script>window.PK_FORCE_LANG=' . wp_json_encode( self::document_lang() ) . ';</script>';
+		$pk_html = preg_replace(
+			'#(<a class="(?:pk-form-logo|pk-submit-back)" href=")https://darkcyan-yak-151002\.hostingersite\.com/(")#',
+			'$1' . esc_url( $home_url ) . '$2',
+			$html
+		);
+		if ( is_string( $pk_html ) ) {
+			$html = $pk_html;
+		}
+		$type_terms = array();
+		if ( taxonomy_exists( PARTIKULIER_ESTATIK_TYPE_TAXONOMY ) ) {
+			$terms = get_terms(
+				array(
+					'taxonomy'   => PARTIKULIER_ESTATIK_TYPE_TAXONOMY,
+					'hide_empty' => false,
+					'lang'       => 'all',
+				)
+			);
+			if ( ! is_wp_error( $terms ) && is_array( $terms ) ) {
+				foreach ( $terms as $term ) {
+					$slug = sanitize_title( (string) $term->slug );
+					$tid  = (int) $term->term_id;
+					if ( '' === $slug || ! $tid ) {
+						continue;
+					}
+					$tl     = function_exists( 'pll_get_term_language' ) ? (string) pll_get_term_language( $tid, 'slug' ) : '';
+					$target = ( function_exists( 'pll_get_term' ) && $doc_lang ) ? (int) pll_get_term( $tid, $doc_lang ) : 0;
+					$val    = $target ? $target : $tid;
+					if ( ! isset( $type_terms[ $slug ] ) || $tl === $doc_lang ) {
+						$type_terms[ $slug ] = $val;
+					}
+					$norm_name = strtolower( remove_accents( (string) $term->name ) );
+					if ( '' !== $norm_name && ( ! isset( $type_terms[ $norm_name ] ) || $tl === $doc_lang ) ) {
+						$type_terms[ $norm_name ] = $val;
+					}
+				}
+			}
+		}
+		$pk_config = array(
+			'ajaxUrl'        => admin_url( 'admin-ajax.php', is_ssl() ? 'https' : 'http' ),
+			'submitNonce'    => wp_create_nonce( 'pk_submit_listing' ),
+			'placesNonce'    => wp_create_nonce( 'pk_places' ),
+			'language'       => $doc_lang,
+			'homeUrl'        => $home_url,
+			'idempotencyKey' => class_exists( 'Partikulier_Form' ) ? Partikulier_Form::idempotency_field_value() : bin2hex( random_bytes( 16 ) ),
+			'typeTerms'      => $type_terms,
+			'i18n'           => array(
+				'publishing'     => __( 'Publication en cours…', 'partikulier' ),
+				'requiredFields' => __( 'Veuillez vérifier les champs obligatoires.', 'partikulier' ),
+				'serverError'    => __( 'Erreur serveur', 'partikulier' ),
+				'saved'          => __( 'Annonce enregistrée !', 'partikulier' ),
+				'retry'          => __( 'réessayez ou contactez-nous.', 'partikulier' ),
+				'whatsappTitle'  => __( 'Une dernière étape : WhatsApp', 'partikulier' ),
+				'whatsappIntro'  => __( 'Votre annonce est enregistrée, mais reste invisible tant que l’équipe n’a pas rapproché votre message WhatsApp.', 'partikulier' ),
+				'whatsappCode'   => __( 'Code de validation :', 'partikulier' ),
+				'whatsappOpen'   => __( 'Ouvrir WhatsApp et envoyer le message', 'partikulier' ),
+				'whatsappNote'   => __( 'Conservez ce code. L’annonce sera publiée seulement après vérification manuelle du message par l’équipe pep.ma.', 'partikulier' ),
+				'photoError'     => __( "photo(s) n'ont pas pu être ajoutées :", 'partikulier' ),
+				'photoHint'      => __( 'Vous pourrez les ajouter depuis « Mes annonces » après validation.', 'partikulier' ),
+			),
+		);
+		$boot      = '<script>window.PK_FORCE_LANG=' . wp_json_encode( $doc_lang ) . ';window.pkConfig=' . wp_json_encode( $pk_config ) . ';</script>';
 		if ( false === strpos( $html, 'name="robots"' ) ) {
 			$html = preg_replace( '#<head>#', "<head>\n<meta name=\"robots\" content=\"noindex, nofollow\">\n" . $boot, $html, 1 );
 		} else {

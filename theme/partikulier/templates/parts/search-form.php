@@ -376,8 +376,8 @@ $pk_season_label = ( 'fr' === $pk_find_lang ) ? 'Location saisonnière' : $pk_t(
 				<?php endforeach; ?>
 			</select>
 			<div class="pk-find-type-ui">
-				<button type="button" class="pk-find-type-btn" aria-haspopup="listbox" aria-expanded="false" aria-controls="pk-find-type-menu" aria-labelledby="pk-find-type-label">
-					<span class="pk-find-type-current"><?php echo esc_html( $pk_t( 'Tous' ) ); ?></span>
+				<button type="button" class="pk-find-type-btn" aria-haspopup="listbox" aria-expanded="false" aria-controls="pk-find-type-menu" aria-labelledby="pk-find-type-label pk-find-type-current">
+					<span class="pk-find-type-current" id="pk-find-type-current"><?php echo esc_html( $pk_t( 'Tous' ) ); ?></span>
 				</button>
 				<div class="pk-find-type-backdrop" hidden></div>
 				<div class="pk-find-type-menu" id="pk-find-type-menu" role="listbox" aria-labelledby="pk-find-type-label" hidden>

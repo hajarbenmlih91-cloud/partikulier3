@@ -1,0 +1,414 @@
+name: Analyser le rapport d'audit UAT
+
+on:
+  workflow_call:
+    inputs:
+      run_id:
+        description: Identifiant du run UAT public à analyser (aucun nouvel appel au site)
+        required: true
+        type: string
+      connected_run_id:
+        description: Identifiant optionnel du run protégé (HMAC et parcours connecté)
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  summarize:
+    name: Extraire les constats détaillés de l'artefact existant
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Valider le run et retrouver son artefact
+        id: meta
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ inputs.run_id }}
+          CONNECTED_RUN_ID: ${{ inputs.connected_run_id }}
+        run: |
+          set -euo pipefail
+          [[ "$RUN_ID" =~ ^[0-9]+$ ]] || { echo 'run_id doit être numérique' >&2; exit 2; }
+          run_json="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID")"
+          run_number="$(python -c 'import json,sys; print(json.load(sys.stdin)["run_number"])' <<<"$run_json")"
+          run_sha="$(python -c 'import json,sys; print(json.load(sys.stdin)["head_sha"])' <<<"$run_json")"
+          run_branch="$(python -c 'import json,sys; print(json.load(sys.stdin)["head_branch"])' <<<"$run_json")"
+          [[ "$run_branch" == 'arena/0e605e79-partikulier3' ]] || { echo "Run branch refusée: $run_branch" >&2; exit 2; }
+          artifact="audit-uat-public-$run_number"
+          echo "run_number=$run_number" >> "$GITHUB_OUTPUT"
+          echo "run_sha=$run_sha" >> "$GITHUB_OUTPUT"
+          echo "artifact=$artifact" >> "$GITHUB_OUTPUT"
+          echo "Run $RUN_ID · $artifact · commit $run_sha"
+          if [ -n "$CONNECTED_RUN_ID" ]; then
+            [[ "$CONNECTED_RUN_ID" =~ ^[0-9]+$ ]] || { echo 'connected_run_id doit être numérique' >&2; exit 2; }
+            connected_json="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$CONNECTED_RUN_ID")"
+            connected_number="$(python -c 'import json,sys; print(json.load(sys.stdin)["run_number"])' <<<"$connected_json")"
+            connected_sha="$(python -c 'import json,sys; print(json.load(sys.stdin)["head_sha"])' <<<"$connected_json")"
+            connected_branch="$(python -c 'import json,sys; print(json.load(sys.stdin)["head_branch"])' <<<"$connected_json")"
+            [[ "$connected_branch" == 'arena/0e605e79-partikulier3' ]] || { echo "Connected run branch refusée: $connected_branch" >&2; exit 2; }
+            echo "connected_number=$connected_number" >> "$GITHUB_OUTPUT"
+            echo "connected_sha=$connected_sha" >> "$GITHUB_OUTPUT"
+            echo "connected_artifact=audit-uat-$connected_number" >> "$GITHUB_OUTPUT"
+            echo "Connected run $CONNECTED_RUN_ID · audit-uat-$connected_number · commit $connected_sha"
+          fi
+
+      - name: Télécharger l'artefact public déjà produit
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: ${{ steps.meta.outputs.artifact }}
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ github.token }}
+          path: uat-audit-source
+
+      - name: Télécharger l'artefact authentifié existant
+        if: ${{ inputs.connected_run_id != '' }}
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: ${{ steps.meta.outputs.connected_artifact }}
+          run-id: ${{ inputs.connected_run_id }}
+          github-token: ${{ github.token }}
+          path: uat-audit-source-connected
+
+      - name: Résumer échecs, avertissements, métriques et captures
+        id: report
+        env:
+          SOURCE_DIR: uat-audit-source
+          CONNECTED_DIR: uat-audit-source-connected
+          REPORT_RUN_ID: ${{ inputs.run_id }}
+          REPORT_SHA: ${{ steps.meta.outputs.run_sha }}
+          CONNECTED_RUN_ID: ${{ inputs.connected_run_id }}
+          CONNECTED_SHA: ${{ steps.meta.outputs.connected_sha }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os, pathlib, re
+          root = pathlib.Path(os.environ['SOURCE_DIR'])
+          connected_root = pathlib.Path(os.environ.get('CONNECTED_DIR', ''))
+          connected_files = sorted(str(f.relative_to(connected_root)) for f in connected_root.rglob('*') if f.is_file()) if connected_root.is_dir() else []
+          lines = [
+              '# Analyse détaillée de l’audit UAT', '',
+              f"Run public source : {os.environ['REPORT_RUN_ID']}",
+              f"Commit testé : `{os.environ['REPORT_SHA']}`", '',
+              'Cette analyse lit uniquement les artefacts existants; elle ne fait aucun appel au staging.', ''
+          ]
+          if os.environ.get('CONNECTED_RUN_ID'):
+              lines += [f"Run connecté source : {os.environ['CONNECTED_RUN_ID']}", f"Commit connecté testé : `{os.environ.get('CONNECTED_SHA', '')}`", '']
+          annotations = []
+
+          def annotate(level, title, message):
+              msg = str(message).replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+              title = str(title).replace('%', '%25').replace('\r', '%0D').replace('\n', ' ')
+              annotations.append(f'::{level} title={title}::{msg}')
+
+          def find_file(base, filename):
+              direct = base / filename
+              if direct.is_file(): return direct
+              found = sorted(base.rglob(filename)) if base.is_dir() else []
+              return found[0] if found else None
+
+          annotate('notice', 'Connected artifact input', f"run_id={os.environ.get('CONNECTED_RUN_ID', '')}; path={connected_root}; exists={connected_root.is_dir()}; files={', '.join(connected_files[:40])}")
+
+          def summarize_lighthouse(base, label):
+              files = sorted(base.rglob('lighthouse-*.json')) if base.is_dir() else []
+              if not files: return
+              lines.extend([f'### Lighthouse — {label}', '', '| Page | Perf | A11y | Best practices | SEO | LCP lab (ms) | INP (ms) | CLS lab | TBT (ms) |', '|---|---:|---:|---:|---:|---:|---:|---:|---:|'])
+              for f in files:
+                  data = json.loads(f.read_text()); cats = data.get('categories', {}); audits = data.get('audits', {})
+                  def score(key):
+                      value = cats.get(key, {}).get('score')
+                      return round(value * 100) if isinstance(value, (int, float)) else 'n/a'
+                  def value(*keys):
+                      for key in keys:
+                          result = audits.get(key, {}).get('numericValue')
+                          if isinstance(result, (int, float)):
+                              return round(result, 4) if key == 'cumulative-layout-shift' else round(result)
+                      return 'n/a'
+                  row = f"| {f.stem.removeprefix('lighthouse-')} | {score('performance')} | {score('accessibility')} | {score('best-practices')} | {score('seo')} | {value('largest-contentful-paint')} | {value('interaction-to-next-paint', 'experimental-interaction-to-next-paint')} | {value('cumulative-layout-shift')} | {value('total-blocking-time')} |"
+                  lines.append(row)
+              lines.append('')
+
+          def summarize_interaction_log(base, label):
+              log = find_file(base, 'interactions-vitals.txt')
+              if not log: return
+              evidence = [x.strip() for x in log.read_text(errors='replace').splitlines() if re.search(r'\b(?:LCP|CLS|INP)\b', x, re.I)]
+              if evidence:
+                  lines.extend([f'### Mesures/interactions depuis le log Chromium — {label}', ''])
+                  lines.extend(f'- {x}' for x in evidence)
+                  lines.append('')
+
+          # Record the artifact layout so missing expected evidence is diagnosable.
+          for source, label in [(root, 'public'), (connected_root, 'connecté')]:
+              if source.is_dir():
+                  files = sorted(str(f.relative_to(source)) for f in source.rglob('*') if f.is_file())
+                  inventory = ', '.join(files[:100]) or '(aucun fichier)'
+                  lines += [f'## Inventaire artefact {label}', '', inventory, '']
+                  annotate('notice', f'Inventaire artefact {label}', inventory)
+                  lh_files = sorted(source.rglob('lighthouse-*.json'))
+                  annotate('notice', f'Debug Lighthouse {label}', f'{len(lh_files)} fichier(s): ' + ', '.join(f.name for f in lh_files))
+                  for f in lh_files:
+                      data = json.loads(f.read_text()); cats = data.get('categories', {}); audits = data.get('audits', {})
+                      def lab_value(*keys):
+                          for key in keys:
+                              val = audits.get(key, {}).get('numericValue')
+                              if isinstance(val, (int, float)):
+                                  return round(val, 4) if key == 'cumulative-layout-shift' else round(val)
+                          return 'n/a'
+                      score_values = []
+                      for key in ['performance', 'accessibility', 'best-practices', 'seo']:
+                          val = cats.get(key, {}).get('score')
+                          score_values.append(str(round(val * 100)) if isinstance(val, (int, float)) else 'n/a')
+                      metric_text = f"{f.stem}: Perf/A11y/BP/SEO={','.join(score_values)}; LCP lab={lab_value('largest-contentful-paint')} ms; INP Lighthouse={lab_value('interaction-to-next-paint', 'experimental-interaction-to-next-paint')} ms; CLS lab={lab_value('cumulative-layout-shift')}; TBT={lab_value('total-blocking-time')} ms"
+                      annotate('notice', f'Lighthouse data {label}', metric_text)
+                  if not find_file(source, 'interaction-web-vitals.json'):
+                      interaction_log = find_file(source, 'interactions-vitals.txt')
+                      if interaction_log:
+                          for item in interaction_log.read_text(errors='replace').splitlines():
+                              if re.search(r'(?:LCP observed|CLS observed|Lab INP sample captured|Lab INP proxy within)', item, re.I):
+                                  annotate('notice', f'Chromium Web Vitals {label}', item.strip())
+                  if label == 'connecté':
+                      owner_log = find_file(source, 'owner-journey.txt')
+                      if owner_log:
+                          for item in owner_log.read_text(errors='replace').splitlines():
+                              if re.match(r'^\s*(PASS|FAIL|WARN|SKIPPED)\b', item, re.I):
+                                  annotate('error' if re.match(r'^\s*FAIL\b', item, re.I) else 'notice', 'Parcours propriétaire connecté', item.strip())
+
+          # Résultats des scripts PHP live : KO/ATT/SAUTÉS avec verbatim concis.
+          for filename, label in [('security.txt', 'Sécurité live'), ('cache-ttfb.txt', 'Cache/TTFB'), ('auth-boundary.txt', 'Frontière auth')]:
+              p = find_file(root, filename)
+              if not p:
+                  continue
+              lines.extend([f'## {label}', ''])
+              matches = [x.strip() for x in p.read_text(errors='replace').splitlines() if re.match(r'^\s*(KO|ATT|SAUTÉ|FAIL|WARN|SKIPPED)\b', x, re.I)]
+              if matches:
+                  for item in matches:
+                      if re.match(r'^KO\b', item, re.I) and 'HTTP 404' in item and ('tests/' in item or 'sonde' in item):
+                          note = f'FAUX POSITIF DU TEST — {item}; HTTP 404 signifie que la ressource est introuvable/non servie, résultat sûr. Corriger l’assertion pour accepter 404.'
+                          lines.append(f'- **NOTE (test à corriger)** {note}')
+                          annotate('notice', '404 sûr — assertion à corriger', note)
+                      elif re.match(r'^KO\b', item, re.I) and 'GET /?pk_diag=1' in item and 'HTTP 302' in item:
+                          note = f'INCONCLUSIF — {item}; la sonde n’a pas suivi la redirection de localisation. Vérifier la destination finale avant de conclure.'
+                          lines.append(f'- **À vérifier** {note}')
+                          annotate('warning', 'Diagnostic redirigé', note)
+                      else:
+                          lines.append(f'- {item}')
+                          level = 'error' if re.match(r'^(KO|FAIL)\b', item, re.I) else 'warning'
+                          annotate(level, label, item)
+              else:
+                  lines.append('Aucune ligne KO/ATT/SAUTÉ trouvée; consulter le log brut ci-dessous.')
+              lines.append('')
+
+          # Browser/SEO/a11y/XSS: conserver les IDs et détails, pas seulement le statut global.
+          p = find_file(root, 'browser-audit.json')
+          if p:
+              data = json.loads(p.read_text())
+              failed = [r for r in data.get('results', []) if r.get('status') == 'FAIL']
+              lines += ['## Chromium, responsive, SEO, Axe, JavaScript et XSS', '',
+                        f"Statut : **{data.get('status')}** · {data.get('total_checks')} contrôles · {data.get('failed_checks')} échec(s) enregistrés.", '']
+              for row in failed:
+                  detail = f"{row.get('category')} — {row.get('check')}: {row.get('detail')}"
+                  lines.append(f'- **{row.get("severity", "error").upper()}** {detail}')
+                  annotate('error' if row.get('severity') == 'error' else 'warning', row.get('check', 'Browser finding'), detail)
+              if not failed: lines.append('Aucun contrôle browser en statut FAIL.')
+              lines.append('')
+
+          # Interactions, captures et Web Vitals de laboratoire.
+          p = find_file(root, 'interaction-web-vitals.json')
+          if p:
+              data = json.loads(p.read_text())
+              lines += ['## Interactions JavaScript et Web Vitals', '',
+                        f"Statut fonctionnel : **{data.get('status')}** · INP lab proxy max : **{data.get('interaction_inp_lab_max_ms') if data.get('interaction_inp_lab_max_ms') is not None else 'n/a'} ms**.", '',
+                        '| Écran | Largeur | LCP lab (ms) | CLS lab |', '|---|---:|---:|---:|']
+              for m in data.get('metrics', []):
+                  lcp = m.get('lcp_ms') if m.get('lcp_ms') is not None else 'n/a'
+                  cls = m.get('cls') if m.get('cls') is not None else 'n/a'
+                  lines.append(f"| {m.get('label')} | {m.get('width')} | {lcp} | {cls} |")
+                  nav = m.get('navigation') or {}
+                  metric_note = f"{m.get('label')}: LCP={lcp} ms, CLS={cls}, TTFB navigateur={round(nav.get('ttfb', 0)) if nav.get('ttfb') else 'n/a'} ms, DCL={round(nav.get('domContentLoaded', 0)) if nav.get('domContentLoaded') else 'n/a'} ms"
+                  annotate('notice', f"Web Vitals {m.get('label')}", metric_note)
+              inp = data.get('interaction_inp_lab_max_ms')
+              if inp is not None: annotate('notice', 'INP laboratoire proxy', f"Max PerformanceEventTiming sur interactions simulées: {inp} ms; ne pas assimiler à l’INP p98 terrain.")
+              lines += ['', '### Interactions testées', '']
+              for item in data.get('checks', []):
+                  if item.get('category') == 'interaction':
+                      text = f"{item.get('status')} — {item.get('check')}: {item.get('detail')}"
+                      lines.append(f'- {text}')
+                      if item.get('status') == 'FAIL': annotate('error', item.get('check', 'Interaction'), item.get('detail', ''))
+              lines += ['', '**Interprétation :** LCP/CLS sont des mesures de laboratoire. L’INP de ce script est le maximum des durées `PerformanceEventTiming` des interactions simulées; ce n’est pas le p98 terrain CrUX/RUM.', '']
+          else:
+              summarize_interaction_log(root, 'public')
+
+          # Lighthouse navigation metrics are extracted directly from each JSON;
+          # CLS keeps decimal precision and INP is labelled n/a if Lighthouse has none.
+          summarize_lighthouse(root, 'public')
+
+          # Findings from the protected run: HMAC checks and the temporary-owner journey.
+          if os.environ.get('CONNECTED_RUN_ID') and connected_root.is_dir():
+              lines += ['## Résultats du run connecté protégé', '',
+                        'Les lignes ci-dessous viennent de l’artefact connecté déjà existant; aucun parcours ni appel réseau n’a été relancé.', '']
+              for filename, label in [('security.txt', 'Sécurité/HMAC connectée'), ('cache-ttfb.txt', 'Cache/TTFB connecté'), ('load-smoke.txt', 'Charge smoke'), ('load-full.txt', 'Charge complète')]:
+                  f = find_file(connected_root, filename)
+                  if not f:
+                      continue
+                  lines += [f'### {label}', '']
+                  selected = [x.strip() for x in f.read_text(errors='replace').splitlines() if re.match(r'^\s*(OK|KO|ATT|SAUTÉ|FAIL|WARN|SKIPPED)\b', x, re.I)]
+                  if not selected:
+                      lines.append('Aucune ligne de résultat structurée trouvée; consulter le fichier brut de l’artefact.')
+                  for item in selected:
+                      if re.match(r'^KO\b', item, re.I) and 'HTTP 404' in item and ('tests/' in item or 'sonde' in item):
+                          note = f'FAUX POSITIF DU TEST — {item}; HTTP 404 signifie que la ressource est introuvable/non servie, résultat sûr. Corriger l’assertion pour accepter 404.'
+                          lines.append(f'- **NOTE (test à corriger)** {note}')
+                          annotate('notice', '404 sûr — assertion à corriger', note)
+                      elif re.match(r'^KO\b', item, re.I) and 'GET /?pk_diag=1' in item and 'HTTP 302' in item:
+                          note = f'INCONCLUSIF — {item}; la sonde n’a pas suivi la redirection de localisation. Vérifier la destination finale avant de conclure.'
+                          lines.append(f'- **À vérifier** {note}')
+                          annotate('warning', 'Diagnostic redirigé', note)
+                      else:
+                          lines.append(f'- {item}')
+                          if re.match(r'^(KO|FAIL)\b', item, re.I): annotate('error', label, item)
+                          elif re.match(r'^(ATT|WARN|SAUTÉ|SKIPPED)\b', item, re.I): annotate('warning', label, item)
+                          else: annotate('notice', label, item)
+                  lines.append('')
+
+              owner_file = find_file(connected_root, 'owner-journey.json')
+              if owner_file:
+                  owner = json.loads(owner_file.read_text())
+                  lines += ['### Parcours du compte propriétaire temporaire', '', f"Statut global : **{owner.get('status', 'inconnu')}** · {owner.get('authentication', 'information absente')}", '']
+                  for item in owner.get('checks', []):
+                      detail = f"{item.get('name')}: {item.get('detail', '')}"
+                      lines.append(f"- **{item.get('status', 'inconnu')}** {detail}")
+                      if item.get('status') == 'FAIL': annotate('error', item.get('name', 'Parcours propriétaire'), detail)
+                  if not owner.get('checks'): lines.append('Aucun détail de contrôle dans owner-journey.json.')
+                  lines.append('')
+              elif find_file(connected_root, 'owner-journey.txt'):
+                  owner_text = find_file(connected_root, 'owner-journey.txt').read_text(errors='replace')
+                  lines += ['### Parcours du compte propriétaire temporaire', '', owner_text, '']
+
+              connected_vitals = find_file(connected_root, 'interaction-web-vitals.json')
+              if connected_vitals:
+                  vitals = json.loads(connected_vitals.read_text())
+                  lines += ['### Web Vitals/interactions du run connecté', '',
+                            f"INP laboratoire proxy max : **{vitals.get('interaction_inp_lab_max_ms', 'n/a')} ms**.", '',
+                            '| Écran | Largeur | LCP lab (ms) | CLS lab |', '|---|---:|---:|---:|']
+                  for m in vitals.get('metrics', []):
+                      lcp = m.get('lcp_ms') if m.get('lcp_ms') is not None else 'n/a'
+                      cls = m.get('cls') if m.get('cls') is not None else 'n/a'
+                      lines.append(f"| {m.get('label')} | {m.get('width')} | {lcp} | {cls} |")
+                      annotate('notice', f"Web Vitals connectés {m.get('label')}", f"LCP lab={lcp} ms, CLS={cls}")
+                  for item in vitals.get('checks', []):
+                      if item.get('category') == 'interaction' and item.get('status') == 'FAIL':
+                          detail = f"{item.get('check')}: {item.get('detail')}"
+                          lines.append(f'- **FAIL** {detail}')
+                          annotate('error', item.get('check', 'Interaction connectée'), detail)
+                  lines.append('')
+
+              else:
+                  summarize_interaction_log(connected_root, 'connecté')
+              summarize_lighthouse(connected_root, 'connecté')
+
+          # Mobile screenshots shipped with the public and (when supplied) protected artifact.
+          shots = []
+          for source, prefix in [(root, 'public'), (connected_root, 'connecté')]:
+              if source.is_dir(): shots.extend((f, prefix) for f in sorted(source.rglob('*.png')) if 'screenshots' in f.parts)
+          lines += ['## Captures', '']
+          lines.extend(f'- `{prefix}/{f.name}` ({f.stat().st_size:,} octets)' for f, prefix in shots)
+          if not shots: lines.append('Aucune capture trouvée dans les artefacts.')
+          lines.append('')
+
+          out = pathlib.Path('audit-uat-analysis.md')
+          out.write_text('\n'.join(lines) + '\n')
+          pathlib.Path(os.environ['GITHUB_STEP_SUMMARY']).write_text('\n'.join(lines) + '\n')
+          critical = [a for a in annotations if a.startswith('::error') or a.startswith('::warning')]
+          print('\n'.join(critical[:12]))
+          print(f"Analyse produite : {out}; {len(shots)} captures trouvées.")
+          PY
+
+      - name: Publier les métriques exactes et le parcours connecté
+        env:
+          SOURCE_DIR: uat-audit-source
+          CONNECTED_DIR: uat-audit-source-connected
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, os, pathlib, re
+          roots = [('public', pathlib.Path(os.environ['SOURCE_DIR'])), ('connecté', pathlib.Path(os.environ['CONNECTED_DIR']))]
+          lines = ['## Métriques exactes extraites des artefacts', '', 'LCP/CLS = mesures de laboratoire; INP Lighthouse navigation généralement n/a. Le proxy INP Chromium n’est pas l’INP terrain CrUX/RUM.', '']
+          evidence = {label: {'lighthouse': [], 'chromium': [], 'owner': [], 'diagnostics': []} for label, _ in roots}
+          commands = []
+          def command(level, title, message):
+              esc = lambda s: str(s).replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+              return f'::{level} title={esc(title)}::{esc(message)}'
+          for label, root in roots:
+              if not root.is_dir():
+                  evidence[label]['lighthouse'].append(f'Dossier absent: {root}')
+                  continue
+              for path in sorted(root.rglob('lighthouse-*.json')):
+                  data = json.loads(path.read_text()); audits = data.get('audits', {}); cats = data.get('categories', {})
+                  score = lambda key: round(cats[key]['score'] * 100) if isinstance(cats.get(key, {}).get('score'), (int, float)) else 'n/a'
+                  def metric(*keys):
+                      for key in keys:
+                          value = audits.get(key, {}).get('numericValue')
+                          if isinstance(value, (int, float)):
+                              return round(value, 4) if key == 'cumulative-layout-shift' else round(value)
+                      return 'n/a'
+                  text = f"{path.stem}: Perf/A11y/BP/SEO={score('performance')}/{score('accessibility')}/{score('best-practices')}/{score('seo')}; LCP lab={metric('largest-contentful-paint')} ms; INP Lighthouse={metric('interaction-to-next-paint', 'experimental-interaction-to-next-paint')} ms; CLS lab={metric('cumulative-layout-shift')}; TBT={metric('total-blocking-time')} ms"
+                  lines.append(f'- **{label}** {text}')
+                  evidence[label]['lighthouse'].append(text)
+              vital_log = next(iter(sorted(root.rglob('interactions-vitals.txt'))), None)
+              if vital_log:
+                  vital_lines = vital_log.read_text(errors='replace').splitlines()
+                  for text in vital_lines:
+                      text = text.strip()
+                      if re.search(r'(?:LCP observed|CLS observed|Lab INP sample captured|Lab INP proxy within)', text, re.I):
+                          lines.append(f'- **Chromium {label}** {text}')
+                          evidence[label]['chromium'].append(text)
+                  if not any(re.search(r'Lab INP sample captured', text, re.I) for text in vital_lines):
+                      warning = 'Proxy INP non produit: interaction-web-vitals.json absent et aucune ligne "Lab INP sample captured" dans le log.'
+                      lines.append(f'- **À noter** {warning}')
+                      evidence[label]['chromium'].append(warning)
+                      tail = [x.strip() for x in vital_lines[-12:] if x.strip()]
+                      errors = [x for x in tail if re.search(r'\b(?:FAIL|Error|Timeout|Exception|TypeError|ReferenceError)\b|locator\.|waiting for|Target page', x, re.I)]
+                      if errors:
+                          lines += ['Dernières lignes d’erreur du script interactions:', *[f'- `{x}`' for x in errors]]
+                          evidence[label]['diagnostics'].extend(f'Fin du log interactions: {x}' for x in errors[-8:])
+              if label == 'connecté':
+                  owner_log = next(iter(sorted(root.rglob('owner-journey.txt'))), None)
+                  owner_json = next(iter(sorted(root.rglob('owner-journey.json'))), None)
+                  if owner_log:
+                      lines += ['', '### Parcours du compte propriétaire temporaire', '']
+                      owner_lines = owner_log.read_text(errors='replace').splitlines()
+                      for text in owner_lines:
+                          text = text.strip()
+                          if re.match(r'^(PASS|FAIL|WARN|SKIPPED)\b', text, re.I):
+                              lines.append(f'- {text}')
+                              evidence[label]['owner'].append(text)
+                      if not owner_json:
+                          warning = 'owner-journey.json absent: le script n’a pas publié son rapport final; le parcours est incomplet.'
+                          lines.append(f'- **À noter** {warning}')
+                          evidence[label]['owner'].append(warning)
+                          tail = [x.strip() for x in owner_lines[-12:] if x.strip()]
+                          errors = [x for x in tail if re.search(r'\b(?:FAIL|Error|Timeout|Exception|TypeError|ReferenceError)\b|locator\.|waiting for|Target page', x, re.I)]
+                          if errors:
+                              lines += ['Dernières lignes d’erreur du parcours propriétaire:', *[f'- `{x}`' for x in errors]]
+                              evidence[label]['diagnostics'].extend(f'Fin du log propriétaire: {x}' for x in errors[-8:])
+          for label, groups in evidence.items():
+              for kind, items in groups.items():
+                  if items:
+                      title = f'Evidence {label} {kind}'
+                      commands.append(command('notice', title, ' | '.join(items)))
+          content = '\n'.join(lines) + '\n'
+          with open('audit-uat-analysis.md', 'a') as f: f.write('\n' + content)
+          with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as f: f.write('\n' + content)
+          print('\n'.join(commands))
+          print(f"Evidence: {len(commands)} métrique(s)/résultat(s) extraite(s).")
+          PY
+
+      - name: Publier l'analyse détaillée
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: audit-uat-analysis-${{ inputs.run_id }}
+          path: audit-uat-analysis.md
+          if-no-files-found: error
+          retention-days: 14

@@ -9,6 +9,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+if ( is_singular( PARTIKULIER_ESTATIK_POST_TYPE ) ) {
+	require PARTIKULIER_DIR . '/templates/single.php';
+	return;
+}
+
 if ( is_singular( 'post' ) ) {
 	require PARTIKULIER_DIR . '/templates/single-article.php';
 	return;

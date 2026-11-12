@@ -17,14 +17,47 @@ class Partikulier_Site_Hygiene {
 	const MARKER = 'Partikulier hygiene';
 
 	public static function init() {
+		add_action( 'init', array( __CLASS__, 'serve_favicon' ), 0 );
+		add_action( 'do_faviconico', array( __CLASS__, 'output_favicon_ico' ) );
 		add_action( 'init', array( __CLASS__, 'remove_readme' ), 1 );
 		add_action( 'init', array( __CLASS__, 'close_uat_robots' ), 1 );
+		add_action( 'init', array( __CLASS__, 'retire_default_hello_world' ), 1 );
+		add_filter( 'wp_robots', array( __CLASS__, 'noindex_default_hello_world' ) );
 		add_action( 'init', array( __CLASS__, 'replace_known_brand_sentences' ), 1 );
 		add_action( 'init', array( __CLASS__, 'disable_browser_detection' ), 1 );
 		add_action( 'init', array( __CLASS__, 'ensure_htaccess' ), 2 );
 		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'dequeue_hostinger_chat' ), 100 );
 		add_filter( 'script_loader_tag', array( __CLASS__, 'strip_hostinger_tag' ), 10, 3 );
 		add_action( 'template_redirect', array( __CLASS__, 'strip_hostinger_buffer' ), 0 );
+	}
+
+	public static function serve_favicon() {
+		if ( is_admin() || wp_doing_ajax() || ( defined( 'WP_CLI' ) && WP_CLI ) || ( defined( 'REST_REQUEST' ) && REST_REQUEST ) ) {
+			return;
+		}
+		$path = isset( $_SERVER['REQUEST_URI'] ) ? (string) wp_parse_url( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ), PHP_URL_PATH ) : '';
+		if ( '/favicon.ico' !== $path ) {
+			return;
+		}
+		if ( is_file( ABSPATH . 'favicon.ico' ) || ( function_exists( 'has_site_icon' ) && has_site_icon() ) ) {
+			return;
+		}
+		self::output_favicon_ico();
+	}
+
+	public static function output_favicon_ico() {
+		$ico = PARTIKULIER_DIR . '/assets/img/favicon.ico';
+		if ( ! is_file( $ico ) || ! is_readable( $ico ) ) {
+			return;
+		}
+		if ( ! headers_sent() ) {
+			status_header( 200 );
+			header( 'Content-Type: image/x-icon' );
+			header( 'Cache-Control: public, max-age=604800' );
+		}
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_readfile
+		readfile( $ico );
+		exit;
 	}
 
 	public static function remove_readme() {
@@ -35,8 +68,50 @@ class Partikulier_Site_Hygiene {
 	}
 
 	/**
+	 * L'article d'exemple WordPress n'est pas une annonce. Sur la recette,
+	 * on le retire de la publication s'il a encore son titre d'origine.
+	 */
+	public static function retire_default_hello_world() {
+		if ( ! self::is_uat_host() || get_transient( 'pk_hello_world_retired' ) ) {
+			return;
+		}
+		$post = get_page_by_path( 'hello-world', OBJECT, 'post' );
+		if ( $post instanceof WP_Post && 'Hello world!' === $post->post_title && 'publish' === $post->post_status ) {
+			wp_update_post(
+				array(
+					'ID'          => $post->ID,
+					'post_status' => 'draft',
+				)
+			);
+			delete_transient( 'pk_sitemap_xml_v2' );
+		}
+		set_transient( 'pk_hello_world_retired', 1, DAY_IN_SECONDS );
+	}
+
+	/**
+	 * Si l'article d'exemple est encore public, il ne doit pas être indexé.
+	 *
+	 * @param array<string, bool|string> $robots Directives.
+	 * @return array<string, bool|string>
+	 */
+	public static function noindex_default_hello_world( $robots ) {
+		if ( ! is_singular( 'post' ) ) {
+			return $robots;
+		}
+		$post = get_queried_object();
+		if ( $post instanceof WP_Post && 'hello-world' === $post->post_name ) {
+			$robots['noindex']  = true;
+			$robots['nofollow'] = true;
+		}
+		return $robots;
+	}
+
+	/**
 	 * Le fichier physique gagne sur le filtre WordPress. Sur la recette, il
 	 * doit bloquer tout le monde. Ce n'est pas le mot de passe.
+	 *
+	 * HCDN remplace la réponse publique sur *.hostingersite.com. Réécrire
+	 * le fichier d'origine ne change pas cette réponse.
 	 */
 	public static function close_uat_robots() {
 		if ( ! self::is_uat_host() ) {

@@ -22,6 +22,8 @@ class Partikulier_Contact {
 
 	const CONSENT_EN = 'I agree that pep.ma may use this message to reply to me.';
 
+	const CONSENT_AR = 'أوافق على أن يستخدم موقع pep.ma هذه الرسالة للرد عليّ.';
+
 	public static function init() {
 		add_action( 'admin_post_' . self::ACTION, array( __CLASS__, 'handle' ) );
 		add_action( 'admin_post_nopriv_' . self::ACTION, array( __CLASS__, 'handle' ) );
@@ -32,23 +34,39 @@ class Partikulier_Contact {
 	 */
 	public static function language() {
 		$lang = class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::current_language() : 'fr';
-		return in_array( $lang, array( 'fr', 'en', 'ar' ), true ) ? $lang : 'fr';
+		if ( ! in_array( $lang, array( 'fr', 'en', 'ar' ), true ) ) {
+			return 'fr';
+		}
+		if ( 'fr' === $lang && isset( $_POST['pk_language'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification -- lecture de secours pour redirection admin-post
+			$req_lang = sanitize_key( wp_unslash( $_POST['pk_language'] ) ); // phpcs:ignore WordPress.Security.NonceVerification
+			if ( in_array( $req_lang, array( 'fr', 'en', 'ar' ), true ) ) {
+				return $req_lang;
+			}
+		}
+		return $lang;
 	}
 
 	/**
-	 * Phrase déjà écrite. Pas d’arabe inventé.
+	 * Phrase de consentement traduite dans la langue active.
 	 *
 	 * @return string
 	 */
 	public static function consent_sentence() {
-		return 'en' === self::language() ? self::CONSENT_EN : self::CONSENT_FR;
+		$lang = self::language();
+		if ( 'en' === $lang ) {
+			return self::CONSENT_EN;
+		}
+		if ( 'ar' === $lang ) {
+			return self::CONSENT_AR;
+		}
+		return self::CONSENT_FR;
 	}
 
 	/**
 	 * @return string
 	 */
 	public static function consent_lang() {
-		return 'en' === self::language() ? 'en' : 'fr';
+		return self::language();
 	}
 
 	/**
@@ -68,43 +86,83 @@ class Partikulier_Contact {
 	}
 
 	/**
+	 * Libellé localisé du champ Message.
+	 *
+	 * @return string
+	 */
+	public static function message_label() {
+		$lang = self::language();
+		if ( 'ar' === $lang ) {
+			return 'الرسالة';
+		}
+		return 'Message';
+	}
+
+	/**
+	 * Libellé localisé du bouton d’envoi.
+	 *
+	 * @return string
+	 */
+	public static function submit_label() {
+		$lang = self::language();
+		if ( 'en' === $lang ) {
+			return 'Send';
+		}
+		if ( 'ar' === $lang ) {
+			return 'إرسال';
+		}
+		return 'Envoyer';
+	}
+
+	/**
 	 * @param string $code nom|mail|message|limite|envoi
 	 * @return string
 	 */
 	public static function error_text( $code ) {
-		$en = 'en' === self::language();
+		$lang = self::language();
 		if ( 'nom' === $code ) {
-			return $en ? 'Your name is required.' : 'Votre nom est requis.';
+			return 'en' === $lang ? 'Your name is required.' : ( 'ar' === $lang ? 'الاسم مطلوب.' : 'Votre nom est requis.' );
 		}
 		if ( 'mail' === $code ) {
-			return $en ? 'Enter a valid email.' : 'Indiquez un e-mail valide.';
+			return 'en' === $lang ? 'Enter a valid email.' : ( 'ar' === $lang ? 'أدخل بريداً إلكترونياً صالحاً.' : 'Indiquez un e-mail valide.' );
 		}
 		if ( 'message' === $code ) {
-			return $en ? 'The message is required.' : 'Le message est requis.';
+			return 'en' === $lang ? 'The message is required.' : ( 'ar' === $lang ? 'الرسالة مطلوبة.' : 'Le message est requis.' );
 		}
 		if ( 'case' === $code ) {
 			return '';
 		}
 		if ( 'limite' === $code ) {
-			return $en
-				? 'Too many failed attempts. For security, please wait 15 minutes before trying again.'
-				: 'Trop de tentatives échouées. Par mesure de sécurité, veuillez patienter 15 minutes avant de réessayer.';
+			if ( 'en' === $lang ) {
+				return 'Too many failed attempts. For security, please wait 15 minutes before trying again.';
+			}
+			if ( 'ar' === $lang ) {
+				return 'عدد كبير جداً من المحاولات الفاشلة. لدواعٍ أمنية، يرجى الانتظار 15 دقيقة قبل المحاولة مجدداً.';
+			}
+			return 'Trop de tentatives échouées. Par mesure de sécurité, veuillez patienter 15 minutes avant de réessayer.';
 		}
-		return $en ? 'Please try again later.' : 'Merci de réessayer plus tard.';
+		return 'en' === $lang ? 'Please try again later.' : ( 'ar' === $lang ? 'يرجى المحاولة لاحقاً.' : 'Merci de réessayer plus tard.' );
 	}
 
 	/**
 	 * @return string
 	 */
 	public static function success_text() {
-		return 'en' === self::language() ? 'Message sent.' : 'Message envoyé.';
+		$lang = self::language();
+		if ( 'en' === $lang ) {
+			return 'Message sent.';
+		}
+		if ( 'ar' === $lang ) {
+			return 'تم إرسال الرسالة.';
+		}
+		return 'Message envoyé.';
 	}
 
 	/**
 	 * @return string
 	 */
 	public static function ui_lang() {
-		return 'en' === self::language() ? 'en' : 'fr';
+		return self::language();
 	}
 
 	public static function handle() {

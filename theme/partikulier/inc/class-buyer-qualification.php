@@ -100,6 +100,35 @@ class Partikulier_Buyer_Qualification {
 			return 'https://wa.me/' . rawurlencode( $number ) . '?text=' . rawurlencode( $text );
 	}
 
+	/**
+	 * Échappe une URL WhatsApp (wa.me) tout en préservant %0A dans ?text=
+	 * que esc_url() supprime systématiquement.
+	 *
+	 * @param string $url URL générée pour wa.me.
+	 * @return string
+	 */
+	public static function esc_wa_url( $url ) {
+			$url = (string) $url;
+		if ( '' === $url ) {
+				return '';
+		}
+			$parts = explode( '?', $url, 2 );
+			$base  = esc_url( $parts[0], array( 'https', 'http' ) );
+		if ( '' === $base ) {
+				return '';
+		}
+		if ( ! isset( $parts[1] ) || '' === $parts[1] ) {
+				return $base;
+		}
+			$marker = 'PKNLTOKEN9F4A';
+			$query  = str_ireplace( array( '%0D%0A', '%0D', '%0A' ), $marker, $parts[1] );
+			$clean  = esc_url( $base . '?' . $query, array( 'https', 'http' ) );
+		if ( '' === $clean ) {
+				return '';
+		}
+			return str_replace( $marker, '%0A', $clean );
+	}
+
 	public static function handle_contact_authorization( WP_REST_Request $request ) {
 		if ( self::core_leads() ) {
 				return self::core_leads()::rest_contact_authorization( $request );

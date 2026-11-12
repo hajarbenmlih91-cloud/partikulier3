@@ -232,8 +232,9 @@ if (200 === $rat->get_status()) {
         }
 }
 $assert('DP9-AV-019-t34-rattrapage-n8n-preserve',
-        200 === $rat->get_status() && in_array((int) $F['A3_actif'], $listees, true),
-        ['http' => $rat->get_status(), 'a3_listee' => in_array((int) $F['A3_actif'], $listees, true), 'comportement' => 'annonce approuvée puis désactivée < 72 h : toujours livrée au rattrapage (v1.1 §7 — non filtré dans ce lot)']
+        200 === $rat->get_status() && in_array((int) $F['A3_actif'], $listees, true)
+            && str_contains(strtolower((string) ($rat->get_headers()['Cache-Control'] ?? '')), 'no-store'),
+        ['http' => $rat->get_status(), 'a3_listee' => in_array((int) $F['A3_actif'], $listees, true), 'no_store' => str_contains(strtolower((string) ($rat->get_headers()['Cache-Control'] ?? '')), 'no-store'), 'comportement' => 'annonce approuvée puis désactivée < 72 h : toujours livrée au rattrapage (v1.1 §7 — non filtré dans ce lot)']
 );
 
 $rap = Partikulier_Listing_Transitions::transition((int) $F['A3_actif'], 'reactivate', $owner, '', '');
