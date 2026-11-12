@@ -18,6 +18,24 @@ const results = [];
 const pageErrors = [];
 const server5xx = [];
 
+const trace = (msg) => {
+  console.error(`[e2e ${new Date().toISOString()}] ${msg}`);
+};
+
+const withTimeout = (promise, ms, label) => Promise.race([
+  promise,
+  new Promise((_, reject) => setTimeout(() => reject(new Error(`Timeout after ${ms}ms: ${label}`)), ms)),
+]);
+
+const safeJson = async (res, label, ms = 10000) => {
+  try {
+    return await withTimeout(res.json(), ms, `${label}.json()`);
+  } catch (err) {
+    trace(`safeJson failed (${label}): ${err?.message || err}`);
+    return null;
+  }
+};
+
 const record = (testId, category, ok, detail, severity = 'error') => {
   const status = ok ? 'PASS' : (severity === 'finding' ? 'KNOWN_DEFECT' : 'FAIL');
   results.push({ test_id: testId, category, status, severity, detail: String(detail ?? '') });
@@ -25,7 +43,7 @@ const record = (testId, category, ok, detail, severity = 'error') => {
 };
 
 const clearGates = async (page) => {
-  await page.waitForLoadState('load').catch(() => {});
+  await page.waitForLoadState('load', { timeout: 15000 }).catch(() => {});
   const cookieBar = page.locator('[data-pk-cookie]');
   await cookieBar.waitFor({ state: 'visible', timeout: 1000 }).catch(() => {});
   if (await cookieBar.isVisible().catch(() => false)) {
@@ -47,7 +65,22 @@ const clearGates = async (page) => {
 };
 
 const attachMonitors = (page, label) => {
-  page.on('pageerror', (err) => pageErrors.push(`${label}: ${err.message}`));
+  page.on('pageerror', (err) => {
+    trace(`PAGEERROR ${label}: ${err.message}`);
+    pageErrors.push(`${label}: ${err.message}`);
+  });
+  page.on('crash', () => {
+    trace(`PAGE_CRASH ${label}`);
+    pageErrors.push(`${label}: page crashed`);
+  });
+  page.on('console', (msg) => {
+    if (msg.type() === 'error') {
+      trace(`CONSOLE_ERR ${label}: ${msg.text()}`);
+    }
+  });
+  page.on('requestfailed', (req) => {
+    trace(`REQ_FAILED ${label}: ${req.method()} ${req.url()} -> ${req.failure()?.errorText || 'unknown'}`);
+  });
   page.on('response', (res) => {
     if (res.status() >= 500) {
       server5xx.push(`${label}: HTTP ${res.status()} ${res.url()}`);
@@ -55,6 +88,7 @@ const attachMonitors = (page, label) => {
   });
 };
 
+trace(`launching chromium against ${BASE}`);
 const browser = await chromium.launch({ headless: true });
 
 try {
@@ -62,6 +96,8 @@ try {
   // 1. Desktop flow: Hero Search + unmocked pk_places_search & pk_find_count
   // =========================================================================
   const deskCtx = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  deskCtx.setDefaultTimeout(20000);
+  deskCtx.setDefaultNavigationTimeout(30000);
   // Ensure clipboard fallback works cleanly in headless browser for share button check.
   await deskCtx.addInitScript(() => {
     if (!navigator.clipboard) {
@@ -111,7 +147,7 @@ try {
   );
   await page.locator('.pk-find-tab[for="pk-find-rent"]').click();
   const findCountRes = await findCountPromise;
-  const findCountJson = await findCountRes.json().catch(() => null);
+  const findCountJson = await safeJson(findCountRes, 'findCountRes');
   const modalOpened = await page.evaluate(() => !!document.querySelector('.pk-find-open')?.checked);
   record('E2E-SEARCH-MODAL-001', 'search', modalOpened && findCountRes.status() === 200 && findCountJson?.success === true,
     `modalOpened=${modalOpened}; http=${findCountRes.status()}; json=${JSON.stringify(findCountJson)}`);
@@ -124,7 +160,7 @@ try {
   );
   await placeInput.fill('Casa');
   const placesRes = await placesPromise;
-  const placesJson = await placesRes.json().catch(() => null);
+  const placesJson = await safeJson(placesRes, 'placesRes');
   const firstSuggest = page.locator('#pk-s-city-suggestions .pk-suggest-item').first();
   await firstSuggest.waitFor({ state: 'visible', timeout: 10000 });
   const suggestCount = await page.locator('#pk-s-city-suggestions .pk-suggest-item').count();
@@ -141,14 +177,14 @@ try {
   );
   await page.locator('.pk-find-tx-btn[data-pk-intent="a-vendre"]').click();
   const countRes2 = await countUpdatePromise;
-  const countJson2 = await countRes2.json().catch(() => null);
+  const countJson2 = await safeJson(countRes2, 'countRes2');
   const countAppartPromise = page.waitForResponse(
     (res) => res.url().includes('/admin-ajax.php') && res.request().postData()?.includes('action=pk_find_count'),
     { timeout: 15000 }
   );
   await page.locator('.pk-find-type-card[data-value="appartement"]').click();
   const countRes3 = await countAppartPromise;
-  const countJson3 = await countRes3.json().catch(() => null);
+  const countJson3 = await safeJson(countRes3, 'countRes3');
   record('E2E-FIND-COUNT-001', 'search',
     countRes2.status() === 200 && countRes3.status() === 200 && typeof countJson3?.data?.count === 'number',
     `saleCount=${countJson2?.data?.count}; appartCount=${countJson3?.data?.count}`);
@@ -249,26 +285,35 @@ try {
         ? `aria-pressed toggled ${beforePressed} -> ${afterPressed} after AJAX swap`
         : `.pk-card-wishlist detached after archive AJAX swap (aria-pressed stayed ${beforePressed})`);
     if (swappedWorked) {
-      await postSwapHeart.click(); // restore state cleanly
+      trace('section 2: restoring postSwapHeart.click');
+      await postSwapHeart.click({ timeout: 15000 }); // restore state cleanly
+      trace('section 2: postSwapHeart restored');
     }
   }
 
   // =========================================================================
   // 3. Single Listing (Active + Closed): Gallery, Lightbox, Wishlist, Views, Share, WhatsApp
   // =========================================================================
+  trace(`section 3: goto activeOwner=${fixture.listings.activeOwner.url}`);
   const viewsPromise = page.waitForResponse(
     (res) => res.url().includes('/admin-ajax.php') && res.request().postData()?.includes('action=pk_views_counter'),
     { timeout: 15000 }
-  );
+  ).then((res) => ({ res })).catch((err) => ({ err }));
   await page.goto(fixture.listings.activeOwner.url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  trace('section 3: activeOwner domcontentloaded -> clearGates');
   await clearGates(page);
-  const viewsRes = await viewsPromise;
-  const viewsJson = await viewsRes.json().catch(() => null);
+  trace('section 3: clearGates done -> awaiting viewsPromise');
+  const viewsWrap = await viewsPromise;
+  if (viewsWrap.err) throw viewsWrap.err;
+  const viewsRes = viewsWrap.res;
+  trace(`section 3: viewsRes status=${viewsRes.status()} -> safeJson`);
+  const viewsJson = await safeJson(viewsRes, 'viewsRes');
   record('E2E-SINGLE-VIEWS-001', 'single',
     viewsRes.status() === 200 && viewsJson?.success === true,
     `http=${viewsRes.status()}; json=${JSON.stringify(viewsJson)}`);
 
   // Gallery carousel + Lightbox open/Escape close
+  trace('section 3: gallery carousel');
   const countBefore = (await page.locator('.pk-carousel-count').textContent())?.trim();
   await page.locator('.pk-carousel-next').click();
   const countAfter = (await page.locator('.pk-carousel-count').textContent())?.trim();
@@ -301,13 +346,16 @@ try {
     `href=${waHref}; hasNewline=${waHasNewline}; text=${JSON.stringify(waText)}`);
 
   // Wishlist toggle on single -> syncs pk_sync_favorite & localStorage
+  trace('section 3: single wishlist click');
   const syncFavPromise = page.waitForResponse(
     (res) => res.url().includes('/admin-ajax.php') && res.request().postData()?.includes('action=pk_sync_favorite'),
     { timeout: 15000 }
-  );
+  ).then((res) => ({ res })).catch((err) => ({ err }));
   await page.locator('.pk-single-actions .pk-card-wishlist').click();
-  const syncFavRes = await syncFavPromise;
-  const syncFavJson = await syncFavRes.json().catch(() => null);
+  const syncFavWrap = await syncFavPromise;
+  if (syncFavWrap.err) throw syncFavWrap.err;
+  const syncFavRes = syncFavWrap.res;
+  const syncFavJson = await safeJson(syncFavRes, 'syncFavRes');
   const wishSaved = await page.evaluate((id) => {
     const arr = JSON.parse(localStorage.getItem('pk_wishlist') || '[]');
     return arr.includes(String(id));
@@ -317,6 +365,7 @@ try {
     `http=${syncFavRes.status()}; savedInLocalStorage=${wishSaved}`);
 
   // Closed listing verification
+  trace(`section 3: goto closed=${fixture.listings.closed.url}`);
   await page.goto(fixture.listings.closed.url, { waitUntil: 'domcontentloaded', timeout: 30000 });
   const closedState = await page.evaluate(() => ({
     hasClosedClass: !!document.querySelector('.pk-single-closed'),
@@ -332,14 +381,17 @@ try {
   // =========================================================================
   // 4. Favorites Page (/fr/favoris/ + /en/favoris/)
   // =========================================================================
+  trace(`section 4: goto favorisFr=${fixture.pages.favorisFr}`);
   const favListPromise = page.waitForResponse(
     (res) => res.url().includes('/admin-ajax.php') && res.request().postData()?.includes('pk_favorites_list'),
     { timeout: 15000 }
-  );
+  ).then((res) => ({ res })).catch((err) => ({ err }));
   await page.goto(fixture.pages.favorisFr, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await clearGates(page);
-  const favListRes = await favListPromise;
-  const favListJson = await favListRes.json().catch(() => null);
+  const favListWrap = await favListPromise;
+  if (favListWrap.err) throw favListWrap.err;
+  const favListRes = favListWrap.res;
+  const favListJson = await safeJson(favListRes, 'favListRes');
   const favCardsCount = await page.locator('#pk-favorites-grid .pk-card').count();
   const favCountFr = (await page.locator('#pk-fav-count').textContent())?.trim();
   record('E2E-FAVORIS-LIST-001', 'favorites',
@@ -472,7 +524,7 @@ try {
     );
     await page.locator('#next').click();
     const tunnelSubmitRes = await tunnelSubmitPromise;
-    const tunnelSubmitJson = await tunnelSubmitRes.json().catch(() => null);
+    const tunnelSubmitJson = await safeJson(tunnelSubmitRes, 'tunnelSubmitRes');
     deposerAjaxOk = tunnelSubmitRes.status() === 200 && tunnelSubmitJson?.success === true && tunnelSubmitJson?.data?.status === 'pending_whatsapp';
     await page.locator('.pk-whatsapp-verification').waitFor({ state: 'visible', timeout: 10000 });
     const waPanelCode = (await page.locator('.pk-whatsapp-code').textContent())?.trim() || '';
@@ -539,6 +591,7 @@ try {
   // =========================================================================
   // 7. Connexion toggles + Owner Dashboard (/mes-annonces/ deactivate/reactivate)
   // =========================================================================
+  trace('section 7: connexion & owner dashboard');
   await page.goto(`${fixture.pages.connexionFr}?auth_item=login-form`, { waitUntil: 'domcontentloaded', timeout: 30000 });
   await clearGates(page);
 
@@ -595,11 +648,13 @@ try {
   const deactivatePromise = page.waitForResponse(
     (res) => res.url().includes('/admin-ajax.php') && res.request().postData()?.includes('pk_manage_listing'),
     { timeout: 15000 }
-  );
+  ).then((res) => ({ res })).catch((err) => ({ err }));
   await ownerItem.locator(`.pk-manage-btn[data-action="deactivate_confirm"][data-post-id="${ownerId}"]`).click();
-  const deactivateRes = await deactivatePromise;
+  const deactivateWrap = await deactivatePromise;
+  if (deactivateWrap.err) throw deactivateWrap.err;
+  const deactivateRes = deactivateWrap.res;
   await page.waitForFunction(() => !window.__pkBeforeReload, { timeout: 10000 });
-  await page.waitForLoadState('domcontentloaded');
+  await page.waitForLoadState('domcontentloaded', { timeout: 15000 });
   await page.locator(`.pk-listing-item:has([data-post-id="${ownerId}"]) .pk-listing-status`).waitFor({ state: 'visible', timeout: 10000 });
   const statusAfterDeactivate = (await page.locator(`.pk-listing-item:has([data-post-id="${ownerId}"]) .pk-listing-status`).textContent())?.trim();
   record('E2E-OWNER-DEACTIVATE-001', 'owner',
@@ -611,11 +666,13 @@ try {
   const reactivatePromise = page.waitForResponse(
     (res) => res.url().includes('/admin-ajax.php') && res.request().postData()?.includes('pk_manage_listing'),
     { timeout: 15000 }
-  );
+  ).then((res) => ({ res })).catch((err) => ({ err }));
   await page.locator(`.pk-manage-btn[data-action="reactivate"][data-post-id="${ownerId}"]`).click();
-  const reactivateRes = await reactivatePromise;
+  const reactivateWrap = await reactivatePromise;
+  if (reactivateWrap.err) throw reactivateWrap.err;
+  const reactivateRes = reactivateWrap.res;
   await page.waitForFunction(() => !window.__pkBeforeReload, { timeout: 10000 });
-  await page.waitForLoadState('domcontentloaded');
+  await page.waitForLoadState('domcontentloaded', { timeout: 15000 });
   await page.locator(`.pk-listing-item:has([data-post-id="${ownerId}"]) .pk-listing-status`).waitFor({ state: 'visible', timeout: 10000 });
   const statusAfterReactivate = (await page.locator(`.pk-listing-item:has([data-post-id="${ownerId}"]) .pk-listing-status`).textContent())?.trim();
   record('E2E-OWNER-REACTIVATE-001', 'owner',
@@ -628,12 +685,15 @@ try {
     hashLinks === 0,
     `footer a[href="#"] count=${hashLinks}`);
 
-  await deskCtx.close();
+  await withTimeout(deskCtx.close(), 5000, 'deskCtx.close').catch(() => {});
 
   // =========================================================================
   // 8. Mobile viewport check (390x844): Nav toggle, mobile scroll filter chips
   // =========================================================================
+  trace('section 8: mobile viewport');
   const mobCtx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true });
+  mobCtx.setDefaultTimeout(20000);
+  mobCtx.setDefaultNavigationTimeout(30000);
   const mobPage = await mobCtx.newPage();
   attachMonitors(mobPage, 'mobile');
 
@@ -664,14 +724,16 @@ try {
   await mobPage.keyboard.press('Escape');
   record('E2E-MOBILE-ARCHIVE-CHIPS-001', 'mobile', mobFindOpen, `mobFindOpen=${mobFindOpen}`);
 
-  await mobCtx.close();
+  await withTimeout(mobCtx.close(), 5000, 'mobCtx.close').catch(() => {});
 
   record('E2E-JS-ERRORS-001', 'runtime', pageErrors.length === 0, pageErrors.join(' | ') || 'none');
   record('E2E-HTTP-5XX-001', 'runtime', server5xx.length === 0, server5xx.join(' | ') || 'none');
 } catch (err) {
+  trace(`UNEXPECTED ERROR: ${err?.stack || err?.message || err}`);
   record('E2E-UNEXPECTED-ERR-001', 'runtime', false, err?.stack || err?.message || String(err));
 } finally {
-  await browser.close();
+  trace('closing browser');
+  await withTimeout(browser.close(), 5000, 'browser.close').catch(() => {});
 }
 
 const hardFails = results.filter((r) => r.status === 'FAIL').length;

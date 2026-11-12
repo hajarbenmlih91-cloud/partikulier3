@@ -16,6 +16,7 @@ jobs:
   contrats:
     name: contrats WordPress / PHP 8.3
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     services:
       mysql:
         image: mysql:8.0
@@ -822,16 +823,22 @@ jobs:
             status=$?
             echo "Diagnostic e2e-full (exit $status):"
             if [[ -f /tmp/e2e-full.stderr.log ]]; then
-              tail -n 60 /tmp/e2e-full.stderr.log
+              cp /tmp/e2e-full.stderr.log preuves-run/integration/e2e-full.stderr.log || true
+              tail -n 100 /tmp/e2e-full.stderr.log
             fi
             if [[ -f /tmp/wp-e2e-full.log ]]; then
+              cp /tmp/wp-e2e-full.log preuves-run/integration/wp-e2e-full.log || true
               echo 'Serveur PHP:'
-              tail -n 30 /tmp/wp-e2e-full.log
+              tail -n 60 /tmp/wp-e2e-full.log
             fi
             exit "$status"
           }
           trap report_e2e_error ERR
           cleanup_e2e() {
+            if [[ ! -f preuves-run/integration/e2e-full.json ]]; then
+              [[ -f /tmp/e2e-full.stderr.log ]] && cp /tmp/e2e-full.stderr.log preuves-run/integration/e2e-full.stderr.log || true
+              [[ -f /tmp/wp-e2e-full.log ]] && cp /tmp/wp-e2e-full.log preuves-run/integration/wp-e2e-full.log || true
+            fi
             PK_WP_DIR=$PWD/wp php theme/partikulier/tests/e2e-full-fixture.php cleanup || true
             if [[ -n "${SRV:-}" ]]; then kill "$SRV" 2>/dev/null || true; fi
           }
@@ -852,7 +859,8 @@ jobs:
           PK_BASE=http://127.0.0.1:8099 \
           PK_E2E_FIXTURE=$PWD/preuves-run/integration/e2e-full-fixture.json \
           PK_E2E_OUT=$PWD/preuves-run/integration/e2e-full.json \
-            node theme/partikulier/tests/e2e-full-interactions.mjs 2> /tmp/e2e-full.stderr.log
+            timeout --signal=TERM --kill-after=10 180 \
+              node theme/partikulier/tests/e2e-full-interactions.mjs 2> /tmp/e2e-full.stderr.log
           echo "PASS  e2e-full" | tee -a preuves-run/journal.txt
       - name: Publier les résultats
         if: always()
