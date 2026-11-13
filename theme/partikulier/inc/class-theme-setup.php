@@ -81,6 +81,7 @@ class Partikulier_Setup {
 		 * Tailles d'images dediees aux annonces (generent aussi les variantes AVIF via Partikulier_AVIF).
 		 */
 	public static function register_image_sizes() {
+			add_image_size( 'pk-card-sm', 360, 270, true );
 			add_image_size( 'pk-card', 640, 480, true );
 			add_image_size( 'pk-card-2x', 1280, 960, true );
 			add_image_size( 'pk-hero', 1600, 900, true );

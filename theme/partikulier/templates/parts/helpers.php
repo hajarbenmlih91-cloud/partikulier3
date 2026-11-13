@@ -203,6 +203,51 @@ if ( ! function_exists( 'pk_price_html' ) ) {
 }
 
 /**
+ * Registre de symboles SVG partages (emis une seule fois dans wp_footer).
+ * Desactive en AJAX ou hors rendu complet afin que les fragments restent autonomes.
+ */
+if ( ! function_exists( 'pk_svg_sprite_use_enabled' ) ) {
+	function pk_svg_sprite_use_enabled() {
+		return did_action( 'wp_head' ) && ! wp_doing_ajax();
+	}
+}
+
+if ( ! function_exists( 'pk_svg_sprite_registry' ) ) {
+	function pk_svg_sprite_registry( $id = null, $viewbox = '0 0 24 24', $content = '' ) {
+		static $symbols = array();
+		static $hooked  = false;
+		if ( null === $id ) {
+			return $symbols;
+		}
+		if ( ! isset( $symbols[ $id ] ) && '' !== $content ) {
+			$symbols[ $id ] = array(
+				'viewBox' => $viewbox,
+				'content' => $content,
+			);
+			if ( ! $hooked ) {
+				$hooked = true;
+				add_action( 'wp_footer', 'pk_render_svg_sprite', 20 );
+			}
+		}
+		return $symbols;
+	}
+}
+
+if ( ! function_exists( 'pk_render_svg_sprite' ) ) {
+	function pk_render_svg_sprite() {
+		$symbols = pk_svg_sprite_registry();
+		if ( empty( $symbols ) ) {
+			return;
+		}
+		echo '<svg id="pk-svg-sprite" xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute;width:0;height:0;overflow:hidden;pointer-events:none" aria-hidden="true" focusable="false">';
+		foreach ( $symbols as $id => $sym ) {
+			echo '<symbol id="' . esc_attr( $id ) . '" viewBox="' . esc_attr( $sym['viewBox'] ) . '">' . $sym['content'] . '</symbol>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+		}
+		echo "</svg>\n";
+	}
+}
+
+/**
  * Icone SVG par type de bien, choisie sur le slug du terme.
  *
  * Le theme affichait le caractere "⌂" pour tous les types : le preview React
@@ -210,9 +255,10 @@ if ( ! function_exists( 'pk_price_html' ) ) {
  */
 if ( ! function_exists( 'pk_type_icon' ) ) {
 	function pk_type_icon( $slug = '' ) {
-		$slug = sanitize_title( (string) $slug );
-		$slug = preg_replace( '/-(fr|en|ar)$/', '', $slug );
-		$alias = array(
+		static $paths = null;
+		$slug         = sanitize_title( (string) $slug );
+		$slug         = preg_replace( '/-(fr|en|ar)$/', '', $slug );
+		$alias        = array(
 			'entrepot' => 'local',
 			'depot'    => 'local',
 			'usine'    => 'local',
@@ -224,11 +270,22 @@ if ( ! function_exists( 'pk_type_icon' ) ) {
 		if ( isset( $alias[ $slug ] ) ) {
 			$slug = $alias[ $slug ];
 		}
-		$file  = dirname( __DIR__, 2 ) . '/inc/type-icon-paths.php';
-		$paths = is_readable( $file ) ? include $file : array();
-		$d     = ( is_array( $paths ) && isset( $paths[ $slug ] ) ) ? $paths[ $slug ] : ( is_array( $paths ) && isset( $paths['maison'] ) ? $paths['maison'] : '' );
+		if ( null === $paths ) {
+			$file  = dirname( __DIR__, 2 ) . '/inc/type-icon-paths.php';
+			$paths = is_readable( $file ) ? include $file : array();
+			if ( ! is_array( $paths ) ) {
+				$paths = array();
+			}
+		}
+		$resolved = isset( $paths[ $slug ] ) ? $slug : ( isset( $paths['maison'] ) ? 'maison' : '' );
+		$d        = '' !== $resolved ? $paths[ $resolved ] : '';
 		if ( '' === $d ) {
 			return '';
+		}
+		if ( pk_svg_sprite_use_enabled() ) {
+			$sym_id = 'pk-ico-' . $resolved;
+			pk_svg_sprite_registry( $sym_id, '0 0 1024 1024', '<path fill="currentColor" d="' . $d . '"/>' );
+			return '<svg viewBox="0 0 1024 1024" width="42" height="42" aria-hidden="true" focusable="false"><use href="#' . esc_attr( $sym_id ) . '"/></svg>';
 		}
 		return '<svg viewBox="0 0 1024 1024" width="42" height="42" aria-hidden="true" focusable="false"><path fill="currentColor" d="' . $d . '"/></svg>';
 	}
@@ -861,6 +918,70 @@ if ( ! function_exists( 'pk_card_title_html' ) ) {
 	}
 }
 
+if ( ! function_exists( 'pk_card_icon_definitions' ) ) {
+	/**
+	 * Definitions des icones legers de cartes et actions UI (partagees par sprite).
+	 */
+	function pk_card_icon_definitions() {
+		return array(
+			'fact' => array(
+				'area'   => '<path d="M4 9V5h4"/><path d="M16 5h4v4"/><path d="M20 15v4h-4"/><path d="M8 20H4v-4"/><path d="M9 15.5l2.2-2.8 1.6 1.6L16 10.5"/>',
+				'bed'    => '<path fill="currentColor" d="M4.2 5.1h6.1c.55 0 1 .45 1 1V11H3.2V6.1c0-.55.45-1 1-1zm9.5 0h6.1c.55 0 1 .45 1 1V11h-8.1V6.1c0-.55.45-1 1-1zM3 12.1h18v2.7H3zm-.8 3.5h19.6v2.3H2.2zM4.3 18.1h2v2.7h-2zm13.4 0h2v2.7h-2z"/>',
+				'sofa'   => '<path d="M5 11V8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v3"/><path d="M3 12h18v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4z"/><path d="M7 18v2"/><path d="M17 18v2"/>',
+				'bath'   => '<path d="M5 12h14v2a5 5 0 0 1-5 5H10a5 5 0 0 1-5-5v-2z"/><path d="M7 12V8a2 2 0 0 1 2-2h1"/><path d="M8 6V4"/>',
+				'desk'   => '<path d="M4 9h16v7H4z"/><path d="M8 16v3"/><path d="M16 16v3"/><path d="M9 9V6h6v3"/>',
+				'suite'  => '<path d="M7 20V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v14"/><path d="M7 20h10"/><path d="M14.5 12h.01"/>',
+				'floors' => '<path d="M4 20h5v-5h5v-5h6"/>',
+				'open'   => '<rect x="3" y="6" width="18" height="12" rx="1.5"/><path d="M3 12h18"/>',
+				'mark'   => '<path d="M5 7h9l5 5-5 5H5V7z"/><path d="M9 12h.01"/>',
+			),
+			'ui'   => array(
+				'eye'   => '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',
+				'heart' => '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>',
+				'pin'   => '<path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/>',
+			),
+		);
+	}
+}
+
+if ( ! function_exists( 'pk_register_card_ui_symbols' ) ) {
+	function pk_register_card_ui_symbols() {
+		static $registered = false;
+		if ( $registered || ! pk_svg_sprite_use_enabled() ) {
+			return;
+		}
+		$registered = true;
+		$defs       = pk_card_icon_definitions();
+		foreach ( $defs['fact'] as $k => $inner ) {
+			pk_svg_sprite_registry( 'pk-fact-' . $k, '0 0 24 24', $inner );
+		}
+		foreach ( $defs['ui'] as $k => $inner ) {
+			pk_svg_sprite_registry( 'pk-ui-' . $k, '0 0 24 24', $inner );
+		}
+	}
+}
+
+if ( ! function_exists( 'pk_card_ui_icon' ) ) {
+	/**
+	 * Icone UI de carte (eye, heart, pin) via sprite en rendu complet ou inline en AJAX.
+	 */
+	function pk_card_ui_icon( $name ) {
+		$defs  = pk_card_icon_definitions();
+		$inner = isset( $defs['ui'][ $name ] ) ? $defs['ui'][ $name ] : '';
+		if ( '' === $inner ) {
+			return '';
+		}
+		$attrs = 'pin' === $name
+			? 'viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"'
+			: 'xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"';
+		if ( pk_svg_sprite_use_enabled() ) {
+			pk_register_card_ui_symbols();
+			return '<svg ' . $attrs . '><use href="#pk-ui-' . esc_attr( $name ) . '"/></svg>';
+		}
+		return '<svg ' . $attrs . '>' . $inner . '</svg>';
+	}
+}
+
 if ( ! function_exists( 'pk_card_fact_icon' ) ) {
 	/**
 	 * Petite icone de fait, mobile seulement. Le texte reste inchange.
@@ -888,21 +1009,18 @@ if ( ! function_exists( 'pk_card_fact_icon' ) ) {
 		} elseif ( preg_match( '/ouvert|open space|مفتوحة/u', $t ) ) {
 			$kind = 'open';
 		}
-		$paths = array(
-			'area'   => '<path d="M4 9V5h4"/><path d="M16 5h4v4"/><path d="M20 15v4h-4"/><path d="M8 20H4v-4"/><path d="M9 15.5l2.2-2.8 1.6 1.6L16 10.5"/>',
-			'bed'    => '<path d="M3 18V9"/><path d="M21 18v-5"/><path d="M3 13h18"/><path d="M3 18h18"/><path d="M7 13V10a2 2 0 0 1 2-2h1"/>',
-			'sofa'   => '<path d="M5 11V8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v3"/><path d="M3 12h18v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4z"/><path d="M7 18v2"/><path d="M17 18v2"/>',
-			'bath'   => '<path d="M5 12h14v2a5 5 0 0 1-5 5H10a5 5 0 0 1-5-5v-2z"/><path d="M7 12V8a2 2 0 0 1 2-2h1"/><path d="M8 6V4"/>',
-			'desk'   => '<path d="M4 9h16v7H4z"/><path d="M8 16v3"/><path d="M16 16v3"/><path d="M9 9V6h6v3"/>',
-			'suite'  => '<path d="M7 20V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v14"/><path d="M7 20h10"/><path d="M14.5 12h.01"/>',
-			'floors' => '<path d="M4 20h5v-5h5v-5h6"/>',
-			'open'   => '<rect x="3" y="6" width="18" height="12" rx="1.5"/><path d="M3 12h18"/>',
-			'mark'   => '<path d="M5 7h9l5 5-5 5H5V7z"/><path d="M9 12h.01"/>',
-		);
-		if ( 'bed' === $kind ) {
-			return '<svg class="pk-card-fact-icon pk-card-fact-icon--bed" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M4.2 5.1h6.1c.55 0 1 .45 1 1V11H3.2V6.1c0-.55.45-1 1-1zm9.5 0h6.1c.55 0 1 .45 1 1V11h-8.1V6.1c0-.55.45-1 1-1zM3 12.1h18v2.7H3zm-.8 3.5h19.6v2.3H2.2zM4.3 18.1h2v2.7h-2zm13.4 0h2v2.7h-2z"/></svg>';
+		$defs = pk_card_icon_definitions();
+		if ( pk_svg_sprite_use_enabled() ) {
+			pk_register_card_ui_symbols();
+			if ( 'bed' === $kind ) {
+				return '<svg class="pk-card-fact-icon pk-card-fact-icon--bed" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><use href="#pk-fact-bed"/></svg>';
+			}
+			return '<svg class="pk-card-fact-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><use href="#pk-fact-' . esc_attr( $kind ) . '"/></svg>';
 		}
-		$inner = isset( $paths[ $kind ] ) ? $paths[ $kind ] : $paths['mark'];
+		if ( 'bed' === $kind ) {
+			return '<svg class="pk-card-fact-icon pk-card-fact-icon--bed" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false">' . $defs['fact']['bed'] . '</svg>';
+		}
+		$inner = isset( $defs['fact'][ $kind ] ) ? $defs['fact'][ $kind ] : $defs['fact']['mark'];
 		return '<svg class="pk-card-fact-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' . $inner . '</svg>';
 	}
 }

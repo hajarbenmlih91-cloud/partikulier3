@@ -374,7 +374,7 @@ class Partikulier_AVIF {
 	/**
 	 * Reecrit chaque URL d'un attribut srcset vers sa variante AVIF.
 	 */
-	private static function srcset_to_avif( $srcset ) {
+	public static function srcset_to_avif( $srcset ) {
 		$entries = array_map( 'trim', explode( ',', $srcset ) );
 		$out     = array();
 		foreach ( $entries as $entry ) {

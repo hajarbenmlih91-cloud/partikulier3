@@ -128,11 +128,11 @@ if ( $price ) {
 								$pk_sizes  = '(max-width: 767px) 300px, (max-width: 1199px) 50vw, 640px';
 					if ( $jpg ) {
 						?>
-								<picture>
+						<picture>
 									<?php if ( $avif ) : ?>
-												<source type="image/avif" srcset="<?php echo esc_attr( $avif ); ?>">
+												<source type="image/avif" srcset="<?php echo esc_attr( $pk_srcset ? Partikulier_AVIF::srcset_to_avif( $pk_srcset ) : $avif ); ?>" sizes="<?php echo esc_attr( $pk_sizes ); ?>">
 										<?php endif; ?>
-											<?php $pk_is_first_archive_card = isset( $pk_card_index ) && (int) $pk_card_index <= 2; // LCP : 2 premières cartes en eager (archive =1, home =2 visibles au-dessus du pli) ?>
+											<?php $pk_is_first_archive_card = isset( $pk_card_index ) && (int) $pk_card_index <= 1; // LCP : seule la 1re carte visible est en eager/high ?>
 												<img src="<?php echo esc_url( $jpg ); ?>"<?php echo $pk_srcset ? ' srcset="' . esc_attr( $pk_srcset ) . '" sizes="' . esc_attr( $pk_sizes ) . '"' : ''; ?> width="640" height="480" alt="<?php echo esc_attr( $pk_display_title ); ?>" loading="<?php echo $pk_is_first_archive_card ? 'eager' : 'lazy'; ?>" decoding="async" fetchpriority="<?php echo $pk_is_first_archive_card ? 'high' : 'low'; ?>">
 								</picture>
 								<?php
@@ -167,10 +167,10 @@ if ( $price ) {
 		</a>
 		<div class="pk-card-actions">
 				<a class="pk-card-action pk-card-peek" href="<?php echo esc_url( $pk_property_url ); ?>" aria-label="<?php echo esc_attr( Partikulier_Localization::translate_polylang_string( 'Aperçu rapide', 'Aperçu rapide', 'partikulier' ) ); ?>">
-						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+						<?php echo function_exists( 'pk_card_ui_icon' ) ? pk_card_ui_icon( 'eye' ) : '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 				</a>
 				<button type="button" class="pk-card-action pk-card-wishlist" data-post-id="<?php echo esc_attr( $property->ID ); ?>" aria-label="<?php echo esc_attr( Partikulier_Localization::translate_polylang_string( 'Ajouter aux favoris', 'Ajouter aux favoris', 'partikulier' ) ); ?>">
-						<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+						<?php echo function_exists( 'pk_card_ui_icon' ) ? pk_card_ui_icon( 'heart' ) : '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 				</button>
 		</div>
 		</div>
@@ -260,7 +260,7 @@ if ( $price ) {
 				<div class="pk-card-foot">
 					<?php if ( $pk_city_label && $pk_city_url ) : ?>
 						<a class="pk-card-city" href="<?php echo esc_url( $pk_city_url ); ?>">
-							<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>
+							<?php echo function_exists( 'pk_card_ui_icon' ) ? pk_card_ui_icon( 'pin' ) : '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/></svg>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 							<span itemprop="address" itemscope itemtype="https://schema.org/PostalAddress"><span itemprop="addressLocality"><?php echo esc_html( $pk_city_label ); ?></span></span>
 						</a>
 					<?php endif; ?>
