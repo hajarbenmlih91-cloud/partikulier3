@@ -388,14 +388,14 @@ try {
     $assert(
         'FIX-REMEDIATION-15',
         str_contains($tunnelCode, 'dir="')
-        && str_contains($hygieneCode, 'repair\\.php')
+        && (bool) preg_match('#wp-admin/maint/repair[^\n]*R=404#', $hygieneCode)
         && $upgradePublishOnly
         && isset($enLex['depot'], $enLex['dépôt'], $enLex['hangar'], $enLex['usine'], $arLex['depot'], $arLex['dépôt'], $arLex['hangar'], $arLex['usine'])
         && $waArOk
         && $waEnOk,
         sprintf('tunnelSSR=%s repair404=%s upgradePublishOnly=%s lexTypes=%s waAr=%s waEn=%s',
             str_contains($tunnelCode, 'dir="') ? 'yes' : 'no',
-            str_contains($hygieneCode, 'repair\\.php') ? 'yes' : 'no',
+            preg_match('#wp-admin/maint/repair[^\n]*R=404#', $hygieneCode) ? 'yes' : 'no',
             $upgradePublishOnly ? 'yes' : 'no',
             isset($enLex['usine'], $arLex['usine']) ? 'yes' : 'no',
             $waArOk ? 'yes' : 'no',
