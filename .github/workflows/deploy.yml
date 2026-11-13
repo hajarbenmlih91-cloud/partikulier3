@@ -407,13 +407,33 @@ jobs:
             echo "smoke $p $c"
             test "$c" = "200"
           done
-          curl -fsS "$site/wp-json/partikulier/v1/health" > build/health.json
+          for pass in 1 2; do
+            code="$(curl -sS -D "build/health-$pass.hdr" -o "build/health-$pass.json" -w '%{http_code}' "$site/wp-json/partikulier/v1/health")"
+            echo "health pass $pass status=$code"
+            test "$code" = "200"
+          done
           python - <<'PY'
           import json
           from pathlib import Path
-          health = json.loads(Path("build/health.json").read_text(encoding="utf-8"))
-          assert health.get("status") == "ok", health
-          print("health endpoint: ok")
+          def parse_headers(path):
+              out = {}
+              for line in Path(path).read_text(encoding="utf-8", errors="replace").splitlines():
+                  if ":" in line:
+                      k, v = line.split(":", 1)
+                      out.setdefault(k.strip().lower(), []).append(v.strip())
+              return out
+          for p in (1, 2):
+              health = json.loads(Path(f"build/health-{p}.json").read_text(encoding="utf-8"))
+              assert health.get("status") == "ok", (p, health)
+              hdrs = parse_headers(f"build/health-{p}.hdr")
+              cc = ", ".join(hdrs.get("cache-control", []))
+              ls = ", ".join(hdrs.get("x-litespeed-cache", []))
+              hcdn = ", ".join(hdrs.get("x-hcdn-cache-status", []))
+              print(f"health pass {p}: Cache-Control={cc!r} X-LiteSpeed-Cache={ls!r} X-HCDN-Cache-Status={hcdn!r}")
+              assert "no-store" in cc.lower(), f"pass {p}: Cache-Control missing no-store: {cc!r}"
+              assert "hit" not in ls.lower(), f"pass {p}: X-LiteSpeed-Cache must not HIT: {ls!r}"
+              assert "hit" not in hcdn.lower(), f"pass {p}: X-HCDN-Cache-Status must not HIT: {hcdn!r}"
+          print("health endpoint: ok (2 consecutive non-cacheable passes)")
           PY
 
       - name: Déploiement terminé

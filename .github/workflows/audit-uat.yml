@@ -408,9 +408,12 @@ jobs:
           set -euo pipefail
           npm install --global lighthouse@12.8.2
           chrome_path="$(cd theme/partikulier && node --input-type=module -e 'import { chromium } from "playwright"; console.log(chromium.executablePath())')"
+          # Préchauffer le binaire Chromium uniquement sur about:blank (zéro requête au site)
+          # pour éviter la contention du premier lancement à froid dans les traces Lighthouse.
+          timeout 20 "$chrome_path" --headless --no-sandbox --disable-dev-shm-usage --dump-dom about:blank >/dev/null 2>&1 || true
           lh_failed=0
           run_lh() {
-            local label="$1" url="$2" form="$3"
+            local label="$1" url="$2" form="$3" out_file="${4:-$AUDIT_OUT_DIR/lighthouse-$1.json}"
             local -a native=()
             curl -fsS "$url" >/dev/null 2>&1 || true
             sleep 1
@@ -429,7 +432,7 @@ jobs:
                 --only-categories=performance,accessibility,best-practices,seo \
                 "${native[@]}" \
                 --output=json \
-                --output-path="$AUDIT_OUT_DIR/lighthouse-$label.json" \
+                --output-path="$out_file" \
                 --quiet 2>&1)"; then
                 ok=1
                 break
@@ -447,7 +450,37 @@ jobs:
               lh_failed=1
             fi
           }
-          run_lh fr-home-mobile "$SITE_URL/fr/" mobile
+          run_lh_median() {
+            local label="$1" url="$2" form="$3" runs="${4:-3}"
+            local -a ok_files=()
+            for i in $(seq 1 "$runs"); do
+              local f="$AUDIT_OUT_DIR/lighthouse-${label}-run${i}.json"
+              local prev_fail="$lh_failed"
+              run_lh "${label}-run${i}" "$url" "$form" "$f"
+              if [[ "$lh_failed" == "$prev_fail" && -s "$f" ]]; then
+                ok_files+=("$f")
+              fi
+            done
+            if (( ${#ok_files[@]} == 0 )); then
+              lh_failed=1
+              return
+            fi
+            python - "$AUDIT_OUT_DIR/lighthouse-${label}.json" "${ok_files[@]}" <<'PY'
+          import json, pathlib, shutil, sys
+          dest = pathlib.Path(sys.argv[1])
+          candidates = []
+          for p in sys.argv[2:]:
+              data = json.loads(pathlib.Path(p).read_text())
+              perf = (data.get('categories', {}).get('performance', {}).get('score') or 0) * 100
+              tbt = data.get('audits', {}).get('total-blocking-time', {}).get('numericValue') or 0
+              candidates.append((perf, -tbt, p))
+          candidates.sort()
+          median_path = candidates[len(candidates) // 2][2]
+          shutil.copyfile(median_path, dest)
+          print(f"Median for {dest.name}: {pathlib.Path(median_path).name} (perf={candidates[len(candidates)//2][0]:.0f}, tbt={-candidates[len(candidates)//2][1]:.0f}ms)")
+          PY
+          }
+          run_lh_median fr-home-mobile "$SITE_URL/fr/" mobile 3
           run_lh en-home-mobile "$SITE_URL/en/" mobile
           run_lh ar-home-mobile "$SITE_URL/ar/" mobile
           run_lh fr-listings-mobile "$SITE_URL/fr/annonces/" mobile
@@ -455,11 +488,13 @@ jobs:
           python - "$AUDIT_OUT_DIR" <<'PY'
           import json, pathlib, sys
           root = pathlib.Path(sys.argv[1])
-          lines = ['## Lighthouse scores et métriques', '', '| Page | Perf | A11y | Best practices | SEO | LCP ms | INP ms | CLS | TBT ms |', '|---|---:|---:|---:|---:|---:|---:|---:|---:|']
+          lines = ['## Lighthouse scores et métriques', '', '| Page | Perf | A11y | Best practices | SEO | LCP ms | INP ms | CLS | TBT ms | BenchmarkIndex |', '|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|']
           for f in sorted(root.glob('lighthouse-*.json')):
               data = json.loads(f.read_text())
               cats = data.get('categories', {})
               audits = data.get('audits', {})
+              bm = data.get('environment', {}).get('benchmarkIndex')
+              bm_s = f"{round(bm)}" if isinstance(bm, (int, float)) else 'n/a'
               score = lambda name: round((cats.get(name, {}).get('score') or 0) * 100)
               def metric(*ids):
                   for audit_id in ids:
@@ -467,8 +502,8 @@ jobs:
                       if value is not None:
                           return round(value)
                   return 'n/a'
-              lines.append(f"| {f.stem.removeprefix('lighthouse-')} | {score('performance')} | {score('accessibility')} | {score('best-practices')} | {score('seo')} | {metric('largest-contentful-paint')} | {metric('interaction-to-next-paint', 'experimental-interaction-to-next-paint')} | {metric('cumulative-layout-shift')} | {metric('total-blocking-time')} |")
-          lines.extend(['', 'Note : INP peut être n/a en Lighthouse navigation; interaction-web-vitals.json contient le proxy INP laboratoire des interactions Playwright.'])
+              lines.append(f"| {f.stem.removeprefix('lighthouse-')} | {score('performance')} | {score('accessibility')} | {score('best-practices')} | {score('seo')} | {metric('largest-contentful-paint')} | {metric('interaction-to-next-paint', 'experimental-interaction-to-next-paint')} | {metric('cumulative-layout-shift')} | {metric('total-blocking-time')} | {bm_s} |")
+          lines.extend(['', 'Note : fr-home-mobile correspond à la médiane de 3 exécutions (les run1..run3 restent présents dans le tableau et l’artefact). INP peut être n/a en Lighthouse navigation; interaction-web-vitals.json contient le proxy INP laboratoire des interactions Playwright.'])
           (root / 'lighthouse-summary.md').write_text('\n'.join(lines) + '\n')
           print('\n'.join(lines))
           PY

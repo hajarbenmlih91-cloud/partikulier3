@@ -42,7 +42,7 @@ function pkLimitTitle(value) {
 			});
 	}
 		labelEstatikExtraInfo();
-	if (window.MutationObserver && document.body) {
+	if (window.MutationObserver && document.body && document.querySelector('#pk-submit-form, .pk-steps, .es-form, [id^="es_extra_info-"]')) {
 			var pkExtraRaf = 0;
 			new MutationObserver(function (mutations) {
 					if (pkExtraRaf) return;
@@ -1033,7 +1033,7 @@ function pkLimitTitle(value) {
 	}
 	window.addEventListener("scroll", tick, { passive: true });
 	window.addEventListener("resize", tick);
-	tick();
+	if ((window.scrollY || window.pageYOffset || 0) > 0) tick();
 }());
 
 /* Annonces mobile : fond noir seulement quand la barre Vente/Location
@@ -1286,7 +1286,9 @@ function pkLimitTitle(value) {
 		try { select.dispatchEvent(new Event("pk-select-rebuild")); }
 		catch (err2) { /* IE */ }
 	}
-	forms.forEach(function (form) {
+	function setupForm(form) {
+		if (form.getAttribute("data-pk-pick-ready") === "1") return;
+		form.setAttribute("data-pk-pick-ready", "1");
 		var panel = form.querySelector(".pk-find-panel");
 		if (!panel) return;
 		var closer = panel.querySelector(".pk-find-close");
@@ -1436,6 +1438,19 @@ function pkLimitTitle(value) {
 				openPick(select);
 			});
 		});
+	}
+	forms.forEach(function (form) {
+		var opener = form.querySelector(".pk-find-open");
+		if (opener && opener.checked) {
+			setupForm(form);
+			return;
+		}
+		var bootPick = function () {
+			setupForm(form);
+		};
+		["pointerdown", "focusin", "keydown", "change"].forEach(function (evt) {
+			form.addEventListener(evt, bootPick, { capture: true, once: true });
+		});
 	});
 }());
 
@@ -1525,10 +1540,17 @@ function pkLimitTitle(value) {
 		var focusTarget = closeBtn || gate.querySelector("[data-pk-lang-pick]");
 		if (focusTarget && typeof focusTarget.focus === "function") {
 			var focusGate = function () {
+				if (gate.hidden) return;
+				if (document.activeElement && document.activeElement !== document.body && !gate.contains(document.activeElement)) return;
 				try { focusTarget.focus({ preventScroll: true }); } catch (err) { try { focusTarget.focus(); } catch (err2) { /* ignore */ } }
 			};
-			if (window.requestAnimationFrame) window.requestAnimationFrame(focusGate);
-			else focusGate();
+			if (document.readyState === "complete") {
+				window.setTimeout(focusGate, 0);
+			} else {
+				window.addEventListener("load", function () {
+					window.setTimeout(focusGate, 0);
+				}, { once: true });
+			}
 		}
 		}
 	}
@@ -1702,6 +1724,7 @@ function pkLimitTitle(value) {
 		if (rent) rent.value = value === "saisonnier" ? "saisonnier" : "";
 	}
 	function applyContext(keepPrice) {
+		contextSynced = true;
 		syncHiddenIntent();
 		syncTxButtons();
 		syncTypeCards();
@@ -1995,8 +2018,25 @@ function pkLimitTitle(value) {
 			showNeed(false);
 		});
 	}
-	if (opener) opener.addEventListener("change", setExpanded);
-	applyContext(true);
+	var contextSynced = false;
+	function ensureContext() {
+		if (contextSynced) return;
+		contextSynced = true;
+		applyContext(true);
+	}
+	if (opener) {
+		opener.addEventListener("change", function () {
+			if (opener.checked) ensureContext();
+			setExpanded();
+		});
+	}
+	if (priceMode() !== "sale" || (typeSelect && typeSelect.value) || (opener && opener.checked)) {
+		ensureContext();
+	} else {
+		syncHiddenIntent();
+		syncTxButtons();
+		guardFilters();
+	}
 	document.addEventListener("keydown", function (event) {
 		if (event.key === "Escape") {
 			if (opener && opener.checked) {
@@ -2149,7 +2189,7 @@ function pkLimitTitle(value) {
 		if (rafId) return;
 		rafId = window.requestAnimationFrame ? window.requestAnimationFrame(sync) : (sync(), 0);
 	}
-	schedule();
+	if ((window.scrollY || window.pageYOffset || 0) > 0) schedule();
 	window.addEventListener("scroll", schedule, { passive: true });
 	window.addEventListener("resize", schedule);
 }());
