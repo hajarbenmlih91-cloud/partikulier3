@@ -352,6 +352,18 @@ try {
         && str_contains($demoFactsCode, 'pk_demo_status_term_id'),
         'demo-facts.php assigns sale prices and a-vendre status terms to all 4 examples'
     );
+
+    // 13. FIX-HYGIENE-DOCTOR-14 : Options -Indexes dans ensure_htaccess, es_status dans Page Doctor et pk_localized_home_url dans pk-diagnostic.
+    $hygieneCode = (string) file_get_contents($themeRoot . '/inc/class-site-hygiene.php');
+    $doctorCode = (string) file_get_contents($themeRoot . '/inc/class-page-doctor.php');
+    $diagCode = (string) file_get_contents($themeRoot . '/pk-diagnostic.php');
+    $assert(
+        'FIX-HYGIENE-DOCTOR-14',
+        str_contains($hygieneCode, 'Options -Indexes')
+        && str_contains($doctorCode, 'PARTIKULIER_ESTATIK_STATUS_TAXONOMY')
+        && str_contains($diagCode, 'pk_localized_home_url'),
+        'Site Hygiene emits Options -Indexes, Page Doctor checks es_status, and pk-diagnostic resolves localized home URLs'
+    );
 } catch (Throwable $e) {
     $assert('FIX-UNEXPECTED', false, $e->getMessage());
 } finally {
