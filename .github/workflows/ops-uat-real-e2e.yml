@@ -195,8 +195,8 @@ jobs:
             $n8n_configured = $n8n_hook !== "" ? "yes" : "no";
 
             $creds = Partikulier_Listing_Approval::approve($post_id);
-            if (class_exists("\\Partikulier\\Core\\Integration\\ListingSynchronizer")) {
-              (new \\Partikulier\\Core\\Integration\\ListingSynchronizer())->flush();
+            if (class_exists("\Partikulier\Core\Integration\ListingSynchronizer")) {
+              (new \Partikulier\Core\Integration\ListingSynchronizer())->flush();
             }
             $tr_ids = [];
             if (function_exists("pll_get_post_translations")) {
@@ -303,6 +303,7 @@ jobs:
           const item = page.locator(`.pk-listing-item:has([data-post-id="${POST_ID}"])`).first();
           await item.waitFor({ state: 'visible', timeout: 10000 });
 
+          await page.evaluate(() => { window.__pkBeforeReload = true; });
           await item.locator(`.pk-manage-btn[data-action="deactivate"][data-post-id="${POST_ID}"]`).click();
           await item.locator(`input[name="pk_reason_${POST_ID}"][value="vendu"]`).check();
           const manageRespPromise = page.waitForResponse(
@@ -312,6 +313,7 @@ jobs:
           await item.locator(`.pk-manage-btn[data-action="deactivate_confirm"][data-post-id="${POST_ID}"]`).click();
           const manageResp = await manageRespPromise;
           if (manageResp.status() !== 200) throw new Error(`Deactivate HTTP ${manageResp.status()}`);
+          await page.waitForFunction(() => !window.__pkBeforeReload, { timeout: 15000 });
           await page.waitForLoadState('domcontentloaded', { timeout: 15000 });
           await page.locator(`.pk-listing-item:has([data-post-id="${POST_ID}"]) .pk-listing-status`).waitFor({ state: 'visible', timeout: 10000 });
           const statusAfter = (await page.locator(`.pk-listing-item:has([data-post-id="${POST_ID}"]) .pk-listing-status`).textContent())?.trim() || '';
@@ -333,9 +335,11 @@ jobs:
           ATT_URL: ${{ steps.moderate_and_owner.outputs.att_url }}
         run: |
           set -euo pipefail
-          ssh -F "$HOME/.ssh/config" partikulier-uat 'bash -s' -- "$WP_PATH" "$SYNTH_TITLE" "${VERIF_CODE:-}" "${TR_IDS:-}" "${OWNER_ID:-0}" "${THUMB_ID:-0}" <<'REMOTE'
+          ssh -F "$HOME/.ssh/config" partikulier-uat 'bash -s' -- "$WP_PATH" "$SYNTH_TITLE" "${VERIF_CODE:-none}" "${TR_IDS:-none}" "${OWNER_ID:-0}" "${THUMB_ID:-0}" <<'REMOTE'
           set -euo pipefail
-          WP_PATH="$1"; TITLE="$2"; VERIF_CODE="$3"; TR_IDS="$4"; OWNER_ID="$5"; THUMB_ID="$6"
+          WP_PATH="${1}"; TITLE="${2}"; VERIF_CODE="${3:-none}"; TR_IDS="${4:-none}"; OWNER_ID="${5:-0}"; THUMB_ID="${6:-0}"
+          if [ "$VERIF_CODE" = "none" ]; then VERIF_CODE=""; fi
+          if [ "$TR_IDS" = "none" ]; then TR_IDS=""; fi
           cd "$WP_PATH"
           PK_E2E_TITLE="$TITLE" PK_E2E_CODE="$VERIF_CODE" PK_E2E_TR_IDS="$TR_IDS" PK_E2E_OWNER_ID="$OWNER_ID" PK_E2E_THUMB_ID="$THUMB_ID" wp eval '
             global $wpdb;
@@ -344,11 +348,15 @@ jobs:
             $tr_ids   = array_filter(array_map("intval", explode(",", (string) getenv("PK_E2E_TR_IDS"))));
             $owner_id = (int) getenv("PK_E2E_OWNER_ID");
             $thumb_id = (int) getenv("PK_E2E_THUMB_ID");
-            $rows = $wpdb->get_col($wpdb->prepare("SELECT ID FROM {$wpdb->posts} WHERE post_title = %s", $title));
+            $rows = $wpdb->get_col($wpdb->prepare("SELECT ID FROM {$wpdb->posts} WHERE post_title = %s OR post_title LIKE %s", $title, "E2E-REAL-%"));
             $all_posts = array_unique(array_merge($tr_ids, array_map("intval", (array) $rows)));
+            $owner_ids = $owner_id > 0 ? [$owner_id] : [];
+            $thumb_ids = $thumb_id > 0 ? [$thumb_id] : [];
             foreach ($all_posts as $pid) {
+              $p = get_post($pid);
+              if ($p && (int) $p->post_author > 0) { $owner_ids[] = (int) $p->post_author; }
               $tid = (int) get_post_thumbnail_id($pid);
-              if ($tid > 0) { wp_delete_attachment($tid, true); }
+              if ($tid > 0) { $thumb_ids[] = $tid; wp_delete_attachment($tid, true); }
               $gallery = get_post_meta($pid, "es_property_gallery", true);
               if (is_array($gallery)) {
                 foreach ($gallery as $gid) { wp_delete_attachment((int) $gid, true); }
@@ -357,7 +365,9 @@ jobs:
               $wpdb->delete($wpdb->prefix . "pk_audit_log", ["property_id" => $pid], ["%d"]);
               wp_delete_post($pid, true);
             }
-            if ($thumb_id > 0 && get_post($thumb_id)) { wp_delete_attachment($thumb_id, true); }
+            foreach (array_unique($thumb_ids) as $tid) {
+              if ($tid > 0 && get_post($tid)) { wp_delete_attachment($tid, true); }
+            }
             if ($code !== "") {
               $wpdb->query($wpdb->prepare(
                 "DELETE FROM {$wpdb->prefix}pk_idempotency WHERE event_id LIKE %s AND response_json LIKE %s",
@@ -365,18 +375,25 @@ jobs:
                 "%" . $wpdb->esc_like($code) . "%"
               ));
             }
-            if ($owner_id > 0 && get_user_by("id", $owner_id)) {
-              $user = get_user_by("id", $owner_id);
-              if (in_array("contributor", (array) $user->roles, true)) {
-                require_once ABSPATH . "wp-admin/includes/user.php";
-                $admin_id = (int) $wpdb->get_var("SELECT user_id FROM {$wpdb->usermeta} WHERE meta_key = \"{$wpdb->prefix}capabilities\" AND meta_value LIKE \"%administrator%\" ORDER BY user_id ASC LIMIT 1");
-                wp_delete_user($owner_id, $admin_id ?: null);
+            $wpdb->query($wpdb->prepare(
+              "DELETE FROM {$wpdb->prefix}pk_idempotency WHERE event_id LIKE %s AND response_json LIKE %s",
+              "pkform:%",
+              "%PK-217-ALTPWW1%"
+            ));
+            foreach (array_unique($owner_ids) as $oid) {
+              if ($oid > 0 && get_user_by("id", $oid)) {
+                $user = get_user_by("id", $oid);
+                if (in_array("contributor", (array) $user->roles, true)) {
+                  require_once ABSPATH . "wp-admin/includes/user.php";
+                  $admin_id = (int) $wpdb->get_var("SELECT user_id FROM {$wpdb->usermeta} WHERE meta_key = \"{$wpdb->prefix}capabilities\" AND meta_value LIKE \"%administrator%\" ORDER BY user_id ASC LIMIT 1");
+                  wp_delete_user($oid, $admin_id ?: null);
+                }
               }
             }
-            if (class_exists("\\Partikulier\\Core\\Integration\\ListingSynchronizer")) {
-              (new \\Partikulier\\Core\\Integration\\ListingSynchronizer())->flush();
+            if (class_exists("\Partikulier\Core\Integration\ListingSynchronizer")) {
+              (new \Partikulier\Core\Integration\ListingSynchronizer())->flush();
             }
-            $rem_posts = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_title = %s", $title));
+            $rem_posts = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_title = %s OR post_title LIKE %s", $title, "E2E-REAL-%"));
             $rem_user  = $owner_id > 0 ? (bool) get_user_by("id", $owner_id) : false;
             $rem_att   = $thumb_id > 0 ? (bool) get_post($thumb_id) : false;
             $rem_idem  = $code !== "" ? (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$wpdb->prefix}pk_idempotency WHERE response_json LIKE %s", "%" . $wpdb->esc_like($code) . "%")) : 0;
