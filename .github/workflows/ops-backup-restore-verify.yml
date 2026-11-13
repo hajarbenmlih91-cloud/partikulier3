@@ -64,7 +64,7 @@ jobs:
           home="$(wp option get home --quiet)"
           case "${home%/}" in "https://$expected") ;; *) echo "Refused host: $home" >&2; exit 1 ;; esac
 
-          target_rel="$(cd wp-content && find uploads -type f \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \) ! -path 'uploads/partikulier-cache/*' | sort | head -n1)"
+          target_rel="$(set +o pipefail; cd wp-content && find uploads -type f \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \) ! -path 'uploads/partikulier-cache/*' | sort | head -n1)"
           test -n "$target_rel" || { echo "No media file found under wp-content/uploads/" >&2; exit 1; }
           target_abs="$WP_PATH/wp-content/$target_rel"
           orig_sha="$(sha256sum "$target_abs" | awk '{print $1}')"
@@ -101,7 +101,7 @@ jobs:
           tar -xzf "$bdir/uploads.tar.gz" -C "$iso_dir/wp-content"
           tar -xzf "$bdir/partikulier-core.tar.gz" -C "$iso_dir/wp-content/plugins"
           tar -xzf "$bdir/partikulier.tar.gz" -C "$iso_dir/wp-content/themes"
-          gunzip -c "$bdir/database.sql.gz" | head -n 5 | grep -q 'MySQL dump\|MariaDB dump\|Dump completed\|--'
+          ( set +o pipefail; gunzip -c "$bdir/database.sql.gz" | head -n 5 | grep -q 'MySQL dump\|MariaDB dump\|Dump completed\|--' )
           iso_sha="$(sha256sum "$iso_dir/wp-content/$target_rel" | awk '{print $1}')"
           test "$iso_sha" = "$orig_sha"
           echo "ISOLATED_DIR_EXTRACT=PASS SHA256=$iso_sha"
