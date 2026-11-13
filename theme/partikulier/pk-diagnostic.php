@@ -236,7 +236,11 @@ if ( ! function_exists( 'partikulier_pk_diag_pages' ) ) {
 
                 /* 1. accueil, par langue. */
                 foreach ( $langues as $l ) {
-                        $u = $l && function_exists( 'pll_home_url' ) ? pll_home_url( $l ) : home_url( '/' );
+                        if ( $l && function_exists( 'pk_localized_home_url' ) ) {
+                                $u = pk_localized_home_url( $l );
+                        } else {
+                                $u = $l && function_exists( 'pll_home_url' ) ? pll_home_url( $l ) : home_url( '/' );
+                        }
                         $ajoute( $u, 'accueil', 'front', $l, (int) get_option( 'page_on_front' ) );
                 }
 
@@ -256,7 +260,9 @@ if ( ! function_exists( 'partikulier_pk_diag_pages' ) ) {
                 $nb   = (int) ceil( max( 1, (int) $q->found_posts ) / $per );
                 foreach ( $langues as $l ) {
                         $base = $arch;
-                        if ( $l && function_exists( 'pll_home_url' ) ) {
+                        if ( $l && function_exists( 'pk_localized_home_url' ) ) {
+                                $base = user_trailingslashit( trailingslashit( pk_localized_home_url( $l ) ) . 'annonces' );
+                        } elseif ( $l && function_exists( 'pll_home_url' ) ) {
                                 $base = user_trailingslashit( trailingslashit( pll_home_url( $l ) ) . 'annonces' );
                         }
                         $ajoute( $base, 'archive annonces', 'archive', $l );

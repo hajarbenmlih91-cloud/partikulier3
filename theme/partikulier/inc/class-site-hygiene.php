@@ -178,7 +178,7 @@ class Partikulier_Site_Hygiene {
 	}
 
 	/**
-	 * Cache long sur les médias, et 404 si readme.html est encore servi en fichier.
+	 * Cache long sur les médias, Options -Indexes contre l'indexation de répertoires, et 404 si readme.html est encore servi en fichier.
 	 */
 	public static function ensure_htaccess() {
 		if ( ! function_exists( 'insert_with_markers' ) ) {
@@ -192,6 +192,9 @@ class Partikulier_Site_Hygiene {
 			return;
 		}
 		$rules = array(
+			'<IfModule mod_autoindex.c>',
+			'Options -Indexes',
+			'</IfModule>',
 			'<IfModule mod_headers.c>',
 			'<FilesMatch "\\.(avif|webp|jpe?g|png|gif|svg|woff2?)$">',
 			'Header set Cache-Control "public, max-age=31536000, immutable"',

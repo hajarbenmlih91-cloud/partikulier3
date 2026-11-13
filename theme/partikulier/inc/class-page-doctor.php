@@ -383,8 +383,11 @@ class Partikulier_Page_Doctor {
 				}
 			}
 
-			// Taxonomies indispensables.
-			$action = wp_get_object_terms( $post->ID, PARTIKULIER_ESTATIK_CATEGORY_TAXONOMY );
+			// Taxonomies indispensables (es_status principal, repli sur es_category historique).
+			$action = wp_get_object_terms( $post->ID, PARTIKULIER_ESTATIK_STATUS_TAXONOMY );
+			if ( is_wp_error( $action ) || ! $action ) {
+				$action = wp_get_object_terms( $post->ID, PARTIKULIER_ESTATIK_CATEGORY_TAXONOMY );
+			}
 			if ( is_wp_error( $action ) || ! $action ) {
 				$out[] = array( 'ko', __( 'Aucune action « À vendre » / « À louer ».', 'partikulier' ), __( 'Pas de badge, et le filtre ne trouvera pas cette annonce.', 'partikulier' ) );
 			} else {
