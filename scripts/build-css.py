@@ -204,6 +204,7 @@ def minify_css(text: str) -> str:
     at_block_stack: list[bool] = []
     paren = 0
     prev_was_space = False
+    prelude_start = 0
 
     while i < n:
         ch = text[i]
@@ -230,12 +231,13 @@ def minify_css(text: str) -> str:
             i += 1
             continue
         if ch == "{":
-            tail = "".join(out[-64:])
+            tail = "".join(out[prelude_start:])
             is_nested = bool(
                 re.search(r"@(?:media|supports|layer|container|document|keyframes)\b[^{};]*$", tail)
             )
             at_block_stack.append(is_nested)
             out.append("{")
+            prelude_start = len(out)
             prev_was_space = False
             i += 1
             continue
@@ -245,11 +247,14 @@ def minify_css(text: str) -> str:
             if out and out[-1] == ";":
                 out.pop()
             out.append("}")
+            prelude_start = len(out)
             prev_was_space = False
             i += 1
             continue
         if ch in (";", ","):
             out.append(ch)
+            if ch == ";":
+                prelude_start = len(out)
             prev_was_space = False
             i += 1
             continue
@@ -383,11 +388,15 @@ def build_outputs() -> tuple[str, str]:
 
 
 def self_test() -> None:
-    sample = '/* note */\nhtml body :focus-visible{color: #fff;}\n.a:not([hidden]){display:block;}\n@media (min-width: 768px) and (max-width: 900px) { .x { width: calc(100% - 1rem); } }\n'
+    sample = (
+        '/* note */\nhtml body :focus-visible{color: #fff;}\n.a:not([hidden]){display:block;}\n'
+        '@media only screen and (min-width: 768px) and (max-width: 1200px) and (orientation: landscape) '
+        '{ html body :focus-visible { width: calc(100% - 1rem); } }\n'
+    )
     minified = minify_css(sample)
     assert "html body :focus-visible{color:#fff}" in minified, minified
     assert ".a:not([hidden]){display:block}" in minified, minified
-    assert "@media (min-width:768px) and (max-width:900px)" in minified, minified
+    assert "@media only screen and (min-width:768px) and (max-width:1200px) and (orientation:landscape){html body :focus-visible{width:calc(100% - 1rem)}}" in minified, minified
 
 
 def main() -> int:

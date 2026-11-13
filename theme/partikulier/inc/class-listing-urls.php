@@ -290,7 +290,8 @@ $vars[] = 'pk_listing_gone';
 		if ( is_admin() || ! $query->is_main_query() ) {
 			return;
 		}
-		$city_slug  = sanitize_title( (string) ( $query->get( 'pk_city_slug' ) ?: $query->get( 'location' ) ) );
+		$city_raw   = $query->get( 'pk_city_slug' ) ?: $query->get( 'location' );
+		$city_slug  = is_scalar( $city_raw ) ? sanitize_title( (string) $city_raw ) : '';
 		$post_types = (array) $query->get( 'post_type' );
 		if ( ! $city_slug || ! in_array( PARTIKULIER_ESTATIK_POST_TYPE, $post_types, true ) ) {
 			return;
@@ -332,7 +333,8 @@ $vars[] = 'pk_listing_gone';
 		if ( PARTIKULIER_ESTATIK_POST_TYPE !== $post_type && ( ! is_array( $post_type ) || ! in_array( PARTIKULIER_ESTATIK_POST_TYPE, $post_type, true ) ) && ! $query->is_post_type_archive( PARTIKULIER_ESTATIK_POST_TYPE ) ) {
 			return $clauses;
 		}
-		$city_slug = sanitize_title( (string) ( $query->get( 'pk_city_slug' ) ?: $query->get( 'location' ) ) );
+		$city_raw  = $query->get( 'pk_city_slug' ) ?: $query->get( 'location' );
+		$city_slug = is_scalar( $city_raw ) ? sanitize_title( (string) $city_raw ) : '';
 		/* E-5105 (F-T17-2, lot sécurité 6.20.6) : garde scalaire homogène —
 		   supprime aussi le couplage fragile (cette ligne n'était protégée
 		   que par le cast (string) ci-dessus) et le warning PHP associé. */

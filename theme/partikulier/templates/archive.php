@@ -156,7 +156,7 @@ $is_type = $queried instanceof WP_Term && PARTIKULIER_ESTATIK_TYPE_TAXONOMY === 
 						<?php
 						$pk_active_filters = 0;
 						foreach ( array( 'es_type', 'es_city', 'es_price_max' ) as $pk_filter_key ) {
-							if ( isset( $_GET[ $pk_filter_key ] ) && '' !== trim( (string) wp_unslash( $_GET[ $pk_filter_key ] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended,WordPress.Security.ValidatedSanitizedInput -- présence/cast, valeur assainie (SE-020/E-2007)
+							if ( isset( $_GET[ $pk_filter_key ] ) && is_scalar( $_GET[ $pk_filter_key ] ) && '' !== trim( (string) wp_unslash( $_GET[ $pk_filter_key ] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended,WordPress.Security.ValidatedSanitizedInput -- présence/garde scalaire, valeur assainie (SE-020/E-2007/E-5105)
 									$pk_active_filters++;
 							}
 						}
