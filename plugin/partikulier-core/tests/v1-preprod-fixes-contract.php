@@ -401,6 +401,20 @@ try {
             $waArOk ? 'yes' : 'no',
             $waEnOk ? 'yes' : 'no')
     );
+
+    // 15. FIX-EN-DOMAIN-16 : I18nDomainLoader répare automatiquement le domaine si Polylang l'a déchargé alors que loaded_locale vaut déjà en_US.
+    \Partikulier\Core\Domain\I18n\I18nDomainLoader::reload_for_slug('en');
+    unload_textdomain('partikulier', true);
+    $reloadedAfterPolylang = \Partikulier\Core\Domain\I18n\I18nDomainLoader::reload_for_slug('en');
+    $pubEnAfterReload = __('Publication en cours…', 'partikulier');
+    $waEnRuntime = __($waMsgId, 'partikulier');
+    $assert(
+        'FIX-EN-DOMAIN-16',
+        ($reloadedAfterPolylang['partikulier'] ?? '') === 'en_US'
+        && $pubEnAfterReload === 'Publishing…'
+        && $waEnRuntime !== $waMsgId,
+        sprintf('reload=%s pub=%s waRuntime=%s', (string) ($reloadedAfterPolylang['partikulier'] ?? ''), $pubEnAfterReload, $waEnRuntime)
+    );
 } catch (Throwable $e) {
     $assert('FIX-UNEXPECTED', false, $e->getMessage());
 } finally {
