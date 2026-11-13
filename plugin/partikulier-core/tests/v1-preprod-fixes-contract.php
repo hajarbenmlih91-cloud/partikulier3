@@ -366,6 +366,7 @@ try {
     );
 
     // 14. FIX-REMEDIATION-15 : SSR <html lang/dir> sur apercu-tunnel, 404 repair.php, types depot/hangar/usine dans ListingLexicon, wizard publish-only et whatsappNote pep.ma.
+    $pluginRoot = dirname(__DIR__);
     $tunnelCode = (string) file_get_contents($themeRoot . '/inc/class-tunnel-preview.php');
     $upgradeCode = (string) file_get_contents($themeRoot . '/inc/class-upgrade-wizard.php');
     $lwtPos = (int) strpos($upgradeCode, 'function listings_without_translation');
