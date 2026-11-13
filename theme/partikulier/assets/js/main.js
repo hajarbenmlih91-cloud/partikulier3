@@ -1522,10 +1522,14 @@ function pkLimitTitle(value) {
 			document.addEventListener("keydown", function (e) {
 				if (e.key === "Escape" && !gate.hidden) dismiss();
 			});
-			var focusTarget = closeBtn || gate.querySelector("[data-pk-lang-pick]");
-			if (focusTarget && typeof focusTarget.focus === "function") {
-				try { focusTarget.focus(); } catch (err) { /* ignore */ }
-			}
+		var focusTarget = closeBtn || gate.querySelector("[data-pk-lang-pick]");
+		if (focusTarget && typeof focusTarget.focus === "function") {
+			var focusGate = function () {
+				try { focusTarget.focus({ preventScroll: true }); } catch (err) { try { focusTarget.focus(); } catch (err2) { /* ignore */ } }
+			};
+			if (window.requestAnimationFrame) window.requestAnimationFrame(focusGate);
+			else focusGate();
+		}
 		}
 	}
 	document.querySelectorAll("[data-pk-lang] a").forEach(function (link) {
@@ -2549,7 +2553,17 @@ function pkLimitTitle(value) {
 		arrow.hidden = !forward(row);
 	}
 	function paintAll() {
-		document.querySelectorAll("[data-pk-scroll-hint]").forEach(paint);
+		var desktop = window.matchMedia("(min-width: 768px)").matches;
+		var updates = [];
+		document.querySelectorAll("[data-pk-scroll-hint]").forEach(function (hint) {
+			var row = hint.querySelector("[data-pk-scroll-hint-row]");
+			var arrow = hint.querySelector("[data-pk-scroll-hint-go]");
+			if (!row || !arrow) return;
+			updates.push({ arrow: arrow, hidden: desktop ? true : !forward(row) });
+		});
+		for (var i = 0; i < updates.length; i++) {
+			updates[i].arrow.hidden = updates[i].hidden;
+		}
 	}
 	function bindHint(hint) {
 		var row = hint.querySelector("[data-pk-scroll-hint-row]");
