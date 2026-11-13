@@ -23,11 +23,12 @@ fi
 
 find scripts -name '*.sh' -print0 | xargs -0 -n1 bash -n
 echo 'Shell lint: PASS'
-python3 scripts/check-deploy-secret-scope.py
-python3 scripts/check-workflow-action-pins.py
+python3 -B scripts/build-css.py --check
+python3 -B scripts/check-deploy-secret-scope.py
+python3 -B scripts/check-workflow-action-pins.py
 
 if command -v node >/dev/null 2>&1; then
-  find theme/partikulier -name '*.mjs' -print0 | while IFS= read -r -d '' file; do node --check "$file" >/dev/null; done
+  find theme/partikulier -type f \( -name '*.mjs' -o -name '*.js' \) -print0 | while IFS= read -r -d '' file; do node --check "$file" >/dev/null; done
   echo 'JavaScript lint: PASS'
 else
   echo 'JavaScript lint: SKIP (node executable not available)'
