@@ -369,6 +369,9 @@ jobs:
             printf 'User-agent: *\nDisallow: /\n' > "$WP_PATH/robots.txt"
             echo "ORIGIN robots.txt:"
             cat "$WP_PATH/robots.txt"
+          elif [ "$DEPLOY_ENV" = "prd" ] && [ -f "$WP_PATH/robots.txt" ] && grep -qE '^Disallow:[[:space:]]*/[[:space:]]*$' "$WP_PATH/robots.txt"; then
+            rm -f "$WP_PATH/robots.txt"
+            echo "Removed staging Disallow:/ robots.txt on prd so dynamic sitemap/Allow serves."
           fi
           wp cache flush || true
           wp eval 'if ( class_exists( "Partikulier_Cache" ) ) { Partikulier_Cache::purge_all(); }' || true
@@ -435,6 +438,24 @@ jobs:
               assert "hit" not in hcdn.lower(), f"pass {p}: X-HCDN-Cache-Status must not HIT: {hcdn!r}"
           print("health endpoint: ok (2 consecutive non-cacheable passes)")
           PY
+          if [ "$DEPLOY_ENVIRONMENT" = "prd" ]; then
+            robots_code="$(curl -sS -o build/prd-robots.txt -w '%{http_code}' "$site/robots.txt")"
+            echo "prd /robots.txt status=$robots_code"
+            test "$robots_code" = "200"
+            if grep -qE '^Disallow:[[:space:]]*/[[:space:]]*$' build/prd-robots.txt; then
+              echo "::error::prd /robots.txt still contains Disallow: /"
+              cat build/prd-robots.txt
+              exit 1
+            fi
+            grep -qi '^Sitemap:' build/prd-robots.txt || { echo "::error::prd /robots.txt missing Sitemap directive"; exit 1; }
+            fr_hdrs="$(curl -sSI "$site/fr/")"
+            if printf '%s' "$fr_hdrs" | grep -qiE '^x-robots-tag:.*noindex'; then
+              echo "::error::prd /fr/ still emits X-Robots-Tag noindex"
+              printf '%s\n' "$fr_hdrs"
+              exit 1
+            fi
+            echo "prd SEO crawlability smoke check: PASS"
+          fi
 
       - name: Déploiement terminé
         env:

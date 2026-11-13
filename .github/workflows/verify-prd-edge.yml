@@ -1,0 +1,107 @@
+name: Vérification edge, HCDN, SEO et santé post-bascule production
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: URL HTTPS publique de production (ex. https://pep.ma)
+        required: true
+        default: https://pep.ma
+        type: string
+      require_hcdn_hit:
+        description: Exiger X-HCDN-Cache-Status=HIT sur asset statique (activer après bascule DNS)
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  verify-edge-seo:
+    name: Edge HCDN, robots.txt, X-Robots-Tag, /health non-cacheable et Lighthouse SEO
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+
+      - name: Vérifier robots.txt, X-Robots-Tag, HCDN et /health 2 passes
+        env:
+          TARGET_URL: ${{ inputs.target_url }}
+          REQUIRE_HCDN_HIT: ${{ inputs.require_hcdn_hit }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, re, urllib.request
+
+          base = os.environ["TARGET_URL"].rstrip("/")
+          if not base.startswith("https://") or "hostingersite.com" in base:
+              raise SystemExit(f"Target must be custom production HTTPS domain (got {base!r})")
+
+          def fetch(url):
+              req = urllib.request.Request(url, headers={"User-Agent": "Partikulier-Prod-Edge-Verify/1.0"})
+              with urllib.request.urlopen(req, timeout=20) as resp:
+                  return resp.status, {k.lower(): v for k, v in resp.headers.items()}, resp.read().decode("utf-8", errors="replace")
+
+          st, _, robots = fetch(base + "/robots.txt")
+          assert st == 200, f"/robots.txt status={st}"
+          assert not re.search(r"^Disallow:\s*/\s*$", robots, re.M), f"/robots.txt blocks crawling:\n{robots}"
+          assert re.search(r"^Sitemap:\s*https://", robots, re.M | re.I), f"/robots.txt missing Sitemap:\n{robots}"
+          print("robots.txt PASS")
+
+          for p in ("/fr/", "/wp-content/themes/partikulier/assets/css/style.min.css"):
+              hdrs_list = []
+              for _ in range(2):
+                  code, hdrs, _ = fetch(base + p)
+                  assert code == 200, (p, code)
+                  assert "noindex" not in hdrs.get("x-robots-tag", "").lower(), (p, hdrs.get("x-robots-tag"))
+                  hdrs_list.append(hdrs)
+              hcdn2 = hdrs_list[1].get("x-hcdn-cache-status", "")
+              print(f"{p} pass2 X-HCDN-Cache-Status={hcdn2!r} X-LiteSpeed-Cache={hdrs_list[1].get('x-litespeed-cache', '')!r}")
+              if os.environ.get("REQUIRE_HCDN_HIT") == "true" and p.endswith(".css"):
+                  assert "hit" in hcdn2.lower(), f"Expected HCDN HIT on {p}, got {hcdn2!r}"
+
+          for i in (1, 2):
+              code, hdrs, body = fetch(base + "/wp-json/partikulier/v1/health")
+              assert code == 200, (i, code)
+              data = json.loads(body)
+              assert data.get("status") == "ok" and data.get("database") == "ready", data
+              cc = hdrs.get("cache-control", "").lower()
+              assert "no-store" in cc, cc
+              assert "hit" not in hdrs.get("x-litespeed-cache", "").lower()
+              assert "hit" not in hdrs.get("x-hcdn-cache-status", "").lower()
+          print("/wp-json/partikulier/v1/health 2-pass PASS")
+          PY
+
+      - name: Lighthouse mobile SEO >= 90 et Performance >= 85
+        env:
+          TARGET_URL: ${{ inputs.target_url }}
+        run: |
+          set -euo pipefail
+          cd theme/partikulier
+          npm ci
+          npx playwright install --with-deps chromium
+          npm install --global lighthouse@12.8.2
+          chrome_path="$(node --input-type=module -e 'import { chromium } from "playwright"; console.log(chromium.executablePath())')"
+          base="${TARGET_URL%/}"
+          curl -fsS "$base/fr/" >/dev/null
+          lighthouse "$base/fr/" \
+            --chrome-path="$chrome_path" \
+            --chrome-flags='--headless --no-sandbox --disable-dev-shm-usage' \
+            --only-categories=performance,accessibility,best-practices,seo \
+            --output=json --output-path=/tmp/lh-prd.json --quiet
+          python3 - <<'PY'
+          import json
+          d = json.load(open("/tmp/lh-prd.json"))
+          cats = {k: round((v.get("score") or 0) * 100) for k, v in d["categories"].items()}
+          print("Production Lighthouse fr-home-mobile:", cats)
+          assert cats["seo"] >= 90, f"SEO below 90: {cats}"
+          assert cats["performance"] >= 85, f"Performance below 85: {cats}"
+          PY

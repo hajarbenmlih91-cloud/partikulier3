@@ -259,7 +259,7 @@ jobs:
             echo "GET $audit_url"
           } | tee -a "$AUDIT_OUT_DIR/cache-ttfb.txt"
           if ! curl -fsS -o /dev/null --max-time 30 \
-            -w 'PHP-PROBE: HTTP %{http_code}; TTFB %{time_starttransfer} s; date %{time_local}\n' \
+            -w "PHP-PROBE: HTTP %{http_code}; TTFB %{time_starttransfer} s; date $(date -u +%Y-%m-%dT%H:%M:%SZ)\n" \
             "$audit_url" 2>&1 | tee -a "$AUDIT_OUT_DIR/cache-ttfb.txt"; then
             echo 'PHP-PROBE: échec du GET horodaté; le find seul ne sera pas converti en preuve de rendu.' | tee -a "$AUDIT_OUT_DIR/cache-ttfb.txt"
             php_rc=1

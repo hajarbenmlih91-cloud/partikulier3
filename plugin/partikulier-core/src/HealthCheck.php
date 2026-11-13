@@ -49,25 +49,25 @@ final class HealthCheck
 			}
 		}
 
+		if ( ! $db_reachable ) {
+			return $this->databaseFailure($db_error);
+		}
+
 		$integrity = ['orphans' => 0, 'missing' => 0, 'served' => 0, 'live_posts' => 0, 'status' => 'ok'];
-		if ( $exists && $db_reachable ) {
+		if ( $exists ) {
 			$integrity           = DomainRegistry::listingIntegrity();
 			$integrity['status'] = ( $integrity['orphans'] === 0 && $integrity['missing'] === 0 ) ? 'ok' : 'degraded';
 		}
 
 		$sync    = ( new ListingSynchronizer() )->stats();
 		$rebuild = get_option('partikulier_core_last_rebuild', []);
-		if ( ! $db_reachable ) {
-			$status = 'critical';
-		} else {
-			$status = ( $exists && $integrity['status'] === 'ok' ) ? 'ok' : 'degraded';
-		}
+		$status  = ( $exists && $integrity['status'] === 'ok' ) ? 'ok' : 'degraded';
 
 		return [
 			'status'         => $status,
 			'core_version'   => PARTIKULIER_CORE_VERSION,
 			'schema_version' => ( new Migrator() )->currentVersion(),
-			'database'       => ! $db_reachable ? 'unreachable' : ( $exists ? 'ready' : 'missing' ),
+			'database'       => $exists ? 'ready' : 'missing',
 			'database_error' => $db_error ?: null,
 			'integrity'      => $integrity,
 			'sync'           => [

@@ -1,0 +1,249 @@
+name: Backup et restauration isolée (uploads + DB vide)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ops-backup-restore-verify
+  cancel-in-progress: false
+
+jobs:
+  verify-hostinger-uploads-and-isolated-dir:
+    name: UAT Hostinger — Backup uploads + suppression ciblée 404 + restore 200 & SHA-256
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment:
+      name: uat
+      url: https://darkcyan-yak-151002.hostingersite.com
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Configurer SSH strict UAT
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
+          chmod 600 "$HOME/.ssh/id_ed25519"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 644 "$HOME/.ssh/known_hosts"
+          {
+            echo "Host partikulier-uat"
+            echo "  HostName $SSH_HOST"
+            echo "  Port $SSH_PORT"
+            echo "  User $SSH_USER"
+            echo "  IdentityFile $HOME/.ssh/id_ed25519"
+            echo "  UserKnownHostsFile $HOME/.ssh/known_hosts"
+            echo "  StrictHostKeyChecking yes"
+            echo "  IdentitiesOnly yes"
+            echo "  BatchMode yes"
+          } > "$HOME/.ssh/config"
+          chmod 600 "$HOME/.ssh/config"
+
+      - name: Vérification UAT — sauvegarde complète, extraction répertoire vide, suppression & restauration uploads/
+        env:
+          WP_PATH: ${{ secrets.WP_PATH }}
+        run: |
+          set -euo pipefail
+          ssh -F "$HOME/.ssh/config" partikulier-uat 'bash -s' -- "$WP_PATH" <<'REMOTE'
+          set -euo pipefail
+          WP_PATH="$1"
+          cd "$WP_PATH"
+          expected='darkcyan-yak-151002.hostingersite.com'
+          home="$(wp option get home --quiet)"
+          case "${home%/}" in "https://$expected") ;; *) echo "Refused host: $home" >&2; exit 1 ;; esac
+
+          target_rel="$(cd wp-content && find uploads -type f \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \) ! -path 'uploads/partikulier-cache/*' | sort | head -n1)"
+          test -n "$target_rel" || { echo "No media file found under wp-content/uploads/" >&2; exit 1; }
+          target_abs="$WP_PATH/wp-content/$target_rel"
+          orig_sha="$(sha256sum "$target_abs" | awk '{print $1}')"
+          asset_url="${home%/}/wp-content/${target_rel}"
+          pre_code="$(curl -fsS -o /tmp/pre_asset.bin -w '%{http_code}' "$asset_url")"
+          pre_http_sha="$(sha256sum /tmp/pre_asset.bin | awk '{print $1}')"
+          rm -f /tmp/pre_asset.bin
+          test "$pre_code" = "200"
+          echo "TARGET_ASSET=$target_rel"
+          echo "TARGET_URL=$asset_url"
+          echo "ORIG_DISK_SHA256=$orig_sha"
+          echo "PRE_HTTP_CODE=$pre_code PRE_HTTP_SHA256=$pre_http_sha"
+
+          stamp="$(date -u +%Y%m%dT%H%M%SZ)"
+          bdir="$HOME/backups/partikulier-verify-${stamp}"
+          iso_dir="$HOME/restore-isolated-${stamp}"
+          trap 'rm -rf "$iso_dir" "$bdir"' EXIT
+          mkdir -p "$bdir" "$iso_dir"
+          tar --exclude='partikulier-cache' -czf "$bdir/uploads.tar.gz" -C "$WP_PATH/wp-content" uploads
+          tar -czf "$bdir/partikulier-core.tar.gz" -C "$WP_PATH/wp-content/plugins" partikulier-core
+          tar -czf "$bdir/partikulier.tar.gz" -C "$WP_PATH/wp-content/themes" partikulier
+          db_name="$(wp config get DB_NAME)"
+          db_user="$(wp config get DB_USER)"
+          db_pass="$(wp config get DB_PASSWORD)"
+          db_host="$(wp config get DB_HOST)"
+          db_port=""
+          if [[ "$db_host" == *:* ]]; then db_port="${db_host##*:}"; db_host="${db_host%%:*}"; fi
+          MYSQL_PWD="$db_pass" mysqldump --single-transaction --no-tablespaces \
+            -h "$db_host" ${db_port:+-P "$db_port"} -u "$db_user" "$db_name" | gzip > "$bdir/database.sql.gz"
+          for f in "$bdir"/*.gz; do gzip -t "$f"; done
+          ( cd "$bdir" && sha256sum *.gz > SHA256SUMS && sha256sum -c SHA256SUMS )
+
+          mkdir -p "$iso_dir/wp-content/plugins" "$iso_dir/wp-content/themes"
+          tar -xzf "$bdir/uploads.tar.gz" -C "$iso_dir/wp-content"
+          tar -xzf "$bdir/partikulier-core.tar.gz" -C "$iso_dir/wp-content/plugins"
+          tar -xzf "$bdir/partikulier.tar.gz" -C "$iso_dir/wp-content/themes"
+          gunzip -c "$bdir/database.sql.gz" | head -n 5 | grep -q 'MySQL dump\|MariaDB dump\|Dump completed\|--'
+          iso_sha="$(sha256sum "$iso_dir/wp-content/$target_rel" | awk '{print $1}')"
+          test "$iso_sha" = "$orig_sha"
+          echo "ISOLATED_DIR_EXTRACT=PASS SHA256=$iso_sha"
+
+          rm -f "$target_abs"
+          test ! -e "$target_abs"
+          del_code="$(curl -s -o /dev/null -w '%{http_code}' "$asset_url")"
+          echo "AFTER_DELETE_HTTP_CODE=$del_code"
+          test "$del_code" = "404"
+
+          tar -xzf "$bdir/uploads.tar.gz" -C "$WP_PATH/wp-content" "$target_rel"
+          test -f "$target_abs"
+          restored_disk_sha="$(sha256sum "$target_abs" | awk '{print $1}')"
+          test "$restored_disk_sha" = "$orig_sha"
+          post_code="$(curl -fsS -o /tmp/post_asset.bin -w '%{http_code}' "$asset_url")"
+          post_http_sha="$(sha256sum /tmp/post_asset.bin | awk '{print $1}')"
+          rm -f /tmp/post_asset.bin
+          echo "AFTER_RESTORE_HTTP_CODE=$post_code RESTORED_DISK_SHA256=$restored_disk_sha RESTORED_HTTP_SHA256=$post_http_sha"
+          test "$post_code" = "200"
+          test "$post_http_sha" = "$orig_sha"
+          echo "UPLOADS_TARGETED_RESTORE=PASS"
+          REMOTE
+
+      - name: Nettoyer la clé SSH
+        if: always()
+        run: rm -f "$HOME/.ssh/id_ed25519" "$HOME/.ssh/known_hosts" "$HOME/.ssh/config"
+
+  verify-cold-restore-empty-dir-and-empty-db:
+    name: Restauration à froid — répertoire vide + base MariaDB vierge (Docker)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    services:
+      mariadb:
+        image: mariadb:11.8
+        env:
+          MARIADB_ROOT_PASSWORD: ci-restore-root-pass
+          MARIADB_DATABASE: partikulier_src
+          MARIADB_USER: partikulier
+          MARIADB_PASSWORD: ci-restore-wp-pass
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Sauvegarder puis restaurer à froid dans un dossier vide + base vide
+        run: |
+          set -euo pipefail
+          WP_VER="$(python3 -c 'import json; print(json.load(open(".github/recipe-dependencies.lock.json"))["wordpress_core"]["version"])')"
+          WP_SHA="$(python3 -c 'import json; print(json.load(open(".github/recipe-dependencies.lock.json"))["wordpress_core"]["archive_sha256"])')"
+          curl -fsSL "https://downloads.wordpress.org/release/wordpress-${WP_VER}.zip" -o /tmp/wp.zip
+          echo "${WP_SHA}  /tmp/wp.zip" | sha256sum -c -
+          mkdir -p /tmp/wp-src /tmp/backups /tmp/wp-cold-restore
+          unzip -q /tmp/wp.zip -d /tmp
+          mv /tmp/wordpress/* /tmp/wp-src/
+          cp -a plugin/partikulier-core /tmp/wp-src/wp-content/plugins/
+          cp -a theme/partikulier /tmp/wp-src/wp-content/themes/
+
+          curl -fsSL https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar -o /tmp/wp-cli.phar
+          chmod +x /tmp/wp-cli.phar
+
+          # Boot source WordPress with a standard static wp-config.php (no docker env indirection)
+          cid="$(docker run -d --rm -p 18091:80 --add-host=host.docker.internal:host-gateway \
+            -v /tmp/wp-src:/var/www/html \
+            -v /tmp/wp-cli.phar:/usr/local/bin/wp:ro \
+            wordpress:6.6-php8.3-apache)"
+          trap 'docker rm -f "${cid:-}" >/dev/null 2>&1 || true; docker rm -f "${cid2:-}" >/dev/null 2>&1 || true' EXIT
+
+          for _ in $(seq 1 40); do
+            if docker exec "$cid" php -v >/dev/null 2>&1; then break; fi
+            sleep 1
+          done
+
+          docker exec "$cid" bash -c '
+            cd /var/www/html
+            wp config create --allow-root --dbname=partikulier_src --dbuser=partikulier --dbpass=ci-restore-wp-pass --dbhost=host.docker.internal:3306 --skip-check --force
+            wp core install --allow-root --url="http://127.0.0.1:18091" --title="Cold Restore Verify" --admin_user=admin --admin_password=ci-admin-pass --admin_email=admin@example.invalid --skip-email
+            printf "%s\n" "RewriteEngine On" "RewriteBase /" "RewriteRule ^index\\.php\$ - [L]" "RewriteCond %{REQUEST_FILENAME} !-f" "RewriteCond %{REQUEST_FILENAME} !-d" "RewriteRule . /index.php [L]" > .htaccess
+            wp rewrite structure "/%postname%/" --allow-root
+            wp rewrite flush --allow-root
+            wp plugin activate partikulier-core --allow-root
+            wp theme activate partikulier --allow-root
+            mkdir -p wp-content/uploads/2026/11
+            cp wp-content/themes/partikulier/assets/img/hero.jpg wp-content/uploads/2026/11/cold-restore-proof.jpg
+            chown -R www-data:www-data /var/www/html/wp-content/uploads
+          '
+          orig_img_sha="$(sha256sum /tmp/wp-src/wp-content/uploads/2026/11/cold-restore-proof.jpg | awk '{print $1}')"
+          pre_health="$(curl -fsS http://127.0.0.1:18091/wp-json/partikulier/v1/health)"
+          echo "PRE_BACKUP_HEALTH=$pre_health"
+          pre_img_code="$(curl -fsS -o /dev/null -w '%{http_code}' http://127.0.0.1:18091/wp-content/uploads/2026/11/cold-restore-proof.jpg)"
+          test "$pre_img_code" = "200"
+
+          # Create full archive (code + uploads + static wp-config.php) + SQL dump via mariadb:11.8 client
+          tar -czf /tmp/backups/site-full.tar.gz -C /tmp/wp-src .
+          docker run --rm --network host mariadb:11.8 \
+            mariadb-dump -h 127.0.0.1 -P 3306 -u partikulier -pci-restore-wp-pass --single-transaction --no-tablespaces partikulier_src \
+            | gzip > /tmp/backups/database.sql.gz
+          gzip -t /tmp/backups/site-full.tar.gz /tmp/backups/database.sql.gz
+
+          # Tear down source container and create BRAND-NEW EMPTY DIRECTORY + BRAND-NEW EMPTY DATABASE
+          docker rm -f "$cid" >/dev/null 2>&1 || true
+          unset cid
+          test -z "$(ls -A /tmp/wp-cold-restore)"
+          docker run --rm --network host mariadb:11.8 \
+            mariadb -h 127.0.0.1 -P 3306 -u root -pci-restore-root-pass \
+            -e "CREATE DATABASE partikulier_cold_empty CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; GRANT ALL PRIVILEGES ON partikulier_cold_empty.* TO 'partikulier'@'%'; FLUSH PRIVILEGES;"
+
+          # Extract archive ONLY into empty directory and load dump ONLY into empty database
+          tar -xzf /tmp/backups/site-full.tar.gz -C /tmp/wp-cold-restore
+          sed -i "s/partikulier_src/partikulier_cold_empty/g" /tmp/wp-cold-restore/wp-config.php
+          gunzip -c /tmp/backups/database.sql.gz | docker run -i --rm --network host mariadb:11.8 \
+            mariadb -h 127.0.0.1 -P 3306 -u partikulier -pci-restore-wp-pass partikulier_cold_empty
+
+          # Boot brand-new container from /tmp/wp-cold-restore (zero DB env vars)
+          cid2="$(docker run -d --rm -p 18092:80 --add-host=host.docker.internal:host-gateway \
+            -v /tmp/wp-cold-restore:/var/www/html \
+            -v /tmp/wp-cli.phar:/usr/local/bin/wp:ro \
+            wordpress:6.6-php8.3-apache)"
+          for _ in $(seq 1 40); do
+            code="$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:18092/wp-json/partikulier/v1/health || true)"
+            if [ "$code" = "200" ]; then break; fi
+            sleep 2
+          done
+
+          docker exec "$cid2" bash -c '
+            cd /var/www/html
+            wp option update home "http://127.0.0.1:18092" --allow-root
+            wp option update siteurl "http://127.0.0.1:18092" --allow-root
+            wp cache flush --allow-root || true
+          '
+          post_health_code="$(curl -s -o /tmp/cold_health.json -w '%{http_code}' http://127.0.0.1:18092/wp-json/partikulier/v1/health)"
+          cat /tmp/cold_health.json
+          test "$post_health_code" = "200"
+          python3 -c 'import json; d=json.load(open("/tmp/cold_health.json")); assert d["status"]=="ok" and d["database"]=="ready"'
+          post_home_code="$(curl -s -o /dev/null -w '%{http_code}' -L http://127.0.0.1:18092/)"
+          test "$post_home_code" = "200"
+          curl -fsS http://127.0.0.1:18092/wp-content/uploads/2026/11/cold-restore-proof.jpg -o /tmp/cold_img.jpg
+          cold_img_sha="$(sha256sum /tmp/cold_img.jpg | awk '{print $1}')"
+          echo "COLD_RESTORE_IMG_SHA=$cold_img_sha ORIG_SHA=$orig_img_sha"
+          test "$cold_img_sha" = "$orig_img_sha"
+          echo "COLD_RESTORE_EMPTY_DIR_AND_EMPTY_DB=PASS"

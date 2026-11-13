@@ -268,12 +268,12 @@ $partikulier_modules = array(
 		'/inc/class-sitemap.php',
 		'/inc/class-price-index.php',
 		'/inc/class-visit-counter.php',
+		'/inc/class-rum-vitals.php',
 		'/inc/class-cache.php',
 		'/inc/class-security.php',
 		'/inc/class-site-hygiene.php',
 		'/inc/class-journal.php',
-		/* Lot E (SECU-1) : passerelle unique des appels système — chargée
-		 * AVANT class-avif.php qui l'utilise pour avifenc/vips. */
+		/* Lot E (SECU-1) : passerelle système chargée AVANT class-avif.php. */
 		'/inc/class-exec-whitelist.php',
 		'/inc/class-image-optimize.php',
 		'/inc/class-avif.php',
@@ -289,8 +289,7 @@ $partikulier_modules = array(
 		'/inc/class-estatik.php',
 		'/inc/class-n8n-security.php',
 		'/inc/class-settings.php',
-		/* SE-020 (E-2003) : sanitiseur d'options (liste blanche) chargé AVANT
-		 * class-customization.php qui l'applique à pk_opts/pk_theme_options. */
+		/* SE-020 (E-2003) : sanitiseur chargé AVANT class-customization.php. */
 		'/inc/class-options-sanitizer.php',
 		'/inc/class-customization.php',
 		'/inc/class-whatsapp-verification.php',
@@ -298,15 +297,11 @@ $partikulier_modules = array(
 		'/inc/class-lead-retention.php',
 		'/inc/class-leads-admin.php',
 		'/inc/class-premium.php',
-		/* Lot B6 (découpe REG-3) : les quatre modules de localisation sont
-		 * chargés AVANT le shell class-localization.php — les traits qu'il
-		 * compose doivent exister à l'évaluation de sa définition de classe. */
+		/* Lot B6+C2 : traits de localisation chargés AVANT class-localization.php. */
 		'/inc/class-localization-runtime.php',
 		'/inc/class-localization-strings.php',
 		'/inc/class-localization-chrome.php',
 		'/inc/class-localization-forms.php',
-		/* Lot C2 (découpe annexe C ≤ 300 l.) : repli variantes B6 déplacé
-		 * VERBATIM dans son trait dédié, chargé avant le shell. */
 		'/inc/class-localization-variants.php',
 		'/inc/class-localization.php',
 		'/inc/class-saved-alerts.php',
@@ -321,9 +316,7 @@ $partikulier_modules = array(
 		'/inc/class-place-requests.php',
 		'/inc/class-places-admin.php',
 		'/inc/class-listing-preview.php',
-		/* Lot C1 (découpe) : les cinq modules de rédaction multilingue sont
-		 * chargés AVANT le shell class-listing-i18n.php — les traits qu'il
-		 * compose doivent exister à l'évaluation de sa définition de classe. */
+		/* Lot C1 : traits multilingues chargés AVANT class-listing-i18n.php. */
 		'/inc/class-listing-i18n-lexicon.php',
 		'/inc/class-listing-arabic-places.php',
 		'/inc/class-listing-closure.php',

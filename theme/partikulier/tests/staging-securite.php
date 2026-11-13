@@ -236,14 +236,25 @@ foreach ( $attendus as $nom => $val ) {
 $powered = entete( $r, 'X-Powered-By' );
 v( $powered === null, 'X-Powered-By absent (pas de version PHP annoncée aux robots)' );
 
-// --- Santé du plugin Core ----------------------------------------------------
-echo "\n-- Plugin Core (lecture seule) --\n";
-$r = httpq( $base . '/wp-json/partikulier/v1/health' );
-	if ( 0 === (int) $r['code'] ) {
-		$r = httpq( $base . '/wp-json/partikulier/v1/health' );
-	}
-$d = json_decode( $r['corps'], true );
-v( $r['code'] === 200 && is_array( $d ) && ( $d['status'] ?? '' ) === 'ok', 'health : HTTP ' . $r['code'] . ' · core ' . ( $d['core_version'] ?? '?' ) . ' · schéma ' . ( $d['schema_version'] ?? '?' ) . ' · BDD ' . ( $d['database'] ?? '?' ) );
+// --- Santé du plugin Core (lecture seule, 2 passages anti-cache) ---------------
+echo "\n-- Plugin Core (lecture seule, non-cacheable 2 passes) --\n";
+$health_passes = array();
+for ( $pass = 1; $pass <= 2; $pass++ ) {
+        $r = httpq( $base . '/wp-json/partikulier/v1/health' );
+        if ( 0 === (int) $r['code'] ) {
+                $r = httpq( $base . '/wp-json/partikulier/v1/health' );
+        }
+        $d    = json_decode( $r['corps'], true );
+        $cc   = (string) ( entete( $r, 'Cache-Control' ) ?? '' );
+        $lsc  = (string) ( entete( $r, 'X-LiteSpeed-Cache' ) ?? '' );
+        $hcdn = (string) ( entete( $r, 'X-HCDN-Cache-Status' ) ?? '' );
+        $ok_body = $r['code'] === 200 && is_array( $d ) && ( $d['status'] ?? '' ) === 'ok' && ( $d['database'] ?? '' ) === 'ready';
+        v( $ok_body, "health passe $pass : HTTP {$r['code']} · status=" . ( $d['status'] ?? '?' ) . ' · BDD=' . ( $d['database'] ?? '?' ) );
+        v( stripos( $cc, 'no-store' ) !== false, "health passe $pass Cache-Control contient no-store ($cc)" );
+        v( stripos( $lsc, 'hit' ) === false, "health passe $pass X-LiteSpeed-Cache non-HIT (" . ( $lsc !== '' ? $lsc : 'absent' ) . ')' );
+        v( stripos( $hcdn, 'hit' ) === false, "health passe $pass X-HCDN-Cache-Status non-HIT (" . ( $hcdn !== '' ? $hcdn : 'absent' ) . ')' );
+        $health_passes[] = $r;
+}
 
 echo "\n-- RÉSULTAT : $OK OK · $KO KO · $ATT à regarder · $SAUT sauté(s) --\n";
 exit( $KO ? 1 : 0 );

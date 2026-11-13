@@ -1,0 +1,74 @@
+name: Sauvegarde complète (DB + uploads)
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Environnement cible (doit correspondre au tag pre-release-* ou release-*)
+        required: true
+        default: uat
+        type: choice
+        options:
+          - uat
+          - prd
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ops-backup-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    name: Exécuter sauvegarde DB + uploads sur ${{ inputs.environment }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    environment:
+      name: ${{ inputs.environment }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Configurer SSH strict
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
+          chmod 600 "$HOME/.ssh/id_ed25519"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 644 "$HOME/.ssh/known_hosts"
+          {
+            echo "Host partikulier-target"
+            echo "  HostName $SSH_HOST"
+            echo "  Port $SSH_PORT"
+            echo "  User $SSH_USER"
+            echo "  IdentityFile $HOME/.ssh/id_ed25519"
+            echo "  UserKnownHostsFile $HOME/.ssh/known_hosts"
+            echo "  StrictHostKeyChecking yes"
+            echo "  IdentitiesOnly yes"
+            echo "  BatchMode yes"
+          } > "$HOME/.ssh/config"
+          chmod 600 "$HOME/.ssh/config"
+
+      - name: Installer le script cron et exécuter une sauvegarde complète vérifiée
+        env:
+          WP_PATH: ${{ secrets.WP_PATH }}
+          BACKUP_ENCRYPTION_PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          scp -F "$HOME/.ssh/config" scripts/hostinger-daily-backup.sh partikulier-target:~/partikulier-daily-backup.sh
+          ssh -F "$HOME/.ssh/config" partikulier-target \
+            "chmod 700 ~/partikulier-daily-backup.sh && WP_PATH=$(printf '%q' "$WP_PATH") BACKUP_ENCRYPTION_PASSPHRASE=$(printf '%q' "${BACKUP_ENCRYPTION_PASSPHRASE:-}") bash ~/partikulier-daily-backup.sh"
+
+      - name: Nettoyer la clé SSH
+        if: always()
+        run: rm -f "$HOME/.ssh/id_ed25519" "$HOME/.ssh/known_hosts" "$HOME/.ssh/config"

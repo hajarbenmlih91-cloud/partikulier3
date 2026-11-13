@@ -55,6 +55,8 @@ global $wpdb;
 $run              = bin2hex(random_bytes(4));
 $origThemeOpts    = get_option('pk_theme_options', null);
 $origLeadSettings = get_option(LeadSettings::OPTION, null);
+$origRumDaily     = get_option('pk_rum_daily', null);
+$origMeasureCk    = $_COOKIE['pk_measure'] ?? null;
 $createdPosts     = [];
 $createdUsers     = [];
 $createdPhones    = [];
@@ -415,9 +417,134 @@ try {
         && $waEnRuntime !== $waMsgId,
         sprintf('reload=%s pub=%s waRuntime=%s', (string) ($reloadedAfterPolylang['partikulier'] ?? ''), $pubEnAfterReload, $waEnRuntime)
     );
+
+    // 16. FIX-HEALTH-04-DB-DOWN : panne DB -> /partikulier/v1/health retourne HTTP 503 + no-store + database=unreachable.
+    $origWpdb = $wpdb;
+    $dbDownCode = 0;
+    $dbDownStatus = '';
+    $dbDownDb = '';
+    $dbDownCc = '';
+    $dbDownLs = '';
+    $dbDownPayloadStatus = '';
+    $dbDownPayloadDb = '';
+    try {
+        $failingWpdb = new class extends \wpdb {
+            public function __construct() {
+            }
+            public function query( $query ) {
+                $this->last_error = 'Simulated DB connection lost';
+                return false;
+            }
+            public function prepare( $query, ...$args ) {
+                return (string) $query;
+            }
+            public function get_var( $query = null, $x = 0, $y = 0 ) {
+                $this->last_error = 'Simulated DB connection lost';
+                return null;
+            }
+            public function get_row( $query = null, $output = OBJECT, $y = 0 ) {
+                $this->last_error = 'Simulated DB connection lost';
+                return null;
+            }
+            public function get_results( $query = null, $output = OBJECT ) {
+                $this->last_error = 'Simulated DB connection lost';
+                return [];
+            }
+        };
+        $failingWpdb->prefix  = $origWpdb->prefix;
+        $failingWpdb->options = $origWpdb->options;
+        $wpdb                 = $failingWpdb;
+
+        $hcDown       = (new \Partikulier\Core\HealthCheck())->get();
+        $dbDownStatus = (string) ($hcDown['status'] ?? '');
+        $dbDownDb     = (string) ($hcDown['database'] ?? '');
+
+        $dbDownReq  = rest_do_request(new WP_REST_Request('GET', '/partikulier/v1/health'));
+        $dbDownCode = $dbDownReq->get_status();
+        $dbDownData = (array) $dbDownReq->get_data();
+        $dbDownHdrs = array_change_key_case($dbDownReq->get_headers(), CASE_LOWER);
+        $dbDownCc   = (string) ($dbDownHdrs['cache-control'] ?? '');
+        $dbDownLs   = (string) ($dbDownHdrs['x-litespeed-cache-control'] ?? '');
+        $dbDownPayloadStatus = (string) ($dbDownData['status'] ?? '');
+        $dbDownPayloadDb     = (string) ($dbDownData['database'] ?? '');
+    } finally {
+        $wpdb = $origWpdb;
+    }
+    $assert(
+        'FIX-HEALTH-04-DB-DOWN',
+        $dbDownStatus === 'critical'
+        && $dbDownDb === 'unreachable'
+        && $dbDownCode === 503
+        && $dbDownPayloadStatus === 'critical'
+        && $dbDownPayloadDb === 'unreachable'
+        && str_contains($dbDownCc, 'no-store')
+        && $dbDownLs === 'no-cache',
+        sprintf('hc=%s/%s rest=%d(%s/%s) cc=%s ls=%s', $dbDownStatus, $dbDownDb, $dbDownCode, $dbDownPayloadStatus, $dbDownPayloadDb, $dbDownCc, $dbDownLs)
+    );
+
+    // 17. FIX-RUM-01 : Télémétrie Web Vitals first-party strictement soumise au consentement pk_measure=yes.
+    $rumClassOk = class_exists('Partikulier_Rum_Vitals');
+    $rumDenied = false;
+    $rumAllowed = false;
+    $rumP75Ok = false;
+    $rumNoPii = false;
+    if ($rumClassOk) {
+        delete_option(Partikulier_Rum_Vitals::OPTION);
+        unset($_COOKIE[Partikulier_Rum_Vitals::COOKIE]);
+        $rumDenied = !Partikulier_Rum_Vitals::record_sample([
+            'route' => 'home',
+            'lang'  => 'fr',
+            'device'=> 'm',
+            'lcp'   => 1800,
+            'inp'   => 60,
+            'cls'   => 0.01,
+            'ttfb'  => 140,
+        ]);
+        $_COOKIE[Partikulier_Rum_Vitals::COOKIE] = 'yes';
+        $rumAllowed = Partikulier_Rum_Vitals::record_sample([
+            'route' => 'https://evil.example/?token=secret',
+            'lang'  => 'fr',
+            'device'=> 'm',
+            'lcp'   => 1900,
+            'inp'   => 55,
+            'cls'   => 0.02,
+            'ttfb'  => 150,
+        ]) && Partikulier_Rum_Vitals::record_sample([
+            'route' => 'home',
+            'lang'  => 'en',
+            'device'=> 'm',
+            'lcp'   => 2100,
+            'inp'   => 95,
+            'cls'   => 0.04,
+            'ttfb'  => 190,
+        ]);
+        $rumRaw = get_option(Partikulier_Rum_Vitals::OPTION, []);
+        $rumJson = (string) wp_json_encode($rumRaw);
+        $rumNoPii = !str_contains($rumJson, 'evil.example') && !str_contains($rumJson, 'secret');
+        $rumSum = Partikulier_Rum_Vitals::summary(7);
+        $rumP75Ok = isset($rumSum['home:m']['lcp_p75'], $rumSum['home:m']['inp_p75'], $rumSum['other:m']['cls_p75'])
+            && $rumSum['home:m']['lcp_p75'] === 2100
+            && $rumSum['home:m']['inp_p75'] === 95;
+    }
+    $assert(
+        'FIX-RUM-01',
+        $rumClassOk && $rumDenied && $rumAllowed && $rumNoPii && $rumP75Ok,
+        sprintf('class=%s deniedWithoutConsent=%s allowed=%s noPii=%s p75=%s',
+            $rumClassOk ? 'yes' : 'no', $rumDenied ? 'yes' : 'no', $rumAllowed ? 'yes' : 'no', $rumNoPii ? 'yes' : 'no', $rumP75Ok ? 'yes' : 'no')
+    );
 } catch (Throwable $e) {
     $assert('FIX-UNEXPECTED', false, $e->getMessage());
 } finally {
+    if ($origMeasureCk === null) {
+        unset($_COOKIE['pk_measure']);
+    } else {
+        $_COOKIE['pk_measure'] = $origMeasureCk;
+    }
+    if ($origRumDaily === null) {
+        delete_option('pk_rum_daily');
+    } else {
+        update_option('pk_rum_daily', $origRumDaily, false);
+    }
     if ($origRequestUri === null) {
         unset($_SERVER['REQUEST_URI']);
     } else {
