@@ -209,13 +209,46 @@ class Partikulier_Visit_Counter {
 			function mobileCookie() {
 				return window.matchMedia("(max-width: 767px)").matches;
 			}
+			var infoPadApplied = false;
+			var focusScheduled = false;
+			function clearInfoPad() {
+				if (infoPadApplied) {
+					infoPadApplied = false;
+					document.body.style.paddingTop = "";
+				}
+			}
 			function placeInfo() {
 				if (!mobileCookie() || bar.hidden || !bar.classList.contains("pk-cookie-info")) {
-					document.body.style.paddingTop = "";
+					clearInfoPad();
 					return;
 				}
 				var card = bar.querySelector(".pk-cookie-card");
-				document.body.style.paddingTop = card ? (card.offsetHeight + 12) + "px" : "";
+				if (card) {
+					infoPadApplied = true;
+					document.body.style.paddingTop = (card.offsetHeight + 12) + "px";
+				} else {
+					clearInfoPad();
+				}
+			}
+			function scheduleFocusYes() {
+				if (focusScheduled || bar.hidden || bar.hasAttribute("data-pk-focused") || !mobileCookie() || gateOpen()) return;
+				var yes = bar.querySelector("[data-yes]");
+				if (!yes) return;
+				focusScheduled = true;
+				var focusYes = function () {
+					focusScheduled = false;
+					if (bar.hidden || bar.hasAttribute("data-pk-focused") || !mobileCookie() || gateOpen()) return;
+					bar.setAttribute("data-pk-focused", "1");
+					if (document.activeElement && document.activeElement !== document.body && !bar.contains(document.activeElement)) return;
+					try { yes.focus({ preventScroll: true }); } catch (err) { yes.focus(); }
+				};
+				if (document.readyState === "complete") {
+					window.setTimeout(focusYes, 0);
+				} else {
+					window.addEventListener("load", function () {
+						window.setTimeout(focusYes, 0);
+					}, { once: true });
+				}
 			}
 			function markInfo() {
 				var link = bar.querySelector(".pk-cookie-card a[href]");
@@ -235,17 +268,7 @@ class Partikulier_Visit_Counter {
 					bar.setAttribute("role", "dialog");
 					bar.setAttribute("aria-modal", bar.classList.contains("pk-cookie-info") ? "false" : "true");
 					bar.setAttribute("aria-labelledby", "pk-cookie-text");
-			if (!bar.hasAttribute("data-pk-focused")) {
-				bar.setAttribute("data-pk-focused", "1");
-				var yes = bar.querySelector("[data-yes]");
-				if (yes) {
-					var focusYes = function () {
-						try { yes.focus({ preventScroll: true }); } catch (err) { yes.focus(); }
-					};
-					if (window.requestAnimationFrame) window.requestAnimationFrame(focusYes);
-					else focusYes();
-				}
-			}
+					scheduleFocusYes();
 				} else {
 					bar.removeAttribute("role");
 					bar.removeAttribute("aria-modal");
@@ -256,7 +279,7 @@ class Partikulier_Visit_Counter {
 			function hide() {
 				bar.hidden = true;
 				document.body.classList.remove("pk-cookie-open");
-				document.body.style.paddingTop = "";
+				clearInfoPad();
 			}
 			function count() {
 				var key = "pk_counted:" + location.pathname;

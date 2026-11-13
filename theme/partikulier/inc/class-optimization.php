@@ -43,7 +43,9 @@ class Partikulier_Optimization {
 
 		// --- Desactiver dashicons sur le front (sauf si admin bar) ---
 		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'dequeue_dashicons' ), 100 );
-		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'dequeue_unused_block_styles' ), 100 );
+		add_action( 'wp', array( __CLASS__, 'unhook_unused_block_styles' ), 20 );
+		add_action( 'wp_enqueue_scripts', array( __CLASS__, 'dequeue_unused_block_styles' ), PHP_INT_MAX );
+		add_action( 'wp_print_styles', array( __CLASS__, 'dequeue_unused_block_styles' ), 1 );
 
 		// --- jQuery : NE PLUS le deregistrer ---
 		// Estatik (recherche AJAX, carte, galerie) et la plupart des plugins tiers
@@ -97,34 +99,51 @@ class Partikulier_Optimization {
 		}
 	}
 
+	private static function is_custom_pk_template() {
+		if ( is_admin() ) {
+			return false;
+		}
+		$pt    = defined( 'PARTIKULIER_ESTATIK_POST_TYPE' ) ? PARTIKULIER_ESTATIK_POST_TYPE : 'properties';
+		$taxes = array_filter( array(
+			defined( 'PARTIKULIER_ESTATIK_LOCATION_TAXONOMY' ) ? PARTIKULIER_ESTATIK_LOCATION_TAXONOMY : '',
+			defined( 'PARTIKULIER_ESTATIK_TYPE_TAXONOMY' ) ? PARTIKULIER_ESTATIK_TYPE_TAXONOMY : '',
+			defined( 'PARTIKULIER_ESTATIK_STATUS_TAXONOMY' ) ? PARTIKULIER_ESTATIK_STATUS_TAXONOMY : '',
+			defined( 'PARTIKULIER_ESTATIK_CATEGORY_TAXONOMY' ) ? PARTIKULIER_ESTATIK_CATEGORY_TAXONOMY : '',
+		) );
+		return is_front_page()
+			|| is_home()
+			|| is_post_type_archive( $pt )
+			|| is_singular( $pt )
+			|| ( ! empty( $taxes ) && is_tax( $taxes ) );
+	}
+
+	/**
+	 * Decroche global-styles et classic-theme-styles avant wp_enqueue_scripts
+	 * sur les gabarits sur mesure qui n'utilisent aucun style de bloc Gutenberg.
+	 */
+	public static function unhook_unused_block_styles() {
+		if ( ! self::is_custom_pk_template() ) {
+			return;
+		}
+		remove_action( 'wp_enqueue_scripts', 'wp_enqueue_global_styles' );
+		remove_action( 'wp_footer', 'wp_enqueue_global_styles', 1 );
+		remove_action( 'wp_enqueue_scripts', 'wp_enqueue_classic_theme_styles' );
+	}
+
 	/**
 	 * Retire le CSS des blocs Gutenberg (wp-block-library, classic-theme-styles,
 	 * global-styles) sur les gabarits sur mesure (accueil, annonces, fiches bien)
 	 * qui n'affichent aucun bloc Gutenberg. Conserve sur les pages éditoriales.
 	 */
 	public static function dequeue_unused_block_styles() {
-		if ( is_admin() ) {
-			return;
-		}
-		$pt      = defined( 'PARTIKULIER_ESTATIK_POST_TYPE' ) ? PARTIKULIER_ESTATIK_POST_TYPE : 'properties';
-		$taxes   = array_filter( array(
-			defined( 'PARTIKULIER_ESTATIK_LOCATION_TAXONOMY' ) ? PARTIKULIER_ESTATIK_LOCATION_TAXONOMY : '',
-			defined( 'PARTIKULIER_ESTATIK_TYPE_TAXONOMY' ) ? PARTIKULIER_ESTATIK_TYPE_TAXONOMY : '',
-			defined( 'PARTIKULIER_ESTATIK_STATUS_TAXONOMY' ) ? PARTIKULIER_ESTATIK_STATUS_TAXONOMY : '',
-			defined( 'PARTIKULIER_ESTATIK_CATEGORY_TAXONOMY' ) ? PARTIKULIER_ESTATIK_CATEGORY_TAXONOMY : '',
-		) );
-		$is_pk = is_front_page()
-			|| is_home()
-			|| is_post_type_archive( $pt )
-			|| is_singular( $pt )
-			|| ( ! empty( $taxes ) && is_tax( $taxes ) );
-		if ( ! $is_pk ) {
+		if ( ! self::is_custom_pk_template() ) {
 			return;
 		}
 		wp_dequeue_style( 'wp-block-library' );
 		wp_dequeue_style( 'wp-block-library-theme' );
 		wp_dequeue_style( 'classic-theme-styles' );
 		wp_dequeue_style( 'global-styles' );
+		wp_deregister_style( 'global-styles' );
 	}
 
 	/**
