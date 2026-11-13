@@ -26,6 +26,20 @@ final class RestController
 		// Les services sont construits à la demande : les lectures publiques ne
 		// initialisent ni leads, ni favoris, ni santé, ni écriture.
 		add_action('rest_api_init', [$this, 'registerRoutes']);
+		add_filter('rest_post_dispatch', [$this, 'forceHealthNoCacheHeaders'], 20, 3);
+	}
+
+	public function forceHealthNoCacheHeaders( $response, $server = null, $request = null )
+	{
+		if ( ! $response instanceof WP_REST_Response || ! $request instanceof WP_REST_Request ) {
+			return $response;
+		}
+		if ( '/' . RouteRegistry::NAMESPACE . '/health' === $request->get_route() ) {
+			do_action('litespeed_control_set_nocache', 'Partikulier health endpoint');
+			$response->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+			$response->header('X-LiteSpeed-Cache-Control', 'no-cache');
+		}
+		return $response;
 	}
 
 	private function repository(): ListingRepository
@@ -185,7 +199,7 @@ final class RestController
 					}
 					return $resp;
 				},
-				'permission_callback' => [$this, 'guardPublic'],
+				'permission_callback' => [$this, 'guardHealth'],
 			], 'plugin');
 
 		// Lot R1 — export Data Qualifiée pour n8n → Google Sheets
@@ -219,6 +233,15 @@ final class RestController
 	public function guardPublic( WP_REST_Request $request ): bool|WP_Error
 	{
 		return $this->rateLimiter()->guard($request, 'public', $this->policy()->canReadPublic(), 180, 60);
+	}
+
+	public function guardHealth( WP_REST_Request $request ): bool|WP_Error
+	{
+		$verdict = $this->guardPublic($request);
+		if ( is_wp_error($verdict) && 'pk_rate_limiter_unavailable' === $verdict->get_error_code() ) {
+			return true;
+		}
+		return $verdict;
 	}
 
 	public function guardWrite( WP_REST_Request $request ): bool|WP_Error

@@ -1,0 +1,411 @@
+name: UAT E2E réel non mocké (dépôt + photo + modération + nettoyage)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ops-uat-real-e2e
+  cancel-in-progress: false
+
+jobs:
+  real-e2e:
+    name: Dépôt réel /deposer/ -> photo uploads/ -> modération -> désactivation -> zéro résidu
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment:
+      name: uat
+      url: https://darkcyan-yak-151002.hostingersite.com
+    env:
+      AUDIT_OUT_DIR: ${{ github.workspace }}/real-e2e-artifacts
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+
+      - name: Installer Playwright et Chromium
+        run: |
+          set -euo pipefail
+          cd theme/partikulier
+          npm ci
+          npx playwright install --with-deps chromium
+          mkdir -p "$AUDIT_OUT_DIR"
+
+      - name: Configurer SSH strict UAT
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
+          chmod 600 "$HOME/.ssh/id_ed25519"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 644 "$HOME/.ssh/known_hosts"
+          {
+            echo "Host partikulier-uat"
+            echo "  HostName $SSH_HOST"
+            echo "  Port $SSH_PORT"
+            echo "  User $SSH_USER"
+            echo "  IdentityFile $HOME/.ssh/id_ed25519"
+            echo "  UserKnownHostsFile $HOME/.ssh/known_hosts"
+            echo "  StrictHostKeyChecking yes"
+            echo "  IdentitiesOnly yes"
+            echo "  BatchMode yes"
+          } > "$HOME/.ssh/config"
+          chmod 600 "$HOME/.ssh/config"
+
+      - name: 1) Soumission réelle non mockée sur /fr/deposer/ (avec photo)
+        id: submit
+        run: |
+          set -euo pipefail
+          SYNTH_PHONE="0600$(( 100000 + RANDOM % 899999 ))"
+          SYNTH_TITLE="E2E-REAL-$(date -u +%Y%m%d%H%M%S)"
+          echo "synth_phone=$SYNTH_PHONE" >> "$GITHUB_OUTPUT"
+          echo "synth_title=$SYNTH_TITLE" >> "$GITHUB_OUTPUT"
+          PK_BASE="https://darkcyan-yak-151002.hostingersite.com" \
+          SYNTH_PHONE="$SYNTH_PHONE" \
+          SYNTH_TITLE="$SYNTH_TITLE" \
+          OUT_JSON="$AUDIT_OUT_DIR/submit-result.json" \
+          node - <<'NODE'
+          import { chromium } from './theme/partikulier/node_modules/playwright/index.mjs';
+          import { writeFile } from 'node:fs/promises';
+          import path from 'node:path';
+
+          const BASE = process.env.PK_BASE;
+          const SYNTH_PHONE = process.env.SYNTH_PHONE;
+          const SYNTH_TITLE = process.env.SYNTH_TITLE;
+          const OUT_JSON = process.env.OUT_JSON;
+
+          const browser = await chromium.launch({ headless: true });
+          const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+          const page = await context.newPage();
+          const pageErrors = [];
+          page.on('pageerror', (e) => pageErrors.push(e.message));
+
+          await page.goto(`${BASE}/fr/deposer/?pk_audit=real_e2e`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+          const cookieNo = page.locator('[data-pk-cookie] [data-no]');
+          if (await cookieNo.isVisible().catch(() => false)) await cookieNo.click().catch(() => {});
+          const langDismiss = page.locator('[data-pk-lang-gate] [data-pk-lang-dismiss]');
+          if (await langDismiss.isVisible().catch(() => false)) await langDismiss.click().catch(() => {});
+
+          await page.locator('#role [data-val="proprietaire"]').click();
+          await page.locator('#transaction [data-val="vente"]').click();
+          await page.locator('#famille [data-val="bureau"]').click();
+          await page.fill('#ville', 'Casablanca');
+          await page.locator('#ville-list li').first().waitFor({ state: 'visible', timeout: 8000 });
+          await page.locator('#ville-list li').first().dispatchEvent('mousedown');
+          await page.fill('#quartier', 'Maarif');
+          await page.locator('#quartier-list li').first().waitFor({ state: 'visible', timeout: 8000 });
+          await page.locator('#quartier-list li').first().dispatchEvent('mousedown');
+          await page.locator('#next').click();
+          await page.locator('#page-2').waitFor({ state: 'visible', timeout: 8000 });
+
+          await page.locator('#bu-type [data-val="plateau"]').click();
+          await page.fill('#bu-surface', '115');
+          await page.locator('#bu-etage [data-val="rdc"]').click();
+          await page.locator('#bu-places [data-dir="1"]').click();
+          await page.locator('#bu-amenagement [data-val="ouvert"]').click();
+          await page.fill('#bu-prix', '2150000');
+          const imgPath = path.resolve('theme/partikulier/assets/img/hero.jpg');
+          await page.setInputFiles('#photos-input', imgPath);
+          await page.locator('#photos-liste > *').first().waitFor({ state: 'visible', timeout: 10000 });
+          await page.locator('#next').click();
+          await page.locator('#page-3').waitFor({ state: 'visible', timeout: 8000 });
+
+          await page.fill('#annonce-titre', SYNTH_TITLE);
+          await page.fill('#annonce-nom', 'Audit Reel UAT');
+          await page.fill('#annonce-telephone', SYNTH_PHONE);
+
+          const respPromise = page.waitForResponse(
+            (r) => r.url().includes('/admin-ajax.php') && r.request().method() === 'POST',
+            { timeout: 30000 }
+          );
+          await page.locator('#next').click();
+          const resp = await respPromise;
+          const status = resp.status();
+          const json = await resp.json().catch(() => null);
+          await page.locator('.pk-whatsapp-verification').waitFor({ state: 'visible', timeout: 15000 });
+          const panelCode = (await page.locator('.pk-whatsapp-code').textContent())?.trim() || '';
+          const photoWarnings = await page.locator('.pk-photo-warning').count();
+          await browser.close();
+
+          const out = {
+            http_status: status,
+            json,
+            panel_code: panelCode,
+            photo_warnings: photoWarnings,
+            page_errors: pageErrors,
+          };
+          await writeFile(OUT_JSON, JSON.stringify(out, null, 2));
+          console.log(JSON.stringify(out, null, 2));
+          if (status !== 200 || !json?.success || json?.data?.status !== 'pending_whatsapp') {
+            throw new Error(`Unmocked pk_submit_listing failed: HTTP ${status} ${JSON.stringify(json)}`);
+          }
+          if (String(json?.data?.verification_code || '').includes('PK-UAT-DRYRUN')) {
+            throw new Error('Unexpected DRYRUN mock code');
+          }
+          if (photoWarnings > 0 || pageErrors.length > 0) {
+            throw new Error(`Photo warnings=${photoWarnings}, pageErrors=${JSON.stringify(pageErrors)}`);
+          }
+          NODE
+          VERIF_CODE="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["json"]["data"]["verification_code"])' "$AUDIT_OUT_DIR/submit-result.json")"
+          echo "verif_code=$VERIF_CODE" >> "$GITHUB_OUTPUT"
+
+      - name: 2) Vérifier DB/uploads/AVIF, modérer (approve) et tester désactivation propriétaire
+        id: moderate_and_owner
+        env:
+          WP_PATH: ${{ secrets.WP_PATH }}
+          SYNTH_TITLE: ${{ steps.submit.outputs.synth_title }}
+          SYNTH_PHONE: ${{ steps.submit.outputs.synth_phone }}
+        run: |
+          set -euo pipefail
+          ssh -F "$HOME/.ssh/config" partikulier-uat 'bash -s' -- "$WP_PATH" "$SYNTH_TITLE" <<'REMOTE' > "$RUNNER_TEMP/e2e-info.json"
+          set -euo pipefail
+          WP_PATH="$1"; TITLE="$2"
+          cd "$WP_PATH"
+          expected='darkcyan-yak-151002.hostingersite.com'
+          home="$(wp option get home --quiet)"
+          case "${home%/}" in "https://$expected") ;; *) echo "Refused host: $home" >&2; exit 1 ;; esac
+          PK_E2E_TITLE="$TITLE" wp eval '
+            global $wpdb;
+            $title = (string) getenv("PK_E2E_TITLE");
+            $post_id = (int) $wpdb->get_var($wpdb->prepare(
+              "SELECT ID FROM {$wpdb->posts} WHERE post_type = %s AND post_title = %s ORDER BY ID DESC LIMIT 1",
+              PARTIKULIER_ESTATIK_POST_TYPE, $title
+            ));
+            if (!$post_id) { fwrite(STDERR, "MISSING_POST\n"); exit(1); }
+            $post = get_post($post_id);
+            $owner_id = (int) $post->post_author;
+            $thumb_id = (int) get_post_thumbnail_id($post_id);
+            $att_file = $thumb_id ? (string) get_attached_file($thumb_id) : "";
+            $att_url  = $thumb_id ? (string) wp_get_attachment_url($thumb_id) : "";
+            $avif_file = $att_file ? preg_replace("/\.(jpe?g|png|webp)$/i", ".avif", $att_file) : "";
+            $n8n_hook = class_exists("Partikulier_N8n_Security") ? trim((string) Partikulier_N8n_Security::get("n8n_webhook_url")) : "";
+            $n8n_configured = $n8n_hook !== "" ? "yes" : "no";
+
+            $creds = Partikulier_Listing_Approval::approve($post_id);
+            if (class_exists("\\Partikulier\\Core\\Integration\\ListingSynchronizer")) {
+              (new \\Partikulier\\Core\\Integration\\ListingSynchronizer())->flush();
+            }
+            $tr_ids = [];
+            if (function_exists("pll_get_post_translations")) {
+              $tr_ids = array_values(array_map("intval", pll_get_post_translations($post_id)));
+            }
+            if (!in_array($post_id, $tr_ids, true)) { $tr_ids[] = $post_id; }
+            $public_url = (string) get_permalink($post_id);
+            $n8n_status = (string) get_post_meta($post_id, "_pk_n8n_status", true);
+            $n8n_err    = (string) get_post_meta($post_id, "_pk_n8n_error", true);
+
+            echo wp_json_encode([
+              "post_id"        => $post_id,
+              "owner_id"       => $owner_id,
+              "owner_login"    => (string) ($creds["login"] ?? ""),
+              "owner_password" => (string) ($creds["password"] ?? ""),
+              "thumb_id"       => $thumb_id,
+              "att_exists"     => ($att_file !== "" && is_file($att_file)),
+              "avif_exists"    => ($avif_file !== "" && is_file($avif_file)),
+              "att_url"        => $att_url,
+              "public_url"     => $public_url,
+              "post_status"    => (string) get_post_status($post_id),
+              "tr_ids"         => $tr_ids,
+              "n8n_configured" => $n8n_configured,
+              "n8n_status"     => $n8n_status,
+              "n8n_error"      => $n8n_err,
+            ]) . "\n";
+          '
+          REMOTE
+          OWNER_PASSWORD="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["owner_password"])' "$RUNNER_TEMP/e2e-info.json")"
+          echo "::add-mask::$OWNER_PASSWORD"
+          python3 -c '
+          import json, sys, urllib.request
+          d = json.load(open(sys.argv[1]))
+          assert d["post_id"] > 0 and d["owner_id"] > 0, d
+          assert d["thumb_id"] > 0 and d["att_exists"], d
+          assert d["post_status"] == "publish", d
+          assert d["owner_password"], "Expected generated password"
+          for u_key in ("att_url", "public_url"):
+              code = urllib.request.urlopen(d[u_key], timeout=20).getcode()
+              assert code == 200, (u_key, code)
+          redacted = {k: v for k, v in d.items() if k != "owner_password"}
+          with open(sys.argv[2], "w") as f:
+              json.dump(redacted, f, indent=2)
+          print(json.dumps(redacted, indent=2))
+          ' "$RUNNER_TEMP/e2e-info.json" "$AUDIT_OUT_DIR/moderate-result.json"
+
+          OWNER_LOGIN="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["owner_login"])' "$RUNNER_TEMP/e2e-info.json")"
+          POST_ID="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["post_id"])' "$RUNNER_TEMP/e2e-info.json")"
+          OWNER_ID="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["owner_id"])' "$RUNNER_TEMP/e2e-info.json")"
+          THUMB_ID="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["thumb_id"])' "$RUNNER_TEMP/e2e-info.json")"
+          TR_IDS="$(python3 -c 'import json,sys; print(",".join(map(str, json.load(open(sys.argv[1]))["tr_ids"])))' "$RUNNER_TEMP/e2e-info.json")"
+          PUBLIC_URL="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["public_url"])' "$RUNNER_TEMP/e2e-info.json")"
+          ATT_URL="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["att_url"])' "$RUNNER_TEMP/e2e-info.json")"
+          rm -f "$RUNNER_TEMP/e2e-info.json"
+
+          echo "post_id=$POST_ID" >> "$GITHUB_OUTPUT"
+          echo "owner_id=$OWNER_ID" >> "$GITHUB_OUTPUT"
+          echo "thumb_id=$THUMB_ID" >> "$GITHUB_OUTPUT"
+          echo "tr_ids=$TR_IDS" >> "$GITHUB_OUTPUT"
+          echo "public_url=$PUBLIC_URL" >> "$GITHUB_OUTPUT"
+          echo "att_url=$ATT_URL" >> "$GITHUB_OUTPUT"
+
+          PK_BASE="https://darkcyan-yak-151002.hostingersite.com" \
+          OWNER_LOGIN="$OWNER_LOGIN" \
+          OWNER_PASSWORD="$OWNER_PASSWORD" \
+          POST_ID="$POST_ID" \
+          node - <<'NODE'
+          import { chromium } from './theme/partikulier/node_modules/playwright/index.mjs';
+
+          const BASE = process.env.PK_BASE;
+          const LOGIN = process.env.OWNER_LOGIN;
+          const PASSWORD = process.env.OWNER_PASSWORD;
+          const POST_ID = process.env.POST_ID;
+
+          const browser = await chromium.launch({ headless: true });
+          const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+          const page = await context.newPage();
+
+          await page.goto(`${BASE}/fr/connexion/?auth_item=login-form&pk_audit=real_e2e`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+          const cookieNo = page.locator('[data-pk-cookie] [data-no]');
+          if (await cookieNo.isVisible().catch(() => false)) await cookieNo.click().catch(() => {});
+          const langDismiss = page.locator('[data-pk-lang-gate] [data-pk-lang-dismiss]');
+          if (await langDismiss.isVisible().catch(() => false)) await langDismiss.click().catch(() => {});
+
+          const loginForm = page.locator('.pk-auth-card .es-auth__login-form');
+          await loginForm.locator('input[name="es_user_login"]').fill(LOGIN);
+          await loginForm.locator('input[name="es_user_password"]').fill(PASSWORD);
+          await loginForm.locator('input[name="es_user_password"]').dispatchEvent('keyup');
+          await page.waitForFunction(() => {
+            const b = document.querySelector('.pk-auth-card .es-auth__login-form .es-btn--login');
+            return b && !b.disabled;
+          }, { timeout: 5000 }).catch(() => {});
+          await loginForm.locator('.es-btn--login').click();
+
+          let loggedIn = false;
+          for (let i = 0; i < 40; i++) {
+            const cks = await context.cookies(BASE);
+            if (cks.some((c) => c.name.startsWith('wordpress_logged_in_'))) { loggedIn = true; break; }
+            await page.waitForTimeout(250);
+          }
+          if (!loggedIn) throw new Error('Owner login failed');
+
+          await page.goto(`${BASE}/fr/mes-annonces/`, { waitUntil: 'domcontentloaded', timeout: 30000 });
+          const item = page.locator(`.pk-listing-item:has([data-post-id="${POST_ID}"])`).first();
+          await item.waitFor({ state: 'visible', timeout: 10000 });
+
+          await item.locator(`.pk-manage-btn[data-action="deactivate"][data-post-id="${POST_ID}"]`).click();
+          await item.locator(`input[name="pk_reason_${POST_ID}"][value="vendu"]`).check();
+          const manageRespPromise = page.waitForResponse(
+            (r) => r.url().includes('/admin-ajax.php') && r.request().postData()?.includes('pk_manage_listing'),
+            { timeout: 15000 }
+          );
+          await item.locator(`.pk-manage-btn[data-action="deactivate_confirm"][data-post-id="${POST_ID}"]`).click();
+          const manageResp = await manageRespPromise;
+          if (manageResp.status() !== 200) throw new Error(`Deactivate HTTP ${manageResp.status()}`);
+          await page.waitForLoadState('domcontentloaded', { timeout: 15000 });
+          await page.locator(`.pk-listing-item:has([data-post-id="${POST_ID}"]) .pk-listing-status`).waitFor({ state: 'visible', timeout: 10000 });
+          const statusAfter = (await page.locator(`.pk-listing-item:has([data-post-id="${POST_ID}"]) .pk-listing-status`).textContent())?.trim() || '';
+          console.log(`OWNER_DEACTIVATE_STATUS=${statusAfter}`);
+          if (statusAfter !== 'Vendu') throw new Error(`Expected Vendu, got ${statusAfter}`);
+          await browser.close();
+          NODE
+
+      - name: 3) Suppression complète et preuve zéro résidu (même après échec)
+        if: always() && steps.submit.outputs.synth_title != ''
+        env:
+          WP_PATH: ${{ secrets.WP_PATH }}
+          SYNTH_TITLE: ${{ steps.submit.outputs.synth_title }}
+          VERIF_CODE: ${{ steps.submit.outputs.verif_code }}
+          TR_IDS: ${{ steps.moderate_and_owner.outputs.tr_ids }}
+          OWNER_ID: ${{ steps.moderate_and_owner.outputs.owner_id }}
+          THUMB_ID: ${{ steps.moderate_and_owner.outputs.thumb_id }}
+          PUBLIC_URL: ${{ steps.moderate_and_owner.outputs.public_url }}
+          ATT_URL: ${{ steps.moderate_and_owner.outputs.att_url }}
+        run: |
+          set -euo pipefail
+          ssh -F "$HOME/.ssh/config" partikulier-uat 'bash -s' -- "$WP_PATH" "$SYNTH_TITLE" "${VERIF_CODE:-}" "${TR_IDS:-}" "${OWNER_ID:-0}" "${THUMB_ID:-0}" <<'REMOTE'
+          set -euo pipefail
+          WP_PATH="$1"; TITLE="$2"; VERIF_CODE="$3"; TR_IDS="$4"; OWNER_ID="$5"; THUMB_ID="$6"
+          cd "$WP_PATH"
+          PK_E2E_TITLE="$TITLE" PK_E2E_CODE="$VERIF_CODE" PK_E2E_TR_IDS="$TR_IDS" PK_E2E_OWNER_ID="$OWNER_ID" PK_E2E_THUMB_ID="$THUMB_ID" wp eval '
+            global $wpdb;
+            $title    = (string) getenv("PK_E2E_TITLE");
+            $code     = (string) getenv("PK_E2E_CODE");
+            $tr_ids   = array_filter(array_map("intval", explode(",", (string) getenv("PK_E2E_TR_IDS"))));
+            $owner_id = (int) getenv("PK_E2E_OWNER_ID");
+            $thumb_id = (int) getenv("PK_E2E_THUMB_ID");
+            $rows = $wpdb->get_col($wpdb->prepare("SELECT ID FROM {$wpdb->posts} WHERE post_title = %s", $title));
+            $all_posts = array_unique(array_merge($tr_ids, array_map("intval", (array) $rows)));
+            foreach ($all_posts as $pid) {
+              $tid = (int) get_post_thumbnail_id($pid);
+              if ($tid > 0) { wp_delete_attachment($tid, true); }
+              $gallery = get_post_meta($pid, "es_property_gallery", true);
+              if (is_array($gallery)) {
+                foreach ($gallery as $gid) { wp_delete_attachment((int) $gid, true); }
+              }
+              $wpdb->delete($wpdb->prefix . "pk_listings", ["property_id" => $pid], ["%d"]);
+              $wpdb->delete($wpdb->prefix . "pk_audit_log", ["property_id" => $pid], ["%d"]);
+              wp_delete_post($pid, true);
+            }
+            if ($thumb_id > 0 && get_post($thumb_id)) { wp_delete_attachment($thumb_id, true); }
+            if ($code !== "") {
+              $wpdb->query($wpdb->prepare(
+                "DELETE FROM {$wpdb->prefix}pk_idempotency WHERE event_id LIKE %s AND response_json LIKE %s",
+                "pkform:%",
+                "%" . $wpdb->esc_like($code) . "%"
+              ));
+            }
+            if ($owner_id > 0 && get_user_by("id", $owner_id)) {
+              $user = get_user_by("id", $owner_id);
+              if (in_array("contributor", (array) $user->roles, true)) {
+                require_once ABSPATH . "wp-admin/includes/user.php";
+                $admin_id = (int) $wpdb->get_var("SELECT user_id FROM {$wpdb->usermeta} WHERE meta_key = \"{$wpdb->prefix}capabilities\" AND meta_value LIKE \"%administrator%\" ORDER BY user_id ASC LIMIT 1");
+                wp_delete_user($owner_id, $admin_id ?: null);
+              }
+            }
+            if (class_exists("\\Partikulier\\Core\\Integration\\ListingSynchronizer")) {
+              (new \\Partikulier\\Core\\Integration\\ListingSynchronizer())->flush();
+            }
+            $rem_posts = (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$wpdb->posts} WHERE post_title = %s", $title));
+            $rem_user  = $owner_id > 0 ? (bool) get_user_by("id", $owner_id) : false;
+            $rem_att   = $thumb_id > 0 ? (bool) get_post($thumb_id) : false;
+            $rem_idem  = $code !== "" ? (int) $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$wpdb->prefix}pk_idempotency WHERE response_json LIKE %s", "%" . $wpdb->esc_like($code) . "%")) : 0;
+            echo "ZERO_RESIDUE_CHECK posts=$rem_posts user=" . ($rem_user ? "1" : "0") . " att=" . ($rem_att ? "1" : "0") . " idem=$rem_idem\n";
+            if ($rem_posts !== 0 || $rem_user || $rem_att || $rem_idem !== 0) { exit(1); }
+          '
+          wp cache flush || true
+          wp eval 'if ( class_exists("Partikulier_Cache") ) { Partikulier_Cache::purge_all(); }' || true
+          REMOTE
+          if [ -n "${ATT_URL:-}" ]; then
+            att_after="$(curl -s -o /dev/null -w '%{http_code}' "$ATT_URL")"
+            echo "MEDIA_AFTER_DELETE_HTTP=$att_after"
+            test "$att_after" = "404"
+          fi
+          if [ -n "${PUBLIC_URL:-}" ]; then
+            pub_after="$(curl -s -o /dev/null -w '%{http_code}' "$PUBLIC_URL")"
+            echo "LISTING_AFTER_DELETE_HTTP=$pub_after"
+            test "$pub_after" = "404" -o "$pub_after" = "410"
+          fi
+
+      - name: Publier les artefacts E2E
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: uat-real-e2e-${{ github.run_number }}
+          path: ${{ github.workspace }}/real-e2e-artifacts/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Nettoyer la clé SSH
+        if: always()
+        run: rm -f "$HOME/.ssh/id_ed25519" "$HOME/.ssh/known_hosts" "$HOME/.ssh/config"
