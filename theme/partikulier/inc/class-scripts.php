@@ -18,6 +18,8 @@ class Partikulier_Scripts {
 			// se declenche PENDANT wp_head, un add_action( 'wp_head', ..., 1 ) a ce
 			// moment-la n'est jamais execute (priorite deja depassee).
 			add_action( 'wp_head', array( __CLASS__, 'preload_assets' ), 2 );
+			add_action( 'wp_head', array( __CLASS__, 'inline_critical_css' ), 3 );
+			add_filter( 'style_loader_tag', array( __CLASS__, 'defer_main_stylesheet' ), 10, 4 );
 	}
 
 	public static function enqueue() {
@@ -84,21 +86,83 @@ class Partikulier_Scripts {
 	}
 
 		/**
-		 * <link rel="preload"> pour la police locale (LCP).
+		 * <link rel="preload"> pour la police locale (LCP) selon la langue active.
 		 *
-		 * La feuille de style n'est PAS preloadee : elle est deja injectee par
-		 * wp_enqueue_style en <link rel="stylesheet"> dans le meme <head>, un
-		 * preload ferait un second telechargement. La police, elle, n'est
-		 * decouverte qu'apres parsing du CSS : la precharger evite le FOUT.
+		 * Sur les pages RTL (arabe), on precharge Noto Sans Arabic ; sur FR/EN,
+		 * uniquement DM Sans (et Instrument Serif sur l'accueil), sans precharger
+		 * ni telecharger les fontes arabes inutilisees.
 		 */
 	public static function preload_assets() {
-			// PARTIKULIER_URI (get_template_directory_uri) et non
-			// get_stylesheet_directory_uri : sur un theme enfant les deux different,
-			// ce qui provoquait un preload vers une URL inexistante.
-			printf(
-					'<link rel="preload" href="%s/assets/fonts/dm-sans-latin.woff2" as="font" type="font/woff2" crossorigin fetchpriority="high">%s',
-					esc_url( PARTIKULIER_URI ),
+			$uri    = esc_url( PARTIKULIER_URI );
+			$is_rtl = is_rtl()
+				|| ( function_exists( 'pll_current_language' ) && 'ar' === pll_current_language( 'slug' ) )
+				|| str_starts_with( (string) get_locale(), 'ar' );
+
+		if ( $is_rtl ) {
+				printf(
+					'<link rel="preload" href="%s/assets/fonts/NotoSansArabic-Regular.woff2" as="font" type="font/woff2" crossorigin fetchpriority="high">%s',
+					$uri,
 					"\n"
+				);
+				printf(
+					'<link rel="preload" href="%s/assets/fonts/NotoSansArabic-SemiBold.woff2" as="font" type="font/woff2" crossorigin>%s',
+					$uri,
+					"\n"
+				);
+				return;
+		}
+
+			printf(
+				'<link rel="preload" href="%s/assets/fonts/dm-sans-latin.woff2" as="font" type="font/woff2" crossorigin fetchpriority="high">%s',
+				$uri,
+				"\n"
+			);
+		if ( is_front_page() ) {
+				printf(
+					'<link rel="preload" href="%s/assets/fonts/instrument-serif-italic.woff2" as="font" type="font/woff2" crossorigin>%s',
+					$uri,
+					"\n"
+				);
+		}
+	}
+
+		/**
+		 * CSS critique inline sur l'accueil pour rendre le premier ecran sans
+		 * requete bloquante, avant le chargement differe de style.min.css.
+		 */
+	public static function inline_critical_css() {
+		if ( is_admin() || ! is_front_page() ) {
+				return;
+		}
+			$file = PARTIKULIER_DIR . '/assets/css/critical.min.css';
+		if ( ! is_readable( $file ) ) {
+				return;
+		}
+			$css = file_get_contents( $file );
+		if ( ! is_string( $css ) || '' === $css ) {
+				return;
+		}
+			$fonts_uri = esc_url_raw( PARTIKULIER_URI . '/assets/fonts' );
+			$css       = str_replace( '__PK_FONTS__', $fonts_uri, $css );
+			printf( "<style id=\"pk-critical-css\">%s</style>\n", $css ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+	}
+
+		/**
+		 * Charge style.min.css sans bloquer le rendu sur l'accueil lorsque le CSS
+		 * critique inline est actif (conserve l'ordre DOM avant #pk-desktop-nav-red).
+		 */
+	public static function defer_main_stylesheet( $html, $handle, $href, $media ) {
+		if ( 'partikulier-style' !== $handle || is_admin() || ! is_front_page() ) {
+				return $html;
+		}
+		if ( ! is_readable( PARTIKULIER_DIR . '/assets/css/critical.min.css' ) ) {
+				return $html;
+		}
+			$safe_href = esc_url( $href );
+			return sprintf(
+				"<link rel=\"stylesheet\" id=\"partikulier-style-css\" href=\"%s\" media=\"print\" onload=\"this.onload=null;this.media='all'\">\n<noscript><link rel=\"stylesheet\" href=\"%s\"></noscript>\n",
+				$safe_href,
+				$safe_href
 			);
 	}
 

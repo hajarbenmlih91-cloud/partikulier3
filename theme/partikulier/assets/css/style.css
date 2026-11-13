@@ -36,6 +36,7 @@
 		font-weight: 400;
 		font-display: swap;
 		src: url("../fonts/NotoSansArabic-Regular.woff2") format("woff2");
+		unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF;
 }
 @font-face {
 		font-family: "Noto Sans Arabic";
@@ -43,6 +44,7 @@
 		font-weight: 600 800;
 		font-display: swap;
 		src: url("../fonts/NotoSansArabic-SemiBold.woff2") format("woff2");
+		unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF;
 }
 html[dir="rtl"] body,
 html[dir="rtl"] [lang="ar"] {
@@ -4198,7 +4200,7 @@ html[dir="rtl"] .pk-single .pk-single-gallery[data-pk-carousel] .pk-gallery-stag
 	letter-spacing: -.02em;
 }
 .pk-lang-gate-sub { margin: 0 0 1.35rem; font-size: .82rem; color: var(--pk-muted); }
-.pk-lang-gate [lang="ar"] { font-family: "Noto Sans Arabic", var(--pk-font), system-ui, sans-serif; }
+html[dir="rtl"] .pk-lang-gate [lang="ar"] { font-family: "Noto Sans Arabic", var(--pk-font), system-ui, sans-serif; }
 .pk-lang-gate-actions {
 	display: flex;
 	flex-direction: column;

@@ -22,6 +22,7 @@ Tags: real-estate, one-column, custom-logo, custom-menu, featured-images, transl
 		font-style: normal;
 		font-weight: 400;
 		font-display: swap;
+		unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF;
 }
 
 @font-face {
@@ -30,6 +31,7 @@ Tags: real-estate, one-column, custom-logo, custom-menu, featured-images, transl
 		font-style: normal;
 		font-weight: 600 800;
 		font-display: swap;
+		unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF;
 }
 
 html[dir='rtl'] body,

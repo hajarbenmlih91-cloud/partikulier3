@@ -43,7 +43,27 @@ function pkLimitTitle(value) {
 	}
 		labelEstatikExtraInfo();
 	if (window.MutationObserver && document.body) {
-			new MutationObserver(labelEstatikExtraInfo).observe(document.body, { childList: true, subtree: true });
+			var pkExtraRaf = 0;
+			new MutationObserver(function (mutations) {
+					if (pkExtraRaf) return;
+					var hasAddedContainer = false;
+					for (var m = 0; m < mutations.length; m++) {
+							var added = mutations[m].addedNodes;
+							for (var n = 0; n < added.length; n++) {
+									var node = added[n];
+									if (node.nodeType === 1 && node.nodeName !== "OPTION" && node.nodeName !== "LI") {
+											hasAddedContainer = true;
+											break;
+									}
+							}
+							if (hasAddedContainer) break;
+					}
+					if (!hasAddedContainer) return;
+					pkExtraRaf = window.requestAnimationFrame(function () {
+							pkExtraRaf = 0;
+							labelEstatikExtraInfo();
+					});
+			}).observe(document.body, { childList: true, subtree: true });
 	}
 
 		/* ---------- Menu mobile ---------- */
@@ -1160,7 +1180,7 @@ function pkLimitTitle(value) {
 			else btn.textContent = currentLabel();
 		}
 		function rebuild() {
-			list.textContent = "";
+			var frag = document.createDocumentFragment();
 			Array.prototype.forEach.call(select.options, function (opt, index) {
 				var li = document.createElement("li");
 				li.className = "pk-select-option";
@@ -1174,8 +1194,10 @@ function pkLimitTitle(value) {
 					paintChoice();
 					closeAll();
 				});
-				list.appendChild(li);
+				frag.appendChild(li);
 			});
+			list.textContent = "";
+			list.appendChild(frag);
 		}
 		rebuild();
 		select.addEventListener("pk-select-rebuild", function () {
@@ -1594,20 +1616,24 @@ function pkLimitTitle(value) {
 		var band = spec ? (spec[mode] || spec.rent) : null;
 		function fill(select) {
 			var current = keep ? select.value : "";
-			select.innerHTML = "";
+			var frag = document.createDocumentFragment();
 			var empty = document.createElement("option");
 			empty.value = "";
 			empty.textContent = any;
-			select.appendChild(empty);
+			frag.appendChild(empty);
+			var hasCurrent = false;
 			list.split(",").forEach(function (raw) {
 				var n = Number(raw);
 				if (!n || (cap && n >= cap) || !inBand(n, band)) return;
 				var opt = document.createElement("option");
 				opt.value = String(n);
 				opt.textContent = group(n) + (unit ? " " + unit : "");
-				select.appendChild(opt);
+				if (current && opt.value === current) hasCurrent = true;
+				frag.appendChild(opt);
 			});
-			select.value = current && select.querySelector("option[value='" + current + "']") ? current : "";
+			select.textContent = "";
+			select.appendChild(frag);
+			select.value = hasCurrent ? current : "";
 			try { select.dispatchEvent(new Event("pk-select-rebuild")); }
 			catch (err) { /* IE */ }
 		}
@@ -1627,20 +1653,24 @@ function pkLimitTitle(value) {
 		if (mode === "season") band = band ? [band[0], Math.min(band[1], 500)] : [30, 500];
 		box.querySelectorAll("select").forEach(function (select) {
 			var current = keep ? select.value : "";
-			select.innerHTML = "";
+			var frag = document.createDocumentFragment();
 			var empty = document.createElement("option");
 			empty.value = "";
 			empty.textContent = any;
-			select.appendChild(empty);
+			frag.appendChild(empty);
+			var hasCurrent = false;
 			list.split(",").forEach(function (raw) {
 				var n = Number(raw);
 				if (!n || !inBand(n, band)) return;
 				var opt = document.createElement("option");
 				opt.value = String(n);
 				opt.textContent = group(n) + (unit ? " " + unit : "");
-				select.appendChild(opt);
+				if (current && opt.value === current) hasCurrent = true;
+				frag.appendChild(opt);
 			});
-			select.value = current && select.querySelector("option[value='" + current + "']") ? current : "";
+			select.textContent = "";
+			select.appendChild(frag);
+			select.value = hasCurrent ? current : "";
 			try { select.dispatchEvent(new Event("pk-select-rebuild")); }
 			catch (err) { /* IE */ }
 		});
@@ -2087,25 +2117,37 @@ function pkLimitTitle(value) {
 	var bar = document.querySelector("[data-pk-scroll-actions]");
 	var search = document.querySelector(".pk-editorial-search");
 	if (!bar || !search) return;
+	var headerEl = document.querySelector(".pk-site-header");
+	var navEl = document.querySelector(".pk-main-nav");
+	var lastTop = -1;
+	var rafId = 0;
 	function sync() {
+		rafId = 0;
 		if (window.matchMedia("(min-width: 768px)").matches) {
 			bar.classList.remove("is-on");
 			return;
 		}
 		var top = 0;
-		[document.querySelector(".pk-site-header"), document.querySelector(".pk-main-nav")].forEach(function (el) {
+		[headerEl, navEl].forEach(function (el) {
 			if (!el) return;
 			var box = el.getBoundingClientRect();
 			if (box.bottom > top && box.top < 120) top = Math.round(box.bottom);
 		});
 		top = Math.max(0, top);
-		document.documentElement.style.setProperty("--pk-header-h", top + "px");
 		var past = search.getBoundingClientRect().bottom < top + 4;
+		if (top !== lastTop) {
+			lastTop = top;
+			document.documentElement.style.setProperty("--pk-header-h", top + "px");
+		}
 		bar.classList.toggle("is-on", past);
 	}
-	sync();
-	window.addEventListener("scroll", sync, { passive: true });
-	window.addEventListener("resize", sync);
+	function schedule() {
+		if (rafId) return;
+		rafId = window.requestAnimationFrame ? window.requestAnimationFrame(sync) : (sync(), 0);
+	}
+	schedule();
+	window.addEventListener("scroll", schedule, { passive: true });
+	window.addEventListener("resize", schedule);
 }());
 
 
@@ -2115,10 +2157,14 @@ function pkLimitTitle(value) {
 	var bar = document.querySelector("[data-pk-archive-actions]");
 	var search = document.querySelector(".pk-archive-search");
 	var sort = document.querySelector("[data-pk-sort]");
+	var headerEl = document.querySelector(".pk-site-header");
+	var navEl = document.querySelector(".pk-main-nav");
+	var lastTop = -1;
+	var rafId = 0;
 
 	function headerTop() {
 		var top = 0;
-		[document.querySelector(".pk-site-header"), document.querySelector(".pk-main-nav")].forEach(function (el) {
+		[headerEl, navEl].forEach(function (el) {
 			if (!el) return;
 			var box = el.getBoundingClientRect();
 			if (box.bottom > top && box.top < 120) top = Math.round(box.bottom);
@@ -2127,6 +2173,7 @@ function pkLimitTitle(value) {
 	}
 
 	function syncBar() {
+		rafId = 0;
 		if (!bar || !search) return;
 		if (window.matchMedia("(min-width: 768px)").matches) {
 			bar.classList.remove("is-on");
@@ -2134,10 +2181,17 @@ function pkLimitTitle(value) {
 			return;
 		}
 		var top = headerTop();
-		document.documentElement.style.setProperty("--pk-header-h", top + "px");
 		var past = search.getBoundingClientRect().bottom < top + 4;
+		if (top !== lastTop) {
+			lastTop = top;
+			document.documentElement.style.setProperty("--pk-header-h", top + "px");
+		}
 		bar.hidden = !past;
 		bar.classList.toggle("is-on", past);
+	}
+	function scheduleBar() {
+		if (rafId) return;
+		rafId = window.requestAnimationFrame ? window.requestAnimationFrame(syncBar) : (syncBar(), 0);
 	}
 
 	function openFind() {
@@ -2219,9 +2273,9 @@ function pkLimitTitle(value) {
 	});
 
 	if (bar && search) {
-		syncBar();
-		window.addEventListener("scroll", syncBar, { passive: true });
-		window.addEventListener("resize", syncBar);
+		scheduleBar();
+		window.addEventListener("scroll", scheduleBar, { passive: true });
+		window.addEventListener("resize", scheduleBar);
 	}
 }());
 
@@ -2525,9 +2579,16 @@ function pkLimitTitle(value) {
 			paint(hint);
 		});
 	};
-	paintAll();
-	window.addEventListener("scroll", paintAll, { passive: true });
-	window.addEventListener("resize", paintAll);
+	var hintRaf = 0;
+	function schedulePaintAll() {
+		if (hintRaf) return;
+		hintRaf = window.requestAnimationFrame ? window.requestAnimationFrame(function () {
+			hintRaf = 0;
+			paintAll();
+		}) : (paintAll(), 0);
+	}
+	schedulePaintAll();
+	window.addEventListener("resize", schedulePaintAll);
 }());
 
 /* 6.20.203 — ville, quartier, retrait : seuls les résultats changent. */
