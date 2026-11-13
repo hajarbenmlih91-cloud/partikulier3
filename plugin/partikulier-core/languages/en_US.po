@@ -358,8 +358,8 @@ msgstr "Property"
 msgid "Bien de particulier à particulier proposé %1$s à %2$s, en contact direct avec %3$s, sans commission ni intermédiaire."
 msgstr "Property offered by owner %1$s in %2$s, in direct contact with %3$s, with no commission or intermediary."
 
-msgid "Bonjour %1$s,\n\nVotre demande de publication est enregistrée mais reste en attente de validation. Ouvrez WhatsApp et envoyez le message préparé :\n%2$s\n\nVotre code de rapprochement : %3$s\n\nL’équipe Partikulier.com"
-msgstr "Hello %1$s,\n\nYour publication request is recorded but is awaiting validation. Open WhatsApp and send the prepared message:\n%2$s\n\nYour matching code: %3$s\n\nThe Partikulier.com team"
+msgid "Bonjour %1$s,\n\nVotre demande de publication est enregistrée mais reste en attente de validation. Ouvrez WhatsApp et envoyez le message préparé :\n%2$s\n\nVotre code de rapprochement : %3$s\n\nL’équipe pep.ma"
+msgstr "Hello %1$s,\n\nYour publication request is recorded but is awaiting validation. Open WhatsApp and send the prepared message:\n%2$s\n\nYour matching code: %3$s\n\nThe pep.ma team"
 
 msgid "Bonjour %s,"
 msgstr "Hello %s,"
@@ -475,8 +475,8 @@ msgstr "Owner sign-in required."
 msgid "Consentement WhatsApp"
 msgstr "WhatsApp Consent"
 
-msgid "Conservez ce code. L’annonce sera publiée seulement après vérification manuelle du message par l’équipe Partikulier."
-msgstr "Keep this code. The listing will only be published after the Partikulier team manually checks the message."
+msgid "Conservez ce code. L’annonce sera publiée seulement après vérification manuelle du message par l’équipe pep.ma."
+msgstr "Keep this code. The listing will only be published after the pep.ma team manually checks the message."
 
 msgid "Contact"
 msgstr "Contact"

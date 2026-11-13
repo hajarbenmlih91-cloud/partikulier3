@@ -376,8 +376,8 @@ msgstr "عقار"
 msgid "Bien de particulier à particulier proposé %1$s à %2$s, en contact direct avec %3$s, sans commission ni intermédiaire."
 msgstr "عقار معروض من فرد لفرد %1$s في %2$s، في تواصل مباشر مع %3$s، دون عمولة ولا وسيط."
 
-msgid "Bonjour %1$s,\n\nVotre demande de publication est enregistrée mais reste en attente de validation. Ouvrez WhatsApp et envoyez le message préparé :\n%2$s\n\nVotre code de rapprochement : %3$s\n\nL’équipe Partikulier.com"
-msgstr "مرحباً %1$s،\n\nتم تسجيل طلب النشر لكنه في انتظار المصادقة. افتح واتساب وأرسل الرسالة الجاهزة:\n%2$s\n\nرمز المطابقة الخاص بك: %3$s\n\nفريق Partikulier.com"
+msgid "Bonjour %1$s,\n\nVotre demande de publication est enregistrée mais reste en attente de validation. Ouvrez WhatsApp et envoyez le message préparé :\n%2$s\n\nVotre code de rapprochement : %3$s\n\nL’équipe pep.ma"
+msgstr "مرحباً %1$s،\n\nتم تسجيل طلب النشر لكنه في انتظار المصادقة. افتح واتساب وأرسل الرسالة الجاهزة:\n%2$s\n\nرمز المطابقة الخاص بك: %3$s\n\nفريق pep.ma"
 
 msgid "Bonjour %s,"
 msgstr "مرحباً %s،"
@@ -514,8 +514,8 @@ msgstr "مطلوب تسجيل دخول المالك."
 msgid "Consentement WhatsApp"
 msgstr "موافقة واتساب"
 
-msgid "Conservez ce code. L’annonce sera publiée seulement après vérification manuelle du message par l’équipe Partikulier."
-msgstr "احتفظ بهذا الرمز. لن يُنشر الإعلان إلا بعد تحقق فريق Partikulier يدوياً من الرسالة."
+msgid "Conservez ce code. L’annonce sera publiée seulement après vérification manuelle du message par l’équipe pep.ma."
+msgstr "احتفظ بهذا الرمز. لن يُنشر الإعلان إلا بعد تحقق فريق pep.ma يدوياً من الرسالة."
 
 msgid "Contact"
 msgstr "اتصال"

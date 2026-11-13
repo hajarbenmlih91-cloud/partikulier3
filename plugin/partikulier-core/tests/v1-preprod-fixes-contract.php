@@ -364,6 +364,43 @@ try {
         && str_contains($diagCode, 'pk_localized_home_url'),
         'Site Hygiene emits Options -Indexes, Page Doctor checks es_status, and pk-diagnostic resolves localized home URLs'
     );
+
+    // 14. FIX-REMEDIATION-15 : SSR <html lang/dir> sur apercu-tunnel, 404 repair.php, types depot/hangar/usine dans ListingLexicon, wizard publish-only et whatsappNote pep.ma.
+    $pluginRoot = dirname(__DIR__);
+    $tunnelCode = (string) file_get_contents($themeRoot . '/inc/class-tunnel-preview.php');
+    $upgradeCode = (string) file_get_contents($themeRoot . '/inc/class-upgrade-wizard.php');
+    $lwtPos = (int) strpos($upgradeCode, 'function listings_without_translation');
+    $lwtNext = (int) strpos($upgradeCode, 'function ', $lwtPos + 10);
+    $lwtSlice = $lwtNext > $lwtPos ? substr($upgradeCode, $lwtPos, $lwtNext - $lwtPos) : substr($upgradeCode, $lwtPos);
+    $rtPos = (int) strpos($upgradeCode, 'function run_translations');
+    $rtNext = (int) strpos($upgradeCode, 'function ', $rtPos + 10);
+    $rtSlice = $rtNext > $rtPos ? substr($upgradeCode, $rtPos, $rtNext - $rtPos) : substr($upgradeCode, $rtPos);
+    $upgradePublishOnly = !str_contains($lwtSlice, "'pending'") && !str_contains($rtSlice, "'pending'");
+    $enLex = \Partikulier\Core\Domain\I18n\ListingLexicon::lex('en')['types'] ?? [];
+    $arLex = \Partikulier\Core\Domain\I18n\ListingLexicon::lex('ar')['types'] ?? [];
+    $moAr = new \MO();
+    $moEn = new \MO();
+    $moArLoaded = $moAr->import_from_file($pluginRoot . '/languages/ar.mo');
+    $moEnLoaded = $moEn->import_from_file($pluginRoot . '/languages/en_US.mo');
+    $waMsgId = 'Conservez ce code. L’annonce sera publiée seulement après vérification manuelle du message par l’équipe pep.ma.';
+    $waArOk = $moArLoaded && $moAr->translate($waMsgId) !== $waMsgId;
+    $waEnOk = $moEnLoaded && $moEn->translate($waMsgId) !== $waMsgId;
+    $assert(
+        'FIX-REMEDIATION-15',
+        str_contains($tunnelCode, 'dir="')
+        && (bool) preg_match('#wp-admin/maint/repair[^\n]*R=404#', $hygieneCode)
+        && $upgradePublishOnly
+        && isset($enLex['depot'], $enLex['dépôt'], $enLex['hangar'], $enLex['usine'], $arLex['depot'], $arLex['dépôt'], $arLex['hangar'], $arLex['usine'])
+        && $waArOk
+        && $waEnOk,
+        sprintf('tunnelSSR=%s repair404=%s upgradePublishOnly=%s lexTypes=%s waAr=%s waEn=%s',
+            str_contains($tunnelCode, 'dir="') ? 'yes' : 'no',
+            preg_match('#wp-admin/maint/repair[^\n]*R=404#', $hygieneCode) ? 'yes' : 'no',
+            $upgradePublishOnly ? 'yes' : 'no',
+            isset($enLex['usine'], $arLex['usine']) ? 'yes' : 'no',
+            $waArOk ? 'yes' : 'no',
+            $waEnOk ? 'yes' : 'no')
+    );
 } catch (Throwable $e) {
     $assert('FIX-UNEXPECTED', false, $e->getMessage());
 } finally {

@@ -162,6 +162,16 @@ class Partikulier_Tunnel_Preview {
 			exit;
 		}
 		$doc_lang = self::document_lang();
+		$doc_dir  = 'ar' === $doc_lang ? 'rtl' : 'ltr';
+		$pk_html  = preg_replace(
+			'#<html\b[^>]*>#i',
+			'<html lang="' . esc_attr( $doc_lang ) . '" dir="' . esc_attr( $doc_dir ) . '">',
+			$html,
+			1
+		);
+		if ( is_string( $pk_html ) ) {
+			$html = $pk_html;
+		}
 		if ( in_array( $doc_lang, array( 'ar', 'en' ), true )
 			&& class_exists( '\Partikulier\Core\Domain\I18n\I18nDomainLoader' ) ) {
 			\Partikulier\Core\Domain\I18n\I18nDomainLoader::reload_for_slug( $doc_lang );
