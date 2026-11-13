@@ -98,7 +98,7 @@ final class I18nDomainLoader
 		if ( $locale === null || $locale === '' ) {
 			$locale = (string) \determine_locale();
 		}
-		if ( $locale === self::$loaded_locale ) {
+		if ( $locale === self::$loaded_locale && ( '' === $locale || self::is_domain_active() ) ) {
 			return 'deja:' . ( $locale ?: 'source' );
 		}
 		if ( \function_exists('unload_textdomain') ) {
@@ -141,7 +141,7 @@ final class I18nDomainLoader
 			}
 			self::$loaded_locale   = null;
 			$report['partikulier'] = 'source(msgid)';
-		} elseif ( $locale !== self::$loaded_locale ) {
+		} elseif ( $locale !== self::$loaded_locale || ! self::is_domain_active() ) {
 			if ( \function_exists('unload_textdomain') ) {
 				\unload_textdomain(self::DOMAIN);
 			}
@@ -266,6 +266,12 @@ final class I18nDomainLoader
 	 * (load_textdomain(domaine, fichier) — le domaine sert le DERNIER
 	 * catalogue chargé).
 	 */
+	private static function is_domain_active(): bool
+	{
+		return \function_exists('is_textdomain_loaded') && \is_textdomain_loaded(self::DOMAIN)
+			&& ( ! \function_exists('get_translations_for_domain') || ! ( \get_translations_for_domain(self::DOMAIN) instanceof \NOOP_Translations ) );
+	}
+
 	private static function load_catalog( string $locale ): bool
 	{
 		$file = \dirname(PARTIKULIER_CORE_FILE) . '/languages/' . $locale . '.mo';
