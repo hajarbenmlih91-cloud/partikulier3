@@ -170,7 +170,7 @@ jobs:
           SYNTH_PHONE: ${{ steps.submit.outputs.synth_phone }}
         run: |
           set -euo pipefail
-          ssh -F "$HOME/.ssh/config" partikulier-uat 'bash -s' -- "$WP_PATH" "$SYNTH_TITLE" <<'REMOTE' > "$RUNNER_TEMP/e2e-info.json"
+          ssh -F "$HOME/.ssh/config" partikulier-uat 'bash -s' -- "$WP_PATH" "$SYNTH_TITLE" <<'REMOTE' > "$RUNNER_TEMP/e2e-raw.txt"
           set -euo pipefail
           WP_PATH="$1"; TITLE="$2"
           cd "$WP_PATH"
@@ -207,7 +207,7 @@ jobs:
             $n8n_status = (string) get_post_meta($post_id, "_pk_n8n_status", true);
             $n8n_err    = (string) get_post_meta($post_id, "_pk_n8n_error", true);
 
-            echo wp_json_encode([
+            echo "\nPK_E2E_JSON:" . wp_json_encode([
               "post_id"        => $post_id,
               "owner_id"       => $owner_id,
               "owner_login"    => (string) ($creds["login"] ?? ""),
@@ -225,6 +225,14 @@ jobs:
             ]) . "\n";
           '
           REMOTE
+          python3 -c '
+          import sys
+          lines = [l for l in open(sys.argv[1]).read().splitlines() if l.startswith("PK_E2E_JSON:")]
+          if not lines:
+              raise SystemExit("Missing PK_E2E_JSON line in wp eval output")
+          open(sys.argv[2], "w").write(lines[-1].split("PK_E2E_JSON:", 1)[1])
+          ' "$RUNNER_TEMP/e2e-raw.txt" "$RUNNER_TEMP/e2e-info.json"
+          rm -f "$RUNNER_TEMP/e2e-raw.txt"
           OWNER_PASSWORD="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["owner_password"])' "$RUNNER_TEMP/e2e-info.json")"
           echo "::add-mask::$OWNER_PASSWORD"
           python3 -c '
