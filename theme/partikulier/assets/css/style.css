@@ -4376,13 +4376,14 @@ a:hover { color: #161715; }
 .pk-btn:hover, .pk-btn-primary:hover, .pk-btn-dark:hover, .pk-card-cta:hover, .pk-editorial-hero .pk-btn-light:hover, .pk-editorial-hero .pk-btn-primary:hover { color: #fff; }
 .pk-topbar a, .pk-topbar a:hover, .pk-editorial-region-band a, .pk-editorial-region-band a:hover { color: #fff; }
 .pk-editorial-feature { display: block; position: relative; min-height: 0 !important; height: auto; overflow: visible; background: transparent; color: #fff; }
-.pk-editorial-feature > img { position: relative !important; inset: auto !important; display: block; width: 100%; height: 440px; object-fit: cover; }
+.pk-editorial-feature > picture { display: block; }
+.pk-editorial-feature > img, .pk-editorial-feature > picture > img { position: relative !important; inset: auto !important; display: block; width: 100%; height: 440px; object-fit: cover; }
 .pk-editorial-feature__veil { display: none !important; background: none !important; }
 .pk-editorial-feature__content { position: relative !important; inset: auto !important; left: auto; right: auto; bottom: auto; z-index: 1; max-width: none; width: 100%; margin: -28px 0 0; padding: 18px 24px 20px; background: #323232; color: #fff; }
 .pk-editorial-feature__kicker, .pk-editorial-feature__content, .pk-editorial-feature__content strong, .pk-editorial-feature__content small, .pk-editorial-feature:hover, .pk-editorial-feature:hover .pk-editorial-feature__kicker, .pk-editorial-feature:hover .pk-editorial-feature__content, .pk-editorial-feature:hover .pk-editorial-feature__content strong, .pk-editorial-feature:hover .pk-editorial-feature__content small { color: #fff !important; }
 .pk-editorial-feature__price { background: transparent; color: #fff; padding: 0; margin-top: .55rem; font-size: 1.15rem; }
 @media (max-width: 640px) {
-	.pk-editorial-feature > img { height: 260px; }
+	.pk-editorial-feature > img, .pk-editorial-feature > picture > img { height: 260px; }
 	.pk-editorial-feature__content { margin-top: -18px; }
 }
 

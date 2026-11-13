@@ -235,11 +235,17 @@ class Partikulier_Visit_Counter {
 					bar.setAttribute("role", "dialog");
 					bar.setAttribute("aria-modal", bar.classList.contains("pk-cookie-info") ? "false" : "true");
 					bar.setAttribute("aria-labelledby", "pk-cookie-text");
-					if (!bar.hasAttribute("data-pk-focused")) {
-						bar.setAttribute("data-pk-focused", "1");
-						var yes = bar.querySelector("[data-yes]");
-						if (yes) yes.focus();
-					}
+			if (!bar.hasAttribute("data-pk-focused")) {
+				bar.setAttribute("data-pk-focused", "1");
+				var yes = bar.querySelector("[data-yes]");
+				if (yes) {
+					var focusYes = function () {
+						try { yes.focus({ preventScroll: true }); } catch (err) { yes.focus(); }
+					};
+					if (window.requestAnimationFrame) window.requestAnimationFrame(focusYes);
+					else focusYes();
+				}
+			}
 				} else {
 					bar.removeAttribute("role");
 					bar.removeAttribute("aria-modal");
