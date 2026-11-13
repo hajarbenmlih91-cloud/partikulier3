@@ -185,7 +185,7 @@ jobs:
         run: |
           set -euo pipefail
           bash .github/scripts/recipe-setup-command.sh estatik-activate -- \
-            wp plugin activate estatik --path=wp
+            wp plugin activate estatik --path=wp --exec='add_action("activated_plugin", static function () { remove_action("activated_plugin", "es_demo_content_redirect"); }, 0);'
       - name: Copier le plugin Partikulier Core
         run: |
           set -euo pipefail
