@@ -759,7 +759,7 @@ msgid ""
 "\n"
 "Votre code de rapprochement : %3$s\n"
 "\n"
-"L’équipe Partikulier.com"
+"L’équipe pep.ma"
 msgstr ""
 
 #: inc/class-geo.php:31

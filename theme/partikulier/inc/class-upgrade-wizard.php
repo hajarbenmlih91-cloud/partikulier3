@@ -124,7 +124,7 @@ class Partikulier_Upgrade_Wizard {
 		$default = function_exists( 'pll_default_language' ) ? pll_default_language() : 'fr';
 		$posts   = get_posts( array(
 			'post_type'        => PARTIKULIER_ESTATIK_POST_TYPE,
-			'post_status'      => array( 'publish', 'pending', 'draft' ),
+			'post_status'      => 'publish',
 			'posts_per_page'   => -1,
 			'fields'           => 'ids',
 			'suppress_filters' => true,
@@ -433,7 +433,7 @@ class Partikulier_Upgrade_Wizard {
 		$default = function_exists( 'pll_default_language' ) ? pll_default_language() : 'fr';
 		$posts   = get_posts( array(
 			'post_type'        => PARTIKULIER_ESTATIK_POST_TYPE,
-			'post_status'      => array( 'publish', 'pending', 'draft' ),
+			'post_status'      => 'publish',
 			'posts_per_page'   => -1,
 			'suppress_filters' => true,
 			'lang'             => '',
