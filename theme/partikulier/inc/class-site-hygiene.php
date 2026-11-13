@@ -204,6 +204,7 @@ class Partikulier_Site_Hygiene {
 			'RewriteEngine On',
 			'RewriteRule ^readme\\.html$ - [R=404,L]',
 			'RewriteRule ^wp-admin/maint/repair\\.php$ - [R=404,L]',
+			'RewriteRule ^wp-content/themes/partikulier/(apercu-tunnel\\.html|apercu/.*\\.html)$ - [R=404,L]',
 			'</IfModule>',
 		);
 		insert_with_markers( $htaccess, self::MARKER, $rules );

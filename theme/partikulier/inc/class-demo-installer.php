@@ -147,8 +147,8 @@ class Partikulier_Demo_Installer {
 			<?php if ( $demo_count ) : ?>
 			<h2><?php esc_html_e( 'Vérifications rapides', 'partikulier' ); ?></h2>
 			<ul style="list-style:disc;margin-left:20px">
-				<li><a href="<?php echo esc_url( home_url( '/' ) ); ?>" target="_blank"><?php esc_html_e( 'Accueil — cartes d’annonces + villes', 'partikulier' ); ?></a></li>
-				<li><a href="<?php echo esc_url( pk_properties_archive_url() ); ?>" target="_blank"><?php esc_html_e( 'Catalogue /annonces/', 'partikulier' ); ?></a> — filtres : <code>?es_city=casablanca</code> · <code>?es_type=villa</code> · <code>?es_action=a-louer</code> (location) vs <code>?es_action=a-vendre</code> (vente)</li>
+				<li><a href="<?php echo esc_url( home_url( '/' ) ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Accueil — cartes d’annonces + villes', 'partikulier' ); ?></a></li>
+				<li><a href="<?php echo esc_url( pk_properties_archive_url() ); ?>" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Catalogue /annonces/', 'partikulier' ); ?></a> — filtres : <code>?es_city=casablanca</code> · <code>?es_type=villa</code> · <code>?es_action=a-louer</code> (location) vs <code>?es_action=a-vendre</code> (vente)</li>
 				<li><?php esc_html_e( 'Fiches bien : cliquez une carte → galerie (flèches + compteur), métriques, bloc WhatsApp', 'partikulier' ); ?></li>
 			</ul>
 			<p><strong>Contenu installé :</strong> 30 annonces — 10 Casablanca, 10 Rabat, 10 Marrakech — 7 types (appartement, villa, studio, maison, duplex, riad, terrain) — 15 ventes / 15 locations — chaque annonce a 3 photos du dossier demo.</p>

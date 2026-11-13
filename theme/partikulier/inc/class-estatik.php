@@ -269,7 +269,7 @@ class Partikulier_Estatik {
 	}
 
 		/**
-		 * Retire les meta generator d'Estatik.
+		 * Retire les meta generator et la mention .es-powered (target="_blank" sans rel="noopener") d'Estatik.
 		 */
 	public static function remove_estatik_head() {
 			$hooks = array( 'wp_head' );
@@ -283,6 +283,9 @@ class Partikulier_Estatik {
 					}
 				}
 			}
+		}
+		foreach ( array( 'es_after_listings', 'es_after_single_content', 'es_after_authentication', 'es_after_profile' ) as $powered_hook ) {
+			remove_action( $powered_hook, 'es_powered_by' );
 		}
 	}
 
