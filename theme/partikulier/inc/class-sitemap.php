@@ -15,6 +15,13 @@ class Partikulier_Sitemap {
 	const CACHE_KEY = 'pk_sitemap_xml_v2';
 	const TTL       = 86400; // 24 h
 
+	/* Version des regles de reecriture du theme. Incrementer si les regles
+	 * declarees dans init() changent : le flush conditionne ci-dessous
+	 * persiste alors la nouvelle regle sans dependre d'un flush externe
+	 * (activation, reglages de permaliens ou workflow de deploiement). */
+	const REWRITE_RULES_VERSION = '1';
+	const REWRITE_VERSION_OPTION = 'pk_sitemap_rewrite_rules_version';
+
 	public static function init() {
 		add_filter( 'wp_sitemaps_enabled', '__return_false' );
 		// robots.txt virtuel (uniquement si le fichier physique n'existe pas).
@@ -29,11 +36,29 @@ class Partikulier_Sitemap {
 		} );
 		add_action( 'template_redirect', array( __CLASS__, 'serve_sitemap' ) );
 		add_filter( 'redirect_canonical', array( __CLASS__, 'keep_sitemap_canonical' ), 10, 2 );
+		add_action( 'init', array( __CLASS__, 'maybe_flush_rewrite_rules' ), 20 );
 
 		// Purge a chaque modification d'une annonce ou d'un terme geo.
 		foreach ( array( 'save_post', 'delete_post', 'edited_term', 'create_term', 'delete_term' ) as $hook ) {
 			add_action( $hook, array( __CLASS__, 'purge' ) );
 		}
+	}
+
+	/**
+	 * Persiste les regles de reecriture une seule fois par version.
+	 *
+	 * add_rewrite_rule() seul ne touche pas la base : sans flush, la regle
+	 * ^sitemap\.xml$ reste inactive (404 observe en UAT le 10/11/2026, alors
+	 * que seul un flush externe — ici celui du workflow de deploiement —
+	 * l'avait persistee). Le flush logiciel (false) ne reecrit pas le
+	 * .htaccess et ne se declenche qu'au changement de version.
+	 */
+	public static function maybe_flush_rewrite_rules() {
+		if ( get_option( self::REWRITE_VERSION_OPTION ) === self::REWRITE_RULES_VERSION ) {
+			return;
+		}
+		flush_rewrite_rules( false );
+		update_option( self::REWRITE_VERSION_OPTION, self::REWRITE_RULES_VERSION, false );
 	}
 
 	/**

@@ -248,10 +248,20 @@ class Partikulier_Tunnel_Preview {
 			),
 		);
 		$boot      = '<script>window.PK_FORCE_LANG=' . wp_json_encode( $doc_lang ) . ';window.pkConfig=' . wp_json_encode( $pk_config ) . ';</script>';
+		/* Le tunnel est un document autonome servi sans wp_head() : le SEO
+		 * du theme (Partikulier_SEO) ne s'y applique pas. On injecte donc
+		 * ici la meta description, dans la langue du document — elle etait
+		 * absente de /deposer/ (constat UAT 14/11/2026). */
+		$pk_meta_descriptions = array(
+			'fr' => 'Déposez gratuitement votre annonce immobilière entre particuliers en quelques étapes simples et vérifiées.',
+			'en' => 'List your property for free between private individuals in a few simple, verified steps.',
+			'ar' => 'انشر إعلانك العقاري مجانا بين الأفراد في خطوات بسيطة وموثقة.',
+		);
+		$pk_meta = '<meta name="description" content="' . esc_attr( $pk_meta_descriptions[ $doc_lang ] ?? $pk_meta_descriptions['fr'] ) . '">';
 		if ( false === strpos( $html, 'name="robots"' ) ) {
-			$html = preg_replace( '#<head>#', "<head>\n<meta name=\"robots\" content=\"noindex, nofollow\">\n" . $boot, $html, 1 );
+			$html = preg_replace( '#<head>#', "<head>\n<meta name=\"robots\" content=\"noindex, nofollow\">\n" . $pk_meta . "\n" . $boot, $html, 1 );
 		} else {
-			$html = preg_replace( '#<head>#', '<head>' . $boot, $html, 1 );
+			$html = preg_replace( '#<head>#', '<head>' . $pk_meta . $boot, $html, 1 );
 		}
 		status_header( 200 );
 		if ( ! headers_sent() ) {

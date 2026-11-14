@@ -308,8 +308,8 @@ class Partikulier_JSONLD {
 					'contactPoint' => array(
 							'@type'             => 'ContactPoint',
 							'contactType'       => 'customer service',
-							'areaServed'        => 'FR',
-							'availableLanguage' => array( 'French' ),
+						'areaServed'        => 'MA',
+						'availableLanguage' => array( 'French', 'English', 'Arabic' ),
 					),
 			);
 
