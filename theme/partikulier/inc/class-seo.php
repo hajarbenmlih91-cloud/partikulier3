@@ -385,6 +385,12 @@ class Partikulier_SEO {
 			155
 				);
 		}
+		if ( is_page() && $queried instanceof WP_Post ) {
+			$page_desc = self::page_description( $queried );
+			if ( $page_desc ) {
+				return $page_desc;
+			}
+		}
 		if ( is_front_page() ) {
 				$description = get_bloginfo( 'description' );
 			if ( ! $description ) {
@@ -398,7 +404,97 @@ class Partikulier_SEO {
 							return '';
 	}
 
-				/** Description localisée des fiches EN/AR sans fuite du texte libre FR. */
+	/**
+	 * Meta description des pages ordinaires (connexion, favoris, contact…).
+	 *
+	 * Historiquement, description() ne couvrait que les fiches, taxonomies,
+	 * l'archive, l'accueil et les auteurs : les pages servies par un modele
+	 * du theme sortaient sans meta description (constat UAT 14/11/2026 sur
+	 * connexion, favoris, contact, journal, faq). La cle de correspondance
+	 * est le modele de page (stable quelle que soit la langue Polylang),
+	 * completee par le slug pour les pages au modele generique (contact,
+	 * faq). Les textes sont fournis dans les trois langues du portail,
+	 * comme localized_listing_description().
+	 */
+	private static function page_description( $post ) {
+		$locale = function_exists( 'pll_current_language' ) ? (string) pll_current_language( 'slug' ) : 'fr';
+		if ( ! in_array( $locale, array( 'fr', 'en', 'ar' ), true ) ) {
+			$locale = 'fr';
+		}
+
+		// Meta saisie manuellement (champ _pk_meta_description) : prioritaire
+		// en FR, jamais injectee telle quelle en EN/AR (texte libre FR).
+		if ( 'fr' === $locale ) {
+			$stored = trim( (string) get_post_meta( $post->ID, '_pk_meta_description', true ) );
+			if ( $stored ) {
+				return self::limit( self::replace_mad( self::normalize_description( $stored ) ), 155 );
+			}
+		}
+
+		$template = basename( (string) get_page_template_slug( $post ) );
+		$slug     = (string) $post->post_name;
+		$key      = '';
+		if ( 'page-connexion.php' === $template || 0 === strpos( $slug, 'connexion' ) ) {
+			$key = 'connexion';
+		} elseif ( 'page-favoris.php' === $template || 'favoris' === $slug ) {
+			$key = 'favoris';
+		} elseif ( 'page-journal.php' === $template || 'journal' === $slug ) {
+			$key = 'journal';
+		} elseif ( 'page-mes-annonces.php' === $template || 'mes-annonces' === $slug ) {
+			$key = 'mes-annonces';
+		} elseif ( 'page-legal.php' === $template ) {
+			$key = 'legal';
+		} elseif ( 0 === strpos( $slug, 'contact' ) ) {
+			$key = 'contact';
+		} elseif ( 0 === strpos( $slug, 'faq' ) ) {
+			$key = 'faq';
+		}
+		if ( ! $key ) {
+			return '';
+		}
+
+		$map = array(
+			'connexion'    => array(
+				'fr' => 'Connectez-vous à votre espace pep.ma pour gérer vos annonces immobilières et vos favoris entre particuliers.',
+				'en' => 'Sign in to your pep.ma account to manage your property listings and favourites.',
+				'ar' => 'سجل الدخول إلى حسابك على pep.ma لإدارة إعلاناتك العقارية ومفضلاتك.',
+			),
+			'favoris'      => array(
+				'fr' => 'Retrouvez vos annonces immobilières favorites au Maroc et contactez directement les propriétaires, sans commission.',
+				'en' => 'Find your favourite property listings in Morocco and contact owners directly, with no commission.',
+				'ar' => 'اعثر على إعلاناتك العقارية المفضلة في المغرب وتواصل مباشرة مع الملاك، بدون عمولة.',
+			),
+			'journal'      => array(
+				'fr' => 'Le journal pep.ma : conseils et actualités de l’immobilier entre particuliers au Maroc.',
+				'en' => 'The pep.ma journal: advice and news on peer-to-peer real estate in Morocco.',
+				'ar' => 'مدونة pep.ma: نصائح وأخبار العقار بين الأفراد في المغرب.',
+			),
+			'mes-annonces' => array(
+				'fr' => 'Gérez vos annonces immobilières pep.ma : activation, désactivation et suivi de vos biens en location ou en vente.',
+				'en' => 'Manage your pep.ma property listings: activation, deactivation and tracking of your rentals and sales.',
+				'ar' => 'أدر إعلاناتك العقارية على pep.ma: التفعيل والتعطيل ومتابعة عقاراتك للكراء أو البيع.',
+			),
+			'legal'        => array(
+				'fr' => 'Informations légales du portail pep.ma, plateforme d’annonces immobilières gratuites entre particuliers au Maroc.',
+				'en' => 'Legal information for pep.ma, the free peer-to-peer property listings platform in Morocco.',
+				'ar' => 'المعلومات القانونية لبوابة pep.ma، منصة الإعلانات العقارية المجانية بين الأفراد في المغرب.',
+			),
+			'contact'      => array(
+				'fr' => 'Contactez l’équipe pep.ma : aide pour vos annonces immobilières entre particuliers au Maroc.',
+				'en' => 'Contact the pep.ma team: help with your peer-to-peer property listings in Morocco.',
+				'ar' => 'اتصل بفريق pep.ma: مساعدة بخصوص إعلاناتك العقارية بين الأفراد في المغرب.',
+			),
+			'faq'          => array(
+				'fr' => 'Questions fréquentes sur pep.ma : publier, chercher et contacter un propriétaire, gratuitement et sans commission.',
+				'en' => 'Frequently asked questions about pep.ma: listing, searching and contacting an owner, free and commission-free.',
+				'ar' => 'الأسئلة الشائعة حول pep.ma: النشر والبحث والتواصل مع المالك، مجانا وبدون عمولة.',
+			),
+		);
+
+		return self::limit( $map[ $key ][ $locale ], 155 );
+	}
+
+	/** Description localisée des fiches EN/AR sans fuite du texte libre FR. */
 	private static function localized_listing_description( $post, $locale ) {
 			/* 6.17.30 : lexique canonique complet de Listing_I18n (riad,
 			 * duplex, loft…) — la carte réduite laissait « Riad » latin
