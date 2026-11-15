@@ -52,6 +52,22 @@ class Partikulier_Scripts {
 				);
 		}
 
+		// Page de connexion : parcours de la maquette (bloc e-mail
+		// dépliable, ouverture WhatsApp), sur ce seul template.
+		if ( is_page_template( 'templates/page-connexion.php' ) ) {
+			$conn_js = PARTIKULIER_DIR . '/assets/js/connexion.js';
+			wp_enqueue_script(
+				'partikulier-connexion',
+				PARTIKULIER_URI . '/assets/js/connexion.js',
+				array( 'partikulier-main' ),
+				is_readable( $conn_js ) ? (string) filemtime( $conn_js ) : PARTIKULIER_VERSION,
+				array(
+					'in_footer' => true,
+					'strategy'  => 'defer',
+				)
+			);
+		}
+
 		// Espace connecté : navigation par panneaux du tableau de bord,
 		// chargée uniquement sur le template « Mes annonces ».
 		if ( is_page_template( 'templates/page-mes-annonces.php' ) ) {
