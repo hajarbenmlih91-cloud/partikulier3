@@ -244,8 +244,8 @@ $pk_default_tab = $has_listings ? 'panel-annonces' : 'panel-contacts';
 												<?php
 												printf(
 														/* translators: %s : nom de l'utilisateur */
-														esc_html__( 'Bonjour %s,', 'partikulier' ),
-														esc_html( $current_user->display_name )
+													esc_html__( 'Bonjour %s,', 'partikulier' ),
+													esc_html( $pk_name_source )
 												);
 												?><span class="pk-hero-accent"><?php echo esc_html( $pk_t['hello_accent'] ); ?></span>
 										</h1>
@@ -499,7 +499,7 @@ $pk_default_tab = $has_listings ? 'panel-annonces' : 'panel-contacts';
 								<dl class="pk-espace-info">
 										<div class="pk-espace-info-row">
 												<dt><?php echo esc_html( $pk_t['first_name'] ); ?></dt>
-												<dd><?php echo esc_html( $current_user->display_name ); ?></dd>
+												<dd><?php echo esc_html( $pk_name_source ); ?></dd>
 										</div>
 										<div class="pk-espace-info-row">
 												<dt><?php echo esc_html( $pk_t['email'] ); ?></dt>
