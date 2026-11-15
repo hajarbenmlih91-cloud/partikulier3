@@ -119,7 +119,7 @@ get_header();
 		<div class="pk-container pk-auth-container">
                 <?php echo Partikulier_Geo::breadcrumbs_html(); // phpcs:ignore ?>
 
-				<div class="pk-espace-auth-card">
+				<div class="pk-auth-card pk-espace-auth-card">
 						<header class="pk-espace-auth-head">
 								<h1 class="pk-espace-auth-title"><?php echo esc_html( $pk_auth_t['welcome'] ); ?></h1>
 								<p class="pk-espace-auth-promise"><?php echo esc_html( $pk_auth_t['promise'] ); ?></p>
