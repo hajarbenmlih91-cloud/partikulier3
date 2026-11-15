@@ -52,7 +52,23 @@ class Partikulier_Scripts {
 				);
 		}
 
-			// Donnees JS : admin ajax (formulaire annonce), endpoint REST maison.
+		// Espace connecté : navigation par panneaux du tableau de bord,
+		// chargée uniquement sur le template « Mes annonces ».
+		if ( is_page_template( 'templates/page-mes-annonces.php' ) ) {
+			$espace_js = PARTIKULIER_DIR . '/assets/js/espace.js';
+			wp_enqueue_script(
+				'partikulier-espace',
+				PARTIKULIER_URI . '/assets/js/espace.js',
+				array( 'partikulier-main' ),
+				is_readable( $espace_js ) ? (string) filemtime( $espace_js ) : PARTIKULIER_VERSION,
+				array(
+					'in_footer' => true,
+					'strategy'  => 'defer',
+				)
+			);
+		}
+
+				// Donnees JS : admin ajax (formulaire annonce), endpoint REST maison.
 			wp_localize_script( 'partikulier-main', 'pkConfig', array(
 					'ajaxUrl'          => admin_url( 'admin-ajax.php', is_ssl() ? 'https' : 'http' ),
 					'nonce'            => wp_create_nonce( 'pk_public' ),
