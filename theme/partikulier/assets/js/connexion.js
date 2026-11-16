@@ -18,6 +18,9 @@
 		if (!serverOpen) {
 			emailBox.hidden = true;
 			toggle.setAttribute("aria-expanded", "false");
+		} else {
+			// Lien profond (?auth_item) : amener le formulaire à l'écran.
+			emailBox.scrollIntoView({ block: "start" });
 		}
 		toggle.addEventListener("click", function () {
 			var willOpen = emailBox.hidden;
@@ -58,7 +61,13 @@
 			input.removeAttribute("aria-invalid");
 			if (feedback) feedback.textContent = "";
 			var text = template.replace("%s", "+" + digits);
-			window.open("https://wa.me/" + team + "?text=" + encodeURIComponent(text), "_blank", "noopener");
+			var url = "https://wa.me/" + team + "?text=" + encodeURIComponent(text);
+			// Confirmation dans la feuille, comme la maquette (bloc #suite).
+			if (suite && suiteLink) {
+				suiteLink.setAttribute("href", url);
+				suite.hidden = false;
+			}
+			window.open(url, "_blank", "noopener");
 		});
 
 		input.addEventListener("keydown", function (ev) {
