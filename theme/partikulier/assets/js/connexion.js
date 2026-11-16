@@ -42,6 +42,8 @@
 		var template = waBox.getAttribute("data-wa-message") || "";
 		var errorMsg = waBox.getAttribute("data-wa-error") || "";
 		var feedback = waBox.querySelector(".pk-conn-feedback");
+		var suite = document.getElementById("pk-conn-suite");
+		var suiteLink = document.getElementById("pk-conn-suite-link");
 
 		function fail() {
 			if (feedback) feedback.textContent = errorMsg;
