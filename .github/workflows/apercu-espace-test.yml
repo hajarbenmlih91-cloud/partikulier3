@@ -8,8 +8,7 @@ name: Aperçu espace (page de test temporaire)
 
 on:
   push:
-    branches: ["test/espace-apercu"]
-    paths: [".apercu-test/action.txt"]
+    tags: ["pre-release-*"]
 
 permissions:
   contents: read
