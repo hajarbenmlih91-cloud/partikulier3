@@ -212,7 +212,9 @@ $assert('DA-008', $orderErrors === [],
 
 /* DA-009 — baseline gelée, actualisée pour le module démo explicite en 6.20.9 :
 exactement 19 fichiers, après réintégration de quatre fichiers historiques omis ;
-les huit domaines métier restent propriété du plugin. */
+les huit domaines métier restent propriété du plugin. Actualisation espace
+(2026-11-17) : inc/class-tunnel-preview.php franchit les 400 lignes avec le
+payload d'édition du tunnel (bouton « Modifier » pré-rempli) — 20 fichiers. */
 $themeRoot = (string) get_template_directory();
 $frozenBaseline = [
     'inc/class-amenities.php',
@@ -234,6 +236,7 @@ $frozenBaseline = [
     'inc/class-settings.php',
     'inc/class-morocco-places.php',
     'inc/class-leads-admin.php',
+    'inc/class-tunnel-preview.php',
 ];
 $documentedExclusions = [ // hors métrique : outil de diagnostic (traitement lot E) et gabarit de substitution Estatik
     'pk-diagnostic.php',
