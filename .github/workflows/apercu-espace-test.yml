@@ -1,10 +1,13 @@
 name: Aperçu espace (page de test temporaire)
 
-# Outil JETABLE de validation : crée (ou supprime) une page « Espace test »
-# sur le site WordPress UAT, utilisant le template « Mes annonces » du code
-# déployé. Déclenché par un tag pre-release-* (seuls ces tags sont autorisés
-# par la politique de l'environnement uat) ; l'action (create ou delete) est
-# lue dans le fichier marqueur .apercu-test/action.txt du commit tagué.
+# Outil JETABLE de validation sur le site WordPress UAT. Déclenché par un
+# tag pre-release-* (seuls ces tags sont autorisés par la politique de
+# l'environnement uat) ; l'action est lue dans le fichier marqueur
+# .apercu-test/action.txt du commit tagué :
+#   create : crée la page « Espace test » (template Mes annonces)
+#   delete : supprime cette page
+#   seed   : prépare le compte de test (nom affiché + 3 annonces du site
+#            affectées à ce compte, pour voir l'espace rempli)
 # À supprimer avec la branche test/espace-apercu après validation.
 
 on:
@@ -32,7 +35,7 @@ jobs:
         run: |
           ACTION=$(tr -d '[:space:]' < .apercu-test/action.txt)
           echo "ACTION=$ACTION" >> "$GITHUB_ENV"
-          case "$ACTION" in create|delete) ;; *) echo "::error::Action inconnue : $ACTION"; exit 1 ;; esac
+          case "$ACTION" in create|delete|seed) ;; *) echo "::error::Action inconnue : $ACTION"; exit 1 ;; esac
 
       - name: Configure SSH
         env:
@@ -124,4 +127,42 @@ jobs:
           else
             echo "Aucune page de test à supprimer."
           fi
+          REMOTE
+
+      - name: Préparer le compte de test (nom + 3 annonces)
+        if: env.ACTION == 'seed'
+        env:
+          WP_PATH: ${{ secrets.WP_PATH }}
+        run: |
+          set -euo pipefail
+          ssh partikulier-hostinger 'bash -s' -- "$WP_PATH" <<'REMOTE'
+          set -euo pipefail
+          cd "$1"
+
+          COMPTE="dashboard.test@pep.ma"
+          UID_TEST=$(wp user get "$COMPTE" --field=ID 2>/dev/null | grep -E '^[0-9]+$' | head -1 || true)
+          [ -n "$UID_TEST" ] || { echo "::error::Compte de test introuvable."; exit 1; }
+          echo "Compte de test : id $UID_TEST"
+
+          # Nom affichable : le badge de l'espace montre le premier mot du nom.
+          wp user update "$UID_TEST" --display_name="Compte test" >/dev/null
+          wp user meta update "$UID_TEST" first_name "Compte" >/dev/null
+          wp user meta update "$UID_TEST" last_name "test" >/dev/null
+
+          # 3 annonces publiées avec photo, affectées à ce compte.
+          CHOISIES=""
+          CANDIDATES=$(wp post list --post_type=properties --post_status=publish --posts_per_page=40 --field=ID --format=csv 2>/dev/null | grep -E '^[0-9]+$' || true)
+          for ID in $CANDIDATES; do
+            PHOTO=$(wp post meta get "$ID" _thumbnail_id 2>/dev/null | grep -E '^[0-9]+$' | head -1 || true)
+            [ -n "$PHOTO" ] || continue
+            DEJA=$(wp post get "$ID" --field=post_author 2>/dev/null | grep -E '^[0-9]+$' | head -1 || true)
+            if [ "$DEJA" != "$UID_TEST" ]; then
+              wp post update "$ID" --post_author="$UID_TEST" >/dev/null
+            fi
+            echo "Annonce $ID : $(wp post get "$ID" --field=post_title 2>/dev/null | head -1)"
+            CHOISIES="$CHOISIES $ID"
+            [ "$(echo $CHOISIES | wc -w)" -ge 3 ] && break
+          done
+          [ "$(echo $CHOISIES | wc -w)" -ge 1 ] || { echo "::error::Aucune annonce candidate trouvée."; exit 1; }
+          echo "Annonces affectées au compte de test :$CHOISIES"
           REMOTE
