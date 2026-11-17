@@ -9638,6 +9638,9 @@ html body .pk-cookie-actions button[data-yes] {
 	min-height: 44px;
 }
 .pk-esp .logo { display: block; width: 118px; height: auto; margin-top: 2px; }
+.pk-esp .logo-home { display: block; line-height: 0; }
+/* Panneau dépôt ouvert : le formulaire garde son logo, celui de l'espace se masque. */
+body.is-depot .pk-esp .logo { visibility: hidden; }
 .pk-esp .top-end { position: relative; display: flex; align-items: center; gap: 10px; }
 .pk-esp .info {
 	width: 32px; height: 32px;
@@ -9653,6 +9656,12 @@ html body .pk-cookie-actions button[data-yes] {
 	font: inherit; font-size: 14px; font-weight: 700;
 	padding: 8px 14px 8px 10px;
 	cursor: pointer;
+	min-width: 0;
+}
+/* Le nom du compte ne doit jamais déborder du badge (petits écrans, libellés longs). */
+.pk-esp #pk-esp-chip-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 560px) {
+	.pk-esp #pk-esp-chip-name { max-width: 30vw; }
 }
 .pk-esp .regles {
 	position: absolute; top: 48px; right: 0; z-index: 30;
