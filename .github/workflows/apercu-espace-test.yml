@@ -1,0 +1,115 @@
+name: Aperçu espace (page de test temporaire)
+
+# Outil JETABLE de validation : crée (ou supprime) une page « Espace test »
+# sur le site WordPress, utilisant le template « Mes annonces » du code
+# déployé. À supprimer avec la branche test/espace-apercu une fois la
+# validation terminée. Aucun merge, aucun tag, aucun déploiement uat/prd :
+# la création de page passe par wp-cli sur l'environnement dev.
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: créer ou supprimer la page de test
+        required: true
+        default: create
+        type: choice
+        options:
+          - create
+          - delete
+
+permissions:
+  contents: read
+
+jobs:
+  page-test:
+    name: Page « Espace test » (${{ inputs.action }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: dev
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Configurer SSH strict
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+          WP_PATH: ${{ secrets.WP_PATH }}
+        run: |
+          set -euo pipefail
+          : "${SSH_HOST:?secret SSH_HOST manquant}"
+          : "${SSH_PORT:?secret SSH_PORT manquant}"
+          : "${SSH_USER:?secret SSH_USER manquant}"
+          : "${SSH_PRIVATE_KEY:?secret SSH_PRIVATE_KEY manquant}"
+          : "${SSH_KNOWN_HOSTS:?secret SSH_KNOWN_HOSTS manquant}"
+          : "${WP_PATH:?secret WP_PATH manquant}"
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
+          chmod 600 "$HOME/.ssh/id_ed25519"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 644 "$HOME/.ssh/known_hosts"
+          {
+            echo "Host partikulier-hostinger"
+            echo "  HostName $SSH_HOST"
+            echo "  Port $SSH_PORT"
+            echo "  User $SSH_USER"
+            echo "  IdentityFile $HOME/.ssh/id_ed25519"
+            echo "  UserKnownHostsFile $HOME/.ssh/known_hosts"
+            echo "  StrictHostKeyChecking yes"
+            echo "  IdentitiesOnly yes"
+            echo "  BatchMode yes"
+            echo "  ConnectionAttempts 4"
+            echo "  ConnectTimeout 15"
+            echo "  ServerAliveInterval 15"
+            echo "  ServerAliveCountMax 3"
+          } > "$HOME/.ssh/config"
+          chmod 600 "$HOME/.ssh/config"
+
+      - name: Créer la page de test
+        if: ${{ inputs.action == 'create' }}
+        env:
+          WP_PATH: ${{ secrets.WP_PATH }}
+        run: |
+          set -euo pipefail
+          ssh partikulier-hostinger 'bash -s' -- "$WP_PATH" <<'REMOTE'
+          set -euo pipefail
+          WP_PATH="$1"
+          command -v wp >/dev/null 2>&1 || { echo "wp-cli introuvable" >&2; exit 1; }
+          cd "$WP_PATH"
+          id="$(wp post list --post_type=page --name=espace-test --field=ID --format=ids)"
+          if [ -z "$id" ]; then
+            id="$(wp post create --post_type=page --post_status=publish --post_title='Espace test' --post_name=espace-test --porcelain)"
+            echo "Page créée : $id"
+          else
+            echo "Page existante réutilisée : $id"
+          fi
+          wp post meta update "$id" _wp_page_template templates/page-mes-annonces.php
+          wp eval "pll_set_post_language($id, 'fr');"
+          wp cache flush || true
+          echo "URL de test : $(wp eval "echo get_permalink($id);")"
+          REMOTE
+
+      - name: Supprimer la page de test
+        if: ${{ inputs.action == 'delete' }}
+        env:
+          WP_PATH: ${{ secrets.WP_PATH }}
+        run: |
+          set -euo pipefail
+          ssh partikulier-hostinger 'bash -s' -- "$WP_PATH" <<'REMOTE'
+          set -euo pipefail
+          WP_PATH="$1"
+          command -v wp >/dev/null 2>&1 || { echo "wp-cli introuvable" >&2; exit 1; }
+          cd "$WP_PATH"
+          id="$(wp post list --post_type=page --name=espace-test --field=ID --format=ids)"
+          if [ -n "$id" ]; then
+            wp post delete "$id" --force
+            echo "Page de test $id supprimée définitivement."
+          else
+            echo "Aucune page « espace-test » à supprimer."
+          fi
+          wp cache flush || true
+          REMOTE
