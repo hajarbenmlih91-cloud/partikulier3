@@ -8252,9 +8252,20 @@ function pkFr(el) {
     if (m.sunshine) fd.append("pk_sunshine", m.sunshine);
     fd.append("pk_title", titre);
     fd.append("pk_description", description);
-    if (extra) fd.append("pk_extra", extra);
+    fd.append("pk_extra", extra);
+    fd.append("pk_address", adresse);
     fd.append("pk_name", nom);
     fd.append("pk_phone", tel);
+    if (cfg.edit && cfg.edit.id) {
+      fd.append("pk_edit_id", String(cfg.edit.id));
+      var keptIds = [];
+      photos.forEach(function (p) {
+        if (p && p.attachmentId) keptIds.push(String(p.attachmentId));
+      });
+      fd.append("pk_keep_photos", keptIds.join(","));
+      var coverActuelle = photoPrincipale();
+      if (coverActuelle && coverActuelle.attachmentId) fd.append("pk_cover_attachment", String(coverActuelle.attachmentId));
+    }
 
     var orderedPhotos = [];
     var cover = photoPrincipale();
@@ -8942,6 +8953,180 @@ function pkFr(el) {
       if (e.key === "Escape") close();
     });
   })();
+
+  // --- Mode édition : le tunnel se rouvre rempli avec l'annonce existante.
+  // Les données arrivent de window.pkConfig.edit, injectées par le serveur
+  // après vérification que le visiteur est bien l'auteur de l'annonce.
+  function pkNormValeur(s) {
+    return String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim().toLowerCase();
+  }
+  function pkPresser(id, valeur) {
+    var racine = document.getElementById(id);
+    if (!racine || valeur === "" || valeur === null || typeof valeur === "undefined") return false;
+    var cible = pkNormValeur(valeur);
+    var boutons = racine.querySelectorAll("[aria-pressed]");
+    for (var i = 0; i < boutons.length; i++) {
+      var b = boutons[i];
+      if (b.getAttribute("data-val") === String(valeur)) {
+        if (b.getAttribute("aria-pressed") !== "true") b.click();
+        return true;
+      }
+      var texte = pkNormValeur(b.getAttribute("data-court") || b.getAttribute("data-fr") || b.textContent);
+      if (texte && texte === cible) {
+        if (b.getAttribute("aria-pressed") !== "true") b.click();
+        return true;
+      }
+    }
+    return false;
+  }
+  function pkPresserId(id) {
+    var b = document.getElementById(id);
+    if (b && b.getAttribute("aria-pressed") !== "true") b.click();
+  }
+  function pkChamp(id, valeur) {
+    var el = document.getElementById(id);
+    if (!el || valeur === "" || valeur === null || typeof valeur === "undefined") return;
+    el.value = String(valeur);
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+  function pkCompteur(id, n) {
+    var step = document.getElementById(id);
+    if (!step) return;
+    var num = parseInt(n, 10);
+    if (isNaN(num) || num <= 0) return;
+    var plus = step.querySelector("[data-dir='1']");
+    if (!plus) return;
+    for (var i = 0; i < num && i < 60; i++) plus.click();
+  }
+  function pkExtraDepuisDescription(desc) {
+    var texte = String(desc || "").trim();
+    if (!texte) return "";
+    var fixe = "";
+    try { fixe = String(texteCorpsBien() || "").trim(); } catch (err) { fixe = ""; }
+    if (!fixe) return texte;
+    var phrasesFixe = {};
+    fixe.split(/(?<=[.!?])\s+/).forEach(function (p) {
+      phrasesFixe[pkNormValeur(p)] = true;
+    });
+    var phrases = texte.split(/(?<=[.!?])\s+/);
+    while (phrases.length && phrasesFixe[pkNormValeur(phrases[0])]) phrases.shift();
+    return phrases.join(" ").trim();
+  }
+  function pkHydraterEdition() {
+    var cfg = window.pkConfig || {};
+    var e = cfg.edit;
+    if (!e || !e.id) return;
+    pkPresser("role", e.role || "proprietaire");
+    pkPresser("transaction", e.transaction || "vente");
+    if (e.famille) pkPresser("famille", e.famille);
+    var groupesSousType = { appartement: "appart-type", entrepot: "en-type", batiment: "bat-type", lot: "lot-type" };
+    if (e.sousType && groupesSousType[e.famille]) pkPresser(groupesSousType[e.famille], e.sousType);
+    pkChamp("ville", e.city);
+    pkChamp("quartier", e.district);
+
+    var vente = e.transaction !== "location" && e.transaction !== "saisonnier";
+    var surfParFamille = {
+      appartement: "ap-surface", maison: "ma-surface", villa: "vi-surface", riad: "ri-habitable",
+      bureau: "bu-surface", local: "surface", immeuble: "im-hab", entrepot: "en-surface",
+      batiment: "bi-surface", ferme: "fe-surface"
+    };
+    var prixParFamille = {
+      appartement: "ap-prix", maison: "ma-prix", villa: vente ? "vi-prix" : "vi-loyer", riad: "ri-prix",
+      bureau: "bu-prix", local: "prix", immeuble: vente ? "im-prix" : "im-loyer",
+      entrepot: vente ? "en-prix" : "en-loyer", batiment: vente ? "bi-prix" : "bi-loyer",
+      ferme: vente ? "fe-prix" : "fe-loyer"
+    };
+    if (e.famille === "lot") {
+      var surfLot = { villa: "lv-surface", immeuble: "li-surface", commercial: "tu-surface", groupement: "tu-surface", industriel: "ti-surface", agricole: "ta-surface" };
+      var prixLot = { villa: "lv-prix", immeuble: "li-prix", commercial: "tu-prix", groupement: "tu-prix", industriel: "ti-prix", agricole: vente ? "ta-prix" : "ta-loyer" };
+      surfParFamille.lot = surfLot[e.sousType] || "lv-surface";
+      prixParFamille.lot = prixLot[e.sousType] || "lv-prix";
+    }
+    pkChamp(surfParFamille[e.famille], e.surface);
+    pkChamp(prixParFamille[e.famille], e.price);
+
+    var prefixe = { appartement: "ap", maison: "ma", villa: "vi", riad: "ri" }[e.famille];
+    if (prefixe) {
+      pkCompteur(prefixe + "-chambres", e.bedrooms);
+      pkCompteur(prefixe + "-salons", e.livingRooms);
+      pkCompteur(prefixe + "-sdb", e.bathrooms);
+      if (e.furnished) {
+        var meubleId = prefixe + "-meuble";
+        var racineMeuble = document.getElementById(meubleId);
+        if (racineMeuble) {
+          var cibleMeuble = pkNormValeur(e.furnished);
+          racineMeuble.querySelectorAll("[aria-pressed]").forEach(function (b) {
+            var texteB = pkNormValeur(b.getAttribute("data-court") || b.getAttribute("data-fr") || b.textContent);
+            if (texteB && texteB.indexOf(cibleMeuble) === 0 && b.getAttribute("aria-pressed") !== "true") b.click();
+          });
+        }
+      }
+      if (e.garage === "Oui") pkPresserId(prefixe + "-garage");
+      if (e.terrace === "Oui") pkPresserId(prefixe + "-terrasse");
+    }
+    if (e.famille === "villa" && e.elevator === "Oui") pkPresserId("vi-ascenseur");
+
+    if (e.floor) {
+      var etageId = e.famille === "bureau" ? "bu-etage" : "ap-etage";
+      if (!pkPresser(etageId, e.floor)) {
+        var numEtage = parseInt(e.floor, 10);
+        if (!isNaN(numEtage) && numEtage >= 6) {
+          pkPresserId(etageId + "-plus");
+          pkChamp(etageId + "-num", numEtage);
+        } else if (/rdc|rez/i.test(String(e.floor))) {
+          pkPresser(etageId, "rdc");
+        }
+      }
+    }
+
+    var soleilId = { appartement: "ap-soleil", maison: "ma-soleil" }[e.famille];
+    if (soleilId && e.sunshine) {
+      var sel = document.getElementById(soleilId);
+      if (sel) {
+        var cibleSoleil = pkNormValeur(e.sunshine);
+        for (var o = 0; o < sel.options.length; o++) {
+          var opt = sel.options[o];
+          if (pkNormValeur(opt.getAttribute("data-fr") || opt.textContent) === cibleSoleil || pkNormValeur(opt.value) === cibleSoleil) {
+            sel.selectedIndex = o;
+            sel.dispatchEvent(new Event("change", { bubbles: true }));
+            break;
+          }
+        }
+      }
+    }
+    if (e.visAVis === "Oui") {
+      var ficheId = { appartement: "fiche-appartement", maison: "fiche-maison", villa: "fiche-villa", riad: "fiche-riad", bureau: "fiche-bureau" }[e.famille];
+      var fiche = ficheId ? document.getElementById(ficheId) : null;
+      if (fiche) {
+        fiche.querySelectorAll("button").forEach(function (b) {
+          if (pkNormValeur(b.getAttribute("data-fr") || b.textContent) === "sans vis-a-vis" && b.getAttribute("aria-pressed") !== "true") b.click();
+        });
+      }
+      pkPresserId("vi-visavis");
+    }
+
+    var titreEl = document.getElementById("annonce-titre");
+    pkChamp("annonce-titre", e.title);
+    if (titreEl && e.title) titreEl.setAttribute("data-touched", "true");
+    pkChamp("annonce-nom", e.name);
+    pkChamp("annonce-telephone", e.phone);
+    pkChamp("annonce-adresse", e.address);
+    var extra = e.extra;
+    if (!extra && e.description) extra = pkExtraDepuisDescription(e.description);
+    pkChamp("annonce-plus", extra);
+
+    if (Array.isArray(e.photos) && e.photos.length) {
+      e.photos.forEach(function (p) {
+        if (!p || !p.url || !p.id) return;
+        var pid = "existant-" + p.id;
+        photos.push({ id: pid, url: p.url, attachmentId: p.id });
+        if (p.cover) coverId = pid;
+      });
+      if (!coverId && photos.length) coverId = photos[0].id;
+      peindrePhotos();
+    }
+  }
+  pkHydraterEdition();
 
   sync();
   montrer(1);

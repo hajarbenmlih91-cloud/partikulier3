@@ -224,6 +224,7 @@ class Partikulier_Tunnel_Preview {
 				}
 			}
 		}
+		$edit_payload = self::edit_payload_for_request();
 		$pk_config = array(
 			'ajaxUrl'        => admin_url( 'admin-ajax.php', is_ssl() ? 'https' : 'http' ),
 			'submitNonce'    => wp_create_nonce( 'pk_submit_listing' ),
@@ -246,6 +247,7 @@ class Partikulier_Tunnel_Preview {
 				'photoError'     => __( "photo(s) n'ont pas pu être ajoutées :", 'partikulier' ),
 				'photoHint'      => __( 'Vous pourrez les ajouter depuis « Mes annonces » après validation.', 'partikulier' ),
 			),
+			'edit'           => $edit_payload,
 		);
 		$boot      = '<script>window.PK_FORCE_LANG=' . wp_json_encode( $doc_lang ) . ';window.pkConfig=' . wp_json_encode( $pk_config ) . ';</script>';
 		/* Le tunnel est un document autonome servi sans wp_head() : le SEO
@@ -271,6 +273,198 @@ class Partikulier_Tunnel_Preview {
 		}
 		echo $html; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- document HTML autonome du thème, déjà figé.
 		exit;
+	}
+
+	/**
+	 * Données d'une annonce à modifier, pour pré-remplir le tunnel.
+	 *
+	 * Sans annonce demandée, visiteur anonyme, annonce d'un autre type ou
+	 * annonce d'autrui, on ne renvoie rien : le tunnel reste un dépôt vierge
+	 * et aucune donnée privée ne part dans le document. Le téléphone n'est
+	 * transmis qu'à l'auteur (ou à un administrateur), depuis le numéro
+	 * nettoyé rattaché à son compte, jamais depuis le champ chiffré seul.
+	 *
+	 * @return array
+	 */
+	private static function edit_payload_for_request() {
+		if ( ! is_user_logged_in() ) {
+			return array();
+		}
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- lecture seule, propriété vérifiée ci-dessous avant toute donnée.
+		$edit_id = isset( $_GET['edit'] ) ? absint( wp_unslash( $_GET['edit'] ) ) : 0;
+		if ( ! $edit_id ) {
+			return array();
+		}
+		$post = get_post( $edit_id );
+		if ( ! $post || PARTIKULIER_ESTATIK_POST_TYPE !== $post->post_type ) {
+			return array();
+		}
+		if ( (int) get_current_user_id() !== (int) $post->post_author && ! current_user_can( 'manage_options' ) ) {
+			return array();
+		}
+
+		$meta = static function ( $key ) use ( $post ) {
+			return (string) get_post_meta( $post->ID, $key, true );
+		};
+
+		// Type de bien : on repasse du terme Estatik à la famille du tunnel.
+		$famille   = '';
+		$sous_type = '';
+		$type_map  = array(
+			'studio'             => array( 'appartement', 'studio' ),
+			'appartement'        => array( 'appartement', 'appartement' ),
+			'duplex'             => array( 'appartement', 'duplex' ),
+			'triplex'            => array( 'appartement', 'triplex' ),
+			'maison'             => array( 'maison', '' ),
+			'villa'              => array( 'villa', '' ),
+			'riad'               => array( 'riad', '' ),
+			'local'              => array( 'local', '' ),
+			'local-commercial'   => array( 'local', '' ),
+			'commerce'           => array( 'local', '' ),
+			'bureau'             => array( 'bureau', '' ),
+			'depot'              => array( 'entrepot', 'depot' ),
+			'hangar'             => array( 'entrepot', 'depot' ),
+			'entrepot'           => array( 'entrepot', 'depot' ),
+			'frigo'              => array( 'entrepot', 'frigo' ),
+			'plateforme'         => array( 'entrepot', 'plateforme' ),
+			'usine'              => array( 'batiment', 'usine' ),
+			'atelier'            => array( 'batiment', 'atelier' ),
+			'immeuble'           => array( 'immeuble', '' ),
+			'terrain-villa'      => array( 'lot', 'villa' ),
+			'terrain-immeuble'   => array( 'lot', 'immeuble' ),
+			'terrain-commercial' => array( 'lot', 'commercial' ),
+			'terrain-groupement' => array( 'lot', 'groupement' ),
+			'terrain-industriel' => array( 'lot', 'industriel' ),
+			'terrain-agricole'   => array( 'lot', 'agricole' ),
+			'terrain'            => array( 'lot', '' ),
+			'ferme'              => array( 'ferme', '' ),
+		);
+		$type_terms = wp_get_object_terms( $post->ID, PARTIKULIER_ESTATIK_TYPE_TAXONOMY );
+		if ( ! is_wp_error( $type_terms ) && $type_terms ) {
+			foreach ( $type_terms as $type_term ) {
+				$candidats = array(
+					sanitize_title( (string) $type_term->slug ),
+					sanitize_title( remove_accents( (string) $type_term->name ) ),
+				);
+				foreach ( $candidats as $candidat ) {
+					if ( isset( $type_map[ $candidat ] ) ) {
+						list( $famille, $sous_type ) = $type_map[ $candidat ];
+						break 2;
+					}
+				}
+			}
+		}
+
+		// Transaction : vente par défaut, location ou saisonnier selon le statut.
+		$transaction   = 'vente';
+		$status_terms  = wp_get_object_terms( $post->ID, PARTIKULIER_ESTATIK_STATUS_TAXONOMY );
+		$status_texte  = '';
+		if ( ! is_wp_error( $status_terms ) && $status_terms ) {
+			foreach ( $status_terms as $status_term ) {
+				$status_texte .= ' ' . strtolower( remove_accents( (string) $status_term->name . ' ' . (string) $status_term->slug ) );
+			}
+		}
+		if ( false !== strpos( $status_texte, 'saisonn' ) ) {
+			$transaction = 'saisonnier';
+		} elseif ( preg_match( '/louer|location|rent/', $status_texte ) || '' !== $meta( '_pk_rent' ) ) {
+			$transaction = 'location';
+		}
+
+		// Photos déjà en ligne : la galerie, plus la vignette si elle en sort.
+		$photos   = array();
+		$thumb_id = (int) get_post_thumbnail_id( $post->ID );
+		$gallery  = get_post_meta( $post->ID, 'es_property_gallery', true );
+		if ( is_array( $gallery ) ) {
+			foreach ( $gallery as $attachment_id ) {
+				$attachment_id = (int) $attachment_id;
+				if ( ! $attachment_id ) {
+					continue;
+				}
+				$url = wp_get_attachment_image_url( $attachment_id, 'large' );
+				if ( ! $url ) {
+					$url = wp_get_attachment_url( $attachment_id );
+				}
+				if ( ! $url ) {
+					continue;
+				}
+				$photos[] = array(
+					'id'    => $attachment_id,
+					'url'   => $url,
+					'cover' => $attachment_id === $thumb_id,
+				);
+			}
+		}
+		if ( $thumb_id && ! in_array( $thumb_id, array_column( $photos, 'id' ), true ) ) {
+			$thumb_url = wp_get_attachment_image_url( $thumb_id, 'large' );
+			if ( ! $thumb_url ) {
+				$thumb_url = wp_get_attachment_url( $thumb_id );
+			}
+			if ( $thumb_url ) {
+				array_unshift(
+					$photos,
+					array(
+						'id'    => $thumb_id,
+						'url'   => $thumb_url,
+						'cover' => true,
+					)
+				);
+			}
+		}
+
+		// Téléphone : le numéro nettoyé du compte auteur d'abord (lisible par
+		// l'auteur lui-même), le champ chiffré ensuite (administrateurs).
+		$phone = (string) get_user_meta( (int) $post->post_author, '_pk_owner_phone_clean', true );
+		if ( '' === $phone && class_exists( 'Partikulier_Crypto' ) && '' !== $meta( '_pk_owner_phone' ) ) {
+			$phone = (string) Partikulier_Crypto::decrypt_phone( $meta( '_pk_owner_phone' ) );
+		}
+		$name = $meta( '_pk_owner_name' );
+		if ( '' === $name ) {
+			$author = get_user_by( 'id', (int) $post->post_author );
+			$name   = $author ? (string) $author->display_name : '';
+		}
+
+		$bedrooms = $meta( '_pk_bedrooms_label' );
+		if ( '' === $bedrooms ) {
+			$bedrooms = $meta( 'es_property_bedrooms' );
+		}
+		$living = $meta( '_pk_living_rooms_label' );
+		if ( '' === $living ) {
+			$living = $meta( '_pk_living_rooms' );
+		}
+		$bathrooms = $meta( '_pk_bathrooms_label' );
+		if ( '' === $bathrooms ) {
+			$bathrooms = $meta( 'es_property_bathrooms' );
+		}
+
+		return array(
+			'id'             => (int) $post->ID,
+			'role'           => 'agent' === $meta( '_pk_owner_role' ) ? 'agent' : 'proprietaire',
+			'transaction'    => $transaction,
+			'famille'        => $famille,
+			'sousType'       => $sous_type,
+			'city'           => $meta( '_pk_city_name' ),
+			'district'       => $meta( '_pk_district_name' ),
+			'title'          => (string) $post->post_title,
+			'description'    => html_entity_decode( wp_strip_all_tags( (string) $post->post_content ), ENT_QUOTES, 'UTF-8' ),
+			'extra'          => $meta( '_pk_extra_note' ),
+			'address'        => $meta( '_pk_address_note' ),
+			'name'           => $name,
+			'phone'          => $phone,
+			'surface'        => $meta( 'es_property_area' ),
+			'price'          => $meta( 'es_property_price' ),
+			'bedrooms'       => $bedrooms,
+			'livingRooms'    => $living,
+			'bathrooms'      => $bathrooms,
+			'floor'          => $meta( '_pk_floor' ),
+			'garage'         => $meta( '_pk_garage' ),
+			'elevator'       => $meta( '_pk_elevator' ),
+			'terrace'        => $meta( '_pk_terrace' ),
+			'terraceSurface' => $meta( '_pk_terrace_surface' ),
+			'visAVis'        => $meta( '_pk_vis_a_vis' ),
+			'sunshine'       => $meta( '_pk_sunshine' ),
+			'furnished'      => $meta( '_pk_furnished' ),
+			'photos'         => $photos,
+		);
 	}
 
 	/**
