@@ -91,6 +91,7 @@
 		panels.forEach(function (panel) {
 			panel.hidden = panel !== target;
 		});
+		if (target.id === "panel-favoris") refreshFavorites();
 		if (window.history && window.history.replaceState) {
 			window.history.replaceState(null, "", "#" + target.id);
 		}
@@ -153,9 +154,53 @@
 			paintList(id);
 		});
 	});
-	/* La grille des favoris est remplie par main.js (AJAX) : repeindre
-	 * la pagination quand son contenu change, et masquer le bouton
-	 * « plus » quand l'état vide est affiché. */
+	/* La grille des favoris est remplie par main.js (AJAX) au chargement.
+	 * À chaque ouverture du panneau, la repeindre si la liste du
+	 * navigateur a changé depuis (cœur coché dans l'espace même). */
+	var favLoadedFor = null;
+	function refreshFavorites() {
+		var grid = document.getElementById("pk-favorites-grid");
+		var empty = document.getElementById("pk-favorites-empty");
+		if (!grid || !window.pkConfig || !pkConfig.ajaxUrl) return;
+		var ids = [];
+		try {
+			ids = JSON.parse(window.localStorage.getItem("pk_wishlist") || "[]");
+		} catch (e) {
+			ids = [];
+		}
+		if (!Array.isArray(ids)) ids = [];
+		var signature = ids.join(",");
+		if (signature === favLoadedFor) return;
+		favLoadedFor = signature;
+		if (!ids.length) {
+			grid.innerHTML = "";
+			if (empty) empty.hidden = false;
+			paintList("pk-favorites-grid");
+			return;
+		}
+		var fd = new FormData();
+		fd.append("action", "pk_favorites_list");
+		fd.append("nonce", pkConfig.nonce || "");
+		fd.append("ids", signature);
+		fetch(pkConfig.ajaxUrl, { method: "POST", body: fd, credentials: "same-origin" })
+			.then(function (r) {
+				return r.json();
+			})
+			.then(function (data) {
+				if (!data || !data.success || !data.data || !data.data.count) {
+					grid.innerHTML = "";
+					if (empty) empty.hidden = false;
+				} else {
+					grid.innerHTML = data.data.html;
+					if (empty) empty.hidden = true;
+					if (window.pkBindWishlist) window.pkBindWishlist();
+				}
+				paintList("pk-favorites-grid");
+			})
+			.catch(function () {
+				/* main.js affichera l'état vide si le sien a aussi échoué. */
+			});
+	}
 	var favGrid = document.getElementById("pk-favorites-grid");
 	if (favGrid && window.MutationObserver) {
 		new MutationObserver(function () {
