@@ -23,7 +23,7 @@ concurrency:
 
 jobs:
   apercu:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     environment: uat
 
@@ -149,20 +149,26 @@ jobs:
           wp user meta update "$UID_TEST" first_name "Compte" >/dev/null
           wp user meta update "$UID_TEST" last_name "test" >/dev/null
 
-          # 3 annonces publiées avec photo, affectées à ce compte.
-          CHOISIES=""
-          CANDIDATES=$(wp post list --post_type=properties --post_status=publish --posts_per_page=40 --field=ID --format=csv 2>/dev/null | grep -E '^[0-9]+$' || true)
-          for ID in $CANDIDATES; do
-            PHOTO=$(wp post meta get "$ID" _thumbnail_id 2>/dev/null | grep -E '^[0-9]+$' | head -1 || true)
-            [ -n "$PHOTO" ] || continue
-            DEJA=$(wp post get "$ID" --field=post_author 2>/dev/null | grep -E '^[0-9]+$' | head -1 || true)
-            if [ "$DEJA" != "$UID_TEST" ]; then
-              wp post update "$ID" --post_author="$UID_TEST" >/dev/null
-            fi
-            echo "Annonce $ID : $(wp post get "$ID" --field=post_title 2>/dev/null | head -1)"
-            CHOISIES="$CHOISIES $ID"
-            [ "$(echo $CHOISIES | wc -w)" -ge 3 ] && break
-          done
-          [ "$(echo $CHOISIES | wc -w)" -ge 1 ] || { echo "::error::Aucune annonce candidate trouvée."; exit 1; }
-          echo "Annonces affectées au compte de test :$CHOISIES"
+          # Restitution (1er seed) : rendre les traductions 214/215/216 à
+          # l'auteur de leur version française. Puis 3 biens FR distincts,
+          # publiés, avec photo, affectés au compte de test.
+          wp eval '
+          $uid = (int) get_user_by("email", "dashboard.test@pep.ma")->ID;
+          foreach ([216, 215, 214] as $id) {
+            $fr = function_exists("pll_get_post") ? (int) pll_get_post($id, "fr") : 0;
+            if ($fr && $fr !== $id && (int) get_post_field("post_author", $id) === $uid) {
+              $auteur = (int) get_post_field("post_author", $fr);
+              if ($auteur) { wp_update_post(["ID" => $id, "post_author" => $auteur]); echo "rendu $id auteur $auteur\n"; }
+            }
+          }
+          $q = get_posts(["post_type" => "properties", "post_status" => "publish", "posts_per_page" => 60, "orderby" => "date", "order" => "DESC", "lang" => "fr"]);
+          $n = 0;
+          foreach ($q as $p) {
+            if (!get_post_thumbnail_id($p->ID)) { continue; }
+            wp_update_post(["ID" => $p->ID, "post_author" => $uid]);
+            echo "affecte {$p->ID} : {$p->post_title}\n";
+            if (++$n >= 3) { break; }
+          }
+          echo "biens FR publiés affectés : $n\n";
+          '
           REMOTE
