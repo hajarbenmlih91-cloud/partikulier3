@@ -2,9 +2,10 @@ name: Aperçu espace (page de test temporaire)
 
 # Outil JETABLE de validation : crée (ou supprime) une page « Espace test »
 # sur le site WordPress UAT, utilisant le template « Mes annonces » du code
-# déployé. Déclenché par le fichier marqueur .apercu-test/action.txt
-# (contenu : create ou delete), poussé sur la branche test/espace-apercu.
-# À supprimer avec la branche une fois la validation terminée.
+# déployé. Déclenché par un tag pre-release-* (seuls ces tags sont autorisés
+# par la politique de l'environnement uat) ; l'action (create ou delete) est
+# lue dans le fichier marqueur .apercu-test/action.txt du commit tagué.
+# À supprimer avec la branche test/espace-apercu après validation.
 
 on:
   push:
@@ -25,7 +26,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Lire l'action demandée
         run: |
@@ -35,42 +36,51 @@ jobs:
 
       - name: Configure SSH
         env:
-          DEPLOY_HOST: ${{ secrets.SSH_HOST }}
-          DEPLOY_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-          DEPLOY_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+          WP_PATH: ${{ secrets.WP_PATH }}
         run: |
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/deploy_key
-          chmod 600 ~/.ssh/deploy_key
-          printf '%s\n' "$DEPLOY_KNOWN_HOSTS" > ~/.ssh/known_hosts
-          chmod 644 ~/.ssh/known_hosts
-
-          if ! ssh-keygen -F "$DEPLOY_HOST" -f ~/.ssh/known_hosts >/dev/null; then
-            echo "::error::Le secret SSH_KNOWN_HOSTS ne correspond pas à SSH_HOST (dev)."
-            exit 1
-          fi
+          set -euo pipefail
+          : "${SSH_HOST:?secret SSH_HOST manquant}"
+          : "${SSH_PORT:?secret SSH_PORT manquant}"
+          : "${SSH_USER:?secret SSH_USER manquant}"
+          : "${SSH_PRIVATE_KEY:?secret SSH_PRIVATE_KEY manquant}"
+          : "${SSH_KNOWN_HOSTS:?secret SSH_KNOWN_HOSTS manquant}"
+          : "${WP_PATH:?secret WP_PATH manquant}"
+          install -m 700 -d "$HOME/.ssh"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
+          chmod 600 "$HOME/.ssh/id_ed25519"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 644 "$HOME/.ssh/known_hosts"
+          {
+            echo "Host partikulier-hostinger"
+            echo "  HostName $SSH_HOST"
+            echo "  Port $SSH_PORT"
+            echo "  User $SSH_USER"
+            echo "  IdentityFile $HOME/.ssh/id_ed25519"
+            echo "  UserKnownHostsFile $HOME/.ssh/known_hosts"
+            echo "  StrictHostKeyChecking yes"
+            echo "  IdentitiesOnly yes"
+            echo "  BatchMode yes"
+            echo "  ConnectionAttempts 4"
+            echo "  ConnectTimeout 15"
+            echo "  ServerAliveInterval 15"
+            echo "  ServerAliveCountMax 3"
+          } > "$HOME/.ssh/config"
+          chmod 600 "$HOME/.ssh/config"
 
       - name: Créer la page de test
         if: env.ACTION == 'create'
         env:
-          DEPLOY_HOST: ${{ secrets.SSH_HOST }}
-          DEPLOY_USER: ${{ secrets.SSH_USER }}
-          DEPLOY_PORT: ${{ secrets.SSH_PORT || '65002' }}
-          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          WP_PATH: ${{ secrets.WP_PATH }}
         run: |
-          ssh -i ~/.ssh/deploy_key -p "$DEPLOY_PORT" \
-            -o StrictHostKeyChecking=yes \
-            -o UserKnownHostsFile=~/.ssh/known_hosts \
-            -o PasswordAuthentication=no \
-            -o ConnectTimeout=30 \
-            -o ServerAliveInterval=15 \
-            -o ServerAliveCountMax=4 \
-            "$DEPLOY_USER@$DEPLOY_HOST" 'bash -s' <<REMOTE
           set -euo pipefail
-
-          WP_PATH="$DEPLOY_PATH"
-          cd "$WP_PATH"
+          ssh partikulier-hostinger 'bash -s' -- "$WP_PATH" <<'REMOTE'
+          set -euo pipefail
+          cd "$1"
 
           SLUG="espace-test"
           EXISTANT=$(wp post list --post_type=page --name="$SLUG" --field=ID --format=csv 2>/dev/null | head -1 || true)
@@ -93,21 +103,12 @@ jobs:
       - name: Supprimer la page de test
         if: env.ACTION == 'delete'
         env:
-          DEPLOY_HOST: ${{ secrets.SSH_HOST }}
-          DEPLOY_USER: ${{ secrets.SSH_USER }}
-          DEPLOY_PORT: ${{ secrets.SSH_PORT || '65002' }}
-          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          WP_PATH: ${{ secrets.WP_PATH }}
         run: |
-          ssh -i ~/.ssh/deploy_key -p "$DEPLOY_PORT" \
-            -o StrictHostKeyChecking=yes \
-            -o UserKnownHostsFile=~/.ssh/known_hosts \
-            -o PasswordAuthentication=no \
-            -o ConnectTimeout=30 \
-            -o ServerAliveInterval=15 \
-            -o ServerAliveCountMax=4 \
-            "$DEPLOY_USER@$DEPLOY_HOST" 'bash -s' <<REMOTE
           set -euo pipefail
-          cd "$DEPLOY_PATH"
+          ssh partikulier-hostinger 'bash -s' -- "$WP_PATH" <<'REMOTE'
+          set -euo pipefail
+          cd "$1"
 
           SLUG="espace-test"
           ID=$(wp post list --post_type=page --name="$SLUG" --field=ID --format=csv 2>/dev/null | head -1 || true)
