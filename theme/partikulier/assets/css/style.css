@@ -9607,3 +9607,366 @@ html body .pk-cookie-actions button[data-yes] {
 	font-size: .75rem; font-weight: 700;
 }
 .pk-conn-email { margin-top: 1.1rem; text-align: start; }
+/* ===== Espace connecté : feuille fidèle à la maquette validée =====
+ * Reproduit l'écran #profil de espace-acheteur.html : fond rouge
+ * #FF5757 sur le hub (classe is-hub sur le body), fond blanc sur les
+ * panneaux (is-panel), cartes blanches ombrées, chip prénom, popover
+ * des règles, grilles de cartes du site, modales et toast. Préfixes
+ * pk-esp pour primer sur les règles historiques du tableau de bord.
+ * Les cartes annonces gardent le style du site (card-property.php),
+ * exactement comme la maquette les embarque. */
+.pk-esp-body { background: #fff; }
+.pk-esp-body.is-hub { background: #FF5757; }
+.pk-esp-body.is-panel { background: #fff; }
+.pk-esp {
+	width: 100%;
+	min-height: 100vh;
+	margin: 0;
+	padding: 22px 20px 56px;
+	background: transparent;
+	color: #161715;
+	font-family: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+	box-sizing: border-box;
+	position: relative;
+}
+.pk-esp *, .pk-esp *::before, .pk-esp *::after { box-sizing: border-box; }
+.pk-esp [hidden] { display: none !important; }
+.pk-esp .top {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	min-height: 44px;
+}
+.pk-esp .logo { display: block; width: 118px; height: auto; margin-top: 2px; }
+.pk-esp .top-end { position: relative; display: flex; align-items: center; gap: 10px; }
+.pk-esp .info {
+	width: 32px; height: 32px;
+	border: 0; border-radius: 50%;
+	background: #fff; color: #FF5757;
+	font: inherit; font-size: 15px; font-weight: 700; font-style: italic;
+	cursor: pointer;
+}
+.pk-esp .chip {
+	display: inline-flex; align-items: center; gap: 8px;
+	border: 0; border-radius: 999px;
+	background: #fff; color: #1a1a1a;
+	font: inherit; font-size: 14px; font-weight: 700;
+	padding: 8px 14px 8px 10px;
+	cursor: pointer;
+}
+.pk-esp .regles {
+	position: absolute; top: 48px; right: 0; z-index: 30;
+	width: 220px; padding: 12px;
+	border-radius: 8px; background: #fff;
+	box-shadow: 0 8px 28px rgba(0,0,0,.12);
+	font-size: 13px; line-height: 1.4;
+}
+.pk-esp .regles p { margin: 0 0 6px; }
+.pk-esp .regles p:last-child { margin: 0; }
+.pk-esp .hub-col { width: min(100%, 440px); margin: 48px auto 0; }
+.pk-esp .hub-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 0; }
+.pk-esp .hub-cards button {
+	display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+	min-height: 148px; padding: 22px 12px;
+	border: 0; border-radius: 18px;
+	background: #fff; color: #1a1a1a;
+	box-shadow: 0 10px 28px rgba(0,0,0,.12);
+	font: inherit; font-size: 16px; font-weight: 800; text-align: center;
+	cursor: pointer;
+}
+.pk-esp .hub-cards button.hub-span { grid-column: 1 / -1; min-height: 88px; flex-direction: row; gap: 10px; }
+.pk-esp .hub-list {
+	margin-top: 16px;
+	border-radius: 18px; background: #fff;
+	box-shadow: 0 10px 28px rgba(0,0,0,.12);
+	overflow: hidden;
+}
+.pk-esp .hub-row {
+	width: 100%;
+	display: flex; align-items: center; gap: 12px;
+	padding: 14px 16px;
+	border: 0; border-bottom: 1px solid #f0f0f0;
+	background: #fff; color: #1a1a1a;
+	font: inherit; font-size: 15px; font-weight: 600; text-align: left;
+	text-decoration: none;
+	cursor: pointer;
+}
+.pk-esp .hub-row:last-child { border-bottom: 0; }
+.pk-esp .hub-row:hover { background: #fafafa; }
+.pk-esp .hub-row .txt { flex: 1; min-width: 0; }
+.pk-esp .hub-row strong { display: block; font-size: 15px; }
+.pk-esp .hub-row em {
+	display: block; margin-top: 2px;
+	color: #5d615a; font-style: normal; font-size: 14px; font-weight: 500;
+	overflow-wrap: anywhere;
+}
+.pk-esp .hub-row .chev { margin-inline-start: auto; flex: none; color: #9a9a9a; }
+.pk-esp .hub-row .pencil {
+	margin-inline-start: auto; flex: none;
+	width: 32px; height: 32px;
+	border-radius: 50%; background: #f3f4f6; color: #1a1a1a;
+	display: grid; place-items: center;
+}
+.pk-esp .panel-col { width: min(100%, 560px); margin: 28px auto 0; }
+.pk-esp .cards-wrap { width: min(100%, 1080px); margin: 8px auto 0; }
+.pk-esp .panel h1 {
+	margin: 8px 0 18px; text-align: left;
+	font-size: 32px; font-weight: 800; letter-spacing: -.03em; line-height: 1.15;
+	color: #161715;
+}
+.pk-esp .lead { margin: 0 0 16px; font-size: 16px; line-height: 1.45; }
+.pk-esp .grille { display: grid; grid-template-columns: 1fr; gap: 16px; margin: 12px 0 0; }
+@media (min-width: 768px) { .pk-esp .grille { grid-template-columns: 1fr 1fr; } }
+@media (min-width: 901px) { .pk-esp .grille { grid-template-columns: 1fr 1fr 1fr; } }
+.pk-esp .grille > .suite { display: none; }
+.pk-esp .pk-listing-item {
+	min-width: 0;
+	display: flex; flex-direction: column;
+	gap: 0; padding: 0;
+	border: 0; border-radius: 0;
+	background: transparent; box-shadow: none;
+}
+/* La règle générique « .pk-card, .pk-step » du site met un gros
+ * padding sur .pk-card ; dans l'espace, la carte garde son rendu
+ * d'archive (image pleine largeur), comme dans la maquette. */
+.pk-esp .pk-card {
+	padding: 0;
+	border: 0; border-radius: 0;
+	box-shadow: none; overflow: hidden;
+}
+.pk-esp .pk-listing-item .pk-card { flex: 1; }
+.pk-esp .pk-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin: 0 0 18px; }
+.pk-esp .pk-stats div { border: 1px solid #e6e5df; background: #fff; padding: 12px; }
+.pk-esp .pk-stats strong { display: block; font-size: 26px; letter-spacing: -.03em; }
+.pk-esp .pk-stats span { display: block; margin-top: 4px; color: #5d615a; font-size: 12px; }
+@media (min-width: 800px) { .pk-esp .pk-stats { grid-template-columns: repeat(5, 1fr); } }
+.pk-esp .own-metrics { margin: 6px 0 0; color: #161715; font-size: 13px; font-weight: 700; }
+.pk-esp .own-actions { display: flex; width: 100%; margin: 12px 0 0; }
+.pk-esp .own-actions button, .pk-esp .own-actions a {
+	flex: 1 1 50%; width: 50%; min-height: 46px;
+	display: grid; place-items: center;
+	margin: 0; padding: 10px 8px;
+	font: inherit; font-size: 15px; font-weight: 700;
+	text-align: center; text-decoration: none;
+	cursor: pointer;
+}
+.pk-esp .own-actions .pk-esp-off { background: #fff; color: #161715; border: 1px solid #161715; }
+.pk-esp .own-actions .pk-esp-mod, .pk-esp .own-actions .pk-esp-on { background: #FF5757; color: #fff; border: 1px solid #FF5757; }
+.pk-esp .own-actions .pk-esp-full { flex-basis: 100%; width: 100%; }
+.pk-esp .pk-listing-feedback { margin: 8px 0 0; font-size: 13px; font-weight: 700; color: #161715; }
+.pk-esp .pk-listing-feedback:empty { display: none; }
+.pk-esp .plus-wrap { text-align: center; margin: 18px 0 0; }
+.pk-esp .plus {
+	display: inline-block; width: auto; height: auto; margin: 0;
+	padding: 10px 18px;
+	border: 0; border-radius: 999px;
+	background: #FF5757; color: #fff;
+	font: inherit; font-size: 15px; font-weight: 700;
+	cursor: pointer;
+}
+.pk-esp .retour {
+	display: inline-block; margin: 0 0 16px;
+	padding: 10px 22px;
+	border: 0; border-radius: 999px;
+	background: #FF5757; color: #fff;
+	font: inherit; font-size: 15px; font-weight: 700;
+	cursor: pointer;
+}
+.pk-esp .retour.bas { margin: 28px 0 0; }
+.pk-esp .esp-vide {
+	padding: 18px 16px;
+	border-radius: 12px; background: #f3f4f6;
+	font-size: 15px; line-height: 1.5;
+}
+.pk-esp .esp-vide strong { display: block; margin-bottom: 6px; font-size: 16px; }
+.pk-esp .note-box { padding: 16px; border-radius: 12px; background: #f3f4f6; }
+.pk-esp .note-box p { margin: 0 0 10px; font-size: 14px; line-height: 1.45; }
+.pk-esp .note-box p:last-child { margin: 0; }
+.pk-esp .switch-row {
+	display: flex; align-items: center; justify-content: space-between; gap: 16px;
+	margin-top: 22px; font-weight: 700;
+}
+.pk-esp .switch {
+	width: 44px; height: 26px; flex: none;
+	border: 0; border-radius: 999px;
+	background: #d0d0d0;
+	position: relative; cursor: pointer; padding: 0;
+}
+.pk-esp .switch[aria-pressed="true"] { background: #FF5757; }
+.pk-esp .switch::after {
+	content: ""; position: absolute; top: 3px; left: 3px;
+	width: 20px; height: 20px; border-radius: 50%; background: #fff;
+}
+.pk-esp .switch[aria-pressed="true"]::after { transform: translateX(18px); }
+.pk-esp .langue-label { display: block; margin: 18px 0 8px; font-size: 14px; }
+.pk-esp select {
+	width: 100%; height: 48px;
+	border: 1px solid #e4e4e4; border-radius: 8px;
+	padding: 0 12px; background: #fff;
+	font: inherit; font-size: 15px; color: #161715;
+}
+.pk-esp .enregistrer {
+	height: 48px; margin-top: 28px; padding: 0 28px;
+	border: 0; border-radius: 999px;
+	background: #FF5757; color: #fff;
+	font: inherit; font-size: 16px; font-weight: 700;
+	cursor: pointer;
+}
+.pk-esp .faq-wrap { width: min(100%, 920px); margin: 18px auto 0; }
+.pk-esp .faq { display: grid; grid-template-columns: 1fr; gap: 28px; margin-top: 12px; }
+@media (min-width: 768px) { .pk-esp .faq { grid-template-columns: 220px 1fr; } }
+.pk-esp .faq-nav { display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
+.pk-esp .faq-nav a { color: #FF5757; font-weight: 700; text-decoration: none; }
+.pk-esp .faq-body h1 { margin: 0 0 18px; font-size: 32px; }
+.pk-esp .faq-body h2 { margin: 22px 0 8px; color: #FF5757; font-size: 18px; }
+.pk-esp .faq-body p { margin: 0; font-size: 15px; line-height: 1.5; }
+.pk-esp .voile {
+	position: fixed; inset: 0; z-index: 50;
+	display: grid; place-items: center;
+	padding: 20px;
+	background: rgba(80,80,80,.55);
+}
+.pk-esp .modal {
+	width: min(100%, 420px);
+	padding: 28px 24px 24px;
+	border-radius: 16px; background: #fff;
+	box-shadow: 0 16px 48px rgba(0,0,0,.18);
+}
+.pk-esp .modal-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.pk-esp .modal h2 { margin: 0; font-size: 22px; font-weight: 800; letter-spacing: -.02em; }
+.pk-esp .modal-x {
+	width: 32px; height: 32px; flex: none;
+	border: 0; border-radius: 50%;
+	background: #f2f2f2; color: #8d8d8d;
+	font-size: 18px; line-height: 1;
+	cursor: pointer;
+}
+.pk-esp .modal label { display: block; margin: 22px 0 8px; color: #6b6b6b; font-size: 14px; }
+.pk-esp .modal input {
+	width: 100%; height: 48px;
+	border: 1px solid #e6e6e6; border-radius: 8px;
+	padding: 0 12px;
+	font: inherit; font-size: 15px; color: #161715;
+	background: #fff;
+}
+.pk-esp .modal .enregistrer, .pk-esp .modal .fermer { display: block; width: min(100%, 280px); margin: 16px auto 0; }
+.pk-esp .fermer {
+	height: 44px; padding: 0 28px;
+	border: 0; border-radius: 999px;
+	background: #f2f2f2; color: #1a1a1a;
+	font: inherit; font-size: 15px; font-weight: 700;
+	cursor: pointer;
+}
+.pk-esp .modal-error { margin: 12px 0 0; color: #C8242B; font-size: 13px; font-weight: 700; }
+.pk-esp .modal-error:empty { display: none; }
+.pk-esp .pk-deactivate-reason {
+	position: fixed; inset: 0; z-index: 40;
+	place-items: center;
+	padding: 16px;
+	background: rgba(22, 23, 21, .45);
+}
+.pk-esp .pk-deactivate-reason:not([hidden]) { display: grid; }
+.pk-esp .off-card {
+	width: min(100%, 420px); max-height: min(90vh, 680px); overflow: auto;
+	background: #fff; border-radius: 20px;
+	padding: 18px 18px 16px;
+	box-shadow: 0 18px 50px rgba(0,0,0,.18);
+}
+.pk-esp .off-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.pk-esp .off-title { margin: 0; text-align: left; font-size: 20px; line-height: 1.2; font-weight: 800; letter-spacing: -.02em; }
+.pk-esp .off-x {
+	width: 32px; height: 32px; flex: none;
+	border: 0; border-radius: 50%;
+	background: #f2f2f2; color: #161715;
+	font-size: 20px; line-height: 1;
+	cursor: pointer;
+}
+.pk-esp .off-list { margin-top: 8px; }
+.pk-esp .pk-reason-option {
+	display: flex; align-items: center; justify-content: space-between; gap: 16px;
+	padding: 14px 0;
+	border-bottom: 1px solid #eee;
+	color: #161715; font-size: 16px; font-weight: 650;
+	cursor: pointer;
+}
+.pk-esp .pk-reason-option input {
+	appearance: none; -webkit-appearance: none;
+	box-sizing: border-box;
+	width: 22px !important; height: 22px !important;
+	min-width: 22px; min-height: 22px; max-width: 22px; max-height: 22px;
+	padding: 0 !important; margin: 0; flex: 0 0 22px;
+	border: 2px solid #c8c8c8 !important; border-radius: 50% !important;
+	background: #fff !important; box-shadow: none;
+	cursor: pointer;
+}
+.pk-esp .pk-reason-option input:checked {
+	border-color: #FF5757 !important;
+	background: radial-gradient(circle at center, #FF5757 0 5px, #fff 6px) !important;
+	box-shadow: none;
+}
+.pk-esp .pk-reason-note-label { display: block; margin-top: 14px; font-size: 14px; font-weight: 700; }
+.pk-esp .pk-reason-note {
+	width: 100%; margin-top: 8px; padding: 10px 12px;
+	border: 1px solid #e6e6e6; border-radius: 8px;
+	font: inherit; font-size: 15px;
+}
+.pk-esp .pk-reason-actions { margin-top: 16px; }
+.pk-esp .off-ok {
+	width: 100%; min-height: 48px; margin: 0;
+	border: 0; border-radius: 999px;
+	background: #FF5757; color: #fff;
+	font: inherit; font-size: 16px; font-weight: 700;
+	cursor: pointer;
+}
+.pk-esp .off-ok:hover { background: #E04D4D; }
+.pk-esp .pk-reason-cancel {
+	display: block; margin: 12px auto 0; padding: 6px 10px;
+	border: 0; background: none;
+	color: #161715; font: inherit; font-size: 14px; font-weight: 700;
+	cursor: pointer;
+}
+.pk-esp .pk-reason-hint { margin: 12px 0 0; color: #5d615a; font-size: 13px; line-height: 1.45; }
+.pk-esp #pk-esp-depot-frame { display: block; width: 100%; min-height: 72vh; border: 0; background: #fff; }
+.pk-esp .num {
+	display: inline; margin: 0; padding: 0;
+	border: 0; background: none;
+	color: inherit; font: inherit;
+	cursor: pointer;
+}
+.pk-esp .pk-listing-status {
+	display: inline; padding: 0; margin: 0;
+	background: none; border-radius: 0;
+	color: inherit; font-size: inherit; font-weight: inherit;
+	text-transform: none; letter-spacing: 0;
+}
+.pk-esp .toast {
+	position: fixed; z-index: 60;
+	left: 50%; bottom: 20px;
+	transform: translateX(-50%);
+	margin: 0; padding: 6px 10px;
+	border-radius: 999px;
+	background: #fff; color: #161715;
+	font-size: 12px; font-weight: 700;
+	box-shadow: 0 6px 20px rgba(0,0,0,.16);
+}
+/* Panneau Téléphone : mêmes valeurs que la feuille de connexion
+ * (les règles d'origine sont scopées .pk-conn-sheet). */
+.pk-esp .pk-conn-input {
+	height: 46px; width: 100%;
+	padding: 0 12px;
+	border: 0; border-radius: 8px;
+	background: #f3f4f6; color: #1a1a1a;
+	font: inherit; font-size: 14px;
+	box-sizing: border-box;
+}
+.pk-esp .pk-conn-input:focus { outline: none; box-shadow: 0 0 0 2px #1a1a1a; }
+.pk-esp .pk-conn-go {
+	width: 100%; height: 48px;
+	margin-top: 16px; padding: 0;
+	border: 0; border-radius: 999px;
+	background: #FF5757; color: #fff;
+	font: inherit; font-size: 16px; font-weight: 700;
+	cursor: pointer;
+}
+.pk-esp .pk-conn-go:hover, .pk-esp .pk-conn-go:focus-visible { filter: brightness(1.05); }
+.pk-esp .pk-conn-suite a { color: #FF5757; text-decoration: none; font-weight: 700; }

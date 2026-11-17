@@ -36,7 +36,23 @@ if ( function_exists( 'pll_current_language' ) && function_exists( 'pll_get_post
 		$pk_card_heading_tag = ( is_post_type_archive( PARTIKULIER_ESTATIK_POST_TYPE ) || is_tax() ) ? 'h2' : 'h3';
 $pk_property_url             = get_permalink( $property );
 if ( class_exists( 'Partikulier_Listing_URLs' ) ) {
-		$pk_property_url = Partikulier_Listing_URLs::filter_link( $pk_property_url, $property );
+	$pk_property_url = Partikulier_Listing_URLs::filter_link( $pk_property_url, $property );
+}
+
+// Espace connecté : bouton.num dans le pied de carte (copie du numéro
+// + toast, comme la maquette). Rendu uniquement dans la feuille de
+// l'espace et pour la carte du propriétaire connecté : le numéro
+// affiché est celui de son compte — seule source réelle disponible,
+// aucun numéro par annonce n'existe encore côté site.
+$pk_card_num = null;
+if ( is_user_logged_in() && wp_script_is( 'partikulier-espace', 'enqueued' ) && (int) $property->post_author === (int) get_current_user_id() ) {
+	foreach ( array( '_pk_phone', 'phone', 'billing_phone', 'es_phone' ) as $pk_phone_key ) {
+		$pk_candidate = trim( (string) get_user_meta( get_current_user_id(), $pk_phone_key, true ) );
+		if ( '' !== $pk_candidate ) {
+			$pk_card_num = $pk_candidate;
+			break;
+		}
+	}
 }
 
 						$price = get_post_meta( $property->ID, 'es_property_price', true );
@@ -146,7 +162,11 @@ if ( $price ) {
 				}
 				?>
 				<span class="pk-card-price" itemprop="price">
+						<?php if ( null !== $pk_card_num ) : // Espace : le numéro remplace le prix, comme la maquette. ?>
+						<button class="num" type="button" data-tel="<?php echo esc_attr( $pk_card_num ); ?>"><?php echo esc_html( $pk_card_num ); ?></button>
+						<?php else : ?>
 						<?php echo $price_html; // phpcs:ignore WordPress.Security.EscapeOutput -- construit exclusivement de morceaux esc_html() (l.116-118) (SE-020) ?>
+						<?php endif; ?>
 				</span>
 				<?php if ( $action ) : ?>
 						<span class="pk-card-badge pk-badge-<?php echo esc_attr( sanitize_title( $action ) ); ?>"><?php echo esc_html( class_exists( 'Partikulier_Localization' ) ? Partikulier_Localization::translate_taxonomy_label( $action ) : $action ); ?></span>

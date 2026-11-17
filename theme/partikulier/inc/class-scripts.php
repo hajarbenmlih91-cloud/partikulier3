@@ -82,6 +82,25 @@ class Partikulier_Scripts {
 					'strategy'  => 'defer',
 				)
 			);
+			// Configuration propre à l'espace : enregistrement du profil
+			// (nom, e-mail, préférence du quota) et libellés de la feuille.
+			$pk_listings_count = is_user_logged_in()
+				? count_user_posts( get_current_user_id(), PARTIKULIER_ESTATIK_POST_TYPE, true )
+				: 0;
+			wp_localize_script( 'partikulier-espace', 'pkEspace', array(
+				'ajaxUrl'       => admin_url( 'admin-ajax.php' ),
+				'nonce'         => wp_create_nonce( 'pk_espace_profil' ),
+				'listingsCount' => (int) $pk_listings_count,
+				'i18n'          => array(
+					'saveError'      => __( 'Enregistrement impossible. Vérifiez vos informations et réessayez.', 'partikulier' ),
+					'saved'          => __( 'Enregistré', 'partikulier' ),
+					'more'           => __( 'plus d’annonces', 'partikulier' ),
+					'less'           => __( 'moins d’annonces', 'partikulier' ),
+					'modalNameTitle' => __( 'Prénom', 'partikulier' ),
+					'modalMailTitle' => __( 'Modifier l’adresse e-mail', 'partikulier' ),
+					'modalMailLabel' => __( 'Email', 'partikulier' ),
+				),
+			) );
 		}
 
 				// Donnees JS : admin ajax (formulaire annonce), endpoint REST maison.

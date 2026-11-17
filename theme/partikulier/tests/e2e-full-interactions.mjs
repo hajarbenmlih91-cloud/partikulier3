@@ -632,6 +632,11 @@ try {
   record('E2E-OWNER-LOGIN-001', 'auth', loggedIn, `sessionCookie=${loggedIn}`);
 
   await page.goto(fixture.pages.mesAnnoncesFr, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  // Espace fidèle à la maquette validée : le hub (fond rouge) est l'écran
+  // d'accueil ; on ouvre le panneau « Mes annonces » comme un utilisateur.
+  // Le hash #panel-annonces est ensuite conservé, donc les rechargements
+  // après AJAX rouvrent directement le panneau.
+  await page.locator('[data-panel="panel-annonces"]').first().click();
   const ownerId = fixture.listings.activeOwner.id;
   const ownerItem = page.locator(`.pk-listing-item:has([data-post-id="${ownerId}"])`).first();
   await ownerItem.waitFor({ state: 'visible', timeout: 10000 });
