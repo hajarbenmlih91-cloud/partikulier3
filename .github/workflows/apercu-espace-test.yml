@@ -83,13 +83,19 @@ jobs:
           cd "$1"
 
           SLUG="espace-test"
-          EXISTANT=$(wp post list --post_type=page --name="$SLUG" --field=ID --format=csv 2>/dev/null | head -1 || true)
+          # Un plugin de cache écrit « Success: Purged... » sur stdout pendant
+          # les écritures : ne garder que les lignes purement numériques.
+          EXISTANT=$(wp post list --post_type=page --name="$SLUG" --field=ID --format=csv 2>/dev/null | grep -E '^[0-9]+$' | head -1 || true)
           if [ -n "$EXISTANT" ]; then
             echo "Page déjà présente (id $EXISTANT), réutilisation."
             ID="$EXISTANT"
           else
             ID=$(wp post create --post_type=page --post_status=publish \
-              --post_title="Espace test" --post_name="$SLUG" --porcelain)
+              --post_title="Espace test" --post_name="$SLUG" --porcelain | grep -E '^[0-9]+$' | tail -1)
+            if [ -z "$ID" ]; then
+              ID=$(wp post list --post_type=page --name="$SLUG" --field=ID --format=csv 2>/dev/null | grep -E '^[0-9]+$' | head -1 || true)
+            fi
+            [ -n "$ID" ] || { echo "::error::ID de la page créée introuvable."; exit 1; }
             echo "Page créée (id $ID)."
           fi
 
@@ -111,7 +117,7 @@ jobs:
           cd "$1"
 
           SLUG="espace-test"
-          ID=$(wp post list --post_type=page --name="$SLUG" --field=ID --format=csv 2>/dev/null | head -1 || true)
+          ID=$(wp post list --post_type=page --name="$SLUG" --field=ID --format=csv 2>/dev/null | grep -E '^[0-9]+$' | head -1 || true)
           if [ -n "$ID" ]; then
             wp post delete "$ID" --force
             echo "Page de test supprimée (id $ID)."
