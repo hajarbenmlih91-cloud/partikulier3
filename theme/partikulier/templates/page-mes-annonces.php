@@ -283,7 +283,7 @@ if ( class_exists( 'Partikulier_WhatsApp_Verification' ) ) {
 }
 
 $pk_depot_url   = pk_page_url( 'deposer', '/deposer/' );
-$pk_home_url    = home_url( '/' );
+$pk_home_url    = function_exists( 'pk_localized_home_url' ) ? pk_localized_home_url( $pk_esp_lang ) : home_url( '/' );
 $pk_logo_color  = get_theme_file_uri( 'assets/img/pep-logo-sm.png' );
 $pk_logo_white  = get_theme_file_uri( 'assets/img/pep-logo-white-sm.png' );
 $pk_logout_url  = wp_logout_url( pk_page_url( 'connexion', '/connexion/' ) );
@@ -316,7 +316,9 @@ $pk_icon_chipuser = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none"
 
 <main class="pk-esp" id="pk-espace" data-listings="<?php echo (int) $pk_listings_n; ?>" data-depot-url="<?php echo esc_attr( $pk_depot_url ); ?>">
 	<div class="top">
-		<img class="logo" id="pk-esp-logo" alt="pep" src="<?php echo esc_url( $pk_logo_white ); ?>" data-blanc="<?php echo esc_attr( $pk_logo_white ); ?>" data-couleur="<?php echo esc_attr( $pk_logo_color ); ?>">
+		<a class="logo-home" href="<?php echo esc_url( $pk_home_url ); ?>" aria-label="pep.ma">
+			<img class="logo" id="pk-esp-logo" alt="pep" src="<?php echo esc_url( $pk_logo_white ); ?>" data-blanc="<?php echo esc_attr( $pk_logo_white ); ?>" data-couleur="<?php echo esc_attr( $pk_logo_color ); ?>">
+		</a>
 		<div class="top-end">
 			<button class="info" id="pk-esp-info" type="button" aria-label="<?php echo esc_attr( $pk_t['info_label'] ); ?>" aria-expanded="false" aria-controls="pk-esp-regles">i</button>
 			<button class="chip" id="pk-esp-chip" type="button">

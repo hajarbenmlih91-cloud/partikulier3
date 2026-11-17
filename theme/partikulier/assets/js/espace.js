@@ -63,6 +63,7 @@
 	function showHub() {
 		body.classList.add("is-hub");
 		body.classList.remove("is-panel");
+		body.classList.remove("is-depot");
 		setLogo(false);
 		if (hub) hub.hidden = false;
 		closeModal();
@@ -83,6 +84,8 @@
 		}
 		body.classList.add("is-panel");
 		body.classList.remove("is-hub");
+		// Panneau dépôt : le formulaire a déjà son logo — masquer celui de l'espace.
+		body.classList.toggle("is-depot", id === "panel-modifier");
 		setLogo(true);
 		if (hub) hub.hidden = true;
 		closeModal();
