@@ -634,11 +634,43 @@ class Partikulier_Form {
 							delete_post_meta( $post_id, '_pk_whatsapp_verified_by' );
 							Partikulier_WhatsApp_Verification::create_pending( $post_id );
 
-							// --- Photos : upload -> WordPress cree automatiquement les tailles,
-							//     et wp_generate_attachment_metadata declenche la conversion AVIF
-							//     (filtre Partikulier_AVIF::generate_avif). ---
-							$thumb_id     = 0;
-							$photo_errors = array();
+						// Mode édition : photos existantes retirées par l'annonceur.
+						// Le tunnel envoie la liste des pièces jointes conservées ;
+						// on ne supprime pas les fichiers, on les retire seulement
+						// de la galerie de cette annonce.
+						if ( $is_edit && isset( $data['pk_keep_photos'] ) ) {
+							$keep_raw = $data['pk_keep_photos'];
+							if ( ! is_array( $keep_raw ) ) {
+								$keep_raw = explode( ',', (string) wp_unslash( $keep_raw ) );
+							}
+							$keep_ids         = array_filter( array_map( 'absint', $keep_raw ) );
+							$existing_gallery = get_post_meta( $post_id, 'es_property_gallery', true );
+							$existing_gallery = is_array( $existing_gallery ) ? array_map( 'absint', $existing_gallery ) : array();
+							$kept_gallery     = array_values(
+								array_filter(
+									$existing_gallery,
+									static function ( $attachment_id ) use ( $keep_ids ) {
+										return in_array( $attachment_id, $keep_ids, true );
+									}
+								)
+							);
+							update_post_meta( $post_id, 'es_property_gallery', $kept_gallery );
+							$current_thumb = (int) get_post_thumbnail_id( $post_id );
+							if ( $current_thumb && ! in_array( $current_thumb, $kept_gallery, true ) ) {
+								if ( $kept_gallery ) {
+									set_post_thumbnail( $post_id, $kept_gallery[0] );
+								} else {
+									delete_post_thumbnail( $post_id );
+								}
+							}
+						}
+
+						// --- Photos : upload -> WordPress cree automatiquement les tailles,
+						//     et wp_generate_attachment_metadata declenche la conversion AVIF
+						//     (filtre Partikulier_AVIF::generate_avif). ---
+						$thumb_id     = 0;
+						$photo_errors = array();
+						$uploaded_ids = array();
 		if ( $files && ! empty( $files['name'][0] ) ) {
 				require_once ABSPATH . 'wp-admin/includes/image.php';
 				require_once ABSPATH . 'wp-admin/includes/file.php';
@@ -681,10 +713,11 @@ class Partikulier_Form {
 									update_post_meta( $attachment_id, '_wp_attachment_image_alt', $alt_text );
 							}
 
-							$gallery[] = $attachment_id;
-							if ( 0 === $thumb_id ) {
+						$gallery[]      = $attachment_id;
+						$uploaded_ids[] = $attachment_id;
+						if ( 0 === $thumb_id ) {
 								$thumb_id = $attachment_id;
-							}
+						}
 			}
 			if ( $gallery ) {
 					update_post_meta( $post_id, 'es_property_gallery', $gallery );
@@ -692,7 +725,20 @@ class Partikulier_Form {
 		}
 
 		if ( $thumb_id ) {
-				set_post_thumbnail( $post_id, $thumb_id );
+			set_post_thumbnail( $post_id, $thumb_id );
+		}
+
+		// Photo principale choisie sur l'aperçu du tunnel : si c'est une photo
+		// déjà en ligne, elle gagne sur le premier nouvel envoi. Si c'est un
+		// nouvel envoi, le tunnel la téléverse en premier et $thumb_id la
+		// désigne déjà.
+		if ( $is_edit && ! empty( $data['pk_cover_attachment'] ) ) {
+			$cover_id      = absint( $data['pk_cover_attachment'] );
+			$final_gallery = get_post_meta( $post_id, 'es_property_gallery', true );
+			$final_gallery = is_array( $final_gallery ) ? array_map( 'absint', $final_gallery ) : array();
+			if ( $cover_id && in_array( $cover_id, $final_gallery, true ) ) {
+				set_post_thumbnail( $post_id, $cover_id );
+			}
 		}
 
 							// Les photos refusees sont signalees a l'annonceur, pas avalees.
@@ -702,8 +748,18 @@ class Partikulier_Form {
 				delete_post_meta( $post_id, '_pk_photo_errors' );
 		}
 
-							// --- Versions arabe et anglaise : trois pages distinctes, liees entre
-							//     elles par Polylang pour alimenter les balises hreflang. ---
+						// Textes libres du tunnel, copiés tels quels : en mode édition,
+						// le tunnel les rouvre dans leurs champs d'origine au lieu de
+						// devoir les deviner dans la description assemblée.
+						if ( isset( $data['pk_extra'] ) ) {
+							update_post_meta( $post_id, '_pk_extra_note', sanitize_textarea_field( wp_unslash( $data['pk_extra'] ) ) );
+						}
+						if ( isset( $data['pk_address'] ) ) {
+							update_post_meta( $post_id, '_pk_address_note', sanitize_text_field( wp_unslash( $data['pk_address'] ) ) );
+						}
+
+						// --- Versions arabe et anglaise : trois pages distinctes, liees entre
+						//     elles par Polylang pour alimenter les balises hreflang. ---
 		if ( class_exists( 'Partikulier_Listing_Translations' ) && Partikulier_Listing_Translations::available() ) {
 				$i18n_values                     = Partikulier_Listing_Preview::normalize_input( $data );
 									$source_lang = isset( $source_lang ) ? $source_lang : ( function_exists( 'pll_default_language' ) ? pll_default_language() : 'fr' );

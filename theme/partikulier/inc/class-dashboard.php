@@ -17,6 +17,7 @@ class Partikulier_Dashboard {
 
 	public static function init() {
 		add_action( 'wp_ajax_pk_manage_listing', array( __CLASS__, 'handle_manage' ) );
+		add_action( 'wp_ajax_pk_espace_profil', array( __CLASS__, 'handle_espace_profil' ) );
 		add_action( 'wp_ajax_pk_views_counter', array( __CLASS__, 'handle_views_counter' ) );
 		add_action( 'wp_ajax_nopriv_pk_views_counter', array( __CLASS__, 'handle_views_counter' ) );
 		add_action( 'pre_get_posts', array( __CLASS__, 'exclude_closed_from_public_lists' ) );
@@ -61,6 +62,67 @@ class Partikulier_Dashboard {
 		$meta_query   = (array) $query->get( 'meta_query' );
 		$meta_query[] = self::active_listing_meta_query();
 		$query->set( 'meta_query', $meta_query );
+	}
+
+	/**
+	 * Enregistrement du profil dans l'espace connecté (modales du hub).
+	 *
+	 * Champs autorisés, un par appel : nom affiché (modale « Prénom »),
+	 * adresse e-mail (modale « Modifier l'adresse e-mail », via
+	 * wp_update_user : unicité et format validés par WordPress) et la
+	 * préférence de rappels du quota (panneau Confidentialité).
+	 * Toujours l'utilisateur connecté lui-même ; nonce dédié.
+	 */
+	public static function handle_espace_profil() {
+		check_ajax_referer( 'pk_espace_profil', 'nonce' );
+		if ( ! is_user_logged_in() ) {
+			wp_send_json_error( array( 'message' => __( 'Connectez-vous pour modifier votre profil.', 'partikulier' ) ), 401 );
+		}
+
+		$user_id = get_current_user_id();
+		$field   = isset( $_POST['field'] ) ? sanitize_key( wp_unslash( $_POST['field'] ) ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- clé contrôlée ci-dessous.
+		$value   = isset( $_POST['value'] ) ? sanitize_text_field( wp_unslash( $_POST['value'] ) ) : '';
+
+		if ( 'quota_reminders' === $field ) {
+			update_user_meta( $user_id, 'pk_quota_reminders', '1' === $value ? '1' : '0' );
+			wp_send_json_success( array( 'quota_reminders' => '1' === $value ) );
+		}
+
+		if ( 'display_name' === $field ) {
+			$value = trim( $value );
+			if ( '' === $value ) {
+				wp_send_json_error( array( 'message' => __( 'Le prénom ne peut pas être vide.', 'partikulier' ) ), 422 );
+			}
+			$updated = wp_update_user( array(
+				'ID'           => $user_id,
+				'display_name' => $value,
+			) );
+			if ( is_wp_error( $updated ) ) {
+				wp_send_json_error( array( 'message' => $updated->get_error_message() ), 422 );
+			}
+			wp_send_json_success( array( 'display_name' => $value ) );
+		}
+
+		if ( 'email' === $field ) {
+			$value = sanitize_email( $value );
+			if ( ! is_email( $value ) ) {
+				wp_send_json_error( array( 'message' => __( 'Adresse e-mail invalide.', 'partikulier' ) ), 422 );
+			}
+			$existing = email_exists( $value );
+			if ( $existing && (int) $existing !== $user_id ) {
+				wp_send_json_error( array( 'message' => __( 'Cette adresse e-mail est déjà utilisée par un autre compte.', 'partikulier' ) ), 422 );
+			}
+			$updated = wp_update_user( array(
+				'ID'         => $user_id,
+				'user_email' => $value,
+			) );
+			if ( is_wp_error( $updated ) ) {
+				wp_send_json_error( array( 'message' => $updated->get_error_message() ), 422 );
+			}
+			wp_send_json_success( array( 'email' => $value ) );
+		}
+
+		wp_send_json_error( array( 'message' => __( 'Champ non autorisé.', 'partikulier' ) ), 400 );
 	}
 
 	/**
